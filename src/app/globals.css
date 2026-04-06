@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------
+ * 폰트 정의
+ * ---------------------------------------------------------- */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ----------------------------------------------------------
+ * CoreZent 디자인 토큰 (CSS 변수)
+ * ---------------------------------------------------------- */
+@theme {
+  /* 배경 */
+  --color-bg:              #0B1120;
+  --color-surface:         #111A2E;
+  --color-border:          #1E293B;
+
+  /* 텍스트 */
+  --color-text:            #F1F5F9;
+  --color-text-muted:      #94A3B8;
+  --color-heading:         #ffffff;
+
+  /* 액센트 */
+  --color-accent:          #38BDF8;
+  --color-accent-dark:     #0ea5e9;
+
+  /* 상태 */
+  --color-success:         #00e676;
+  --color-warning:         #ffc107;
+  --color-error:           #ff5252;
+
+  /* 폰트 */
+  --font-sans:             'Geist', 'Inter', system-ui, sans-serif;
+  --font-mono:             'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ----------------------------------------------------------
+ * 기본 스타일
+ * ---------------------------------------------------------- */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #0B1120;
+    color: #F1F5F9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  code, kbd, pre, samp {
+    font-family: var(--font-mono);
+    font-size: 0.875rem; /* 14px */
+  }
+}

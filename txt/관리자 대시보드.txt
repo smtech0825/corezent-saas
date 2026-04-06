@@ -1,0 +1,26 @@
+이미지 설명
+
+- 전체 이미지는 참고용으로만 사용해줘.
+- 관리자와 사용자 대시보드도 웹사이트 UI 스타일과 같은 스타일로 제작
+- 이미지 이름이 admin으로 시작되면 관리자 대시보드user로 시작하면 사용자 대시보드 참고용이야.
+
+- user_plan: 사용자가 사용중인 구독 상품 정보
+- user_orders: 구입 내역 정보
+- user_setting: 회원 정보 확인/변경
+
+- admin_home : 왼쪽에 메뉴인 부분 참고, 관리자 대시보드 첫 부분에 새로운 주문, 회원 현황, 새로 가입한 회원 등의 정보
+- admin_user_management: 회원 관리, 회원 임의로 추가 가능
+- admin_support_request: 문의 요청 목록, 클릭해서 답변 가능, 답변이 안된 문의 표시, 안읽은 문의 표시
+- admin_affiliate_setting: Affiliate 설정
+- admin_affiliate_request: 출금 요청, 출금은 계좌이체, Paypal로 가능
+- admin_front_setting, admin_front_section: 홈 화면 등의 콘텐츠 변경 기능
+- admin_front_menu: Home 페이지의 섹션 순서 변경
+- admin_front_FAQ: 홈 화면에 노출되는 FAQ 수정
+- admin_front_tools,admin_front_feature,admin_front_interview,admin_front_partners : Home에 보여지는 부분 수정
+- admin_front_admin_setting: 기타 관리자 설정
+- admin_front_invoice: 인보이스 설정
+- admin_front_SMTP: SMTP 설정
+- admin_front_GDPR: GDPR 설정
+- admin_front_Privacy_Term: Privacy, Terms등 설정
+
+- 상품 등록: 이미지, 설명, 가격, 판매 방식, 기간 설정(구독 선택 시), 독립적인 상품 페이지 수정 등

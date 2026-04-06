@@ -1,0 +1,31 @@
+# 환경 변수 (절대 커밋 금지)
+.env
+.env.local
+.env.production
+
+# 오류 로그
+error_log.txt
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 에디터 설정
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# 빌드 산출물
+dist/
+build/
+node_modules/
+.next/
+
+# Claude 설정
+.claude/
+
+# 임시 파일
+*.tmp
+*.temp

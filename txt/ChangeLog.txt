@@ -1,0 +1,34 @@
+1. 레이아웃 전략: "Master-Detail" 구조
+여러 상품이 있으므로 페이지 왼쪽에는 **상품 리스트(Sidebar)**를, 오른쪽에는 **해당 상품의 업데이트 히스토리(Main Content)**를 배치하는 구조
+
+[좌측: 상품 필터 사이드바]
+- All Updates: 모든 제품의 통합 업데이트 피드
+- 제품별 아이콘과 함께 배치
+각 항목 옆에 현재 최신 버전(v1.2.0 등)을 작게 표시하여 클릭 전에도 정보를 제공
+
+2. 메인 컨텐츠 구성 (Changelog Card)
+① 상단 섹션: 현재 상태 및 다운로드 
+선택한 제품의 가장 최신 상태를 최상단에 고정합니다.
+- Version Tag: v2.4.1 (Bold, Mono font)
+- Release Date: 2026.04.05
+- Primary Download Button:
+  예)데스크톱 앱: Download for Mac (Universal), Download for Windows
+  예)익스텐션: Install from Chrome Store 
+  예)버튼 옆에는 파일 크기와 체크섬(Checksum) 정보를 작게 기입하여 전문성을 더합니다.
+② 본문 섹션: 변경 내용 (Change Categories)
+내용을 단순히 나열하지 않고 카테고리별로 그룹화하여 가독성을 높입니다.
+🚀 New Features: 새롭게 추가된 강력한 기능들
+✨ Improvements: 기존 기능의 성능 향상 및 UX 개선
+🐛 Bug Fixes: 해결된 버그 목록 (수정된 이슈 번호 링크 포함 가능)
+⚠️ Breaking Changes: (필요 시) 업데이트 시 주의해야 할 변경 사항
+
+3. 전문가가 제안하는 디자인 디테일 (UX)
+
+타임라인 인디케이터: 왼쪽 사이드에 수직선을 두어 과거 버전으로 내려가는 시각적 흐름 제공
+검색 기능: 특정 기능이나 버그 수정 건을 찾을 수 있는 상단 검색바
+RSS / 구독 버튼: 해당 제품의 새로운 업데이트 알림을 받을 수 있는 이메일 구독 폼
+코드 스니펫: 개발자용 도구라면 변경된 API 예시 등을 JetBrains Mono 폰트로 깔끔하게 노출
+
+4. 지나치게 화려한 장식보다는 텍스트의 위계와 여백에 집중
+포인트: 업데이트 카테고리(New, Fixed 등)에만 절제된 컬러 배지(Green, Blue, Amber) 사용
+

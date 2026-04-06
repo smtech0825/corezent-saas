@@ -1,0 +1,80 @@
+import type { Metadata } from 'next'
+import { createAdminClient } from '@/lib/supabase/admin'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
+import HeroSection from '@/components/sections/HeroSection'
+import ProductSection from '@/components/sections/ProductSection'
+import HowItWorksSection from '@/components/sections/HowItWorksSection'
+import FeaturesSection from '@/components/sections/FeaturesSection'
+import PricingSection from '@/components/sections/PricingSection'
+import TestimonialsSection from '@/components/sections/TestimonialsSection'
+import CTASection from '@/components/sections/CTASection'
+import FAQSection from '@/components/sections/FAQSection'
+
+export const metadata: Metadata = {
+  title: 'CoreZent — Software Built for You',
+  description:
+    'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation.',
+}
+
+// 섹션 기본 설정 (DB에 없을 경우 fallback)
+const defaultSections = [
+  { name: 'hero',         is_visible: true, order_index: 0 },
+  { name: 'product',      is_visible: true, order_index: 1 },
+  { name: 'how_it_works', is_visible: true, order_index: 2 },
+  { name: 'features',     is_visible: true, order_index: 3 },
+  { name: 'pricing',      is_visible: true, order_index: 4 },
+  { name: 'testimonials', is_visible: true, order_index: 5 },
+  { name: 'faq',          is_visible: true, order_index: 6 },
+  { name: 'cta',          is_visible: true, order_index: 7 },
+]
+
+export default async function HomePage() {
+  const client = createAdminClient()
+
+  // 병렬로 모든 DB 데이터 조회
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes] = await Promise.all([
+    client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
+    client.from('front_features').select('id, icon, title, description').eq('is_published', true).order('order_index'),
+    client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
+    client.from('front_faqs').select('id, question, answer').eq('is_published', true).order('order_index'),
+  ])
+
+  // DB 섹션과 기본값 병합 후 order_index 기준 정렬
+  const dbMap = new Map((sectionsRes.data ?? []).map((s) => [s.name, s]))
+  const sections = defaultSections
+    .map((def) => ({ ...def, ...(dbMap.get(def.name) ?? {}) }))
+    .sort((a, b) => a.order_index - b.order_index)
+
+  const features = featuresRes.data ?? []
+  const testimonials = testimonialsRes.data ?? []
+  const faqs = faqsRes.data ?? []
+
+  // 섹션 이름 → 컴포넌트 매핑
+  const sectionMap: Record<string, React.ReactNode> = {
+    hero:         <HeroSection />,
+    product:      <ProductSection />,
+    how_it_works: <HowItWorksSection />,
+    features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
+    pricing:      <PricingSection />,
+    testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
+    faq:          <FAQSection faqs={faqs} />,
+    cta:          <CTASection />,
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0B1120] font-sans">
+      <Navbar />
+      <main>
+        {sections
+          .filter((s) => s.is_visible)
+          .map((s) => {
+            const component = sectionMap[s.name]
+            if (!component) return null
+            return <div key={s.name}>{component}</div>
+          })}
+      </main>
+      <Footer />
+    </div>
+  )
+}
