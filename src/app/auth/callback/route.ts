@@ -6,12 +6,13 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
   const tokenHash = url.searchParams.get('token_hash')
-  const type = url.searchParams.get('type') as 'magiclink' | 'email' | null
+  const type = url.searchParams.get('type') as 'magiclink' | 'email' | 'signup' | 'recovery' | null
   const redirect = url.searchParams.get('redirect') ?? '/dashboard'
   const origin = url.origin
 
@@ -27,9 +28,19 @@ export async function GET(request: Request) {
 
   // 이메일 인증 (token_hash 방식)
   if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
     console.log('[callback] verifyOtp error:', error)
-    if (!error) return NextResponse.redirect(`${origin}${redirect}`)
+    if (!error) {
+      // 신규 회원 이메일 인증 완료 시 웰컴 이메일 발송
+      if (type === 'signup' && data.user?.email) {
+        sendEmail({
+          to: data.user.email,
+          subject: 'Welcome to CoreZent!',
+          html: welcomeEmailHtml('CoreZent'),
+        }).catch((err) => console.error('[email] 웰컴 이메일 발송 실패:', err))
+      }
+      return NextResponse.redirect(`${origin}${redirect}`)
+    }
     return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
   }
 

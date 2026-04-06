@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import ReplyForm from './ReplyForm'
+import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,6 +75,15 @@ export default async function TicketDetailPage({
       await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
     } else {
       await client.from('support_tickets').update({ status: 'answered' }).eq('id', id)
+    }
+
+    // 사용자에게 답변 알림 이메일 발송
+    if (ticket && userEmail !== '—') {
+      sendEmail({
+        to: userEmail,
+        subject: `Re: ${ticket.subject}`,
+        html: supportReplyEmailHtml(ticket.subject, message, 'CoreZent'),
+      }).catch((err) => console.error('[email] 답변 알림 이메일 발송 실패:', err))
     }
 
     revalidatePath(`/admin/support/${id}`)
