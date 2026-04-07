@@ -35,10 +35,12 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
  * @반환값: user_id가 포함된 체크아웃 URL
  */
 export function buildCheckoutUrl(baseUrl: string, userId?: string | null): string {
-  if (!baseUrl || baseUrl === '#' || !userId) return baseUrl || '#'
+  if (!baseUrl || baseUrl === '#') return baseUrl || '#'
   try {
     const url = new URL(baseUrl)
-    url.searchParams.set('checkout[custom][user_id]', userId)
+    if (userId) url.searchParams.set('checkout[custom][user_id]', userId)
+    // 결제 완료 후 대시보드 라이선스 페이지로 리다이렉트
+    url.searchParams.set('checkout[redirect_url]', 'https://www.corezent.com/dashboard/licenses')
     return url.toString()
   } catch {
     return baseUrl
