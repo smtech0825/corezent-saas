@@ -104,7 +104,7 @@ export default function PricingSection() {
 
               {/* CTA */}
               <Link
-                href="/auth/register"
+                href="/pricing"
                 className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200 hover:-translate-y-0.5 mb-7"
               >
                 Get started
