@@ -19,7 +19,6 @@ import {
   LogOut,
   X,
   ChevronDown,
-  FileText,
   List,
   HelpCircle,
   Sparkles,
@@ -45,7 +44,6 @@ const frontendNav = [
   { label: 'Testimonials', href: '/admin/content/testimonials', icon: Quote },
   { label: 'Tools', href: '/admin/content/tools', icon: Wrench },
   { label: 'Partners', href: '/admin/content/partners', icon: Handshake },
-  { label: 'Pages', href: '/admin/content/pages', icon: FileText },
 ]
 
 interface Props {

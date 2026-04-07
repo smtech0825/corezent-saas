@@ -90,7 +90,7 @@ export default function SectionsManager({ sections, onToggle, onReorder }: Props
             </span>
             <button
               onClick={() => handleToggle(section.name, section.is_visible)}
-              className={`w-10 h-6 rounded-full transition-colors relative ${
+              className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden ${
                 section.is_visible ? 'bg-emerald-500' : 'bg-[#1E293B]'
               }`}
             >
