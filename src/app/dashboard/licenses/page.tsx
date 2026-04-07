@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Key, Copy } from 'lucide-react'
 import LicenseCopyButton from '../_components/LicenseCopyButton'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'My Licenses — CoreZent',
 }
@@ -19,7 +21,7 @@ export default async function LicensesPage() {
   const { data: licenses } = await supabase
     .from('licenses')
     .select(`
-      id, serial_key, status, activated_at, expires_at, created_at,
+      id, serial_key, status, expires_at, created_at,
       products(name, slug)
     `)
     .eq('user_id', user.id)
