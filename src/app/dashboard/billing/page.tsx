@@ -21,12 +21,12 @@ export default async function BillingPage() {
   const [{ data: subscriptions }, { data: orders }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('*, products(name)')
+      .select('*, product_prices!product_price_id(products!product_id(name))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false }),
     supabase
       .from('orders')
-      .select('id, amount, status, created_at, product_prices(products(name))')
+      .select('id, amount, status, created_at, product_prices!product_price_id(products!product_id(name))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),
@@ -51,7 +51,7 @@ export default async function BillingPage() {
                     <Package size={18} className="text-[#38BDF8]" />
                   </div>
                   <div>
-                    <p className="text-white font-medium">{sub.products?.name ?? 'Unknown'}</p>
+                    <p className="text-white font-medium">{(sub.product_prices as any)?.products?.name ?? 'Unknown'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
                       {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}

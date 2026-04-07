@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   // 활성 구독
   const { data: subscriptions } = await supabase
     .from('subscriptions')
-    .select('*, product_prices(products(name))')
+    .select('*, product_prices!product_price_id(products!product_id(name))')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .limit(3)
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   // 최근 주문
   const { data: orders } = await supabase
     .from('orders')
-    .select('id, amount, status, created_at, product_prices(products(name))')
+    .select('id, amount, status, created_at, product_prices!product_price_id(products!product_id(name))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5)
