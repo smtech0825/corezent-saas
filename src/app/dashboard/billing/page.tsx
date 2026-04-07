@@ -78,7 +78,7 @@ export default async function BillingPage() {
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <SubStatusBadge status={sub.status} />
-                  {sub.customer_portal_url && (
+                  {sub.status === 'active' && sub.customer_portal_url ? (
                     <Link
                       href={sub.customer_portal_url}
                       target="_blank"
@@ -88,7 +88,15 @@ export default async function BillingPage() {
                       <ExternalLink size={11} />
                       Manage subscription
                     </Link>
-                  )}
+                  ) : sub.status !== 'active' ? (
+                    <Link
+                      href="/dashboard/licenses"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <ExternalLink size={11} />
+                      Check License
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -155,15 +163,16 @@ function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: 
 }
 
 function SubStatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    active:    'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    paused:    'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
-    expired:   'text-[#475569] bg-[#1E293B] border-[#1E293B]',
+  const map: Record<string, { style: string; label: string }> = {
+    active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'active' },
+    paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: 'paused' },
+    cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
+    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
   }
+  const { style, label } = map[status] ?? map.cancelled
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${map[status] ?? map.cancelled}`}>
-      {status}
+    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${style}`}>
+      {label}
     </span>
   )
 }
@@ -173,7 +182,7 @@ function OrderStatusBadge({ status }: { status: string }) {
     paid:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
     failed:    'text-red-400 bg-red-500/10 border-red-500/20',
-    refunded:  'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    refunded:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
     cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
   }
   return (
