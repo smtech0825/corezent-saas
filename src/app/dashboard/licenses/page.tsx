@@ -69,11 +69,9 @@ export default async function LicensesPage() {
                 <LicenseStatusBadge status={lic.status} />
               </div>
 
-              {/* 만료일 / 상태 */}
+              {/* 만료일 */}
               <div>
-                {lic.status === 'active' ? (
-                  <span className="text-sm text-emerald-400 font-medium">Active</span>
-                ) : lic.status === 'revoked' || lic.status === 'expired' ? (
+                {lic.status === 'revoked' || lic.status === 'expired' || lic.status === 'cancelled' ? (
                   <span className="text-sm text-[#94A3B8]">Cancelled</span>
                 ) : lic.expires_at ? (
                   <span className="text-sm text-[#94A3B8]">

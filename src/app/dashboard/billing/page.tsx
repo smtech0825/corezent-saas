@@ -78,25 +78,13 @@ export default async function BillingPage() {
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <SubStatusBadge status={sub.status} />
-                  {sub.status === 'active' && sub.customer_portal_url ? (
-                    <Link
-                      href={sub.customer_portal_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white border border-[#1E293B] hover:border-[#38BDF8]/30 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      <ExternalLink size={11} />
-                      Manage subscription
-                    </Link>
-                  ) : sub.status !== 'active' ? (
-                    <Link
-                      href="/dashboard/licenses"
-                      className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      <ExternalLink size={11} />
-                      Check License
-                    </Link>
-                  ) : null}
+                  <Link
+                    href="/dashboard/licenses"
+                    className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <ExternalLink size={11} />
+                    Check License
+                  </Link>
                 </div>
               </div>
             ))}
@@ -186,7 +174,7 @@ function OrderStatusBadge({ status }: { status: string }) {
     cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
   }
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${map[status] ?? map.pending}`}>
+    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium text-center ${map[status] ?? map.pending}`}>
       {status}
     </span>
   )
