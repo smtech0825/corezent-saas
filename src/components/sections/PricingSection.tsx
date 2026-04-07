@@ -5,10 +5,12 @@
  * @설명: 랜딩 페이지 가격 섹션 — 월간/연간 토글
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight } from 'lucide-react'
 import { products } from '@/lib/products'
+import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
+import { createClient } from '@/lib/supabase/client'
 
 const genie = products.find((p) => p.id === 'geniepost-desktop')
 const MONTHLY = genie?.monthlyPrice ?? 6.99
@@ -27,6 +29,19 @@ const features = [
 
 export default function PricingSection() {
   const [annual, setAnnual] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id ?? null)
+    })
+  }, [])
+
+  const checkoutUrl = buildCheckoutUrl(
+    annual ? (genie?.lemonSqueezy.annual ?? '') : (genie?.lemonSqueezy.monthly ?? ''),
+    userId,
+  )
 
   return (
     <section id="pricing" className="relative py-32 px-6">
@@ -104,7 +119,7 @@ export default function PricingSection() {
 
               {/* CTA */}
               <Link
-                href="/pricing"
+                href={checkoutUrl}
                 className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200 hover:-translate-y-0.5 mb-7"
               >
                 Get started
