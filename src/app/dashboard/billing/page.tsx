@@ -1,13 +1,13 @@
 /**
  * @파일: dashboard/billing/page.tsx
  * @설명: 결제 내역 및 구독 관리 페이지
- *        - 활성 구독 목록 (Lemon Squeezy Customer Portal 링크 포함)
- *        - 주문/결제 내역
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { CreditCard, Package, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Billing — CoreZent',
@@ -18,19 +18,37 @@ export default async function BillingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // 조인 없이 단순 쿼리
   const [{ data: subscriptions }, { data: orders }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('*, product_prices!product_price_id(products!product_id(name))')
+      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false }),
     supabase
       .from('orders')
-      .select('id, amount, status, created_at, product_prices!product_price_id(products!product_id(name))')
+      .select('id, amount, status, created_at, product_price_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),
   ])
+
+  // product_price_id 목록으로 제품명 조회
+  const priceIds = [...new Set([
+    ...(subscriptions ?? []).map((s: any) => s.product_price_id),
+    ...(orders ?? []).map((o: any) => o.product_price_id),
+  ].filter(Boolean))]
+
+  const priceNameMap = new Map<string, string>()
+  if (priceIds.length > 0) {
+    const { data: prices } = await supabase
+      .from('product_prices')
+      .select('id, products(name)')
+      .in('id', priceIds)
+    ;(prices ?? []).forEach((pp: any) => {
+      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
+    })
+  }
 
   return (
     <div className="px-6 py-8 max-w-5xl mx-auto">
@@ -51,7 +69,7 @@ export default async function BillingPage() {
                     <Package size={18} className="text-[#38BDF8]" />
                   </div>
                   <div>
-                    <p className="text-white font-medium">{(sub.product_prices as any)?.products?.name ?? 'Unknown'}</p>
+                    <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
                       {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
@@ -102,7 +120,7 @@ export default async function BillingPage() {
               >
                 <div className="flex items-center gap-3">
                   <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
-                  <span className="text-sm text-white">{(order.product_prices as any)?.products?.name ?? 'Order'}</span>
+                  <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? 'Order'}</span>
                 </div>
                 <span className="text-sm text-[#94A3B8]">
                   {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

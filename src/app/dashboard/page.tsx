@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Key, CreditCard, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Dashboard — CoreZent',
 }
@@ -16,27 +18,42 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // 라이선스 수
-  const { count: licenseCount } = await supabase
-    .from('licenses')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+  // 조인 없이 단순 쿼리
+  const [{ count: licenseCount }, { data: subscriptions }, { data: orders }] = await Promise.all([
+    supabase
+      .from('licenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+    supabase
+      .from('subscriptions')
+      .select('id, status, billing_interval, current_period_end, product_price_id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .limit(3),
+    supabase
+      .from('orders')
+      .select('id, amount, status, created_at, product_price_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ])
 
-  // 활성 구독
-  const { data: subscriptions } = await supabase
-    .from('subscriptions')
-    .select('*, product_prices!product_price_id(products!product_id(name))')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .limit(3)
+  // product_price_id로 제품명 조회
+  const priceIds = [...new Set([
+    ...(subscriptions ?? []).map((s: any) => s.product_price_id),
+    ...(orders ?? []).map((o: any) => o.product_price_id),
+  ].filter(Boolean))]
 
-  // 최근 주문
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('id, amount, status, created_at, product_prices!product_price_id(products!product_id(name))')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const priceNameMap = new Map<string, string>()
+  if (priceIds.length > 0) {
+    const { data: prices } = await supabase
+      .from('product_prices')
+      .select('id, products(name)')
+      .in('id', priceIds)
+    ;(prices ?? []).forEach((pp: any) => {
+      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
+    })
+  }
 
   const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'there'
 
@@ -78,7 +95,7 @@ export default async function DashboardPage() {
               {subscriptions.map((sub: any) => (
                 <div key={sub.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{(sub.product_prices as any)?.products?.name ?? 'Unknown'}</p>
+                    <p className="text-sm text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       Renews {sub.current_period_end
                         ? new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -103,7 +120,7 @@ export default async function DashboardPage() {
               {orders.map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{(order.product_prices as any)?.products?.name ?? 'Order'}</p>
+                    <p className="text-sm text-white font-medium">{priceNameMap.get(order.product_price_id) ?? 'Order'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
