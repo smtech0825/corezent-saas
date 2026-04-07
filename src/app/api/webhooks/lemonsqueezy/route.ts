@@ -444,6 +444,12 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
     .select('serial_key')
     .single()
 
+  // 해당 주문의 구독을 cancelled로 변경
+  await admin
+    .from('subscriptions')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('order_id', order.id)
+
   console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
 
   // Google Sheets 상태 → 중지
