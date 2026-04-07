@@ -37,11 +37,14 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
 export function buildCheckoutUrl(baseUrl: string, userId?: string | null): string {
   if (!baseUrl || baseUrl === '#') return baseUrl || '#'
   try {
-    const url = new URL(baseUrl)
-    if (userId) url.searchParams.set('checkout[custom][user_id]', userId)
+    // URLSearchParams는 [] → %5B%5D 로 인코딩해 LS가 인식 못함
+    // 브래킷을 그대로 유지하기 위해 문자열 직접 조합
+    const params: string[] = []
+    if (userId) params.push(`checkout[custom][user_id]=${encodeURIComponent(userId)}`)
     // 결제 완료 후 대시보드 라이선스 페이지로 리다이렉트
-    url.searchParams.set('checkout[redirect_url]', 'https://www.corezent.com/dashboard/licenses')
-    return url.toString()
+    params.push(`checkout[redirect_url]=${encodeURIComponent('https://www.corezent.com/dashboard/licenses')}`)
+    const separator = baseUrl.includes('?') ? '&' : '?'
+    return baseUrl + separator + params.join('&')
   } catch {
     return baseUrl
   }
