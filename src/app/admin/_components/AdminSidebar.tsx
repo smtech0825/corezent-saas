@@ -23,27 +23,31 @@ import {
   HelpCircle,
   Sparkles,
   Quote,
-  Wrench,
-  Handshake,
+  Layout,
+  Workflow,
+  Megaphone,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const mainNav = [
-  { label: 'Overview', href: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Products', href: '/admin/products', icon: Package },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
-  { label: 'Licenses', href: '/admin/licenses', icon: Key },
-  { label: 'Support', href: '/admin/support', icon: MessageSquare },
+  { label: 'Overview',  href: '/admin',          icon: LayoutDashboard, exact: true },
+  { label: 'Users',     href: '/admin/users',     icon: Users },
+  { label: 'Products',  href: '/admin/products',  icon: Package },
+  { label: 'Orders',    href: '/admin/orders',    icon: ShoppingBag },
+  { label: 'Licenses',  href: '/admin/licenses',  icon: Key },
+  { label: 'Support',   href: '/admin/support',   icon: MessageSquare },
 ]
 
+// Section Settings → 가시성/순서 제어
+// 각 섹션 콘텐츠 에디터는 아래 frontendNav에 대응
 const frontendNav = [
-  { label: 'Section Settings', href: '/admin/content/sections', icon: List },
-  { label: 'FAQ', href: '/admin/content/faq', icon: HelpCircle },
-  { label: 'Features', href: '/admin/content/features', icon: Sparkles },
-  { label: 'Testimonials', href: '/admin/content/testimonials', icon: Quote },
-  { label: 'Tools', href: '/admin/content/tools', icon: Wrench },
-  { label: 'Partners', href: '/admin/content/partners', icon: Handshake },
+  { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
+  { label: 'Hero',             href: '/admin/content/hero',         icon: Layout },
+  { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
+  { label: 'Features',         href: '/admin/content/features',     icon: Sparkles },
+  { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },
+  { label: 'FAQ',              href: '/admin/content/faq',          icon: HelpCircle },
+  { label: 'CTA',              href: '/admin/content/cta',          icon: Megaphone },
 ]
 
 interface Props {

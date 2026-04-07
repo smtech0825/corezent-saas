@@ -1,0 +1,47 @@
+--배치 방식: 위 내용을 한 페이지에 쭉 나열하기보다, 스크롤 애니메이션과 함께 섹션별로 보이게 만들어줘.
+포인트 컬러: 핵심 단어(Performance, Craftsmanship, Zenith 등)에만 Electric Blue(#38BDF8) 컬러를 적용하여 강조
+데이터 시각화: '3. Ecosystem' 섹션에는 데스크톱 앱, 웹, 익스텐션 아이콘들이 서로 연결되는 형태의 그래픽을 넣어
+Typography: 영문 폰트는 Geist Sans나 Inter를 사용하고, 강조하고 싶은 핵심 문구(예: "Digital Craftsmanship")에는 font-weight: 600 이상을 적용
+Call to Action (CTA): 페이지 하단에 **"Experience the CoreZent Ecosystem [View Products]"**와 같은 버튼을 배치하여 브랜드 스토리를 읽은 사용자가 바로 제품 카탈로그로 유입되도록 유도
+
+
+
+About CoreZent: Engineering Precision, Empowering Workflow
+1. The Genesis: From SM Tech to CoreZent
+CoreZent was born from the technical heritage of SM Tech Co Ltd. We began with a fundamental question: "What is the essential value software can provide to a user?"
+
+What started as a collection of small tools designed to maximize business automation and efficiency has evolved into a comprehensive Software House. Today, we span the entire digital ecosystem—from high-performance desktop applications and Chrome extensions to intelligent web services. The name CoreZent represents our dedication to the 'Core' of technology and our relentless pursuit of its 'Zenith'.
+
+2. Our Philosophy: Craftsmanship in Code
+We don’t just write code; we practice Digital Craftsmanship.
+Every product bearing the CoreZent name is built upon three non-negotiable principles:
+
+Performance First: Optimized architecture that delivers overwhelming speed while minimizing system resource consumption.
+
+Intuitive Aesthetics: A refined, "Raycast-style" interface that allows anyone to navigate complex tasks like a pro, without needing a manual.
+
+Solid Reliability: Sustainable tools backed by seamless service and rigorous license management.
+
+Our goal is to eliminate the friction between the user and their tools, allowing them to focus entirely on their creative output.
+
+3. The CoreZent Ecosystem: Versatility and Unity
+While our portfolio is diverse, it is anchored by a unified vision.
+
+Desktop Apps: Power-user tools that integrate deeply into the OS for maximum performance.
+
+Chrome Extensions: Innovations that bridge the gap between web browsing and professional productivity.
+
+Web & Mobile: Cloud-based solutions that ensure your tools and data are accessible anytime, anywhere.
+
+CoreZent provides an integrated system where all software can be managed under a single account and a unified license framework. We unify fragmented tools to complete your unique, powerful workflow.
+
+4. Commitment to Quality: Beyond the Software
+Selling a product is just the beginning of our responsibility. CoreZent oversees the entire user journey.
+Through our weekly Changelogs, we maintain transparency in our development process. We also provide professional-grade Manual Portals to ensure users can unlock 100% of the potential within our software.
+
+Furthermore, we guarantee top-tier security and privacy based on the stable infrastructure of SM Tech. Your licenses and data are protected by modern encryption and can be fully controlled at any time via your Personal Dashboard.
+
+5. The Future: Scaling the Zenith
+Our journey is only beginning. CoreZent is currently developing AI-driven automation, deeper system optimization tools, and innovative platforms for developers and creators alike.
+
+We don't create software that follows fleeting trends; we build essential tools that will earn a permanent spot on your desktop for years to come. Our quest for the Zenith of technology is dedicated to making your professional life more valuable every single day.

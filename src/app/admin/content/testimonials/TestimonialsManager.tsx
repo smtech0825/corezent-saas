@@ -97,6 +97,26 @@ export default function TestimonialsManager({ items: initItems, onCreate, onUpda
           />
         </div>
         <div className="flex items-center gap-3">
+          <input
+            value={f.author_avatar}
+            onChange={(e) => setF({ ...f, author_avatar: e.target.value })}
+            placeholder="Avatar image URL (optional)"
+            className="flex-1 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50"
+          />
+          {f.author_avatar ? (
+            <img
+              src={f.author_avatar}
+              alt="preview"
+              className="w-9 h-9 rounded-full object-cover border border-[#1E293B] shrink-0"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-[#1E293B] border border-[#1E293B] flex items-center justify-center shrink-0">
+              <span className="text-xs text-[#475569]">img</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
           <label className="text-xs text-[#475569]">Rating</label>
           <div className="flex gap-1">
             {[1,2,3,4,5].map((n) => (
@@ -130,6 +150,20 @@ export default function TestimonialsManager({ items: initItems, onCreate, onUpda
             </div>
           ) : (
             <div className="p-4 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+              {t.author_avatar ? (
+                <img
+                  src={t.author_avatar}
+                  alt={t.author_name}
+                  className="w-8 h-8 rounded-full object-cover border border-[#1E293B] shrink-0 mt-0.5"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-[#475569]">
+                    {t.author_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex gap-0.5 mb-2">
                   {[1,2,3,4,5].map((n) => (
@@ -139,6 +173,7 @@ export default function TestimonialsManager({ items: initItems, onCreate, onUpda
                 <p className={`text-sm italic line-clamp-2 ${t.is_published ? 'text-[#94A3B8]' : 'text-[#475569]'}`}>&ldquo;{t.quote}&rdquo;</p>
                 <p className="text-xs text-[#475569] mt-1.5">{t.author_name} · {t.author_title}</p>
               </div>
+            </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => handleToggle(t.id, t.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${t.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#475569] bg-[#1E293B] border-[#1E293B]'}`}>
                   {t.is_published ? 'Published' : 'Draft'}

@@ -29,3 +29,5 @@ node_modules/
 # 임시 파일
 *.tmp
 *.temp
+
+.vercel

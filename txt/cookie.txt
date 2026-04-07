@@ -1,0 +1,43 @@
+🍪 CoreZent Cookie Policy (Draft)
+Last Updated: April 7, 2026
+
+1. Introduction
+CoreZent ("we," "us," or "our") uses cookies and similar tracking technologies on www.corezent.com to enhance your browsing experience, analyze site traffic, and provide secure license management. By using our website, you consent to the use of cookies as described in this policy.
+
+2. What are Cookies?
+Cookies are small text files placed on your device to store data that can be recalled by a web server in the domain that placed the cookie. We use both session cookies (which expire once you close your web browser) and persistent cookies (which stay on your device until you delete them).
+
+3. How We Use Cookies
+We use cookies for the following purposes:
+
+Strictly Necessary Cookies: Essential for you to browse the website and use its features, such as accessing secure areas (My Page), authenticating logins, and verifying software license status. Without these, services like the shopping cart and license management cannot be provided.
+
+Performance and Analytics Cookies: Help us understand how visitors interact with our website by collecting and reporting information anonymously. We use tools like Vercel Analytics and Google Analytics to improve our site performance and user experience.
+
+Functionality Cookies: Allow our website to remember choices you make (such as your username or language preference) to provide a more personalized experience.
+
+Security Cookies: Used to identify and prevent security risks, protecting your account and license data from unauthorized access.
+
+4. Third-Party Cookies
+In addition to our own cookies, we may also use various third-party cookies to report usage statistics of the service and deliver advertisements. These may include:
+
+Payment Processors: To securely handle transactions and prevent fraud.
+
+Authentication Services (Supabase): To manage secure user login sessions.
+
+5. Your Choices Regarding Cookies
+Most web browsers automatically accept cookies, but you can modify your browser settings to decline cookies if you prefer.
+
+Please note that if you choose to remove or reject cookies, this could affect the availability and functionality of our services, specifically logging into your account or accessing your license keys.
+
+To opt-out of being tracked by Google Analytics across all websites, visit: http://tools.google.com/dlpage/gaoptout.
+
+6. Changes to This Policy
+We may update our Cookie Policy from time to time. Any changes will be posted on this page with an updated "Last Updated" date. We encourage you to review this policy periodically.
+
+7. Contact Us
+If you have any questions about our use of cookies, please contact us at:
+
+Email: support@corezent.com
+
+Website: www.corezent.com/support

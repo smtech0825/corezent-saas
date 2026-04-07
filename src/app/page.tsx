@@ -33,11 +33,13 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
     client.from('front_faqs').select('id, question, answer').eq('is_published', true).order('order_index'),
+    client.from('front_content').select('key, value'),
+    client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
   ])
 
   // DB 섹션과 기본값 병합 후 order_index 기준 정렬
@@ -46,20 +48,46 @@ export default async function HomePage() {
     .map((def) => ({ ...def, ...(dbMap.get(def.name) ?? {}) }))
     .sort((a, b) => a.order_index - b.order_index)
 
-  const features = featuresRes.data ?? []
+  const features     = featuresRes.data ?? []
   const testimonials = testimonialsRes.data ?? []
-  const faqs = faqsRes.data ?? []
+  const faqs         = faqsRes.data ?? []
+  const steps        = stepsRes.data ?? []
+
+  // front_content key-value 맵 생성
+  const contentMap = Object.fromEntries((contentRes.data ?? []).map((c) => [c.key, c.value]))
+
+  const heroContent = {
+    badge:     contentMap['hero_badge']     || null,
+    headline1: contentMap['hero_headline1'] || null,
+    headline2: contentMap['hero_headline2'] || null,
+    subtext:   contentMap['hero_subtext']   || null,
+    cta1_text: contentMap['hero_cta1_text'] || null,
+    cta1_href: contentMap['hero_cta1_href'] || null,
+    cta2_text: contentMap['hero_cta2_text'] || null,
+    cta2_href: contentMap['hero_cta2_href'] || null,
+  }
+
+  const ctaContent = {
+    eyebrow:   contentMap['cta_eyebrow']   || null,
+    headline:  contentMap['cta_headline']  || null,
+    subtext:   contentMap['cta_subtext']   || null,
+    btn1_text: contentMap['cta_btn1_text'] || null,
+    btn1_href: contentMap['cta_btn1_href'] || null,
+    btn2_text: contentMap['cta_btn2_text'] || null,
+    btn2_href: contentMap['cta_btn2_href'] || null,
+    footnote:  contentMap['cta_footnote']  || null,
+  }
 
   // 섹션 이름 → 컴포넌트 매핑
   const sectionMap: Record<string, React.ReactNode> = {
-    hero:         <HeroSection />,
+    hero:         <HeroSection content={heroContent} />,
     product:      <ProductSection />,
-    how_it_works: <HowItWorksSection />,
+    how_it_works: <HowItWorksSection steps={steps.length > 0 ? steps : undefined} />,
     features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
     pricing:      <PricingSection />,
     testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
     faq:          <FAQSection faqs={faqs} />,
-    cta:          <CTASection />,
+    cta:          <CTASection content={ctaContent} />,
   }
 
   return (
