@@ -6,42 +6,47 @@
  */
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Script from 'next/script'
 
-export default function LemonSqueezyOverlay() {
-  const router = useRouter()
+function setupLemonSqueezy() {
+  if (typeof window === 'undefined') return
+  const ls = (window as any).LemonSqueezy
+  if (!ls) return
+  ls.Setup({
+    eventHandler: (event: any) => {
+      if (event?.event === 'Checkout.Success') {
+        window.location.href = '/dashboard/licenses'
+      }
+    },
+  })
+}
 
+export default function LemonSqueezyOverlay() {
   useEffect(() => {
-    // 결제 성공 이벤트 수신 → 대시보드 라이선스 페이지로 이동
+    // postMessage 폴백: LS가 iframe에서 부모로 메시지 전송 시 감지
     const handleMessage = (event: MessageEvent) => {
+      const data = event.data
       if (
-        event.origin.includes('lemonsqueezy.com') &&
-        event.data?.event === 'Checkout.Success'
+        data?.event === 'Checkout.Success' ||
+        data?.type === 'checkout.success' ||
+        data?.type === 'lemon:checkout:success'
       ) {
-        router.push('/dashboard/licenses')
+        window.location.href = '/dashboard/licenses'
       }
     }
     window.addEventListener('message', handleMessage)
+
+    // 스크립트가 이미 로드된 경우 즉시 Setup 시도
+    setupLemonSqueezy()
+
     return () => window.removeEventListener('message', handleMessage)
-  }, [router])
+  }, [])
 
   return (
     <Script
       src="https://assets.lemonsqueezy.com/lemon.js"
       strategy="afterInteractive"
-      onLoad={() => {
-        // LS 오버레이 초기화 및 결제 성공 핸들러 등록
-        if (typeof window !== 'undefined' && (window as any).LemonSqueezy) {
-          ;(window as any).LemonSqueezy.Setup({
-            eventHandler: (event: any) => {
-              if (event?.event === 'Checkout.Success') {
-                router.push('/dashboard/licenses')
-              }
-            },
-          })
-        }
-      }}
+      onLoad={setupLemonSqueezy}
     />
   )
 }
