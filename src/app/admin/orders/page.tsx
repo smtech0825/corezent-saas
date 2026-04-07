@@ -53,7 +53,7 @@ export default async function OrdersPage() {
         <div className="text-right">
           <p className="text-xs text-[#475569]">Total Revenue</p>
           <p className="text-lg font-bold text-emerald-400">
-            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalRevenue)}
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalRevenue)}
           </p>
         </div>
       </div>

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   // 활성 구독
   const { data: subscriptions } = await supabase
     .from('subscriptions')
-    .select('*, products(name)')
+    .select('*, product_prices(products(name))')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .limit(3)
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   // 최근 주문
   const { data: orders } = await supabase
     .from('orders')
-    .select('id, total_amount, status, created_at, products(name)')
+    .select('id, amount, status, created_at, product_prices(products(name))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5)
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
               {subscriptions.map((sub: any) => (
                 <div key={sub.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{sub.products?.name ?? 'Unknown'}</p>
+                    <p className="text-sm text-white font-medium">{(sub.product_prices as any)?.products?.name ?? 'Unknown'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       Renews {sub.current_period_end
                         ? new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -103,13 +103,13 @@ export default async function DashboardPage() {
               {orders.map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{order.products?.name ?? 'Order'}</p>
+                    <p className="text-sm text-white font-medium">{(order.product_prices as any)?.products?.name ?? 'Order'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-white">${(order.total_amount / 100).toFixed(2)}</p>
+                    <p className="text-sm text-white">${((order.amount ?? 0) / 100).toFixed(2)}</p>
                     <StatusBadge status={order.status} />
                   </div>
                 </div>
