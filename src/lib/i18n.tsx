@@ -45,6 +45,7 @@ const translations = {
       licenses: 'Licenses',
       billing: 'Billing',
       settings: 'Settings',
+      support: 'Support',
       logout: 'Log out',
     },
     common: {
@@ -70,6 +71,7 @@ const translations = {
       licenses: '라이선스',
       billing: '결제',
       settings: '설정',
+      support: '지원',
       logout: '로그아웃',
     },
     common: {
@@ -95,6 +97,7 @@ const translations = {
       licenses: 'ライセンス',
       billing: '請求',
       settings: '設定',
+      support: 'サポート',
       logout: 'ログアウト',
     },
     common: {

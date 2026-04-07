@@ -3,21 +3,13 @@ import Link from 'next/link'
 const footerLinks = {
   Product: [
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Changelog', href: '#' },
-    { label: 'Roadmap', href: '#' },
-    { label: 'Status', href: '#' },
   ],
   Company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Press', href: '#' },
+    { label: 'About', href: '/about' },
   ],
   Resources: [
     { label: 'Documentation', href: '/manuals' },
-    { label: 'API Reference', href: '#' },
-    { label: 'Guides', href: '#' },
-    { label: 'Support', href: '#' },
+    { label: 'Support', href: '/dashboard/support' },
   ],
   Legal: [
     { label: 'Privacy Policy', href: '/legal/privacy' },

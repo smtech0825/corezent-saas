@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n'
 
@@ -27,6 +27,7 @@ export default function DashboardSidebar({ user, onClose }: Props) {
     { label: t.dashboard.licenses, href: '/dashboard/licenses', icon: Key },
     { label: t.dashboard.billing, href: '/dashboard/billing', icon: CreditCard },
     { label: t.dashboard.settings, href: '/dashboard/settings', icon: Settings },
+    { label: t.dashboard.support, href: '/dashboard/support', icon: HelpCircle },
   ]
 
   async function handleLogout() {
