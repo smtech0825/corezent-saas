@@ -230,14 +230,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     return
   }
 
-  // LS order_id로 우리 DB 주문 조회
-  const lsOrderId = String(attrs.order_id)
-  const { data: order } = await admin
-    .from('orders')
-    .select('id')
-    .eq('lemon_squeezy_order_id', lsOrderId)
-    .single()
-
   // variant_id로 product_price 조회
   const variantId = String(attrs.variant_id)
   const { data: productPrice } = await admin
@@ -257,15 +249,42 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     if (bundleData) bundleId = bundleData.id
   }
 
-  // 구독 billing_interval 계산 (monthly/annual)
-  // Lemon Squeezy: variant_name에 Monthly/Annual 포함되거나 renews_at 주기로 판단
-  const isAnnual = variantId === String(attrs.variant_id) &&
-    (attrs as any).variant_name?.toLowerCase().includes('annual')
-  const billingInterval = isAnnual ? 'annual' : 'monthly'
+  // LS order_id로 우리 DB 주문 조회 — 없으면 직접 생성 (이벤트 순서 역전 대비)
+  const lsOrderId = String(attrs.order_id)
+  let orderId: string | null = null
+  const { data: existingOrder } = await admin
+    .from('orders')
+    .select('id')
+    .eq('lemon_squeezy_order_id', lsOrderId)
+    .single()
+
+  if (existingOrder) {
+    orderId = existingOrder.id
+  } else {
+    console.log(`[LS Webhook] 주문 미존재, subscription_created에서 생성: ${lsOrderId}`)
+    const orderInsert: Record<string, unknown> = {
+      user_id: userId,
+      lemon_squeezy_order_id: lsOrderId,
+      status: 'paid',
+      amount: 0,
+      currency: 'USD',
+    }
+    if (productPrice) orderInsert.product_price_id = productPrice.id
+    if (bundleId) orderInsert.bundle_id = bundleId
+    const { data: newOrder } = await admin
+      .from('orders')
+      .insert(orderInsert)
+      .select('id')
+      .single()
+    orderId = newOrder?.id ?? null
+  }
+
+  // billing_interval: product_price.interval 기준
+  const billingInterval = productPrice?.interval === 'annual' ? 'annual' : 'monthly'
 
   const subInsert: Record<string, unknown> = {
     user_id: userId,
-    order_id: order?.id,
+    order_id: orderId,
     lemon_squeezy_subscription_id: lsSubId,
     status: mapLSSubStatus(attrs.status),
     current_period_start: new Date().toISOString(),
@@ -290,8 +309,8 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
   // 구독형 라이선스 생성
-  if (productPrice?.product_id && order?.id) {
-    await createLicense(userId, order.id, productPrice.product_id, attrs.user_email, attrs.user_name)
+  if (productPrice?.product_id && orderId) {
+    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name)
   }
 }
 
