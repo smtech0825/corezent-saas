@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { LanguageProvider } from '@/lib/i18n'
-import LemonSqueezyOverlay from '@/components/LemonSqueezyOverlay'
 
 export const metadata: Metadata = {
   title: {
@@ -20,7 +19,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <LemonSqueezyOverlay />
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

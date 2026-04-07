@@ -39,12 +39,9 @@ export function buildCheckoutUrl(baseUrl: string, userId?: string | null): strin
   try {
     // URLSearchParams는 [] → %5B%5D 로 인코딩해 LS가 인식 못함
     // 브래킷을 그대로 유지하기 위해 문자열 직접 조합
-    const params: string[] = []
-    // 오버레이(팝업) 체크아웃 모드
-    params.push('embed=1')
-    if (userId) params.push(`checkout[custom][user_id]=${encodeURIComponent(userId)}`)
-    const separator = baseUrl.includes('?') ? '&' : '?'
-    return baseUrl + separator + params.join('&')
+    const url = new URL(baseUrl)
+    if (userId) url.searchParams.set('checkout[custom][user_id]', userId)
+    return url.toString()
   } catch {
     return baseUrl
   }
