@@ -77,7 +77,7 @@ export default function SectionsManager({ sections, onToggle, onReorder }: Props
               : 'border-[#1E293B] bg-[#111A2E] hover:border-[#1E293B]/80'
           } ${dragging === idx ? 'opacity-40' : 'opacity-100'}`}
         >
-          <GripVertical size={16} className="text-[#1E293B] hover:text-[#475569] shrink-0" />
+          <GripVertical size={16} className="text-[#475569] hover:text-[#94A3B8] shrink-0" />
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white">{section.label}</p>
