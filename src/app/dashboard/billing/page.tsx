@@ -26,7 +26,7 @@ export default async function BillingPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('orders')
-      .select('id, amount, status, created_at, products(name)')
+      .select('id, amount, status, created_at, product_prices(products(name))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),
@@ -102,7 +102,7 @@ export default async function BillingPage() {
               >
                 <div className="flex items-center gap-3">
                   <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
-                  <span className="text-sm text-white">{order.products?.name ?? 'Order'}</span>
+                  <span className="text-sm text-white">{(order.product_prices as any)?.products?.name ?? 'Order'}</span>
                 </div>
                 <span className="text-sm text-[#94A3B8]">
                   {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

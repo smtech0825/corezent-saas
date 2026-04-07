@@ -54,7 +54,7 @@ export default async function AdminPage() {
   ])
 
   const totalUsers = userCountRes.count ?? 0
-  const totalRevenue = (revenueRes.data ?? []).reduce((s, o) => s + (o.amount ?? 0), 0)
+  const totalRevenue = (revenueRes.data ?? []).reduce((s, o) => s + (o.amount ?? 0), 0) / 100
   const activeLicenses = licenseCountRes.count ?? 0
   const openTickets = ticketCountRes.count ?? 0
   const recentOrders = recentOrdersRes.data ?? []
@@ -139,7 +139,7 @@ export default async function AdminPage() {
                         {emailMap.get(order.user_id) || '—'}
                       </td>
                       <td className="px-4 py-3 text-white font-medium">
-                        {fmtCurrency(order.amount ?? 0)}
+                        {fmtCurrency((order.amount ?? 0) / 100)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[order.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>

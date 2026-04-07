@@ -41,7 +41,7 @@ export default async function OrdersPage() {
     shortId: o.id.slice(0, 8).toUpperCase(),
   }))
 
-  const totalRevenue = list.filter((o) => o.status === 'paid').reduce((s, o) => s + (o.amount ?? 0), 0)
+  const totalRevenue = list.filter((o) => o.status === 'paid').reduce((s, o) => s + (o.amount ?? 0), 0) / 100
 
   return (
     <div className="p-6 space-y-6">
@@ -80,7 +80,7 @@ export default async function OrdersPage() {
                       <span className="font-mono text-xs text-[#94A3B8]">#{o.shortId}</span>
                     </td>
                     <td className="px-4 py-3 text-[#94A3B8] truncate max-w-[200px]">{o.email}</td>
-                    <td className="px-4 py-3 text-white font-medium">{fmtCurrency(o.amount ?? 0)}</td>
+                    <td className="px-4 py-3 text-white font-medium">{fmtCurrency((o.amount ?? 0) / 100)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColors[o.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
                         {o.status}
