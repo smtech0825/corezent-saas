@@ -21,6 +21,7 @@ import {
   type LSSubscriptionAttributes,
 } from '@/lib/lemonsqueezy'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
+import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 
 // Vercel Edge에서는 rawBody를 text로 읽어야 서명 검증이 가능
 export const runtime = 'nodejs'
@@ -334,6 +335,30 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
 
   if (error) throw new Error(`구독 업데이트 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 업데이트 완료: ${lsSubId}`)
+
+  // Google Sheets 만료일 갱신 (구독 갱신 시)
+  if (attrs.renews_at) {
+    try {
+      const { data: sub } = await admin
+        .from('subscriptions')
+        .select('order_id')
+        .eq('lemon_squeezy_subscription_id', lsSubId)
+        .single()
+      if (sub?.order_id) {
+        const { data: lic } = await admin
+          .from('licenses')
+          .select('serial_key')
+          .eq('order_id', sub.order_id)
+          .single()
+        if (lic?.serial_key) {
+          await updateLicenseExpiry({ serialKey: lic.serial_key, expiresAt: attrs.renews_at })
+          console.log(`[LS Webhook] Sheets 만료일 갱신 완료: ${lic.serial_key}`)
+        }
+      }
+    } catch (sheetsErr) {
+      console.error('[LS Webhook] Sheets 만료일 갱신 실패:', sheetsErr)
+    }
+  }
 }
 
 // ─── subscription_cancelled / expired 핸들러 ─────────────────────────────────
@@ -357,6 +382,28 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
 
   if (error) throw new Error(`구독 취소 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 취소/만료 처리 완료: ${lsSubId}`)
+
+  // Google Sheets 상태 → 중지
+  try {
+    const { data: sub } = await admin
+      .from('subscriptions')
+      .select('order_id')
+      .eq('lemon_squeezy_subscription_id', lsSubId)
+      .single()
+    if (sub?.order_id) {
+      const { data: lic } = await admin
+        .from('licenses')
+        .select('serial_key')
+        .eq('order_id', sub.order_id)
+        .single()
+      if (lic?.serial_key) {
+        await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
+      }
+    }
+  } catch (sheetsErr) {
+    console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+  }
 }
 
 // ─── subscription_paused / unpaused 핸들러 ───────────────────────────────────
@@ -390,12 +437,24 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
   if (!order) return
 
   // 해당 주문의 라이선스를 revoked로 변경
-  await admin
+  const { data: lic } = await admin
     .from('licenses')
     .update({ status: 'revoked' })
     .eq('order_id', order.id)
+    .select('serial_key')
+    .single()
 
   console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
+
+  // Google Sheets 상태 → 중지
+  if (lic?.serial_key) {
+    try {
+      await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
+      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
+    } catch (sheetsErr) {
+      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+    }
+  }
 }
 
 // ─── 라이선스 생성 ────────────────────────────────────────────────────────────
@@ -487,6 +546,15 @@ async function createLicense(
   } catch (mailErr) {
     // 이메일 실패는 무시 (라이선스는 이미 생성됨)
     console.error('[LS Webhook] 이메일 발송 실패:', mailErr)
+  }
+
+  // Google Sheets 라이선스 행 추가
+  try {
+    await appendLicenseRow({ email: userEmail, serialKey, expiresAt })
+    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey}`)
+  } catch (sheetsErr) {
+    // Sheets 실패는 무시 (라이선스는 이미 생성됨)
+    console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
   }
 }
 
