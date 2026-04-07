@@ -7,9 +7,10 @@
  *        - 연간/월간 결제 토글
  *        - 번들 배너
  *        - 제품 카드 그리드
+ *        - 로그인 사용자의 경우 checkout URL에 user_id 자동 주입
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Package, Zap } from 'lucide-react'
 import {
@@ -19,12 +20,23 @@ import {
   BADGE_STYLES,
   type FilterCategory,
 } from '@/lib/products'
+import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
+import { createClient } from '@/lib/supabase/client'
 
 const FILTER_CATEGORIES: FilterCategory[] = ['all', 'chrome-extension', 'desktop', 'web-tool']
 
 export default function PricingClient() {
   const [annual, setAnnual] = useState(false)
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('all')
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // 로그인 사용자 ID 조회 (체크아웃 URL에 주입)
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id ?? null)
+    })
+  }, [])
 
   const filtered = useMemo(
     () =>
@@ -35,6 +47,10 @@ export default function PricingClient() {
   )
 
   const bundlePrice = annual ? bundle.annualMonthlyPrice : bundle.monthlyPrice
+  const bundleUrl = buildCheckoutUrl(
+    annual ? bundle.lemonSqueezy.annual : bundle.lemonSqueezy.monthly,
+    userId,
+  )
 
   return (
     <div className="pt-32 sm:pt-36 pb-24 px-4 sm:px-6">
@@ -141,7 +157,7 @@ export default function PricingClient() {
                 )}
               </div>
               <Link
-                href={annual ? bundle.lemonSqueezy.annual : bundle.lemonSqueezy.monthly}
+                href={bundleUrl}
                 className="inline-flex items-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold px-6 py-3 rounded-lg hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200 text-sm whitespace-nowrap"
               >
                 Get the bundle
@@ -175,9 +191,10 @@ export default function PricingClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-20">
             {filtered.map((product) => {
               const price = annual ? product.annualMonthlyPrice : product.monthlyPrice
-              const checkoutUrl = annual
-                ? product.lemonSqueezy.annual
-                : product.lemonSqueezy.monthly
+              const checkoutUrl = buildCheckoutUrl(
+                annual ? product.lemonSqueezy.annual : product.lemonSqueezy.monthly,
+                userId,
+              )
 
               return (
                 <div

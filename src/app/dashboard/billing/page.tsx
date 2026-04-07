@@ -1,10 +1,13 @@
 /**
  * @파일: dashboard/billing/page.tsx
  * @설명: 결제 내역 및 구독 관리 페이지
+ *        - 활성 구독 목록 (Lemon Squeezy Customer Portal 링크 포함)
+ *        - 주문/결제 내역
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { CreditCard, Package } from 'lucide-react'
+import { CreditCard, Package, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 
 export const metadata = {
   title: 'Billing — CoreZent',
@@ -23,7 +26,7 @@ export default async function BillingPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('orders')
-      .select('id, total_amount, status, created_at, products(name)')
+      .select('id, amount, status, created_at, products(name)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),
@@ -42,7 +45,7 @@ export default async function BillingPage() {
         {subscriptions && subscriptions.length > 0 ? (
           <div className="flex flex-col gap-3">
             {subscriptions.map((sub: any) => (
-              <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4">
+              <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
                     <Package size={18} className="text-[#38BDF8]" />
@@ -50,22 +53,34 @@ export default async function BillingPage() {
                   <div>
                     <p className="text-white font-medium">{sub.products?.name ?? 'Unknown'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
-                      {sub.billing_interval === 'month' ? 'Monthly' : 'Annual'} plan
+                      {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
                       {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <SubStatusBadge status={sub.status} />
-                  {sub.status === 'active' && sub.lemon_squeezy_id && (
-                    <span className="text-xs text-[#475569]">Managed via Lemon Squeezy</span>
+                  {sub.customer_portal_url && (
+                    <Link
+                      href={sub.customer_portal_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white border border-[#1E293B] hover:border-[#38BDF8]/30 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <ExternalLink size={11} />
+                      Manage subscription
+                    </Link>
                   )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <EmptyCard icon={<Package size={20} className="text-[#475569]" />} message="No subscriptions yet." />
+          <EmptyCard
+            icon={<Package size={20} className="text-[#475569]" />}
+            message="No subscriptions yet."
+            action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:underline">Browse plans →</Link>}
+          />
         )}
       </section>
 
@@ -93,7 +108,7 @@ export default async function BillingPage() {
                   {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
                 <span className="text-sm text-white font-medium">
-                  ${(order.total_amount / 100).toFixed(2)}
+                  ${((order.amount ?? 0) / 100).toFixed(2)}
                 </span>
                 <OrderStatusBadge status={order.status} />
               </div>
@@ -109,26 +124,27 @@ export default async function BillingPage() {
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
 
-function EmptyCard({ icon, message }: { icon: React.ReactNode; message: string }) {
+function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: string; action?: React.ReactNode }) {
   return (
     <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl py-12 text-center">
       <div className="w-10 h-10 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-3">
         {icon}
       </div>
       <p className="text-sm text-[#475569]">{message}</p>
+      {action}
     </div>
   )
 }
 
 function SubStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    active:   'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    past_due: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    canceled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
-    trialing: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+    active:    'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    paused:    'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    expired:   'text-[#475569] bg-[#1E293B] border-[#1E293B]',
   }
   return (
-    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${map[status] ?? map.canceled}`}>
+    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${map[status] ?? map.cancelled}`}>
       {status}
     </span>
   )
@@ -136,10 +152,11 @@ function SubStatusBadge({ status }: { status: string }) {
 
 function OrderStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    paid:     'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    pending:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    failed:   'text-red-400 bg-red-500/10 border-red-500/20',
-    refunded: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    paid:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    failed:    'text-red-400 bg-red-500/10 border-red-500/20',
+    refunded:  'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
   }
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${map[status] ?? map.pending}`}>

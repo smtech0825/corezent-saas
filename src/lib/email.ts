@@ -106,6 +106,79 @@ export function welcomeEmailHtml(siteName = 'CoreZent'): string {
 </html>`
 }
 
+// 주문 확인 / 라이선스 키 발송 이메일 HTML 템플릿
+export function orderConfirmationEmailHtml({
+  userName,
+  productName,
+  serialKey,
+  siteName = 'CoreZent',
+}: {
+  userName: string
+  productName: string
+  serialKey: string
+  siteName?: string
+}): string {
+  const safeUser = userName.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const safeProduct = productName.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your ${siteName} License Key</title>
+</head>
+<body style="margin:0;padding:0;background:#0B1120;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1120;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#111A2E;border:1px solid #1E293B;border-radius:16px;overflow:hidden;">
+          <!-- 헤더 -->
+          <tr>
+            <td style="padding:32px 40px 24px;border-bottom:1px solid #1E293B;">
+              <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">${siteName}</p>
+            </td>
+          </tr>
+          <!-- 본문 -->
+          <tr>
+            <td style="padding:32px 40px;">
+              <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Your license is ready!</h1>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#94A3B8;">
+                Hi ${safeUser}, thank you for purchasing <strong style="color:#F1F5F9;">${safeProduct}</strong>.
+                Here is your license key:
+              </p>
+              <!-- 시리얼 키 박스 -->
+              <div style="background:#0B1120;border:1px solid #1E293B;border-radius:10px;padding:20px 24px;margin-bottom:28px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.08em;">License Key</p>
+                <p style="margin:0;font-size:22px;font-weight:700;color:#F59E0B;letter-spacing:0.15em;font-family:'Courier New',monospace;">${serialKey}</p>
+              </div>
+              <p style="margin:0 0 24px;font-size:13px;line-height:1.7;color:#475569;">
+                Keep this key safe. You can also find it anytime in your dashboard under <strong>Licenses</strong>.
+              </p>
+              <a href="https://corezent.com/dashboard/licenses"
+                 style="display:inline-block;background:#F59E0B;color:#0B1120;font-size:14px;font-weight:700;padding:12px 28px;border-radius:10px;text-decoration:none;">
+                View in Dashboard →
+              </a>
+            </td>
+          </tr>
+          <!-- 푸터 -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #1E293B;">
+              <p style="margin:0;font-size:12px;color:#475569;">
+                © ${new Date().getFullYear()} ${siteName}. All rights reserved.<br/>
+                <a href="https://corezent.com" style="color:#475569;">corezent.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
 // 지원 답변 알림 이메일 HTML 템플릿
 export function supportReplyEmailHtml(
   ticketSubject: string,
