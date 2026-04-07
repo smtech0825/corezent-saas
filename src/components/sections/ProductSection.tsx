@@ -5,6 +5,9 @@
 
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
+import { products as catalogProducts } from '@/lib/products'
+
+const genie = catalogProducts.find((p) => p.id === 'geniepost-desktop')
 
 const products = [
   {
@@ -15,9 +18,9 @@ const products = [
     badge: 'Available now',
     badgeStyle: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20',
     tags: ['AI', 'WordPress', 'SEO', 'Automation'],
-    monthlyPrice: '$9',
-    annualPrice: '$99',
-    href: '/auth/register',
+    monthlyPrice: `$${genie?.monthlyPrice.toFixed(2) ?? '6.99'}`,
+    annualPrice: `$${genie?.annualPrice ?? '69'}`,
+    href: '/pricing',
     available: true,
   },
   {

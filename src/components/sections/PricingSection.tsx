@@ -8,6 +8,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight } from 'lucide-react'
+import { products } from '@/lib/products'
+
+const genie = products.find((p) => p.id === 'geniepost-desktop')
+const MONTHLY = genie?.monthlyPrice ?? 6.99
+const ANNUAL = genie?.annualPrice ?? 69
+const ANNUAL_MONTHLY = genie?.annualMonthlyPrice ?? 5.75
+const SAVE_PCT = Math.round((1 - ANNUAL_MONTHLY / MONTHLY) * 100)
 
 const features = [
   'Unlimited AI post generation',
@@ -83,14 +90,16 @@ export default function PricingSection() {
               {/* Price */}
               <div className="flex items-end gap-2 mb-1">
                 <span className="text-5xl font-bold text-white">
-                  {annual ? '$99' : '$9'}
+                  {annual ? `$${ANNUAL}` : `$${MONTHLY.toFixed(2)}`}
                 </span>
                 <span className="text-[#94A3B8] text-base mb-2">
                   {annual ? '/year' : '/month'}
                 </span>
               </div>
               <p className="text-xs text-[#475569] mb-7">
-                {annual ? '~$8.25/month, billed annually' : 'Billed monthly'}
+                {annual
+                  ? `~$${ANNUAL_MONTHLY.toFixed(2)}/month, billed annually · Save ${SAVE_PCT}%`
+                  : `Billed monthly · or $${ANNUAL}/year (save ${SAVE_PCT}%)`}
               </p>
 
               {/* CTA */}
