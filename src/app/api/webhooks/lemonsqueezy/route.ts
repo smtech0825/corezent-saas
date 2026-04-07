@@ -61,6 +61,15 @@ export async function POST(req: NextRequest) {
       case 'subscription_expired':
         await handleSubscriptionCancelled(payload)
         break
+      case 'subscription_paused':
+        await handleSubscriptionStatusChange(payload, 'paused')
+        break
+      case 'subscription_unpaused':
+        await handleSubscriptionStatusChange(payload, 'active')
+        break
+      case 'order_refunded':
+        await handleOrderRefunded(payload)
+        break
       default:
         console.log(`[LS Webhook] 처리하지 않는 이벤트: ${eventName}`)
     }
@@ -329,6 +338,45 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
 
   if (error) throw new Error(`구독 취소 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 취소/만료 처리 완료: ${lsSubId}`)
+}
+
+// ─── subscription_paused / unpaused 핸들러 ───────────────────────────────────
+
+async function handleSubscriptionStatusChange(payload: LSWebhookPayload, status: 'paused' | 'active') {
+  const lsSubId = String(payload.data.id)
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('subscriptions')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('lemon_squeezy_subscription_id', lsSubId)
+  if (error) throw new Error(`구독 상태 변경 실패: ${error.message}`)
+  console.log(`[LS Webhook] 구독 상태 변경 완료: ${lsSubId} → ${status}`)
+}
+
+// ─── order_refunded 핸들러 ────────────────────────────────────────────────────
+
+async function handleOrderRefunded(payload: LSWebhookPayload) {
+  const lsOrderId = String(payload.data.id)
+  const admin = createAdminClient()
+
+  // 주문 상태를 refunded로 업데이트
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ status: 'refunded' })
+    .eq('lemon_squeezy_order_id', lsOrderId)
+    .select('id')
+    .single()
+
+  if (error) throw new Error(`환불 처리 실패: ${error.message}`)
+  if (!order) return
+
+  // 해당 주문의 라이선스를 revoked로 변경
+  await admin
+    .from('licenses')
+    .update({ status: 'revoked' })
+    .eq('order_id', order.id)
+
+  console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
 }
 
 // ─── 라이선스 생성 ────────────────────────────────────────────────────────────
