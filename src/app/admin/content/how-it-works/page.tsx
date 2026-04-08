@@ -62,7 +62,7 @@ export default async function HowItWorksAdminPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">How It Works</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Manage the steps shown in the &ldquo;How It Works&rdquo; section. Use Lucide icon names in PascalCase (e.g. ShoppingCart, Zap, Star).
+          Manage the steps shown in the &ldquo;How It Works&rdquo; section. Icons: Lucide (Zap), Tabler (tb:Cpu), Radix (ri:Star), or raw &lt;svg&gt;.
         </p>
       </div>
 

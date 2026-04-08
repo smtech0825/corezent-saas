@@ -79,11 +79,11 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] text-[#475569] mb-1 block">Icon (Lucide PascalCase)</label>
+            <label className="text-[10px] text-[#475569] mb-1 block">Icon  (lu: / tb: / ri: / &lt;svg&gt;)</label>
             <input
               value={f.icon}
               onChange={(e) => setF({ ...f, icon: e.target.value })}
-              placeholder="e.g. ShoppingCart, Zap, Star"
+              placeholder="Zap · tb:Cpu · ri:Star · <svg>..."
               className={inputCls}
             />
           </div>

@@ -106,7 +106,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
           {editingId === feature.id ? (
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <InputField label="Icon (lucide name)" value={form.icon} onChange={(v) => setForm({ ...form, icon: v })} placeholder="e.g. Zap" />
+                <InputField label="Icon (lu: / tb: / ri: / svg)" value={form.icon} onChange={(v) => setForm({ ...form, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
                 <InputField label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} placeholder="Feature title" />
               </div>
               <InputField label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Feature description" multiline />

@@ -10,10 +10,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { Sparkles, Clock, ChevronDown, Eye } from 'lucide-react'
-import * as LucideIcons from 'lucide-react'
-import * as TablerIcons from '@tabler/icons-react'
-import * as RadixIcons from '@radix-ui/react-icons'
+import { Sparkles, Clock, Eye } from 'lucide-react'
+import DynamicIcon from '@/components/DynamicIcon'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -43,38 +41,6 @@ interface Props {
   products: Product[]
 }
 
-/**
- * 멀티 라이브러리 아이콘 렌더러
- * - 접두사 없음 또는 lu: → Lucide (예: Cpu, lu:Cpu)
- * - tb: → Tabler Icons (예: tb:Cpu → IconCpu)
- * - ri: → Radix Icons (예: ri:Accessibility → AccessibilityIcon)
- */
-function DynamicIcon({ name, size = 20, className }: { name: string; size?: number; className?: string }) {
-  type IconComp = React.ComponentType<{ size?: number; width?: number; height?: number; className?: string }>
-
-  if (name.startsWith('tb:')) {
-    const iconName = 'Icon' + name.slice(3)
-    const icons = TablerIcons as unknown as Record<string, IconComp>
-    const Icon = icons[iconName]
-    if (!Icon) return null
-    return <Icon size={size} className={className} />
-  }
-
-  if (name.startsWith('ri:')) {
-    const iconName = name.slice(3) + 'Icon'
-    const icons = RadixIcons as unknown as Record<string, IconComp>
-    const Icon = icons[iconName]
-    if (!Icon) return null
-    return <Icon width={size} height={size} className={className} />
-  }
-
-  // Lucide (기본 또는 lu: 접두사)
-  const lucideName = name.startsWith('lu:') ? name.slice(3) : name
-  const icons = LucideIcons as unknown as Record<string, IconComp>
-  const Icon = icons[lucideName]
-  if (!Icon) return null
-  return <Icon size={size} className={className} />
-}
 
 export default function ProductList({ products }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -264,7 +230,7 @@ function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: bo
             <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
           )}
           {product.description && (
-            <p className="text-[#94A3B8] text-sm leading-relaxed">
+            <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">
               {product.description}
             </p>
           )}
@@ -280,12 +246,12 @@ function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: bo
               {product.product_features.map((feat, i) => (
                 <div
                   key={i}
-                  className="border border-[#1E293B] bg-[#0B1120] rounded-xl p-5 space-y-3"
+                  className="border border-[#1E293B] bg-[#0B1120] rounded-xl p-5 flex flex-col items-center text-center space-y-3"
                 >
-                  {/* 아이콘 또는 이미지 */}
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#111A2E] border border-[#1E293B]">
+                  {/* 아이콘 또는 이미지 — 1.5배 크기, 가운데 정렬 */}
+                  <div className="flex items-center justify-center w-[72px] h-[72px] rounded-xl bg-[#111A2E] border border-[#1E293B]">
                     {feat.image_url ? (
-                      <div className="relative w-8 h-8">
+                      <div className="relative w-12 h-12">
                         <Image
                           src={feat.image_url}
                           alt={feat.title}
@@ -294,15 +260,15 @@ function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: bo
                         />
                       </div>
                     ) : feat.icon ? (
-                      <DynamicIcon name={feat.icon} size={20} className="text-[#38BDF8]" />
+                      <DynamicIcon name={feat.icon} size={30} className="text-[#38BDF8]" />
                     ) : (
-                      <Sparkles size={20} className="text-[#38BDF8]" />
+                      <Sparkles size={30} className="text-[#38BDF8]" />
                     )}
                   </div>
 
                   <h4 className="text-sm font-semibold text-white">{feat.title}</h4>
                   {feat.description && (
-                    <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    <p className="text-xs text-[#94A3B8] leading-relaxed whitespace-pre-line">
                       {feat.description}
                     </p>
                   )}

@@ -3,8 +3,7 @@
  * @설명: CoreZent 플랫폼 핵심 특징 벤토 그리드 섹션 — DB 데이터 우선, 없으면 기본값 사용
  */
 
-import { Code2, Zap, BookOpen, CreditCard, Shield, HeadphonesIcon, LucideIcon } from 'lucide-react'
-import * as LucideIcons from 'lucide-react'
+import DynamicIcon from '@/components/DynamicIcon'
 
 export interface DbFeature {
   id: string
@@ -60,19 +59,13 @@ const defaultFeatures = [
   },
   {
     id: 'default-6',
-    icon: 'HeadphonesIcon',
+    icon: 'Headphones',
     tag: 'Support',
     title: 'Real support from real people',
     description:
       'Get help directly from the developers who built the product. Fast, knowledgeable, and actually useful.',
   },
 ]
-
-function getIcon(name: string | null): LucideIcon {
-  if (!name) return Zap
-  const icon = (LucideIcons as Record<string, unknown>)[name]
-  return (typeof icon === 'function' ? icon : Zap) as LucideIcon
-}
 
 export default function FeaturesSection({ features }: Props) {
   const items =
@@ -108,28 +101,25 @@ export default function FeaturesSection({ features }: Props) {
 
         {/* Bento grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((feature) => {
-            const Icon = getIcon(feature.icon)
-            return (
-              <div
-                key={feature.id}
-                className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 hover:border-[#38BDF8]/20 hover:bg-[#0F1929] transition-all duration-300 group"
-              >
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl bg-[#0B1120] border border-[#1E293B] flex items-center justify-center group-hover:border-[#38BDF8]/25 transition-colors">
-                    <Icon size={18} className="text-[#38BDF8]" />
-                  </div>
-                  {feature.tag && (
-                    <span className="text-xs text-[#475569] font-mono uppercase tracking-wider">
-                      {feature.tag}
-                    </span>
-                  )}
+          {items.map((feature) => (
+            <div
+              key={feature.id}
+              className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 hover:border-[#38BDF8]/20 hover:bg-[#0F1929] transition-all duration-300 group"
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-[#0B1120] border border-[#1E293B] flex items-center justify-center group-hover:border-[#38BDF8]/25 transition-colors">
+                  <DynamicIcon name={feature.icon ?? 'Zap'} size={18} className="text-[#38BDF8]" />
                 </div>
-                <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">{feature.description}</p>
+                {feature.tag && (
+                  <span className="text-xs text-[#475569] font-mono uppercase tracking-wider">
+                    {feature.tag}
+                  </span>
+                )}
               </div>
-            )
-          })}
+              <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
+              <p className="text-sm text-[#94A3B8] leading-relaxed">{feature.description}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
