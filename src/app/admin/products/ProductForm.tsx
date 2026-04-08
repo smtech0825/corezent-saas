@@ -3,11 +3,13 @@
 /**
  * @컴포넌트: ProductForm
  * @설명: 제품 추가/수정 폼 — 제품 정보 + 가격 플랜 관리
+ *        Logo: URL 직접 입력 또는 파일 업로드 (상호 배타적)
  */
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export interface PriceEntry {
   id?: string
@@ -57,9 +59,18 @@ const selectCls = `${inputCls} cursor-pointer`
 
 export default function ProductForm({ initialData, onSubmit, submitLabel }: Props) {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [slugManual, setSlugManual] = useState(!!initialData?.slug)
+
+  // URL 직접 입력 vs 파일 업로드 모드 (상호 배타적)
+  const [logoMode, setLogoMode] = useState<'url' | 'file' | null>(
+    initialData?.logo_url ? 'url' : null
+  )
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
 
   const [form, setForm] = useState<ProductFormData>(
     initialData ?? {
@@ -83,6 +94,54 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
     const name = e.target.value
     set('name', name)
     if (!slugManual) set('slug', slugify(name))
+  }
+
+  // Logo URL 직접 입력
+  function handleLogoUrlChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    set('logo_url', val)
+    setLogoMode(val ? 'url' : null)
+    setUploadError('')
+  }
+
+  // Logo 파일 업로드 → Supabase Storage
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setUploadError('')
+
+    const supabase = createClient()
+    const ext = file.name.split('.').pop() ?? 'png'
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    const { data, error: uploadErr } = await supabase.storage
+      .from('logos')
+      .upload(filename, file, { upsert: true })
+
+    if (uploadErr) {
+      setUploadError(uploadErr.message)
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('logos')
+      .getPublicUrl(data.path)
+
+    set('logo_url', publicUrl)
+    setLogoMode('file')
+    setUploading(false)
+  }
+
+  // Logo 초기화
+  function clearLogo() {
+    set('logo_url', '')
+    setLogoMode(null)
+    setUploadError('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   function addPrice() {
@@ -190,25 +249,84 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Logo URL">
-            <input
-              value={form.logo_url}
-              onChange={(e) => set('logo_url', e.target.value)}
-              placeholder="https://..."
-              className={inputCls}
-            />
-          </Field>
+        {/* Logo — URL 입력 또는 파일 업로드 */}
+        <Field label="Logo">
+          <div className="space-y-2">
+            {/* URL 입력 */}
+            <div className="flex items-center gap-2">
+              <input
+                value={form.logo_url}
+                onChange={handleLogoUrlChange}
+                readOnly={logoMode === 'file'}
+                placeholder={logoMode === 'file' ? '파일 업로드됨' : 'https://...'}
+                className={
+                  inputCls +
+                  (logoMode === 'file' ? ' opacity-50 cursor-not-allowed select-none' : '')
+                }
+              />
+              {logoMode && (
+                <button
+                  type="button"
+                  onClick={clearLogo}
+                  title="초기화"
+                  className="shrink-0 p-2 text-[#475569] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
 
-          <Field label="Manual URL">
-            <input
-              value={form.manual_url}
-              onChange={(e) => set('manual_url', e.target.value)}
-              placeholder="https://..."
-              className={inputCls}
-            />
-          </Field>
-        </div>
+            {/* 파일 업로드 버튼 */}
+            <div className="flex items-center gap-3">
+              <label
+                className={`inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border transition-colors ${
+                  logoMode === 'url' || uploading
+                    ? 'opacity-40 cursor-not-allowed border-[#1E293B] text-[#475569]'
+                    : 'cursor-pointer border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/40'
+                }`}
+              >
+                <Upload size={13} />
+                {uploading ? '업로드 중...' : '파일 업로드'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                  className="hidden"
+                  disabled={logoMode === 'url' || uploading}
+                  onChange={handleLogoUpload}
+                />
+              </label>
+              <span className="text-xs text-[#475569]">PNG · JPG · WEBP · SVG · 최대 2MB</span>
+            </div>
+
+            {/* 업로드 에러 */}
+            {uploadError && (
+              <p className="text-xs text-red-400">{uploadError}</p>
+            )}
+
+            {/* 로고 미리보기 */}
+            {form.logo_url && (
+              <div className="flex items-center gap-3 pt-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={form.logo_url}
+                  alt="Logo preview"
+                  className="w-10 h-10 rounded-lg object-contain border border-[#1E293B] bg-[#0B1120]"
+                />
+                <span className="text-xs text-[#475569] truncate max-w-xs">{form.logo_url}</span>
+              </div>
+            )}
+          </div>
+        </Field>
+
+        <Field label="Manual URL">
+          <input
+            value={form.manual_url}
+            onChange={(e) => set('manual_url', e.target.value)}
+            placeholder="https://..."
+            className={inputCls}
+          />
+        </Field>
       </section>
 
       {/* 가격 플랜 */}
@@ -289,7 +407,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
         >
           {loading ? 'Saving...' : submitLabel}
