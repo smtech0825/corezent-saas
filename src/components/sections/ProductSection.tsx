@@ -140,11 +140,22 @@ export default async function ProductSection() {
                 <h3 className="text-xl font-bold text-white mb-1">{product.name}</h3>
                 <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
 
-                {/* Description */}
+                {/* Description — 3줄 클램프 + more → /product 이동 */}
                 {product.description && (
-                  <p className="text-[#94A3B8] text-sm leading-relaxed mb-4">
-                    {product.description}
-                  </p>
+                  <div className="relative mb-4">
+                    <p className="text-[#94A3B8] text-sm leading-relaxed line-clamp-3">
+                      {product.description}
+                    </p>
+                    {product.available && product.description.length > 120 && (
+                      <Link
+                        href="/product"
+                        className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
+                        style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
+                      >
+                        more
+                      </Link>
+                    )}
+                  </div>
                 )}
 
                 {/* Tags */}
