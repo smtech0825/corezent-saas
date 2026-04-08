@@ -1,35 +1,31 @@
 /**
  * @컴포넌트: ProductSection
- * @설명: 제품 목록 섹션 — 현재 판매 중인 소프트웨어 카드 그리드
+ * @설명: 랜딩 페이지 제품 목록 섹션 — DB에서 상품 정보를 가져와 카드 그리드로 표시
+ *        Admin에서 등록한 상품이 자동으로 반영됨
  */
 
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
-import { products as catalogProducts } from '@/lib/products'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const genie = catalogProducts.find((p) => p.id === 'geniepost-desktop')
+interface ProductCard {
+  name: string
+  tagline: string
+  description: string
+  tags: string[]
+  monthlyPrice: string | null
+  annualPrice: string | null
+  href: string
+  available: boolean
+}
 
-const products = [
-  {
-    name: 'GeniePost',
-    tagline: 'AI WordPress Auto-Posting',
-    description:
-      'Automatically generate SEO-optimized blog posts and publish them directly to your WordPress site — powered by AI.',
-    badge: 'Available now',
-    badgeStyle: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20',
-    tags: ['AI', 'WordPress', 'SEO', 'Automation'],
-    monthlyPrice: `$${genie?.monthlyPrice.toFixed(2) ?? '6.99'}`,
-    annualPrice: `$${genie?.annualPrice ?? '69'}`,
-    href: '/pricing',
-    available: true,
-  },
+// Coming Soon 플레이스홀더
+const COMING_SOON: ProductCard[] = [
   {
     name: 'Coming Soon',
     tagline: 'New Product in Development',
     description:
       'We are working on our next software product. Sign up to be notified when it launches.',
-    badge: 'Coming soon',
-    badgeStyle: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
     tags: [],
     monthlyPrice: null,
     annualPrice: null,
@@ -41,8 +37,6 @@ const products = [
     tagline: 'More tools on the way',
     description:
       'CoreZent is continuously expanding its product lineup. Stay tuned for more powerful software tools.',
-    badge: 'Coming soon',
-    badgeStyle: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
     tags: [],
     monthlyPrice: null,
     annualPrice: null,
@@ -51,7 +45,39 @@ const products = [
   },
 ]
 
-export default function ProductSection() {
+export default async function ProductSection() {
+  const client = createAdminClient()
+
+  // 모든 상품 + 활성 가격 조회
+  const { data: rawProducts } = await client
+    .from('products')
+    .select('name, tagline, description, tags, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .eq('is_active', true)
+    .order('order_index', { ascending: true })
+
+  // DB 상품 → 카드 데이터 변환
+  const dbCards: ProductCard[] = (rawProducts ?? []).map((p) => {
+    const prices = ((p.product_prices ?? []) as Array<{ type: string; interval: string | null; price: number; is_active: boolean }>)
+      .filter((pr) => pr.is_active)
+    const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+
+    return {
+      name: p.name as string,
+      tagline: (p.tagline as string) ?? '',
+      description: (p.description as string) ?? '',
+      tags: ((p.tags ?? []) as string[]),
+      monthlyPrice: monthly ? `$${monthly.price.toFixed(2)}` : null,
+      annualPrice: annual ? `$${annual.price}` : null,
+      href: '/pricing',
+      available: true,
+    }
+  })
+
+  // 활성 상품 + Coming Soon 플레이스홀더로 최소 3개 채우기
+  const neededPlaceholders = Math.max(0, 3 - dbCards.length)
+  const products = [...dbCards, ...COMING_SOON.slice(0, neededPlaceholders)]
+
   return (
     <section id="product" className="relative py-32 px-6">
       {/* Glow */}
@@ -89,7 +115,7 @@ export default function ProductSection() {
                   : 'border-[#1E293B] bg-[#0E1525] opacity-60'
               }`}
             >
-              {/* Corner glow for available products */}
+              {/* Corner glow */}
               {product.available && (
                 <div
                   className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.1]"
@@ -100,14 +126,14 @@ export default function ProductSection() {
               <div className="relative z-10 flex flex-col flex-1">
                 {/* Badge */}
                 <div
-                  className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${product.badgeStyle}`}
+                  className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${
+                    product.available
+                      ? 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20'
+                      : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                  }`}
                 >
-                  {product.available ? (
-                    <Sparkles size={11} />
-                  ) : (
-                    <Clock size={11} />
-                  )}
-                  {product.badge}
+                  {product.available ? <Sparkles size={11} /> : <Clock size={11} />}
+                  {product.available ? 'Available now' : 'Coming soon'}
                 </div>
 
                 {/* Name & tagline */}
@@ -115,9 +141,11 @@ export default function ProductSection() {
                 <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
 
                 {/* Description */}
-                <p className="text-[#94A3B8] text-sm leading-relaxed mb-6 flex-1">
-                  {product.description}
-                </p>
+                {product.description && (
+                  <p className="text-[#94A3B8] text-sm leading-relaxed mb-4">
+                    {product.description}
+                  </p>
+                )}
 
                 {/* Tags */}
                 {product.tags.length > 0 && (
@@ -136,13 +164,19 @@ export default function ProductSection() {
                 {/* Pricing + CTA */}
                 {product.available ? (
                   <div className="mt-auto">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-2xl font-bold text-white">
-                        {product.monthlyPrice}
-                        <span className="text-sm text-[#94A3B8] font-normal">/mo</span>
-                      </span>
-                      <span className="text-xs text-[#475569]">or {product.annualPrice}/yr</span>
-                    </div>
+                    {product.monthlyPrice && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl font-bold text-white">
+                          {product.monthlyPrice}
+                          <span className="text-sm text-[#94A3B8] font-normal">/mo</span>
+                        </span>
+                        {product.annualPrice && (
+                          <span className="text-xs text-[#475569]">
+                            or {product.annualPrice}/yr
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <Link
                       href={product.href}
                       className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"

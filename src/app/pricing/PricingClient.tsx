@@ -170,21 +170,7 @@ export default function PricingClient({ dbData }: Props) {
 
                     {/* 제품명 + 태그라인 */}
                     <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
-                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-4">{product.tagline}</p>
-
-                    {/* 태그 pill */}
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-6">
-                        {tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs text-[#94A3B8] border border-[#1E293B] rounded-full px-2.5 py-0.5"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
 
                     {/* 가격 */}
                     <div className="mb-8">
