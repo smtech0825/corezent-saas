@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { CreditCard, Package, ExternalLink } from 'lucide-react'
+import { CreditCard, Package, ExternalLink, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -40,13 +40,15 @@ export default async function BillingPage() {
   ].filter(Boolean))]
 
   const priceNameMap = new Map<string, string>()
+  const priceManualMap = new Map<string, string | null>()
   if (priceIds.length > 0) {
     const { data: prices } = await supabase
       .from('product_prices')
-      .select('id, products(name)')
+      .select('id, products(name, manual_url)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
       priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
+      priceManualMap.set(pp.id, pp.products?.manual_url ?? null)
     })
   }
 
@@ -85,6 +87,17 @@ export default async function BillingPage() {
                     <ExternalLink size={11} />
                     Check License
                   </Link>
+                  {priceManualMap.get(sub.product_price_id) && (
+                    <a
+                      href={priceManualMap.get(sub.product_price_id)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <BookOpen size={11} />
+                      Manual
+                    </a>
+                  )}
                 </div>
               </div>
             ))}

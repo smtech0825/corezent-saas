@@ -67,16 +67,30 @@ export default function ProductList({ products }: Props) {
             )}
 
             <div className="relative z-10 flex flex-col flex-1 p-7">
-              {/* 뱃지 */}
-              <div
-                className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${
-                  product.is_active
-                    ? 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20'
-                    : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
-                }`}
-              >
-                {product.is_active ? <Sparkles size={11} /> : <Clock size={11} />}
-                {product.is_active ? 'Available now' : 'Coming soon'}
+              {/* 로고 + 뱃지 */}
+              <div className="flex items-start justify-between mb-5">
+                <div
+                  className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                    product.is_active
+                      ? 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20'
+                      : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                  }`}
+                >
+                  {product.is_active ? <Sparkles size={11} /> : <Clock size={11} />}
+                  {product.is_active ? 'Available now' : 'Coming soon'}
+                </div>
+
+                {/* 로고 이미지 */}
+                {product.logo_url && (
+                  <div className="w-14 h-14 rounded-xl border border-[#1E293B] bg-[#0B1120] overflow-hidden shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.logo_url}
+                      alt={`${product.name} logo`}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* 이름 & 태그라인 */}
