@@ -82,7 +82,7 @@ export default function ProductList({ products }: Props) {
 
                 {/* 로고 이미지 */}
                 {product.logo_url && (
-                  <div className="w-14 h-14 rounded-xl border border-[#1E293B] bg-[#0B1120] overflow-hidden shrink-0">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={product.logo_url}
