@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Sparkles, Clock, ChevronDown, Check, ArrowRight } from 'lucide-react'
 
 interface Product {
@@ -82,12 +83,12 @@ export default function ProductList({ products }: Props) {
 
                 {/* 로고 이미지 */}
                 {product.logo_url && (
-                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                    <Image
                       src={product.logo_url}
                       alt={`${product.name} logo`}
-                      className="w-full h-full object-contain"
+                      fill
+                      className="object-contain"
                     />
                   </div>
                 )}
