@@ -21,7 +21,7 @@ export default async function EditProductPage({
 
   const { data: product } = await client
     .from('products')
-    .select('id, name, slug, tagline, description, category, logo_url, manual_url, is_active, tags, pricing_features')
+    .select('id, name, slug, tagline, description, category, logo_url, manual_url, is_active, tags, pricing_features, product_features')
     .eq('id', id)
     .single()
 
@@ -61,6 +61,7 @@ export default async function EditProductPage({
     is_active: product.is_active ?? true,
     tags: (product.tags ?? []) as string[],
     pricing_features: (product.pricing_features ?? []) as string[],
+    product_features: (product.product_features ?? []) as Array<{ icon: string; image_url: string; title: string; description: string }>,
     prices,
   }
 
@@ -82,6 +83,7 @@ export default async function EditProductPage({
         is_active: data.is_active,
         tags: data.tags.filter(Boolean),
         pricing_features: data.pricing_features.filter(Boolean),
+        product_features: data.product_features.filter((f) => f.title),
       })
       .eq('id', id)
 

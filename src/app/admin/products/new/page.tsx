@@ -28,6 +28,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
       is_active: data.is_active,
       tags: data.tags.filter(Boolean),
       pricing_features: data.pricing_features.filter(Boolean),
+      product_features: data.product_features.filter((f) => f.title),
     })
     .select('id')
     .single()

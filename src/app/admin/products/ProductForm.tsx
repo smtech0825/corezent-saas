@@ -8,7 +8,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Upload, X, Tag, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface PriceEntry {
@@ -16,6 +16,13 @@ export interface PriceEntry {
   type: 'subscription' | 'one_time'
   interval: 'monthly' | 'annual' | ''
   price: string
+}
+
+export interface ProductFeatureEntry {
+  icon: string
+  image_url: string
+  title: string
+  description: string
 }
 
 export interface ProductFormData {
@@ -29,6 +36,7 @@ export interface ProductFormData {
   is_active: boolean
   tags: string[]
   pricing_features: string[]
+  product_features: ProductFeatureEntry[]
   prices: PriceEntry[]
 }
 
@@ -86,6 +94,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       is_active: true,
       tags: [],
       pricing_features: [],
+      product_features: [],
       prices: [emptyPrice()],
     }
   )
@@ -377,6 +386,100 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               placeholder={`Feature ${i + 1} — e.g. Quad-Engine AI Generation: High-quality content powered by 4 premium AI engines.`}
               className={inputCls}
             />
+          ))}
+        </div>
+      </section>
+
+      {/* Product 전용 기능 (최대 12개, /product 확장 박스에 표시) */}
+      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={14} className="text-[#38BDF8]" />
+            <h2 className="text-sm font-semibold text-white">Features (only for Product)</h2>
+            <span className="text-xs text-[#475569]">— /product 확장 박스에 표시 (최대 12개)</span>
+          </div>
+          {form.product_features.length < 12 && (
+            <button
+              type="button"
+              onClick={() =>
+                set('product_features', [
+                  ...form.product_features,
+                  { icon: '', image_url: '', title: '', description: '' },
+                ])
+              }
+              className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus size={13} /> Add Feature
+            </button>
+          )}
+        </div>
+
+        {form.product_features.length === 0 && (
+          <p className="text-xs text-[#475569] py-4 text-center">No features added yet. Click + to add.</p>
+        )}
+
+        {/* 입력 폼: 3열 그리드 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {form.product_features.map((feat, idx) => (
+            <div key={idx} className="relative p-4 bg-[#0B1120] rounded-xl border border-[#1E293B] space-y-3">
+              <button
+                type="button"
+                onClick={() =>
+                  set(
+                    'product_features',
+                    form.product_features.filter((_, i) => i !== idx),
+                  )
+                }
+                className="absolute top-2 right-2 p-1 text-[#475569] hover:text-red-400 transition-colors"
+              >
+                <Trash2 size={12} />
+              </button>
+
+              <input
+                value={feat.icon}
+                onChange={(e) => {
+                  const next = [...form.product_features]
+                  next[idx] = { ...next[idx], icon: e.target.value }
+                  set('product_features', next)
+                }}
+                placeholder="Icon (e.g. Cpu, Globe, Shield)"
+                className={inputCls + ' text-xs'}
+              />
+
+              <input
+                value={feat.image_url}
+                onChange={(e) => {
+                  const next = [...form.product_features]
+                  next[idx] = { ...next[idx], image_url: e.target.value }
+                  set('product_features', next)
+                }}
+                placeholder="Image URL (transparent PNG)"
+                className={inputCls + ' text-xs'}
+              />
+
+              <input
+                value={feat.title}
+                onChange={(e) => {
+                  const next = [...form.product_features]
+                  next[idx] = { ...next[idx], title: e.target.value }
+                  set('product_features', next)
+                }}
+                placeholder="Title *"
+                className={inputCls + ' text-xs'}
+              />
+
+              <textarea
+                rows={2}
+                value={feat.description}
+                onChange={(e) => {
+                  const next = [...form.product_features]
+                  next[idx] = { ...next[idx], description: e.target.value }
+                  set('product_features', next)
+                }}
+                placeholder="Description"
+                className={inputCls + ' text-xs resize-none'}
+              />
+            </div>
           ))}
         </div>
       </section>

@@ -25,7 +25,7 @@ export default async function ProductPage() {
   // 활성 상품 + 가격 정보 조회 (order_index 순)
   const { data: rawProducts } = await client
     .from('products')
-    .select('id, name, tagline, description, category, features, tags, logo_url, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('id, name, tagline, description, category, features, tags, product_features, logo_url, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
@@ -43,6 +43,7 @@ export default async function ProductPage() {
       category: p.category as string,
       features: (p.features ?? []) as string[],
       tags: (p.tags ?? []) as string[],
+      product_features: (p.product_features ?? []) as Array<{ icon: string; image_url: string; title: string; description: string }>,
       logo_url: p.logo_url as string | null,
       is_active: p.is_active as boolean,
       monthlyPrice: monthly?.price ?? null,
