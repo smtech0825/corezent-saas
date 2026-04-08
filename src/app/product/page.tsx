@@ -25,15 +25,16 @@ export default async function ProductPage() {
   // 활성 상품 + 가격 정보 조회 (order_index 순)
   const { data: rawProducts } = await client
     .from('products')
-    .select('id, name, tagline, description, category, features, logo_url, is_active, order_index, product_prices(type, interval, price)')
+    .select('id, name, tagline, description, category, features, logo_url, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
   // 상품별 월간/연간 가격 추출
   const products = (rawProducts ?? []).map((p) => {
-    const prices = (p.product_prices ?? []) as Array<{ type: string; interval: string | null; price: number }>
-    const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
-    const annual = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    const prices = (p.product_prices ?? []) as Array<{ type: string; interval: string | null; price: number; is_active: boolean }>
+    const activePrices = prices.filter((pr) => pr.is_active)
+    const monthly = activePrices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual = activePrices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
     return {
       id: p.id as string,
       name: p.name as string,

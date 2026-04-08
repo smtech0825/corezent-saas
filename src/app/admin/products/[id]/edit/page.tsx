@@ -21,20 +21,34 @@ export default async function EditProductPage({
 
   const { data: product } = await client
     .from('products')
-    .select('*, product_prices(id, type, interval, price)')
+    .select('id, name, slug, tagline, description, category, logo_url, manual_url, is_active')
     .eq('id', id)
     .single()
 
   if (!product) notFound()
 
-  const prices: PriceEntry[] = (product.product_prices ?? []).map(
-    (p: { id: string; type: string; interval: string | null; price: number }) => ({
-      id: p.id,
+  // is_active=true 인 가격만 조회 후 type+interval 기준 중복 제거
+  const { data: rawPrices } = await client
+    .from('product_prices')
+    .select('id, type, interval, price')
+    .eq('product_id', id)
+    .eq('is_active', true)
+    .order('id', { ascending: true })
+
+  const seen = new Set<string>()
+  const prices: PriceEntry[] = (rawPrices ?? [])
+    .filter((p) => {
+      const key = `${p.type}-${p.interval ?? ''}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .map((p) => ({
+      id: p.id as string,
       type: p.type as 'subscription' | 'one_time',
       interval: (p.interval ?? '') as 'monthly' | 'annual' | '',
       price: String(p.price),
-    })
-  )
+    }))
 
   const initialData: ProductFormData = {
     name: product.name ?? '',
@@ -52,6 +66,7 @@ export default async function EditProductPage({
     'use server'
     const c = createAdminClient()
 
+    // 상품 기본 정보 업데이트
     const { error } = await c
       .from('products')
       .update({
@@ -68,27 +83,48 @@ export default async function EditProductPage({
 
     if (error) return { error: error.message }
 
-    // 기존 가격 전체 삭제 — 실패 시 중단 (삭제 없이 insert하면 중복 발생)
-    const { error: deleteError } = await c
+    // 현재 DB의 모든 is_active 가격 ID 조회
+    const { data: currentPrices } = await c
       .from('product_prices')
-      .delete()
+      .select('id')
       .eq('product_id', id)
+      .eq('is_active', true)
 
-    if (deleteError) return { error: `가격 초기화 실패: ${deleteError.message}` }
+    const currentIds = new Set((currentPrices ?? []).map((p: any) => p.id as string))
+    const formIds = new Set(data.prices.filter((p) => p.id).map((p) => p.id as string))
 
-    const priceRows = data.prices
-      .filter((p) => p.price !== '')
-      .map((p) => ({
-        product_id: id,
-        type: p.type,
-        interval: p.type === 'subscription' ? p.interval || null : null,
-        price: parseFloat(p.price),
-        is_active: true,
-      }))
+    // 폼에서 제거된 가격 → is_active=false (orders FK 참조 때문에 삭제 불가)
+    const toDeactivate = [...currentIds].filter((pid) => !formIds.has(pid))
+    if (toDeactivate.length > 0) {
+      await c.from('product_prices').update({ is_active: false }).in('id', toDeactivate)
+    }
 
-    if (priceRows.length > 0) {
-      const { error: priceError } = await c.from('product_prices').insert(priceRows)
-      if (priceError) return { error: priceError.message }
+    // 기존 가격 업데이트 (ID 있는 항목)
+    for (const price of data.prices.filter((p) => p.id && p.price !== '')) {
+      await c
+        .from('product_prices')
+        .update({
+          type: price.type,
+          interval: price.type === 'subscription' ? price.interval || null : null,
+          price: parseFloat(price.price),
+          is_active: true,
+        })
+        .eq('id', price.id!)
+    }
+
+    // 신규 가격 삽입 (ID 없는 항목)
+    const newPrices = data.prices.filter((p) => !p.id && p.price !== '')
+    if (newPrices.length > 0) {
+      const { error: insertError } = await c.from('product_prices').insert(
+        newPrices.map((p) => ({
+          product_id: id,
+          type: p.type,
+          interval: p.type === 'subscription' ? p.interval || null : null,
+          price: parseFloat(p.price),
+          is_active: true,
+        }))
+      )
+      if (insertError) return { error: insertError.message }
     }
 
     revalidatePath('/admin/products')
