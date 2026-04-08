@@ -21,8 +21,10 @@ type TestimonialData = {
 async function createTestimonial(data: TestimonialData) {
   'use server'
   const adminClient = createAdminClient()
-  const { data: created } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
+  const { data: created, error } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
+  if (error) console.error('[createTestimonial]', error)
   revalidatePath('/admin/content/testimonials')
+  revalidatePath('/')
   return created
 }
 
@@ -31,6 +33,7 @@ async function updateTestimonial(id: string, data: TestimonialData) {
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').update(data).eq('id', id)
   revalidatePath('/admin/content/testimonials')
+  revalidatePath('/')
 }
 
 async function deleteTestimonial(id: string) {
@@ -38,6 +41,7 @@ async function deleteTestimonial(id: string) {
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').delete().eq('id', id)
   revalidatePath('/admin/content/testimonials')
+  revalidatePath('/')
 }
 
 async function toggleTestimonialPublish(id: string, published: boolean) {
@@ -45,6 +49,7 @@ async function toggleTestimonialPublish(id: string, published: boolean) {
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/testimonials')
+  revalidatePath('/')
 }
 
 export default async function TestimonialsPage() {

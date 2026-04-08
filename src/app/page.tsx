@@ -35,7 +35,7 @@ export default async function HomePage() {
   // 병렬로 모든 DB 데이터 조회
   const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
-    client.from('front_features').select('id, icon, title, description').eq('is_published', true).order('order_index'),
+    client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
     client.from('front_faqs').select('id, question, answer').eq('is_published', true).order('order_index'),
     client.from('front_content').select('key, value'),

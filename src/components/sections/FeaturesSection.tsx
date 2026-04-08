@@ -8,6 +8,7 @@ import DynamicIcon from '@/components/DynamicIcon'
 export interface DbFeature {
   id: string
   icon: string | null
+  tag: string | null
   title: string
   description: string
 }
@@ -70,7 +71,7 @@ const defaultFeatures = [
 export default function FeaturesSection({ features }: Props) {
   const items =
     features && features.length > 0
-      ? features.map((f) => ({ id: f.id, icon: f.icon, tag: '', title: f.title, description: f.description }))
+      ? features.map((f) => ({ id: f.id, icon: f.icon, tag: f.tag ?? '', title: f.title, description: f.description }))
       : defaultFeatures
 
   return (

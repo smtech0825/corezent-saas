@@ -11,23 +11,24 @@ import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 interface Feature {
   id: string
   icon: string
+  tag: string
   title: string
   description: string
   is_published: boolean
   order_index: number
 }
 
-type CreatedFeature = { id: string; icon: string; title: string; description: string; is_published: boolean; order_index: number } | null
+type CreatedFeature = { id: string; icon: string; tag: string; title: string; description: string; is_published: boolean; order_index: number } | null
 
 interface Props {
   features: Feature[]
-  onCreate: (icon: string, title: string, description: string) => Promise<CreatedFeature>
-  onUpdate: (id: string, icon: string, title: string, description: string) => Promise<void>
+  onCreate: (icon: string, tag: string, title: string, description: string) => Promise<CreatedFeature>
+  onUpdate: (id: string, icon: string, tag: string, title: string, description: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onTogglePublish: (id: string, published: boolean) => Promise<void>
 }
 
-const emptyForm = { icon: '', title: '', description: '' }
+const emptyForm = { icon: '', tag: '', title: '', description: '' }
 
 // ─── InputField — 컴포넌트 외부에 정의하여 리렌더링 시 포커스 손실 방지 ───
 function InputField({ label, value, onChange, placeholder, multiline = false }: {
@@ -66,13 +67,13 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
 
   function startEdit(f: Feature) {
     setEditingId(f.id)
-    setForm({ icon: f.icon ?? '', title: f.title, description: f.description })
+    setForm({ icon: f.icon ?? '', tag: f.tag ?? '', title: f.title, description: f.description })
     setShowNew(false)
   }
 
   async function handleUpdate(id: string) {
     startTransition(async () => {
-      await onUpdate(id, form.icon, form.title, form.description)
+      await onUpdate(id, form.icon, form.tag, form.title, form.description)
       setItems((prev) =>
         prev.map((f) => (f.id === id ? { ...f, ...form } : f))
       )
@@ -83,8 +84,8 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
   async function handleCreate() {
     if (!newForm.title.trim()) return
     startTransition(async () => {
-      const created = await onCreate(newForm.icon, newForm.title, newForm.description)
-      if (created) setItems((prev) => [...prev, { ...created, icon: created.icon ?? '' }])
+      const created = await onCreate(newForm.icon, newForm.tag, newForm.title, newForm.description)
+      if (created) setItems((prev) => [...prev, { ...created, icon: created.icon ?? '', tag: created.tag ?? '' }])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -113,8 +114,9 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <InputField label="Icon (lu: / tb: / ri: / svg)" value={form.icon} onChange={(v) => setForm({ ...form, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
-                <InputField label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} placeholder="Feature title" />
+                <InputField label="Tag (uppercase label)" value={form.tag} onChange={(v) => setForm({ ...form, tag: v })} placeholder="Built in-house · Instant · Docs" />
               </div>
+              <InputField label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} placeholder="Feature title" />
               <InputField label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Feature description" multiline />
               <div className="flex gap-2">
                 <button onClick={() => handleUpdate(feature.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
@@ -134,6 +136,9 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                   </span>
                 )}
                 <div className="min-w-0">
+                  {feature.tag && (
+                    <p className="text-[10px] text-[#475569] font-mono uppercase tracking-wider mb-0.5">{feature.tag}</p>
+                  )}
                   <p className={`text-sm font-medium ${feature.is_published ? 'text-white' : 'text-[#475569]'}`}>{feature.title}</p>
                   <p className="text-xs text-[#475569] mt-1 line-clamp-2">{feature.description}</p>
                 </div>
@@ -157,9 +162,10 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
       {showNew ? (
         <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <InputField label="Icon (lucide name)" value={newForm.icon} onChange={(v) => setNewForm({ ...newForm, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
-            <InputField label="Title" value={newForm.title} onChange={(v) => setNewForm({ ...newForm, title: v })} placeholder="Feature title" />
+            <InputField label="Icon (lu: / tb: / ri: / svg)" value={newForm.icon} onChange={(v) => setNewForm({ ...newForm, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
+            <InputField label="Tag (uppercase label)" value={newForm.tag} onChange={(v) => setNewForm({ ...newForm, tag: v })} placeholder="Built in-house · Instant · Docs" />
           </div>
+          <InputField label="Title" value={newForm.title} onChange={(v) => setNewForm({ ...newForm, title: v })} placeholder="Feature title" />
           <InputField label="Description" value={newForm.description} onChange={(v) => setNewForm({ ...newForm, description: v })} placeholder="Feature description" multiline />
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">

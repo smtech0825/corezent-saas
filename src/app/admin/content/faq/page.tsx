@@ -19,8 +19,11 @@ async function createFaq(question: string, answer: string) {
     .limit(1)
     .single()
   const nextIndex = (maxRow?.order_index ?? -1) + 1
-  const { data } = await adminClient.from('front_faqs').insert({ question, answer, order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
+  const { data, error } = await adminClient.from('front_faqs').insert({ question, answer, order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
+  if (error) console.error('[createFaq]', error)
   revalidatePath('/admin/content/faq')
+  revalidatePath('/faq')
+  revalidatePath('/')
   return data
 }
 
@@ -29,6 +32,8 @@ async function updateFaq(id: string, question: string, answer: string) {
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').update({ question, answer }).eq('id', id)
   revalidatePath('/admin/content/faq')
+  revalidatePath('/faq')
+  revalidatePath('/')
 }
 
 async function deleteFaq(id: string) {
@@ -36,6 +41,8 @@ async function deleteFaq(id: string) {
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').delete().eq('id', id)
   revalidatePath('/admin/content/faq')
+  revalidatePath('/faq')
+  revalidatePath('/')
 }
 
 async function toggleFaqPublish(id: string, published: boolean) {
@@ -43,6 +50,8 @@ async function toggleFaqPublish(id: string, published: boolean) {
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/faq')
+  revalidatePath('/faq')
+  revalidatePath('/')
 }
 
 export default async function FaqPage() {

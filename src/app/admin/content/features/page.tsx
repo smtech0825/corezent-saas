@@ -9,7 +9,7 @@ import FeaturesManager from './FeaturesManager'
 
 export const dynamic = 'force-dynamic'
 
-async function createFeature(icon: string, title: string, description: string) {
+async function createFeature(icon: string, tag: string, title: string, description: string) {
   'use server'
   const adminClient = createAdminClient()
   const { data: maxRow } = await adminClient
@@ -19,16 +19,19 @@ async function createFeature(icon: string, title: string, description: string) {
     .limit(1)
     .single()
   const nextIndex = (maxRow?.order_index ?? -1) + 1
-  const { data } = await adminClient.from('front_features').insert({ icon, title, description, order_index: nextIndex, is_published: true }).select('id, icon, title, description, is_published, order_index').single()
+  const { data, error } = await adminClient.from('front_features').insert({ icon, tag, title, description, order_index: nextIndex, is_published: true }).select('id, icon, tag, title, description, is_published, order_index').single()
+  if (error) console.error('[createFeature]', error)
   revalidatePath('/admin/content/features')
+  revalidatePath('/')
   return data
 }
 
-async function updateFeature(id: string, icon: string, title: string, description: string) {
+async function updateFeature(id: string, icon: string, tag: string, title: string, description: string) {
   'use server'
   const adminClient = createAdminClient()
-  await adminClient.from('front_features').update({ icon, title, description }).eq('id', id)
+  await adminClient.from('front_features').update({ icon, tag, title, description }).eq('id', id)
   revalidatePath('/admin/content/features')
+  revalidatePath('/')
 }
 
 async function deleteFeature(id: string) {
@@ -36,6 +39,7 @@ async function deleteFeature(id: string) {
   const adminClient = createAdminClient()
   await adminClient.from('front_features').delete().eq('id', id)
   revalidatePath('/admin/content/features')
+  revalidatePath('/')
 }
 
 async function toggleFeaturePublish(id: string, published: boolean) {
@@ -43,6 +47,7 @@ async function toggleFeaturePublish(id: string, published: boolean) {
   const adminClient = createAdminClient()
   await adminClient.from('front_features').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/features')
+  revalidatePath('/')
 }
 
 export default async function FeaturesPage() {
@@ -50,7 +55,7 @@ export default async function FeaturesPage() {
 
   const { data: features } = await adminClient
     .from('front_features')
-    .select('id, icon, title, description, is_published, order_index')
+    .select('id, icon, tag, title, description, is_published, order_index')
     .order('order_index')
 
   return (
