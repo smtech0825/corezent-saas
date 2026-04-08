@@ -122,23 +122,22 @@ export default function ProductList({ products }: Props) {
                   <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
                 )}
 
-                {/* 설명 — 3줄(150자) 제한 + "more" 링크 */}
+                {/* 설명 — 항상 3줄 클램프, "more" 클릭 시 하단 패널 열기 */}
                 {desc && (
-                  <p className="text-[#94A3B8] text-sm leading-relaxed mb-4">
-                    {isLongDesc && !isExpanded ? (
-                      <>
-                        {desc.slice(0, DESC_CHAR_LIMIT).trimEnd()}…{' '}
-                        <button
-                          onClick={() => toggle(product.id)}
-                          className="text-[#38BDF8] hover:text-white transition-colors font-medium"
-                        >
-                          more
-                        </button>
-                      </>
-                    ) : (
-                      desc
+                  <div className="relative mb-4">
+                    <p className="text-[#94A3B8] text-sm leading-relaxed line-clamp-3">
+                      {desc}
+                    </p>
+                    {isLongDesc && (
+                      <button
+                        onClick={() => toggle(product.id)}
+                        className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
+                        style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
+                      >
+                        more
+                      </button>
                     )}
-                  </p>
+                  </div>
                 )}
 
                 {/* 태그 pill */}

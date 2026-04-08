@@ -48,6 +48,76 @@ interface Props {
 
 const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '' })
 
+/** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
+function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+    const supabase = createClient()
+    const ext = file.name.split('.').pop() ?? 'png'
+    const filename = `feat-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { data, error: uploadErr } = await supabase.storage
+      .from('logos')
+      .upload(filename, file, { upsert: true })
+    if (uploadErr) {
+      setError(uploadErr.message)
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(data.path)
+    onChange(publicUrl)
+    setUploading(false)
+  }
+
+  function clear() {
+    onChange('')
+    if (fileRef.current) fileRef.current.value = ''
+    setError('')
+  }
+
+  return (
+    <div className="space-y-1">
+      {value ? (
+        <div className="flex items-center gap-2 p-2 bg-[#111A2E] rounded-lg border border-[#1E293B]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="feature preview" className="w-8 h-8 object-contain rounded shrink-0" />
+          <span className="text-xs text-[#475569] truncate flex-1">{value.split('/').pop()}</span>
+          <button type="button" onClick={clear} className="shrink-0 text-[#475569] hover:text-red-400 transition-colors">
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <label
+          className={`flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border transition-colors w-full ${
+            uploading
+              ? 'opacity-40 cursor-not-allowed border-[#1E293B] text-[#475569]'
+              : 'cursor-pointer border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/40'
+          }`}
+        >
+          <Upload size={11} />
+          {uploading ? '업로드 중...' : 'Upload Image (transparent PNG)'}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            disabled={uploading}
+            onChange={handleUpload}
+          />
+        </label>
+      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  )
+}
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -446,15 +516,13 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 className={inputCls + ' text-xs'}
               />
 
-              <input
+              <FeatureImageUpload
                 value={feat.image_url}
-                onChange={(e) => {
+                onChange={(url) => {
                   const next = [...form.product_features]
-                  next[idx] = { ...next[idx], image_url: e.target.value }
+                  next[idx] = { ...next[idx], image_url: url }
                   set('product_features', next)
                 }}
-                placeholder="Image URL (transparent PNG)"
-                className={inputCls + ' text-xs'}
               />
 
               <input
