@@ -17,7 +17,7 @@ import AuthBrand from '../_components/AuthBrand'
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') ?? '/dashboard'
+  const redirect = searchParams.get('redirect') ?? '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

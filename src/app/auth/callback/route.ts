@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')
   const tokenHash = url.searchParams.get('token_hash')
   const type = url.searchParams.get('type') as 'magiclink' | 'email' | 'signup' | 'recovery' | null
-  const redirect = url.searchParams.get('redirect') ?? '/dashboard'
+  const redirect = url.searchParams.get('redirect') ?? '/'
   const origin = url.origin
 
   const supabase = await createClient()
