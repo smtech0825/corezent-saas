@@ -27,6 +27,7 @@ import {
   Workflow,
   Megaphone,
   Bell,
+  Info,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -45,6 +46,7 @@ const frontendNav = [
   { label: 'Announcement',     href: '/admin/content/announcement',  icon: Bell },
   { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
   { label: 'Hero',             href: '/admin/content/hero',         icon: Layout },
+  { label: 'About',            href: '/admin/content/about',        icon: Info },
   { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
   { label: 'Why',              href: '/admin/content/features',     icon: Sparkles },
   { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },

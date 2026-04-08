@@ -42,12 +42,12 @@ export default function Navbar() {
   const supabase = createClient()
 
   // 네비게이션 링크 (번역 적용)
-  const navLinks = [
-    { label: t.nav.about, href: '#about' },
+  const navLinks: { label: string; href: string; external?: boolean }[] = [
+    { label: t.nav.about, href: '/about' },
     { label: t.nav.product, href: '/product' },
     { label: t.nav.pricing, href: '/pricing' },
     { label: t.nav.changelog, href: '#changelog' },
-    { label: t.nav.manual, href: '/manuals' },
+    { label: t.nav.manual, href: 'https://sites.google.com/view/corezent', external: true },
     { label: t.nav.faq, href: '/faq' },
     { label: t.nav.contact, href: '#contact' },
   ]
@@ -156,15 +156,27 @@ export default function Navbar() {
 
           {/* 데스크톱 메뉴 */}
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </div>
 
           {/* 우측 영역 */}
@@ -262,16 +274,29 @@ export default function Navbar() {
         {/* 모바일 메뉴 */}
         {mobileOpen && (
           <div className="lg:hidden border-t border-[#1E293B] bg-[#0B1120] px-6 py-4 flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
             <div className="pt-2 flex flex-col gap-2 border-t border-[#1E293B]">
               {user ? (
                 <>
