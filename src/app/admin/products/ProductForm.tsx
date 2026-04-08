@@ -512,7 +512,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   next[idx] = { ...next[idx], icon: e.target.value }
                   set('product_features', next)
                 }}
-                placeholder="Icon (e.g. Cpu, Globe, Shield)"
+                placeholder="Lucide: Cpu  |  Tabler: tb:Cpu  |  Radix: ri:Accessibility"
                 className={inputCls + ' text-xs'}
               />
 

@@ -12,6 +12,8 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Sparkles, Clock, ChevronDown, Eye } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
+import * as TablerIcons from '@tabler/icons-react'
+import * as RadixIcons from '@radix-ui/react-icons'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -41,10 +43,35 @@ interface Props {
   products: Product[]
 }
 
-/** Lucide 아이콘을 PascalCase 이름으로 렌더링 */
-function LucideIcon({ name, size = 20, className }: { name: string; size?: number; className?: string }) {
-  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>
-  const Icon = icons[name]
+/**
+ * 멀티 라이브러리 아이콘 렌더러
+ * - 접두사 없음 또는 lu: → Lucide (예: Cpu, lu:Cpu)
+ * - tb: → Tabler Icons (예: tb:Cpu → IconCpu)
+ * - ri: → Radix Icons (예: ri:Accessibility → AccessibilityIcon)
+ */
+function DynamicIcon({ name, size = 20, className }: { name: string; size?: number; className?: string }) {
+  type IconComp = React.ComponentType<{ size?: number; width?: number; height?: number; className?: string }>
+
+  if (name.startsWith('tb:')) {
+    const iconName = 'Icon' + name.slice(3)
+    const icons = TablerIcons as unknown as Record<string, IconComp>
+    const Icon = icons[iconName]
+    if (!Icon) return null
+    return <Icon size={size} className={className} />
+  }
+
+  if (name.startsWith('ri:')) {
+    const iconName = name.slice(3) + 'Icon'
+    const icons = RadixIcons as unknown as Record<string, IconComp>
+    const Icon = icons[iconName]
+    if (!Icon) return null
+    return <Icon width={size} height={size} className={className} />
+  }
+
+  // Lucide (기본 또는 lu: 접두사)
+  const lucideName = name.startsWith('lu:') ? name.slice(3) : name
+  const icons = LucideIcons as unknown as Record<string, IconComp>
+  const Icon = icons[lucideName]
   if (!Icon) return null
   return <Icon size={size} className={className} />
 }
@@ -267,7 +294,7 @@ function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: bo
                         />
                       </div>
                     ) : feat.icon ? (
-                      <LucideIcon name={feat.icon} size={20} className="text-[#38BDF8]" />
+                      <DynamicIcon name={feat.icon} size={20} className="text-[#38BDF8]" />
                     ) : (
                       <Sparkles size={20} className="text-[#38BDF8]" />
                     )}

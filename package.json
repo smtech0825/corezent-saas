@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-icons": "^1.3.2",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
+    "@tabler/icons-react": "^3.41.1",
     "googleapis": "^171.4.0",
     "lucide-react": "^1.7.0",
     "next": "15.5.14",
