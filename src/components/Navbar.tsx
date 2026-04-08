@@ -29,6 +29,15 @@ export default function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
+  // 공지 배너 데이터 (DB에서 로드)
+  const [banner, setBanner] = useState({
+    text: 'Introducing GeniePost — AI-powered WordPress posting, starting at $9/month.',
+    text_mobile: 'GeniePost is here — AI WordPress posting from $9/mo.',
+    link_text: 'Learn more →',
+    link_url: '#product',
+    visible: 'true',
+  })
+
   const userRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -41,6 +50,26 @@ export default function Navbar() {
     { label: t.nav.manual, href: '/manuals' },
     { label: t.nav.contact, href: '#contact' },
   ]
+
+  // 배너 데이터 로드
+  useEffect(() => {
+    supabase
+      .from('front_content')
+      .select('key, value')
+      .like('key', 'banner_%')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const map = Object.fromEntries(data.map((r) => [r.key, r.value]))
+          setBanner((prev) => ({
+            text:        map['banner_text']        ?? prev.text,
+            text_mobile: map['banner_text_mobile'] ?? prev.text_mobile,
+            link_text:   map['banner_link_text']   ?? prev.link_text,
+            link_url:    map['banner_link_url']    ?? prev.link_url,
+            visible:     map['banner_visible']     ?? prev.visible,
+          }))
+        }
+      })
+  }, [supabase])
 
   // 로그인 상태 감지
   useEffect(() => {
@@ -90,22 +119,24 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 flex flex-col">
-      {/* 공지 배너 */}
-      <div className="w-full bg-[#0B1120] border-b border-[#1E293B] py-2 text-center text-xs text-[#38BDF8] px-4">
-        <span className="inline-flex items-center justify-center gap-2 flex-wrap">
-          <Zap size={12} className="fill-[#38BDF8] shrink-0" />
-          <span className="hidden sm:inline">
-            Introducing GeniePost — AI-powered WordPress posting, starting at $9/month.
+      {/* 공지 배너 — Admin에서 관리 */}
+      {banner.visible === 'true' && (
+        <div className="w-full bg-[#0B1120] border-b border-[#1E293B] py-2 text-center text-xs text-[#38BDF8] px-4">
+          <span className="inline-flex items-center justify-center gap-2 flex-wrap">
+            <Zap size={12} className="fill-[#38BDF8] shrink-0" />
+            <span className="hidden sm:inline">{banner.text}</span>
+            <span className="sm:hidden">{banner.text_mobile}</span>
+            {banner.link_text && banner.link_url && (
+              <Link
+                href={banner.link_url}
+                className="underline underline-offset-2 hover:text-white transition-colors whitespace-nowrap"
+              >
+                {banner.link_text}
+              </Link>
+            )}
           </span>
-          <span className="sm:hidden">GeniePost is here — AI WordPress posting from $9/mo.</span>
-          <Link
-            href="#product"
-            className="underline underline-offset-2 hover:text-white transition-colors whitespace-nowrap"
-          >
-            Learn more →
-          </Link>
-        </span>
-      </div>
+        </div>
+      )}
 
       {/* 네비게이션 바 */}
       <nav className="backdrop-blur-md bg-[#0B1120]/80 border-b border-[#1E293B]">

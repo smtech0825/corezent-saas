@@ -27,6 +27,7 @@ import {
   Workflow,
   Megaphone,
   Star,
+  Bell,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -42,6 +43,7 @@ const mainNav = [
 // Section Settings → 가시성/순서 제어
 // 각 섹션 콘텐츠 에디터는 아래 frontendNav에 대응
 const frontendNav = [
+  { label: 'Announcement',     href: '/admin/content/announcement',  icon: Bell },
   { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
   { label: 'Hero',             href: '/admin/content/hero',         icon: Layout },
   { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
