@@ -114,7 +114,6 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       setError(result.error)
     } else {
       router.push('/admin/products')
-      router.refresh()
     }
   }
 

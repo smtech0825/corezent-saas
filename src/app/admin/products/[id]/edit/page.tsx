@@ -68,8 +68,13 @@ export default async function EditProductPage({
 
     if (error) return { error: error.message }
 
-    // 기존 가격 전체 삭제 후 재삽입 (단순화)
-    await c.from('product_prices').delete().eq('product_id', id)
+    // 기존 가격 전체 삭제 — 실패 시 중단 (삭제 없이 insert하면 중복 발생)
+    const { error: deleteError } = await c
+      .from('product_prices')
+      .delete()
+      .eq('product_id', id)
+
+    if (deleteError) return { error: `가격 초기화 실패: ${deleteError.message}` }
 
     const priceRows = data.prices
       .filter((p) => p.price !== '')
