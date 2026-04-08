@@ -180,9 +180,9 @@ export default function PricingClient() {
                       )}
                     </div>
 
-                    {/* 구매 버튼 */}
+                    {/* 구매 버튼 — 비로그인 시 회원가입 페이지로 이동 */}
                     <Link
-                      href={checkoutUrl}
+                      href={userId ? checkoutUrl : '/auth/register'}
                       className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold mb-8 bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200"
                     >
                       Get started

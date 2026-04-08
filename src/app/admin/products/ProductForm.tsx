@@ -25,9 +25,6 @@ export interface ProductFormData {
   logo_url: string
   manual_url: string
   is_active: boolean
-  max_devices: string
-  license_duration_days: string
-  order_index: string
   prices: PriceEntry[]
 }
 
@@ -74,9 +71,6 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       logo_url: '',
       manual_url: '',
       is_active: true,
-      max_devices: '',
-      license_duration_days: '',
-      order_index: '0',
       prices: [emptyPrice()],
     }
   )
@@ -212,44 +206,6 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               value={form.manual_url}
               onChange={(e) => set('manual_url', e.target.value)}
               placeholder="https://..."
-              className={inputCls}
-            />
-          </Field>
-        </div>
-      </section>
-
-      {/* 라이선스 설정 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-white">License Settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <Field label="Max Devices">
-            <input
-              type="number"
-              min={1}
-              value={form.max_devices}
-              onChange={(e) => set('max_devices', e.target.value)}
-              placeholder="Unlimited"
-              className={inputCls}
-            />
-          </Field>
-
-          <Field label="License Duration (days)">
-            <input
-              type="number"
-              min={1}
-              value={form.license_duration_days}
-              onChange={(e) => set('license_duration_days', e.target.value)}
-              placeholder="Permanent"
-              className={inputCls}
-            />
-          </Field>
-
-          <Field label="Order Index">
-            <input
-              type="number"
-              min={0}
-              value={form.order_index}
-              onChange={(e) => set('order_index', e.target.value)}
               className={inputCls}
             />
           </Field>

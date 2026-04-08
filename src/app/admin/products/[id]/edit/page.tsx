@@ -45,9 +45,6 @@ export default async function EditProductPage({
     logo_url: product.logo_url ?? '',
     manual_url: product.manual_url ?? '',
     is_active: product.is_active ?? true,
-    max_devices: product.max_devices != null ? String(product.max_devices) : '',
-    license_duration_days: product.license_duration_days != null ? String(product.license_duration_days) : '',
-    order_index: String(product.order_index ?? 0),
     prices,
   }
 
@@ -66,9 +63,6 @@ export default async function EditProductPage({
         logo_url: data.logo_url || null,
         manual_url: data.manual_url || null,
         is_active: data.is_active,
-        max_devices: data.max_devices ? parseInt(data.max_devices) : null,
-        license_duration_days: data.license_duration_days ? parseInt(data.license_duration_days) : null,
-        order_index: parseInt(data.order_index) || 0,
       })
       .eq('id', id)
 

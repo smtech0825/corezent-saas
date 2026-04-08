@@ -26,6 +26,7 @@ import {
   Layout,
   Workflow,
   Megaphone,
+  Star,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -46,8 +47,9 @@ const frontendNav = [
   { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
   { label: 'Features',         href: '/admin/content/features',     icon: Sparkles },
   { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },
-  { label: 'FAQ',              href: '/admin/content/faq',          icon: HelpCircle },
-  { label: 'CTA',              href: '/admin/content/cta',          icon: Megaphone },
+  { label: 'FAQ',              href: '/admin/content/faq',              icon: HelpCircle },
+  { label: 'CTA',              href: '/admin/content/cta',              icon: Megaphone },
+  { label: 'Product Features', href: '/admin/content/product-features', icon: Star },
 ]
 
 interface Props {

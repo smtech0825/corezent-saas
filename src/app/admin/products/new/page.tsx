@@ -26,9 +26,6 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
       logo_url: data.logo_url || null,
       manual_url: data.manual_url || null,
       is_active: data.is_active,
-      max_devices: data.max_devices ? parseInt(data.max_devices) : null,
-      license_duration_days: data.license_duration_days ? parseInt(data.license_duration_days) : null,
-      order_index: parseInt(data.order_index) || 0,
     })
     .select('id')
     .single()
