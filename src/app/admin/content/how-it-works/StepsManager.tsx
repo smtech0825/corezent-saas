@@ -17,15 +17,58 @@ interface Step {
   order_index: number
 }
 
+type CreatedStep = { id: string; icon: string; title: string; description: string; is_published: boolean; order_index: number } | null
+
 interface Props {
   items: Step[]
-  onCreate: (data: Omit<Step, 'id'>) => Promise<void>
+  onCreate: (data: Omit<Step, 'id'>) => Promise<CreatedStep>
   onUpdate: (id: string, data: Omit<Step, 'id'>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onTogglePublish: (id: string, published: boolean) => Promise<void>
 }
 
 const emptyForm = { icon: 'Zap', title: '', description: '', is_published: true, order_index: 0 }
+
+// ─── 모듈 레벨 상수 — 리렌더링 시 포커스 손실 방지 ───────────────────────
+const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
+
+// ─── FormFields — 컴포넌트 외부에 정의하여 unmount/remount 방지 ──────────
+function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyForm) => void }) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[10px] text-[#475569] mb-1 block">Icon  (lu: / tb: / ri: / &lt;svg&gt;)</label>
+          <input
+            value={f.icon}
+            onChange={(e) => setF({ ...f, icon: e.target.value })}
+            placeholder="Zap · tb:Cpu · ri:Star · <svg>..."
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-[#475569] mb-1 block">Title</label>
+          <input
+            value={f.title}
+            onChange={(e) => setF({ ...f, title: e.target.value })}
+            placeholder="Step title"
+            className={inputCls}
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-[10px] text-[#475569] mb-1 block">Description</label>
+        <textarea
+          value={f.description}
+          onChange={(e) => setF({ ...f, description: e.target.value })}
+          rows={3}
+          placeholder="Step description"
+          className={`${inputCls} resize-none`}
+        />
+      </div>
+    </div>
+  )
+}
 
 export default function StepsManager({ items: initItems, onCreate, onUpdate, onDelete, onTogglePublish }: Props) {
   const [items, setItems] = useState<Step[]>(initItems)
@@ -53,7 +96,8 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
     if (!newForm.title.trim()) return
     const next = { ...newForm, order_index: items.length }
     startTransition(async () => {
-      await onCreate(next)
+      const created = await onCreate(next)
+      if (created) setItems((prev) => [...prev, created])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -70,45 +114,6 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
   async function handleToggle(id: string, current: boolean) {
     setItems((prev) => prev.map((s) => (s.id === id ? { ...s, is_published: !current } : s)))
     startTransition(() => onTogglePublish(id, !current))
-  }
-
-  const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
-
-  function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyForm) => void }) {
-    return (
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[10px] text-[#475569] mb-1 block">Icon  (lu: / tb: / ri: / &lt;svg&gt;)</label>
-            <input
-              value={f.icon}
-              onChange={(e) => setF({ ...f, icon: e.target.value })}
-              placeholder="Zap · tb:Cpu · ri:Star · <svg>..."
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="text-[10px] text-[#475569] mb-1 block">Title</label>
-            <input
-              value={f.title}
-              onChange={(e) => setF({ ...f, title: e.target.value })}
-              placeholder="Step title"
-              className={inputCls}
-            />
-          </div>
-        </div>
-        <div>
-          <label className="text-[10px] text-[#475569] mb-1 block">Description</label>
-          <textarea
-            value={f.description}
-            onChange={(e) => setF({ ...f, description: e.target.value })}
-            rows={3}
-            placeholder="Step description"
-            className={`${inputCls} resize-none`}
-          />
-        </div>
-      </div>
-    )
   }
 
   return (

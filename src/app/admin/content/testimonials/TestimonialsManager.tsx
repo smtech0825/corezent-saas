@@ -21,9 +21,11 @@ interface Testimonial {
   is_published: boolean
 }
 
+type CreatedTestimonial = { id: string; quote: string; author_name: string; author_title: string; author_avatar: string | null; rating: number; is_published: boolean } | null
+
 interface Props {
   items: Testimonial[]
-  onCreate: (data: Omit<Testimonial, 'id'>) => Promise<void>
+  onCreate: (data: Omit<Testimonial, 'id'>) => Promise<CreatedTestimonial>
   onUpdate: (id: string, data: Omit<Testimonial, 'id'>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onTogglePublish: (id: string, published: boolean) => Promise<void>
@@ -147,6 +149,78 @@ function AvatarUpload({
   )
 }
 
+// ─── 모듈 레벨 상수 — 리렌더링 시 포커스 손실 방지 ───────────────────────
+const inputCls =
+  'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
+
+// ─── FormFields — 컴포넌트 외부에 정의하여 unmount/remount 방지 ──────────
+function FormFields({
+  f,
+  setF,
+}: {
+  f: typeof emptyForm
+  setF: (v: typeof emptyForm) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <textarea
+        value={f.quote}
+        onChange={(e) => setF({ ...f, quote: e.target.value })}
+        rows={3}
+        placeholder="Customer quote"
+        className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <input
+          value={f.author_name}
+          onChange={(e) => setF({ ...f, author_name: e.target.value })}
+          placeholder="Author name"
+          className={inputCls}
+        />
+        <input
+          value={f.author_title}
+          onChange={(e) => setF({ ...f, author_title: e.target.value })}
+          placeholder="Author title (e.g. CEO at ACME)"
+          className={inputCls}
+        />
+      </div>
+
+      {/* 아바타 파일 업로드 */}
+      <div className="bg-[#0B1120] border border-[#1E293B] rounded-lg p-3">
+        <p className="text-[10px] text-[#475569] mb-2 uppercase tracking-wider font-semibold">
+          Profile Photo
+        </p>
+        <AvatarUpload
+          value={f.author_avatar}
+          onChange={(url) => setF({ ...f, author_avatar: url })}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label className="text-xs text-[#475569]">Rating</label>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setF({ ...f, rating: n })}
+            >
+              <Star
+                size={16}
+                className={
+                  n <= f.rating
+                    ? 'text-amber-400 fill-current'
+                    : 'text-[#1E293B]'
+                }
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────
 export default function TestimonialsManager({
   items: initItems,
@@ -186,7 +260,8 @@ export default function TestimonialsManager({
   async function handleCreate() {
     if (!newForm.quote.trim() || !newForm.author_name.trim()) return
     startTransition(async () => {
-      await onCreate({ ...newForm, author_avatar: newForm.author_avatar || null })
+      const created = await onCreate({ ...newForm, author_avatar: newForm.author_avatar || null })
+      if (created) setItems((prev) => [...prev, created])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -205,76 +280,6 @@ export default function TestimonialsManager({
       prev.map((t) => (t.id === id ? { ...t, is_published: !current } : t))
     )
     startTransition(() => onTogglePublish(id, !current))
-  }
-
-  const inputCls =
-    'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
-
-  function FormFields({
-    f,
-    setF,
-  }: {
-    f: typeof emptyForm
-    setF: (v: typeof emptyForm) => void
-  }) {
-    return (
-      <div className="space-y-3">
-        <textarea
-          value={f.quote}
-          onChange={(e) => setF({ ...f, quote: e.target.value })}
-          rows={3}
-          placeholder="Customer quote"
-          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            value={f.author_name}
-            onChange={(e) => setF({ ...f, author_name: e.target.value })}
-            placeholder="Author name"
-            className={inputCls}
-          />
-          <input
-            value={f.author_title}
-            onChange={(e) => setF({ ...f, author_title: e.target.value })}
-            placeholder="Author title (e.g. CEO at ACME)"
-            className={inputCls}
-          />
-        </div>
-
-        {/* 아바타 파일 업로드 */}
-        <div className="bg-[#0B1120] border border-[#1E293B] rounded-lg p-3">
-          <p className="text-[10px] text-[#475569] mb-2 uppercase tracking-wider font-semibold">
-            Profile Photo
-          </p>
-          <AvatarUpload
-            value={f.author_avatar}
-            onChange={(url) => setF({ ...f, author_avatar: url })}
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <label className="text-xs text-[#475569]">Rating</label>
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setF({ ...f, rating: n })}
-              >
-                <Star
-                  size={16}
-                  className={
-                    n <= f.rating
-                      ? 'text-amber-400 fill-current'
-                      : 'text-[#1E293B]'
-                  }
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (

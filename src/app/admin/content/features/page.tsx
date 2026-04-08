@@ -19,8 +19,9 @@ async function createFeature(icon: string, title: string, description: string) {
     .limit(1)
     .single()
   const nextIndex = (maxRow?.order_index ?? -1) + 1
-  await adminClient.from('front_features').insert({ icon, title, description, order_index: nextIndex, is_published: true })
+  const { data } = await adminClient.from('front_features').insert({ icon, title, description, order_index: nextIndex, is_published: true }).select('id, icon, title, description, is_published, order_index').single()
   revalidatePath('/admin/content/features')
+  return data
 }
 
 async function updateFeature(id: string, icon: string, title: string, description: string) {
@@ -55,9 +56,9 @@ export default async function FeaturesPage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Features</h1>
+        <h1 className="text-2xl font-bold text-white">Why CoreZent</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Manage feature cards shown in the Features section on the landing page.
+          Manage feature cards shown in the &apos;Why CoreZent&apos; section on the landing page. (Lucide: Zap / Tabler: tb:Cpu / Radix: ri:Star / SVG)
         </p>
       </div>
 

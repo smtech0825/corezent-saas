@@ -17,15 +17,44 @@ interface Feature {
   order_index: number
 }
 
+type CreatedFeature = { id: string; icon: string; title: string; description: string; is_published: boolean; order_index: number } | null
+
 interface Props {
   features: Feature[]
-  onCreate: (icon: string, title: string, description: string) => Promise<void>
+  onCreate: (icon: string, title: string, description: string) => Promise<CreatedFeature>
   onUpdate: (id: string, icon: string, title: string, description: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onTogglePublish: (id: string, published: boolean) => Promise<void>
 }
 
 const emptyForm = { icon: '', title: '', description: '' }
+
+// ─── InputField — 컴포넌트 외부에 정의하여 리렌더링 시 포커스 손실 방지 ───
+function InputField({ label, value, onChange, placeholder, multiline = false }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean
+}) {
+  return (
+    <div>
+      <label className="block text-xs text-[#475569] mb-1">{label}</label>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={2}
+          placeholder={placeholder}
+          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+        />
+      ) : (
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50"
+        />
+      )}
+    </div>
+  )
+}
 
 export default function FeaturesManager({ features, onCreate, onUpdate, onDelete, onTogglePublish }: Props) {
   const [items, setItems] = useState<Feature[]>(features)
@@ -54,7 +83,8 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
   async function handleCreate() {
     if (!newForm.title.trim()) return
     startTransition(async () => {
-      await onCreate(newForm.icon, newForm.title, newForm.description)
+      const created = await onCreate(newForm.icon, newForm.title, newForm.description)
+      if (created) setItems((prev) => [...prev, { ...created, icon: created.icon ?? '' }])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -72,30 +102,6 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
     setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: !current } : f)))
     startTransition(() => onTogglePublish(id, !current))
   }
-
-  const InputField = ({ label, value, onChange, placeholder, multiline = false }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean
-  }) => (
-    <div>
-      <label className="block text-xs text-[#475569] mb-1">{label}</label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={2}
-          placeholder={placeholder}
-          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
-        />
-      ) : (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50"
-        />
-      )}
-    </div>
-  )
 
   return (
     <div className="space-y-3">
@@ -151,7 +157,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
       {showNew ? (
         <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <InputField label="Icon (lucide name)" value={newForm.icon} onChange={(v) => setNewForm({ ...newForm, icon: v })} placeholder="e.g. Zap" />
+            <InputField label="Icon (lucide name)" value={newForm.icon} onChange={(v) => setNewForm({ ...newForm, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
             <InputField label="Title" value={newForm.title} onChange={(v) => setNewForm({ ...newForm, title: v })} placeholder="Feature title" />
           </div>
           <InputField label="Description" value={newForm.description} onChange={(v) => setNewForm({ ...newForm, description: v })} placeholder="Feature description" multiline />

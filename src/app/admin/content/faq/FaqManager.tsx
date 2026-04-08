@@ -16,9 +16,11 @@ interface Faq {
   order_index: number
 }
 
+type CreatedFaq = { id: string; question: string; answer: string; is_published: boolean; order_index: number } | null
+
 interface Props {
   faqs: Faq[]
-  onCreate: (question: string, answer: string) => Promise<void>
+  onCreate: (question: string, answer: string) => Promise<CreatedFaq>
   onUpdate: (id: string, question: string, answer: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onTogglePublish: (id: string, published: boolean) => Promise<void>
@@ -57,10 +59,10 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
   async function handleCreate() {
     if (!newForm.question.trim() || !newForm.answer.trim()) return
     startTransition(async () => {
-      await onCreate(newForm.question, newForm.answer)
+      const created = await onCreate(newForm.question, newForm.answer)
+      if (created) setItems((prev) => [...prev, created])
       setNewForm({ question: '', answer: '' })
       setShowNew(false)
-      // 새 항목은 서버에서 revalidate됨
     })
   }
 

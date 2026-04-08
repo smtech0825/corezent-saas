@@ -19,8 +19,9 @@ async function createFaq(question: string, answer: string) {
     .limit(1)
     .single()
   const nextIndex = (maxRow?.order_index ?? -1) + 1
-  await adminClient.from('front_faqs').insert({ question, answer, order_index: nextIndex, is_published: true })
+  const { data } = await adminClient.from('front_faqs').insert({ question, answer, order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
   revalidatePath('/admin/content/faq')
+  return data
 }
 
 async function updateFaq(id: string, question: string, answer: string) {

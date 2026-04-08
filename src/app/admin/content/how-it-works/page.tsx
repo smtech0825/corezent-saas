@@ -20,9 +20,10 @@ type StepData = {
 async function createStep(data: StepData) {
   'use server'
   const adminClient = createAdminClient()
-  await adminClient.from('front_steps').insert(data)
+  const { data: created } = await adminClient.from('front_steps').insert(data).select('id, icon, title, description, is_published, order_index').single()
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
+  return created
 }
 
 async function updateStep(id: string, data: StepData) {

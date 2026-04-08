@@ -46,7 +46,7 @@ const frontendNav = [
   { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
   { label: 'Hero',             href: '/admin/content/hero',         icon: Layout },
   { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
-  { label: 'Features',         href: '/admin/content/features',     icon: Sparkles },
+  { label: 'Why',              href: '/admin/content/features',     icon: Sparkles },
   { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },
   { label: 'FAQ',              href: '/admin/content/faq',              icon: HelpCircle },
   { label: 'CTA',              href: '/admin/content/cta',              icon: Megaphone },

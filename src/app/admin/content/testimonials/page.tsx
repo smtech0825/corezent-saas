@@ -21,8 +21,9 @@ type TestimonialData = {
 async function createTestimonial(data: TestimonialData) {
   'use server'
   const adminClient = createAdminClient()
-  await adminClient.from('front_interviews').insert(data)
+  const { data: created } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
   revalidatePath('/admin/content/testimonials')
+  return created
 }
 
 async function updateTestimonial(id: string, data: TestimonialData) {

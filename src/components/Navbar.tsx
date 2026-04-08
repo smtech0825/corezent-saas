@@ -48,6 +48,7 @@ export default function Navbar() {
     { label: t.nav.pricing, href: '/pricing' },
     { label: t.nav.changelog, href: '#changelog' },
     { label: t.nav.manual, href: '/manuals' },
+    { label: t.nav.faq, href: '/faq' },
     { label: t.nav.contact, href: '#contact' },
   ]
 
