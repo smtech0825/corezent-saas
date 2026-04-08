@@ -19,6 +19,7 @@ interface Product {
   description: string | null
   category: string
   features: string[]
+  tags: string[]
   logo_url: string | null
   is_active: boolean
   monthlyPrice: number | null
@@ -102,9 +103,23 @@ export default function ProductList({ products }: Props) {
 
               {/* 설명 */}
               {product.description && (
-                <p className="text-[#94A3B8] text-sm leading-relaxed mb-6 flex-1">
+                <p className="text-[#94A3B8] text-sm leading-relaxed mb-4">
                   {product.description}
                 </p>
+              )}
+
+              {/* 태그 pill */}
+              {product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {product.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs text-[#94A3B8] border border-[#1E293B] rounded-full px-3 py-1"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               )}
 
               {/* 가격 + CTA */}

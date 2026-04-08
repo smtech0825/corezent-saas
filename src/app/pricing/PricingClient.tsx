@@ -20,6 +20,15 @@ import {
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 
+interface DbProductData {
+  tags: string[]
+  pricing_features: string[]
+}
+
+interface Props {
+  dbData: Record<string, DbProductData>
+}
+
 const FILTER_CATEGORIES: FilterCategory[] = ['all', 'chrome-extension', 'desktop', 'web-tool']
 
 // 연간 절약률 계산 (첫 번째 제품 기준)
@@ -27,7 +36,7 @@ const SAVE_PCT = products[0]
   ? Math.round((1 - products[0].annualMonthlyPrice / products[0].monthlyPrice) * 100)
   : 25
 
-export default function PricingClient() {
+export default function PricingClient({ dbData }: Props) {
   const [annual, setAnnual] = useState(false)
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('all')
   const [userId, setUserId] = useState<string | null>(null)
@@ -125,6 +134,11 @@ export default function PricingClient() {
                 annual ? product.lemonSqueezy.annual : product.lemonSqueezy.monthly,
                 userId,
               )
+              // DB 데이터에서 tags, pricing_features 조회
+              const slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+              const db = dbData[slug]
+              const tags = db?.tags ?? []
+              const displayFeatures = db?.pricing_features?.length ? db.pricing_features : product.features
 
               return (
                 <div
@@ -156,7 +170,21 @@ export default function PricingClient() {
 
                     {/* 제품명 + 태그라인 */}
                     <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
-                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
+                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-4">{product.tagline}</p>
+
+                    {/* 태그 pill */}
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-6">
+                        {tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-xs text-[#94A3B8] border border-[#1E293B] rounded-full px-2.5 py-0.5"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* 가격 */}
                     <div className="mb-8">
@@ -189,9 +217,9 @@ export default function PricingClient() {
                       <ArrowRight size={14} />
                     </Link>
 
-                    {/* 기능 목록 */}
+                    {/* 기능 목록 (DB pricing_features 우선, 없으면 하드코딩 features 사용) */}
                     <ul className="space-y-3 flex-1">
-                      {product.features.map((feature) => {
+                      {displayFeatures.map((feature) => {
                         const colonIdx = feature.indexOf(':')
                         const [title, desc] = colonIdx !== -1
                           ? [feature.slice(0, colonIdx).trim(), feature.slice(colonIdx + 1).trim()]

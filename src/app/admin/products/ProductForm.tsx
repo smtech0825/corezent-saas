@@ -8,7 +8,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Tag, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface PriceEntry {
@@ -27,6 +27,8 @@ export interface ProductFormData {
   logo_url: string
   manual_url: string
   is_active: boolean
+  tags: string[]
+  pricing_features: string[]
   prices: PriceEntry[]
 }
 
@@ -82,6 +84,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       logo_url: '',
       manual_url: '',
       is_active: true,
+      tags: [],
+      pricing_features: [],
       prices: [emptyPrice()],
     }
   )
@@ -327,6 +331,54 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             className={inputCls}
           />
         </Field>
+      </section>
+
+      {/* 태그 (최대 5개) */}
+      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Tag size={14} className="text-[#38BDF8]" />
+          <h2 className="text-sm font-semibold text-white">Tags</h2>
+          <span className="text-xs text-[#475569]">— /product, /pricing 페이지에 표시 (최대 5개)</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <input
+              key={i}
+              value={form.tags[i] ?? ''}
+              onChange={(e) => {
+                const next = [...form.tags]
+                next[i] = e.target.value
+                set('tags', next.filter((t, idx) => t || idx < i))
+              }}
+              placeholder={`Tag ${i + 1}`}
+              className={inputCls}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing 전용 기능 (최대 4개) */}
+      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles size={14} className="text-amber-400" />
+          <h2 className="text-sm font-semibold text-white">Features (only for Pricing)</h2>
+          <span className="text-xs text-[#475569]">— /pricing 페이지에만 표시 (최대 4개)</span>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <input
+              key={i}
+              value={form.pricing_features[i] ?? ''}
+              onChange={(e) => {
+                const next = [...form.pricing_features]
+                next[i] = e.target.value
+                set('pricing_features', next.filter((t, idx) => t || idx < i))
+              }}
+              placeholder={`Feature ${i + 1} — e.g. Quad-Engine AI Generation: High-quality content powered by 4 premium AI engines.`}
+              className={inputCls}
+            />
+          ))}
+        </div>
       </section>
 
       {/* 가격 플랜 */}
