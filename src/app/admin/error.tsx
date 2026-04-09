@@ -1,14 +1,14 @@
 'use client'
 
 /**
- * @파일: dashboard/error.tsx
- * @설명: 대시보드 에러 바운더리 — 서버 에러 시 사용자 친화적 화면 표시
+ * @파일: admin/error.tsx
+ * @설명: 관리자 페이지 에러 바운더리
  */
 
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
-export default function DashboardError({
+export default function AdminError({
   error,
   reset,
 }: {
@@ -16,7 +16,7 @@ export default function DashboardError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[dashboard] error:', error)
+    console.error('[admin] error:', error)
   }, [error])
 
   return (
@@ -26,16 +26,13 @@ export default function DashboardError({
           <AlertTriangle size={24} className="text-amber-400" />
         </div>
         <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
-        <p className="text-sm text-[#94A3B8] mb-4 leading-relaxed">
-          An unexpected error occurred while loading this page.
-        </p>
         <pre className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">
           {error.message}
           {error.digest && `\nDigest: ${error.digest}`}
         </pre>
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-[#0ea5e9] transition-colors"
+          className="inline-flex items-center gap-2 bg-amber-500 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 transition-colors"
         >
           <RefreshCw size={14} />
           Try again
