@@ -49,7 +49,7 @@ export default function Navbar() {
     { label: t.nav.changelog, href: '/changelog' },
     { label: t.nav.manual, href: 'https://sites.google.com/view/corezent', external: true },
     { label: t.nav.faq, href: '/faq' },
-    { label: t.nav.contact, href: '#contact' },
+    { label: t.nav.contact, href: '/contact' },
   ]
 
   // 배너 데이터 로드
