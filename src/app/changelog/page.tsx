@@ -7,7 +7,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Tag } from 'lucide-react'
+import { Tag, ArrowLeft } from 'lucide-react'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,15 +96,20 @@ export default async function ChangelogPage({
 
   if (products.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
-        <p className="text-[#475569] text-sm">No changelog entries yet.</p>
+      <div className="min-h-screen bg-[#0B1120] font-sans">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-[#475569] text-sm">No changelog entries yet.</p>
+        </div>
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex gap-8">
+    <div className="min-h-screen bg-[#0B1120] font-sans">
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-10 flex gap-8">
 
         {/* 사이드바 — 상품 목록 */}
         <aside className="w-56 shrink-0 hidden md:block">
@@ -137,6 +144,17 @@ export default async function ChangelogPage({
 
         {/* 메인 — 타임라인 */}
         <main className="flex-1 min-w-0">
+          {/* 홈으로 돌아가기 */}
+          <div className="mb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm text-[#475569] hover:text-[#94A3B8] transition-colors"
+            >
+              <ArrowLeft size={14} />
+              Back to Home
+            </Link>
+          </div>
+
           {/* 모바일 상품 선택 */}
           <div className="md:hidden mb-6">
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -262,6 +280,7 @@ export default async function ChangelogPage({
           )}
         </main>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -5,10 +5,10 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { CreditCard, Package, ExternalLink, BookOpen } from 'lucide-react'
+import { CreditCard, Package } from 'lucide-react'
 import Link from 'next/link'
 import Pagination from '@/components/common/Pagination'
-import DownloadButton from './DownloadButton'
+import BillingSubscriptionSection, { type SubRow } from './BillingSubscriptionSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -127,68 +127,27 @@ export default async function BillingPage({
         </h2>
         {subscriptions && subscriptions.length > 0 ? (
           <>
-            <div className="flex flex-col gap-3">
-              {subscriptions.map((sub: any) => {
-                const productId  = priceProductMap.get(sub.product_price_id)
-                const changelog  = productId ? changelogMap.get(productId) : undefined
-                const lastVer    = productId ? licenseVersionMap.get(productId) : undefined
-                const isNew      = !!changelog && (lastVer == null || lastVer !== changelog.version)
+            <BillingSubscriptionSection
+              rows={(subscriptions as any[]).map((sub): SubRow => {
+                const productId   = priceProductMap.get(sub.product_price_id)
+                const changelog   = productId ? changelogMap.get(productId) : undefined
+                const lastVer     = productId ? licenseVersionMap.get(productId) : undefined
+                const isNew       = !!changelog && (lastVer == null || lastVer !== changelog.version)
                 const hasDownload = !!changelog && Object.values(changelog.download_urls).some(Boolean)
-
-                return (
-                  <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
-                        <Package size={18} className="text-[#38BDF8]" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
-                          {isNew && hasDownload && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30">
-                              New
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#475569] mt-0.5">
-                          {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
-                          {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <SubStatusBadge status={sub.status} />
-                      <Link
-                        href="/dashboard/licenses"
-                        className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        <ExternalLink size={11} />
-                        Check License
-                      </Link>
-                      {priceManualMap.get(sub.product_price_id) && (
-                        <a
-                          href={priceManualMap.get(sub.product_price_id)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                          <BookOpen size={11} />
-                          Manual
-                        </a>
-                      )}
-                      {hasDownload && changelog && productId && (
-                        <DownloadButton
-                          productId={productId}
-                          version={changelog.version}
-                          downloadUrls={changelog.download_urls}
-                          isNew={isNew}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )
+                return {
+                  id:               sub.id,
+                  productId,
+                  productName:      priceNameMap.get(sub.product_price_id) ?? 'Unknown',
+                  billingInterval:  sub.billing_interval,
+                  currentPeriodEnd: sub.current_period_end ?? null,
+                  status:           sub.status,
+                  manualUrl:        priceManualMap.get(sub.product_price_id) ?? null,
+                  changelog,
+                  isNew,
+                  hasDownload,
+                }
               })}
-            </div>
+            />
             <Pagination page={subPage} total={subTotal ?? 0} pageSize={SUB_PAGE_SIZE} buildHref={subHref} />
           </>
         ) : (
@@ -255,21 +214,6 @@ function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: 
       <p className="text-sm text-[#475569]">{message}</p>
       {action}
     </div>
-  )
-}
-
-function SubStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { style: string; label: string }> = {
-    active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'active' },
-    paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: 'paused' },
-    cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
-    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'expired' },
-  }
-  const { style, label } = map[status] ?? map.cancelled
-  return (
-    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${style}`}>
-      {label}
-    </span>
   )
 }
 

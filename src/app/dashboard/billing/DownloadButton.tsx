@@ -25,9 +25,10 @@ interface Props {
   version: string
   downloadUrls: Record<string, string>   // { mac: "url", windows: "url", ... }
   isNew: boolean                          // last_downloaded_version ≠ latest version
+  onDownloaded?: (productId: string) => void  // 부모에서 같은 상품 배지 동기화용
 }
 
-export default function DownloadButton({ productId, version, downloadUrls, isNew }: Props) {
+export default function DownloadButton({ productId, version, downloadUrls, isNew, onDownloaded }: Props) {
   const platforms = Object.entries(downloadUrls).filter(([, url]) => url)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -52,6 +53,7 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
     markDownloaded(productId, version).finally(() => {
       setLoading(false)
       setDone(true)
+      onDownloaded?.(productId)
     })
     // 즉시 다운로드 URL 열기
     window.open(url, '_blank', 'noopener noreferrer')
