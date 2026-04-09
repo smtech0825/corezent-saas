@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
+import ChangelogSection from '../../ChangelogSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,27 @@ export default async function EditProductPage({
     .eq('product_id', id)
     .eq('is_active', true)
     .order('id', { ascending: true })
+
+  // 기존 changelog 목록 조회
+  const { data: rawChangelogs } = await client
+    .from('changelogs')
+    .select('id, version, release_date, is_latest, download_urls, content')
+    .eq('product_id', id)
+    .order('release_date', { ascending: false })
+
+  const changelogs = (rawChangelogs ?? []).map((c: any) => ({
+    id:            c.id as string,
+    version:       c.version as string,
+    release_date:  c.release_date as string,
+    is_latest:     c.is_latest as boolean,
+    download_urls: (c.download_urls ?? {}) as Record<string, string>,
+    content: {
+      new_features:     ((c.content as any)?.new_features     ?? []) as string[],
+      improvements:     ((c.content as any)?.improvements     ?? []) as string[],
+      bug_fixes:        ((c.content as any)?.bug_fixes        ?? []) as string[],
+      breaking_changes: ((c.content as any)?.breaking_changes ?? []) as string[],
+    },
+  }))
 
   const seen = new Set<string>()
   const prices: PriceEntry[] = (rawPrices ?? [])
@@ -149,6 +171,8 @@ export default async function EditProductPage({
       </div>
 
       <ProductForm initialData={initialData} onSubmit={updateProduct} submitLabel="Save Changes" />
+
+      <ChangelogSection productId={id} initialChangelogs={changelogs} />
     </div>
   )
 }

@@ -1,12 +1,14 @@
 /**
  * @파일: dashboard/billing/page.tsx
  * @설명: 결제 내역 및 구독 관리 — 각각 5개/페이지 독립 페이지네이션
+ *        구독 항목에 Download 버튼 + "New" 배지 포함
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { CreditCard, Package, ExternalLink, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import Pagination from '@/components/common/Pagination'
+import DownloadButton from './DownloadButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,22 +49,58 @@ export default async function BillingPage({
       .range(ordOffset, ordOffset + ORD_PAGE_SIZE - 1),
   ])
 
-  // product_price_id 목록으로 제품명 조회
+  // product_price_id 목록으로 제품 정보 조회
   const priceIds = [...new Set([
     ...(subscriptions ?? []).map((s: any) => s.product_price_id),
     ...(orders ?? []).map((o: any) => o.product_price_id),
   ].filter(Boolean))]
 
-  const priceNameMap = new Map<string, string>()
-  const priceManualMap = new Map<string, string | null>()
+  const priceNameMap    = new Map<string, string>()
+  const priceManualMap  = new Map<string, string | null>()
+  const priceProductMap = new Map<string, string>()  // priceId → productId
+
   if (priceIds.length > 0) {
     const { data: prices } = await supabase
       .from('product_prices')
-      .select('id, products(name, manual_url)')
+      .select('id, products(id, name, manual_url)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
       priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
       priceManualMap.set(pp.id, pp.products?.manual_url ?? null)
+      if (pp.products?.id) priceProductMap.set(pp.id, pp.products.id)
+    })
+  }
+
+  // 구독 상품의 product_id 목록 → 최신 changelog + 사용자 라이선스 조회
+  const subProductIds = [...new Set(
+    (subscriptions ?? []).map((s: any) => priceProductMap.get(s.product_price_id)).filter(Boolean)
+  )] as string[]
+
+  const changelogMap = new Map<string, { version: string; download_urls: Record<string, string> }>()
+  const licenseVersionMap = new Map<string, string | null>()  // productId → last_downloaded_version
+
+  if (subProductIds.length > 0) {
+    const [{ data: latestChangelogs }, { data: userLicenses }] = await Promise.all([
+      supabase
+        .from('changelogs')
+        .select('product_id, version, download_urls')
+        .in('product_id', subProductIds)
+        .eq('is_latest', true),
+      supabase
+        .from('licenses')
+        .select('product_id, last_downloaded_version')
+        .eq('user_id', user.id)
+        .in('product_id', subProductIds),
+    ])
+
+    ;(latestChangelogs ?? []).forEach((c: any) => {
+      changelogMap.set(c.product_id, {
+        version:       c.version,
+        download_urls: (c.download_urls ?? {}) as Record<string, string>,
+      })
+    })
+    ;(userLicenses ?? []).forEach((l: any) => {
+      licenseVersionMap.set(l.product_id, l.last_downloaded_version ?? null)
     })
   }
 
@@ -90,43 +128,66 @@ export default async function BillingPage({
         {subscriptions && subscriptions.length > 0 ? (
           <>
             <div className="flex flex-col gap-3">
-              {subscriptions.map((sub: any) => (
-                <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
-                      <Package size={18} className="text-[#38BDF8]" />
+              {subscriptions.map((sub: any) => {
+                const productId  = priceProductMap.get(sub.product_price_id)
+                const changelog  = productId ? changelogMap.get(productId) : undefined
+                const lastVer    = productId ? licenseVersionMap.get(productId) : undefined
+                const isNew      = !!changelog && (lastVer == null || lastVer !== changelog.version)
+                const hasDownload = !!changelog && Object.values(changelog.download_urls).some(Boolean)
+
+                return (
+                  <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
+                        <Package size={18} className="text-[#38BDF8]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
+                          {isNew && hasDownload && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30">
+                              New
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#475569] mt-0.5">
+                          {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
+                          {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
-                      <p className="text-xs text-[#475569] mt-0.5">
-                        {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
-                        {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <SubStatusBadge status={sub.status} />
-                    <Link
-                      href="/dashboard/licenses"
-                      className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      <ExternalLink size={11} />
-                      Check License
-                    </Link>
-                    {priceManualMap.get(sub.product_price_id) && (
-                      <a
-                        href={priceManualMap.get(sub.product_price_id)!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <SubStatusBadge status={sub.status} />
+                      <Link
+                        href="/dashboard/licenses"
+                        className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
                       >
-                        <BookOpen size={11} />
-                        Manual
-                      </a>
-                    )}
+                        <ExternalLink size={11} />
+                        Check License
+                      </Link>
+                      {priceManualMap.get(sub.product_price_id) && (
+                        <a
+                          href={priceManualMap.get(sub.product_price_id)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <BookOpen size={11} />
+                          Manual
+                        </a>
+                      )}
+                      {hasDownload && changelog && productId && (
+                        <DownloadButton
+                          productId={productId}
+                          version={changelog.version}
+                          downloadUrls={changelog.download_urls}
+                          isNew={isNew}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <Pagination page={subPage} total={subTotal ?? 0} pageSize={SUB_PAGE_SIZE} buildHref={subHref} />
           </>

@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X, HelpCircle } from 'lucide-react'
+import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X, HelpCircle, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n'
 
@@ -24,11 +24,12 @@ export default function DashboardSidebar({ user, supportBadge = 0, onClose }: Pr
   const { t } = useLanguage()
 
   const navItems = [
-    { label: t.dashboard.overview,  href: '/dashboard',          icon: LayoutDashboard, exact: true, badge: 0 },
-    { label: t.dashboard.licenses,  href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
-    { label: t.dashboard.billing,   href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
-    { label: t.dashboard.settings,  href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
-    { label: t.dashboard.support,   href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
+    { label: t.dashboard.overview,   href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
+    { label: t.dashboard.licenses,   href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
+    { label: t.dashboard.billing,    href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
+    { label: t.dashboard.changelog,  href: '/changelog',          icon: History,         exact: false, badge: 0 },
+    { label: t.dashboard.settings,   href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
+    { label: t.dashboard.support,    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
   ]
 
   async function handleLogout() {
