@@ -46,7 +46,7 @@ export default function Navbar() {
     { label: t.nav.about, href: '/about' },
     { label: t.nav.product, href: '/product' },
     { label: t.nav.pricing, href: '/pricing' },
-    { label: t.nav.changelog, href: '#changelog' },
+    { label: t.nav.changelog, href: '/changelog' },
     { label: t.nav.manual, href: 'https://sites.google.com/view/corezent', external: true },
     { label: t.nav.faq, href: '/faq' },
     { label: t.nav.contact, href: '#contact' },
