@@ -1,11 +1,12 @@
 /**
  * @파일: dashboard/billing/page.tsx
- * @설명: 결제 내역 및 구독 관리 페이지
+ * @설명: 결제 내역 및 구독 관리 — 각각 5개/페이지 독립 페이지네이션
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { CreditCard, Package, ExternalLink, BookOpen } from 'lucide-react'
 import Link from 'next/link'
+import Pagination from '@/components/common/Pagination'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,24 +14,37 @@ export const metadata = {
   title: 'Billing — CoreZent',
 }
 
-export default async function BillingPage() {
+const SUB_PAGE_SIZE = 5
+const ORD_PAGE_SIZE = 5
+
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ subPage?: string; ordPage?: string }>
+}) {
+  const { subPage: subPageStr, ordPage: ordPageStr } = await searchParams
+  const subPage = Math.max(1, parseInt(subPageStr ?? '1', 10))
+  const ordPage = Math.max(1, parseInt(ordPageStr ?? '1', 10))
+  const subOffset = (subPage - 1) * SUB_PAGE_SIZE
+  const ordOffset = (ordPage - 1) * ORD_PAGE_SIZE
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // 조인 없이 단순 쿼리
-  const [{ data: subscriptions }, { data: orders }] = await Promise.all([
+  const [{ data: subscriptions, count: subTotal }, { data: orders, count: ordTotal }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('orders')
-      .select('id, amount, status, created_at, product_price_id')
+      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(20),
+      .range(subOffset, subOffset + SUB_PAGE_SIZE - 1),
+    supabase
+      .from('orders')
+      .select('id, amount, status, created_at, product_price_id', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(ordOffset, ordOffset + ORD_PAGE_SIZE - 1),
   ])
 
   // product_price_id 목록으로 제품명 조회
@@ -52,6 +66,14 @@ export default async function BillingPage() {
     })
   }
 
+  // 현재 페이지 파라미터를 유지하며 href 생성
+  function subHref(p: number) {
+    return `/dashboard/billing?subPage=${p}&ordPage=${ordPage}`
+  }
+  function ordHref(p: number) {
+    return `/dashboard/billing?subPage=${subPage}&ordPage=${p}`
+  }
+
   return (
     <div className="px-6 py-8 max-w-5xl mx-auto">
       <div className="mb-8">
@@ -61,47 +83,53 @@ export default async function BillingPage() {
 
       {/* 구독 섹션 */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">Subscriptions</h2>
+        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
+          Subscriptions
+          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({subTotal} total)</span>}
+        </h2>
         {subscriptions && subscriptions.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {subscriptions.map((sub: any) => (
-              <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
-                    <Package size={18} className="text-[#38BDF8]" />
+          <>
+            <div className="flex flex-col gap-3">
+              {subscriptions.map((sub: any) => (
+                <div key={sub.id} className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
+                      <Package size={18} className="text-[#38BDF8]" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
+                      <p className="text-xs text-[#475569] mt-0.5">
+                        {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
+                        {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-medium">{priceNameMap.get(sub.product_price_id) ?? 'Unknown'}</p>
-                    <p className="text-xs text-[#475569] mt-0.5">
-                      {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
-                      {sub.current_period_end && ` · Renews ${new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <SubStatusBadge status={sub.status} />
-                  <Link
-                    href="/dashboard/licenses"
-                    className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    <ExternalLink size={11} />
-                    Check License
-                  </Link>
-                  {priceManualMap.get(sub.product_price_id) && (
-                    <a
-                      href={priceManualMap.get(sub.product_price_id)!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <SubStatusBadge status={sub.status} />
+                    <Link
+                      href="/dashboard/licenses"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      <BookOpen size={11} />
-                      Manual
-                    </a>
-                  )}
+                      <ExternalLink size={11} />
+                      Check License
+                    </Link>
+                    {priceManualMap.get(sub.product_price_id) && (
+                      <a
+                        href={priceManualMap.get(sub.product_price_id)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <BookOpen size={11} />
+                        Manual
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination page={subPage} total={subTotal ?? 0} pageSize={SUB_PAGE_SIZE} buildHref={subHref} />
+          </>
         ) : (
           <EmptyCard
             icon={<Package size={20} className="text-[#475569]" />}
@@ -113,34 +141,40 @@ export default async function BillingPage() {
 
       {/* 결제 내역 섹션 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">Payment History</h2>
+        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
+          Payment History
+          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({ordTotal} total)</span>}
+        </h2>
         {orders && orders.length > 0 ? (
-          <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
-            <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
-              <span>Product</span>
-              <span>Date</span>
-              <span>Amount</span>
-              <span>Status</span>
-            </div>
-            {orders.map((order: any) => (
-              <div
-                key={order.id}
-                className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px_100px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
-                  <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? 'Order'}</span>
-                </div>
-                <span className="text-sm text-[#94A3B8]">
-                  {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <span className="text-sm text-white font-medium">
-                  ${((order.amount ?? 0) / 100).toFixed(2)}
-                </span>
-                <OrderStatusBadge status={order.status} />
+          <>
+            <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
+              <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+                <span>Product</span>
+                <span>Date</span>
+                <span>Amount</span>
+                <span>Status</span>
               </div>
-            ))}
-          </div>
+              {orders.map((order: any) => (
+                <div
+                  key={order.id}
+                  className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px_100px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
+                    <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? 'Order'}</span>
+                  </div>
+                  <span className="text-sm text-[#94A3B8]">
+                    {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <span className="text-sm text-white font-medium">
+                    ${((order.amount ?? 0) / 100).toFixed(2)}
+                  </span>
+                  <OrderStatusBadge status={order.status} />
+                </div>
+              ))}
+            </div>
+            <Pagination page={ordPage} total={ordTotal ?? 0} pageSize={ORD_PAGE_SIZE} buildHref={ordHref} />
+          </>
         ) : (
           <EmptyCard icon={<CreditCard size={20} className="text-[#475569]" />} message="No payment history yet." />
         )}
@@ -168,7 +202,7 @@ function SubStatusBadge({ status }: { status: string }) {
     active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'active' },
     paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: 'paused' },
     cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
-    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
+    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'expired' },
   }
   const { style, label } = map[status] ?? map.cancelled
   return (

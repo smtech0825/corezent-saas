@@ -2,27 +2,30 @@
 
 /**
  * @파일: dashboard/settings/page.tsx
- * @설명: 설정 페이지 — 프로필 수정, 비밀번호 변경
+ * @설명: 설정 페이지 — 프로필(이름+국가) 수정, 비밀번호 변경(현재 비밀번호 검증)
  */
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, CheckCircle } from 'lucide-react'
+import CountrySelect from '@/components/common/CountrySelect'
+import { useToast } from '@/components/common/Toast'
 
 export default function SettingsPage() {
   const supabase = createClient()
+  const { showToast } = useToast()
 
   // 프로필
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
-  const [profileMsg, setProfileMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   // 비밀번호
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordMsg, setPasswordMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [passwordError, setPasswordError] = useState('')
 
   // 초기 로드
   useEffect(() => {
@@ -31,11 +34,12 @@ export default function SettingsPage() {
       setEmail(data.user.email ?? '')
       supabase
         .from('profiles')
-        .select('name')
+        .select('name, country')
         .eq('id', data.user.id)
         .single()
         .then(({ data: profile }) => {
-          setName(profile?.name ?? data.user.user_metadata?.name ?? '')
+          setName(profile?.name ?? data.user!.user_metadata?.name ?? '')
+          setCountry(profile?.country ?? '')
         })
     })
   }, [supabase])
@@ -44,39 +48,58 @@ export default function SettingsPage() {
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     setProfileLoading(true)
-    setProfileMsg(null)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setProfileLoading(false); return }
 
     const { error } = await supabase
       .from('profiles')
-      .update({ name })
+      .update({ name, country })
       .eq('id', user.id)
 
-    setProfileMsg(error
-      ? { type: 'err', text: error.message }
-      : { type: 'ok', text: 'Profile updated successfully.' }
-    )
+    if (error) {
+      showToast('error', error.message)
+    } else {
+      showToast('success', 'Profile updated successfully.')
+    }
     setProfileLoading(false)
   }
 
-  // 비밀번호 변경
+  // 비밀번호 변경 — 현재 비밀번호 먼저 검증
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
+    setPasswordError('')
+
     if (newPassword.length < 8) {
-      setPasswordMsg({ type: 'err', text: 'Password must be at least 8 characters.' })
+      setPasswordError('New password must be at least 8 characters.')
       return
     }
-    setPasswordLoading(true)
-    setPasswordMsg(null)
+    if (!currentPassword) {
+      setPasswordError('Please enter your current password.')
+      return
+    }
 
+    setPasswordLoading(true)
+
+    // 현재 비밀번호 검증: 재로그인 시도
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    })
+
+    if (authError) {
+      setPasswordError('The current password you entered is incorrect.')
+      setPasswordLoading(false)
+      return
+    }
+
+    // 새 비밀번호로 업데이트
     const { error } = await supabase.auth.updateUser({ password: newPassword })
 
     if (error) {
-      setPasswordMsg({ type: 'err', text: error.message })
+      showToast('error', error.message)
     } else {
-      setPasswordMsg({ type: 'ok', text: 'Password updated successfully.' })
+      showToast('success', 'Password updated successfully.')
       setCurrentPassword('')
       setNewPassword('')
     }
@@ -103,6 +126,7 @@ export default function SettingsPage() {
               className={inputCls}
             />
           </FormField>
+
           <FormField label="Email">
             <input
               type="email"
@@ -113,9 +137,15 @@ export default function SettingsPage() {
             <p className="text-xs text-[#475569] mt-1.5">Email cannot be changed here.</p>
           </FormField>
 
-          <Feedback msg={profileMsg} />
+          <FormField label="Country">
+            <CountrySelect
+              value={country}
+              onChange={setCountry}
+              placeholder="Select your country"
+            />
+          </FormField>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-1">
             <SubmitButton loading={profileLoading} label="Save changes" />
           </div>
         </form>
@@ -125,6 +155,17 @@ export default function SettingsPage() {
       <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6">
         <h2 className="text-base font-semibold text-white mb-5">Change Password</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
+          <FormField label="Current Password">
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Your current password"
+              required
+              className={inputCls}
+            />
+          </FormField>
+
           <FormField label="New Password">
             <input
               type="password"
@@ -137,7 +178,11 @@ export default function SettingsPage() {
             />
           </FormField>
 
-          <Feedback msg={passwordMsg} />
+          {passwordError && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">
+              {passwordError}
+            </div>
+          )}
 
           <div className="flex justify-end">
             <SubmitButton loading={passwordLoading} label="Update password" />
@@ -157,20 +202,6 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
     <div>
       <label className="block text-sm text-[#94A3B8] mb-1.5">{label}</label>
       {children}
-    </div>
-  )
-}
-
-function Feedback({ msg }: { msg: { type: 'ok' | 'err'; text: string } | null }) {
-  if (!msg) return null
-  return (
-    <div className={`flex items-center gap-2 text-sm px-4 py-2.5 rounded-lg border ${
-      msg.type === 'ok'
-        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-        : 'text-red-400 bg-red-500/10 border-red-500/20'
-    }`}>
-      {msg.type === 'ok' && <CheckCircle size={14} />}
-      {msg.text}
     </div>
   )
 }

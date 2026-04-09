@@ -2,6 +2,7 @@
  * @파일: auth/callback/route.ts
  * @설명: OAuth 및 이메일 인증 콜백 처리 Route Handler
  *        Supabase가 인증 완료 후 이 URL로 리다이렉트함
+ *        signup 시 국가(country) 메타데이터를 profiles에 저장
  */
 
 import { NextResponse } from 'next/server'
@@ -31,13 +32,39 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
     console.log('[callback] verifyOtp error:', error)
     if (!error) {
-      // 신규 회원 이메일 인증 완료 시 웰컴 이메일 발송
-      if (type === 'signup' && data.user?.email) {
-        sendEmail({
-          to: data.user.email,
-          subject: 'Welcome to CoreZent!',
-          html: welcomeEmailHtml('CoreZent'),
-        }).catch((err) => console.error('[email] 웰컴 이메일 발송 실패:', err))
+      // 신규 회원 이메일 인증 완료 처리
+      if (type === 'signup' && data.user) {
+        const user = data.user
+
+        // 회원가입 시 입력한 country를 profiles에 저장 (비어있는 경우에만)
+        const country = user.user_metadata?.country as string | undefined
+        if (country) {
+          await supabase
+            .from('profiles')
+            .update({ country })
+            .eq('id', user.id)
+            .is('country', null)
+            .then(({ error: profileErr }) => {
+              if (profileErr) {
+                // OR 조건: country가 빈 문자열인 경우도 업데이트
+                supabase
+                  .from('profiles')
+                  .update({ country })
+                  .eq('id', user.id)
+                  .eq('country', '')
+                  .catch(() => {})
+              }
+            })
+        }
+
+        // 웰컴 이메일 발송
+        if (user.email) {
+          sendEmail({
+            to: user.email,
+            subject: 'Welcome to CoreZent!',
+            html: welcomeEmailHtml('CoreZent'),
+          }).catch((err) => console.error('[email] 웰컴 이메일 발송 실패:', err))
+        }
       }
       return NextResponse.redirect(`${origin}${redirect}`)
     }
@@ -45,6 +72,5 @@ export async function GET(request: Request) {
   }
 
   console.log('[callback] no code or token_hash. params:', Object.fromEntries(url.searchParams))
-  // 오류 시 로그인 페이지로
   return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`)
 }

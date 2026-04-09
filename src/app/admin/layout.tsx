@@ -1,6 +1,6 @@
 /**
  * @파일: admin/layout.tsx
- * @설명: 관리자 패널 공통 레이아웃 — admin 역할 확인 후 쉘 구성
+ * @설명: 관리자 패널 공통 레이아웃 — admin 역할 확인 + 미읽음 지원 티켓 뱃지
  */
 
 import { redirect } from 'next/navigation'
@@ -31,8 +31,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const name = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Admin'
   const initials = name[0].toUpperCase()
 
+  // 미읽음 티켓 수 (관리자 기준: is_read=false)
+  const { count: supportBadge } = await adminClient
+    .from('support_tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_read', false)
+
   return (
-    <AdminShell user={{ email: user.email ?? '', name, initials }}>
+    <AdminShell
+      user={{ email: user.email ?? '', name, initials }}
+      supportBadge={supportBadge ?? 0}
+    >
       {children}
     </AdminShell>
   )

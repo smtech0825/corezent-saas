@@ -1,27 +1,17 @@
 /**
  * @파일: dashboard/support/page.tsx
- * @설명: 사용자 대시보드 지원 티켓 제출 및 조회 페이지
+ * @설명: 사용자 대시보드 지원 티켓 제출 및 조회 — 5개/페이지 페이지네이션, Accordion 목록
  */
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import Pagination from '@/components/common/Pagination'
+import TicketList from './TicketList'
 
 export const dynamic = 'force-dynamic'
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-const statusColors: Record<string, string> = {
-  open: 'text-amber-400 bg-amber-400/10',
-  answered: 'text-blue-400 bg-blue-400/10',
-  closed: 'text-[#475569] bg-[#1E293B]',
-}
+const PAGE_SIZE = 5
 
 const priorityOptions = [
   { value: 'low', label: 'Low' },
@@ -30,16 +20,25 @@ const priorityOptions = [
   { value: 'urgent', label: 'Urgent' },
 ]
 
-export default async function SupportPage() {
+export default async function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page: pageStr } = await searchParams
+  const page = Math.max(1, parseInt(pageStr ?? '1', 10))
+  const offset = (page - 1) * PAGE_SIZE
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?redirect=/dashboard/support')
 
-  const { data: tickets } = await supabase
+  const { data: tickets, count: total } = await supabase
     .from('support_tickets')
-    .select('id, subject, status, priority, created_at, updated_at')
+    .select('id, subject, status, priority, created_at, updated_at, user_last_read_at', { count: 'exact' })
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
 
   const list = tickets ?? []
 
@@ -102,9 +101,7 @@ export default async function SupportPage() {
 
           {/* 우선순위 */}
           <div className="space-y-1.5">
-            <label htmlFor="priority" className="text-xs font-medium text-[#94A3B8]">
-              Priority
-            </label>
+            <label htmlFor="priority" className="text-xs font-medium text-[#94A3B8]">Priority</label>
             <select
               id="priority"
               name="priority"
@@ -112,9 +109,7 @@ export default async function SupportPage() {
               className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
             >
               {priorityOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
@@ -145,32 +140,17 @@ export default async function SupportPage() {
         </form>
       </div>
 
-      {/* 기존 티켓 목록 */}
+      {/* 기존 티켓 목록 (Accordion) */}
       {list.length > 0 && (
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#1E293B]">
-            <h2 className="text-sm font-semibold text-white">Your Tickets</h2>
-          </div>
-          <div className="divide-y divide-[#1E293B]/50">
-            {list.map((t) => (
-              <div key={t.id} className="px-6 py-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{t.subject}</p>
-                  <p className="text-xs text-[#475569] mt-0.5">
-                    {fmtDate(t.created_at)} · Updated {fmtDate(t.updated_at)}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${
-                    statusColors[t.status] ?? 'text-[#94A3B8] bg-[#1E293B]'
-                  }`}
-                >
-                  {t.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <>
+          <TicketList tickets={list} />
+          <Pagination
+            page={page}
+            total={total ?? 0}
+            pageSize={PAGE_SIZE}
+            buildHref={(p) => `/dashboard/support?page=${p}`}
+          />
+        </>
       )}
     </div>
   )

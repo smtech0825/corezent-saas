@@ -2,7 +2,7 @@
 
 /**
  * @컴포넌트: AdminSidebar
- * @설명: 관리자 패널 사이드바 — 그룹별 네비게이션, Frontend 섹션 접기/펼치기
+ * @설명: 관리자 패널 사이드바 — 그룹별 네비게이션, Support 알림 뱃지, Frontend 섹션 접기/펼치기
  */
 
 import Link from 'next/link'
@@ -40,8 +40,6 @@ const mainNav = [
   { label: 'Support',   href: '/admin/support',   icon: MessageSquare },
 ]
 
-// Section Settings → 가시성/순서 제어
-// 각 섹션 콘텐츠 에디터는 아래 frontendNav에 대응
 const frontendNav = [
   { label: 'Announcement',     href: '/admin/content/announcement',  icon: Bell },
   { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
@@ -50,16 +48,17 @@ const frontendNav = [
   { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
   { label: 'Why',              href: '/admin/content/features',     icon: Sparkles },
   { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },
-  { label: 'FAQ',              href: '/admin/content/faq',              icon: HelpCircle },
-  { label: 'CTA',              href: '/admin/content/cta',              icon: Megaphone },
+  { label: 'FAQ',              href: '/admin/content/faq',          icon: HelpCircle },
+  { label: 'CTA',              href: '/admin/content/cta',          icon: Megaphone },
 ]
 
 interface Props {
   user: { email: string; name: string; initials: string }
+  supportBadge?: number
   onClose?: () => void
 }
 
-export default function AdminSidebar({ user, onClose }: Props) {
+export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -113,6 +112,7 @@ export default function AdminSidebar({ user, onClose }: Props) {
         {mainNav.map((item) => {
           const Icon = item.icon
           const active = isActive(item.href, item.exact)
+          const isSupport = item.href === '/admin/support'
           return (
             <Link
               key={item.href}
@@ -125,7 +125,14 @@ export default function AdminSidebar({ user, onClose }: Props) {
               }`}
             >
               <Icon size={16} className={active ? 'text-amber-400' : ''} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {/* 미읽음 뱃지 (Support 전용) */}
+              {isSupport && supportBadge > 0 && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                </span>
+              )}
             </Link>
           )
         })}

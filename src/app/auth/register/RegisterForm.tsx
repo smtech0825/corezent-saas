@@ -2,9 +2,8 @@
 
 /**
  * @컴포넌트: RegisterForm
- * @설명: 회원가입 페이지 — 왼쪽 폼 / 오른쪽 로고+슬로건
- *        이메일 가입 시 이메일 인증 필수
- *        Google / GitHub OAuth 지원
+ * @설명: 회원가입 페이지 — 국가 선택(필수) 포함, 법적 문서 링크 연결
+ *        이메일 가입 시 이메일 인증 필수, Google / GitHub OAuth 지원
  */
 
 import { useState } from 'react'
@@ -13,22 +12,28 @@ import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
+import CountrySelect from '@/components/common/CountrySelect'
 
 export default function RegisterForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false) // 인증 메일 발송 완료 상태
+  const [done, setDone] = useState(false)
 
   const supabase = createClient()
 
   // 이메일 회원가입
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
+    if (!country) {
+      setError('Please select your country.')
+      return
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -41,7 +46,7 @@ export default function RegisterForm() {
       email,
       password,
       options: {
-        data: { name },
+        data: { name, country },
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     })
@@ -180,6 +185,18 @@ export default function RegisterForm() {
             </div>
 
             <div>
+              <label className="block text-sm text-[#94A3B8] mb-1.5">
+                Country <span className="text-red-400">*</span>
+              </label>
+              <CountrySelect
+                value={country}
+                onChange={setCountry}
+                required
+                placeholder="Select your country"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm text-[#94A3B8] mb-1.5">Password</label>
               <div className="relative">
                 <input
@@ -226,9 +243,23 @@ export default function RegisterForm() {
 
             <p className="text-xs text-[#475569] leading-relaxed">
               By creating an account, you agree to our{' '}
-              <Link href="/terms" className="text-[#94A3B8] hover:text-white underline">Terms</Link>
+              <a
+                href="/legal/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#94A3B8] hover:text-white underline"
+              >
+                Terms of Service
+              </a>
               {' '}and{' '}
-              <Link href="/privacy" className="text-[#94A3B8] hover:text-white underline">Privacy Policy</Link>.
+              <a
+                href="/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#94A3B8] hover:text-white underline"
+              >
+                Privacy Policy
+              </a>.
             </p>
 
             <button

@@ -11,10 +11,11 @@ import AdminSidebar from './AdminSidebar'
 
 interface Props {
   user: { email: string; name: string; initials: string }
+  supportBadge?: number
   children: React.ReactNode
 }
 
-export default function AdminShell({ user, children }: Props) {
+export default function AdminShell({ user, supportBadge = 0, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -22,7 +23,7 @@ export default function AdminShell({ user, children }: Props) {
       {/* 데스크톱 사이드바 */}
       <div className="hidden lg:flex lg:flex-col">
         <div className="h-screen sticky top-0">
-          <AdminSidebar user={user} />
+          <AdminSidebar user={user} supportBadge={supportBadge} />
         </div>
       </div>
 
@@ -34,7 +35,7 @@ export default function AdminShell({ user, children }: Props) {
             onClick={() => setSidebarOpen(false)}
           />
           <div className="relative z-10 flex flex-col h-full">
-            <AdminSidebar user={user} onClose={() => setSidebarOpen(false)} />
+            <AdminSidebar user={user} supportBadge={supportBadge} onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@
 
 /**
  * @컴포넌트: DashboardSidebar
- * @설명: 대시보드 사이드바 — 네비게이션, 사용자 정보, 로그아웃 (i18n 적용)
+ * @설명: 대시보드 사이드바 — 네비게이션, Support 알림 뱃지, 사용자 정보, 로그아웃
  */
 
 import Link from 'next/link'
@@ -13,21 +13,22 @@ import { useLanguage } from '@/lib/i18n'
 
 interface Props {
   user: { email: string; name: string; initials: string }
+  supportBadge?: number
   onClose?: () => void
 }
 
-export default function DashboardSidebar({ user, onClose }: Props) {
+export default function DashboardSidebar({ user, supportBadge = 0, onClose }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const { t } = useLanguage()
 
   const navItems = [
-    { label: t.dashboard.overview, href: '/dashboard', icon: LayoutDashboard, exact: true },
-    { label: t.dashboard.licenses, href: '/dashboard/licenses', icon: Key },
-    { label: t.dashboard.billing, href: '/dashboard/billing', icon: CreditCard },
-    { label: t.dashboard.settings, href: '/dashboard/settings', icon: Settings },
-    { label: t.dashboard.support, href: '/dashboard/support', icon: HelpCircle },
+    { label: t.dashboard.overview,  href: '/dashboard',          icon: LayoutDashboard, exact: true, badge: 0 },
+    { label: t.dashboard.licenses,  href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
+    { label: t.dashboard.billing,   href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
+    { label: t.dashboard.settings,  href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
+    { label: t.dashboard.support,   href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
   ]
 
   async function handleLogout() {
@@ -75,7 +76,14 @@ export default function DashboardSidebar({ user, onClose }: Props) {
               }`}
             >
               <Icon size={16} className={active ? 'text-[#38BDF8]' : ''} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {/* 알림 뱃지 */}
+              {item.badge > 0 && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                </span>
+              )}
             </Link>
           )
         })}
