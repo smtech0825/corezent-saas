@@ -39,22 +39,19 @@ export async function GET(request: Request) {
         // 회원가입 시 입력한 country를 profiles에 저장 (비어있는 경우에만)
         const country = user.user_metadata?.country as string | undefined
         if (country) {
-          await supabase
+          const { error: profileErr } = await supabase
             .from('profiles')
             .update({ country })
             .eq('id', user.id)
             .is('country', null)
-            .then(({ error: profileErr }) => {
-              if (profileErr) {
-                // OR 조건: country가 빈 문자열인 경우도 업데이트
-                supabase
-                  .from('profiles')
-                  .update({ country })
-                  .eq('id', user.id)
-                  .eq('country', '')
-                  .catch(() => {})
-              }
-            })
+          if (profileErr) {
+            // OR 조건: country가 빈 문자열인 경우도 업데이트
+            await supabase
+              .from('profiles')
+              .update({ country })
+              .eq('id', user.id)
+              .eq('country', '')
+          }
         }
 
         // 웰컴 이메일 발송
