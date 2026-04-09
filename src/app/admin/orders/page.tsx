@@ -44,13 +44,13 @@ export default async function OrdersPage() {
   const totalRevenue = list.filter((o) => o.status === 'paid').reduce((s, o) => s + (o.amount ?? 0), 0) / 100
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-white">Orders</h1>
           <p className="text-sm text-[#94A3B8] mt-1">{list.length} total orders</p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-xs text-[#475569]">Total Revenue</p>
           <p className="text-lg font-bold text-emerald-400">
             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalRevenue)}

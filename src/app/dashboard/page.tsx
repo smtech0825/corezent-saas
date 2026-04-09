@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Welcome back, {name} 👋</h1>

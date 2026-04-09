@@ -21,7 +21,7 @@ export default function Pagination({ page, total, pageSize, buildHref }: Props) 
   const hasPrev = page > 1
   const hasNext = page < totalPages
 
-  const base = 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm border transition-colors'
+  const base = 'inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm border transition-colors'
   const on   = 'text-[#94A3B8] border-[#1E293B] hover:text-white hover:border-[#38BDF8]/30'
   const cur  = 'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/40 font-semibold'
   const off  = 'text-[#475569] border-[#1E293B] opacity-40 pointer-events-none'

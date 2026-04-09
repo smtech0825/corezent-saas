@@ -145,7 +145,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
@@ -153,7 +153,7 @@ export default async function AdminPage() {
       </div>
 
       {/* 통계 카드 4개 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 
         {/* ① Total Users — 월간/연간 신규 서브 지표 */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">

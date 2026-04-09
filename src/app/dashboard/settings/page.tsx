@@ -107,7 +107,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Settings</h1>
         <p className="text-[#94A3B8] text-sm mt-1">Manage your account details and security.</p>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
             />
           </FormField>
 
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-stretch sm:justify-end pt-1">
             <SubmitButton loading={profileLoading} label="Save changes" />
           </div>
         </form>
@@ -195,7 +195,7 @@ export default function SettingsPage() {
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
 
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors'
+const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors'
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -211,7 +211,7 @@ function SubmitButton({ loading, label }: { loading: boolean; label: string }) {
     <button
       type="submit"
       disabled={loading}
-      className="bg-[#38BDF8] text-[#0B1120] font-semibold py-2 px-5 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      className="w-full sm:w-auto bg-[#38BDF8] text-[#0B1120] font-semibold py-3 sm:py-2 px-6 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
       {loading && <Loader2 size={14} className="animate-spin" />}
       {label}

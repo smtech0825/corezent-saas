@@ -77,7 +77,7 @@ export default async function SupportPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Support Tickets</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
@@ -86,7 +86,8 @@ export default async function SupportPage({
       </div>
 
       {/* 상태 탭 필터 */}
-      <div className="flex gap-1 border border-[#1E293B] bg-[#111A2E] rounded-xl p-1 w-fit">
+      <div className="overflow-x-auto -mx-1 px-1">
+      <div className="flex gap-1 border border-[#1E293B] bg-[#111A2E] rounded-xl p-1 w-max min-w-full sm:w-fit sm:min-w-0">
         {tabs.map((tab) => (
           <Link
             key={tab.value}
@@ -100,6 +101,7 @@ export default async function SupportPage({
             {tab.label}
           </Link>
         ))}
+      </div>
       </div>
 
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">

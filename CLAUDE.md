@@ -363,4 +363,49 @@ npm run dev   # Turbopack 개발 서버 (localhost:3000)
 
 ---
 
+# Lemon Squeezy Integration Guide (Context for Claude Code)
+
+이 문서는 웹 애플리케이션에 Lemon Squeezy 결제 및 구독 시스템을 연동하기 위한 핵심 가이드라인입니다. 코드를 작성할 때 이 문서의 규칙과 패턴을 우선적으로 참고하십시오.
+
+## 1. 기본 API 설정 및 규칙 (API Fundamentals)
+- **Base URL:** `https://api.lemonsqueezy.com/v1/` [1]
+- **인증 (Authentication):** 모든 API 요청은 `Authorization: Bearer {API_KEY}` 헤더를 포함해야 합니다 [1].
+- **콘텐츠 타입 (Headers):** 요청 시 반드시 `Accept: application/vnd.api+json` 및 `Content-Type: application/vnd.api+json` 헤더를 사용해야 합니다 [1].
+- **데이터 규격 (JSON:API):** API 응답 및 요청은 JSON:API 스펙을 따릅니다. 데이터는 항상 `data` 객체 안에 `type`, `id`, `attributes`, `relationships` 구조로 감싸져 있으며, 연관 데이터는 `included` 배열에 반환됩니다 [1, 2].
+
+## 2. 프론트엔드 연동: Lemon.js
+프론트엔드에서 체크아웃 오버레이와 결제 이벤트를 처리하기 위해 `Lemon.js`를 사용합니다.
+- **스크립트 추가:** HTML `<head>` 또는 `<body>` 끝에 `<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>`를 로드합니다 [3, 4].
+- **체크아웃 오버레이 열기:**
+  - HTML 방식: `<a>` 태그에 `lemonsqueezy-button` 클래스를 추가하여 구현합니다 [3, 4].
+  - JS 방식: `LemonSqueezy.Url.Open("CHECKOUT_URL")` 메서드를 호출합니다 [3, 4].
+- **이벤트 리스너 설정:** 결제 성공 등의 이벤트를 감지하려면 `LemonSqueezy.Setup()`을 초기화합니다 [3, 4].
+  - 주요 이벤트: `Checkout.Success` (결제 완료 시 order 데이터 반환), `PaymentMethodUpdate.Closed` 등 [3, 4].
+
+## 3. 백엔드 핵심 기능 (Backend Operations)
+### 3.1 체크아웃 세션 생성
+사용자의 이메일, 이름, 세금 식별 번호 등을 미리 채우거나, 웹훅에서 식별할 `custom_data`를 전달하여 API를 통해 동적으로 체크아웃 URL을 생성할 수 있습니다 [5]. 예상 결제 금액(할인, 세금 포함)을 미리 보려면 `preview: true` 파라미터를 사용합니다 [6].
+
+### 3.2 구독 관리 (Subscriptions)
+- **구독 정보 갱신:** API를 통해 구독 상태를 취소(cancel), 일시 정지(pause), 재개(unpause)할 수 있습니다 [7].
+- **플랜 변경(업그레이드/다운그레이드):** 사용자 구독의 Product/Variant ID를 변경하는 PATCH 요청을 보냅니다. 기본적으로 차액(Proration)이 계산되며, 필요에 따라 즉시 청구 여부를 조절할 수 있습니다 [8].
+- **종량제 청구 (Usage-based Billing):** 종량제 플랜의 경우, 앱에서 사용량을 측정한 뒤 `/v1/usage-records` 엔드포인트로 사용량을 보고(action: 'increment' 또는 'set')해야 합니다 [9, 10].
+
+### 3.3 고객 포털 (Customer Portal)
+고객이 직접 결제 수단 업데이트, 영수증 다운로드, 플랜 변경 등을 할 수 있는 페이지입니다 [11].
+- API를 통해 고유한 **Signed URL**(`customer_portal.update_payment_method` 등)을 생성하여, 고객이 로그인 없이 포털에 안전하게 접근하도록 라우팅해야 합니다 [12].
+
+## 4. 웹훅 처리 (Webhooks & Security)
+결제 완료, 구독 갱신 등의 비동기 이벤트 처리를 위해 웹훅 연동이 필수적입니다.
+- **서명 검증 (Signature Verification):** 웹훅 엔드포인트는 요청 헤더의 `X-Signature` 값을 검증해야 합니다. 이는 웹훅 페이로드(Raw Body)를 Lemon Squeezy 웹훅 시크릿 키를 이용해 `HMAC SHA256` 방식으로 해싱한 값과 일치해야 합니다 [13, 14].
+- **주요 구독 이벤트:** `order_created`, `subscription_created`, `subscription_updated`, `subscription_payment_success`, `subscription_payment_failed` 등의 이벤트를 수신하여 데이터베이스(예: 사용자 권한 상태)를 업데이트해야 합니다 [13, 15].
+- **Next.js 구현 참고:** Next.js App Router를 사용하는 경우 `app/api/webhooks/route.ts` 등에서 `crypto` 모듈을 사용하여 서명을 검증하고 데이터를 파싱하도록 구현합니다 [14].
+
+## 5. 부가 기능 (Optional/Advanced Features)
+- **소프트웨어 라이선스 발급:** 제품 설정에서 라이선스 키를 활성화하면 결제 시 키가 발급됩니다. 앱 내에서 API(`/v1/licenses/activate`, `validate`, `deactivate`)를 호출하여 키의 유효성과 기기 활성화를 제어합니다 [16].
+- **무료 평가판 (Free Trials):** 결제 정보 입력 유무에 따라 평가판을 구성할 수 있으며, 결제 정보를 요구하는 경우 Lemon Squeezy 대시보드 내 제품 설정에서 "Trial period"를 설정하면 웹훅(status: `on_trial`)을 통해 제어할 수 있습니다 [15].
+- **할인 쿠폰 제어:** 특정 개월 수만 적용되고 원래 가격으로 돌아가는 "Expiring Subscription Discounts
+
+---
+
 *최초 작성: 2026-04-04 | 프로젝트: CoreZent SaaS*

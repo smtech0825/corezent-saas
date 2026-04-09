@@ -165,7 +165,7 @@ export default function ProductList({ products }: Props) {
                     )}
                     <button
                       onClick={() => toggle(product.id)}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
+                      className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
                     >
                       <Eye size={14} />
                       View Details
@@ -173,7 +173,7 @@ export default function ProductList({ products }: Props) {
                   </div>
                 ) : (
                   <div className="mt-auto mb-4">
-                    <span className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-2.5 rounded-xl text-sm cursor-not-allowed">
+                    <span className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-3 rounded-xl text-sm cursor-not-allowed">
                       Notify me
                     </span>
                   </div>

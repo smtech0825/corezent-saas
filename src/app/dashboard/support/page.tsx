@@ -89,7 +89,7 @@ export default async function SupportPage({
   }
 
   return (
-    <div className="p-6 space-y-8 max-w-3xl">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-white">Support</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
@@ -114,7 +114,7 @@ export default async function SupportPage({
               type="text"
               required
               placeholder="Briefly describe your issue"
-              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
+              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
             />
           </div>
 
@@ -148,10 +148,10 @@ export default async function SupportPage({
             />
           </div>
 
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-stretch sm:justify-end pt-1">
             <button
               type="submit"
-              className="bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+              className="w-full sm:w-auto bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
             >
               Submit Ticket
             </button>

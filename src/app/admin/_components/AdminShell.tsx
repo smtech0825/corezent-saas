@@ -58,7 +58,7 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
               Admin Panel
             </span>
           </div>
-          <div className="text-xs text-[#475569]">
+          <div className="hidden sm:block text-xs text-[#475569] truncate max-w-[200px] lg:max-w-none">
             Logged in as <span className="text-[#94A3B8]">{user.email}</span>
           </div>
         </div>
