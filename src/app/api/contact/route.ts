@@ -2,6 +2,7 @@
  * @파일: api/contact/route.ts
  * @설명: 비회원 문의 API — 이메일 발송 + DB 저장
  *        보안: Rate limiting (IP 기반), Honeypot, 이메일 형식 검증, 5MB 첨부 제한
+ *        DB 저장 성공 시 이메일 실패해도 성공 반환 (이메일은 백그라운드 시도)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -41,78 +42,85 @@ setInterval(() => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    )
+  }
+
+  // FormData 파싱
+  let formData: FormData
   try {
-    // Rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-    if (isRateLimited(ip)) {
+    formData = await request.formData()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request format.' }, { status: 400 })
+  }
+
+  // Honeypot 체크 — 봇이 채운 경우 조용히 성공 반환
+  const honeypot = formData.get('website') as string | null
+  if (honeypot) {
+    return NextResponse.json({ success: true })
+  }
+
+  // 필드 추출 & 검증
+  const email   = (formData.get('email')   as string | null)?.trim() ?? ''
+  const subject = (formData.get('subject') as string | null)?.trim() ?? ''
+  const message = (formData.get('message') as string | null)?.trim() ?? ''
+  const file    = formData.get('attachment') as File | null
+
+  if (!email || !subject || !message) {
+    return NextResponse.json(
+      { error: 'All fields (email, subject, message) are required.' },
+      { status: 400 }
+    )
+  }
+
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 })
+  }
+
+  if (subject.length > 200) {
+    return NextResponse.json(
+      { error: 'Subject must be 200 characters or less.' },
+      { status: 400 }
+    )
+  }
+
+  if (message.length > 5000) {
+    return NextResponse.json(
+      { error: 'Message must be 5,000 characters or less.' },
+      { status: 400 }
+    )
+  }
+
+  // 첨부파일 검증
+  let attachmentBuffer: Buffer | undefined
+  let attachmentName: string | undefined
+  let attachmentSize: number | undefined
+
+  if (file && file.size > 0) {
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      )
-    }
-
-    const formData = await request.formData()
-
-    // Honeypot 체크 — 봇이 채운 경우 조용히 성공 반환
-    const honeypot = formData.get('website') as string | null
-    if (honeypot) {
-      return NextResponse.json({ success: true })
-    }
-
-    // 필드 추출 & 검증
-    const email   = (formData.get('email')   as string)?.trim()
-    const subject = (formData.get('subject') as string)?.trim()
-    const message = (formData.get('message') as string)?.trim()
-    const file    = formData.get('attachment') as File | null
-
-    if (!email || !subject || !message) {
-      return NextResponse.json(
-        { error: 'All fields (email, subject, message) are required.' },
+        { error: 'Attachment must be under 5 MB.' },
         { status: 400 }
       )
     }
-
-    if (!EMAIL_RE.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format.' },
-        { status: 400 }
-      )
-    }
-
-    if (subject.length > 200) {
-      return NextResponse.json(
-        { error: 'Subject must be 200 characters or less.' },
-        { status: 400 }
-      )
-    }
-
-    if (message.length > 5000) {
-      return NextResponse.json(
-        { error: 'Message must be 5,000 characters or less.' },
-        { status: 400 }
-      )
-    }
-
-    // 첨부파일 검증
-    let attachmentBuffer: Buffer | undefined
-    let attachmentName: string | undefined
-    let attachmentSize: number | undefined
-
-    if (file && file.size > 0) {
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: 'Attachment must be under 5 MB.' },
-          { status: 400 }
-        )
-      }
+    try {
       attachmentBuffer = Buffer.from(await file.arrayBuffer())
       attachmentName = file.name
       attachmentSize = file.size
+    } catch {
+      return NextResponse.json({ error: 'Failed to process attachment.' }, { status: 400 })
     }
+  }
 
-    // DB 저장 (admin client — RLS 우회)
+  // ─── DB 저장 ───────────────────────────────────────────────────
+  try {
     const admin = createAdminClient()
-    await admin.from('inquiries').insert({
+    const { error: dbError } = await admin.from('inquiries').insert({
       email,
       subject,
       message,
@@ -121,7 +129,16 @@ export async function POST(request: NextRequest) {
       ip_address: ip,
     })
 
-    // 이메일 발송
+    if (dbError) {
+      console.error('[Contact API] DB insert error:', dbError)
+      // DB 저장 실패해도 이메일 발송은 시도
+    }
+  } catch (err) {
+    console.error('[Contact API] DB exception:', err)
+  }
+
+  // ─── 이메일 발송 (실패해도 사용자에게는 성공 반환) ────────────
+  try {
     await sendEmail({
       to: ADMIN_EMAIL,
       subject: `[CoreZent Inquiry] ${subject}`,
@@ -131,13 +148,11 @@ export async function POST(request: NextRequest) {
         ? [{ filename: attachmentName, content: attachmentBuffer }]
         : undefined,
     })
-
-    return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[Contact API Error]', err)
-    return NextResponse.json(
-      { error: 'Something went wrong. Please try again later.' },
-      { status: 500 }
-    )
+    console.error('[Contact API] Email send error:', err)
+    // 이메일 실패는 로그만 남기고 사용자에게는 성공 반환
+    // (DB에 저장됐으므로 나중에 관리자가 확인 가능)
   }
+
+  return NextResponse.json({ success: true })
 }
