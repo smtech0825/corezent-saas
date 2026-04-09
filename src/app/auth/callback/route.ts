@@ -32,6 +32,11 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
     console.log('[callback] verifyOtp error:', error)
     if (!error) {
+      // 비밀번호 재설정 — 전용 페이지로 이동 (세션은 이미 수립됨)
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/auth/update-password`)
+      }
+
       // 신규 회원 이메일 인증 완료 처리
       if (type === 'signup' && data.user) {
         const user = data.user
