@@ -1,8 +1,7 @@
-'use client'
-
 /**
  * @컴포넌트: Pagination
  * @설명: 공통 페이지네이션 — [처음] [이전] [현재] [다음] [끝] 버튼 UI
+ *        서버 컴포넌트 — buildHref 함수를 서버에서 받기 위해 'use client' 제거
  */
 
 import Link from 'next/link'
