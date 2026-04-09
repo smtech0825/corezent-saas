@@ -33,12 +33,31 @@ export default async function SupportPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?redirect=/dashboard/support')
 
-  const { data: tickets, count: total } = await supabase
+  // user_last_read_at 포함 시도 → 실패 시 없이 재시도 (컬럼 미존재 대비)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let tickets: any[] | null = null
+  let total: number | null = null
+
+  const firstTry = await supabase
     .from('support_tickets')
     .select('id, subject, status, priority, created_at, updated_at, user_last_read_at', { count: 'exact' })
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
+
+  if (firstTry.error) {
+    const fallback = await supabase
+      .from('support_tickets')
+      .select('id, subject, status, priority, created_at, updated_at', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+    tickets = fallback.data
+    total = fallback.count
+  } else {
+    tickets = firstTry.data
+    total = firstTry.count
+  }
 
   const list = tickets ?? []
 

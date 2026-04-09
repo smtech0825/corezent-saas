@@ -18,7 +18,7 @@ interface Ticket {
   priority: string
   created_at: string
   updated_at: string
-  user_last_read_at: string | null
+  user_last_read_at?: string | null
 }
 
 interface Reply {
