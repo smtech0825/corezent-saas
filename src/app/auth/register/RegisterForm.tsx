@@ -42,6 +42,21 @@ export default function RegisterForm() {
     setLoading(true)
     setError('')
 
+    // inactive(탈퇴) 계정 이메일 재가입 차단 사전 확인
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const { status: emailStatus } = await res.json()
+      if (emailStatus === 'inactive') {
+        setError('This account has been deactivated. Please contact support.')
+        setLoading(false)
+        return
+      }
+    } catch { /* 네트워크 오류 시 가입 진행 허용 */ }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
