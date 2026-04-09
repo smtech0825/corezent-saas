@@ -11,6 +11,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { checkEmailRegistered } from './actions'
 import AuthBrand from '../_components/AuthBrand'
 
 export default function ResetPasswordForm() {
@@ -25,6 +26,14 @@ export default function ResetPasswordForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // 가입된 이메일인지 먼저 확인
+    const exists = await checkEmailRegistered(email)
+    if (!exists) {
+      setError('No account found with this email address.')
+      setLoading(false)
+      return
+    }
 
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback`,
