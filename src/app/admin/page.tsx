@@ -1,10 +1,16 @@
 /**
  * @파일: admin/page.tsx
  * @설명: 관리자 대시보드 개요 — 핵심 통계 카드 + 최근 주문/가입 테이블
+ *        월간/연간 신규 가입자·매출 서브 지표 + 성장률 추가
+ *        Open Tickets 아이콘 → /admin/support 링크
  */
 
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Users, DollarSign, Key, MessageSquare, TrendingUp, UserPlus } from 'lucide-react'
+import {
+  Users, DollarSign, Key, MessageSquare,
+  TrendingUp, TrendingDown, UserPlus,
+} from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,29 +24,61 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+/** 성장률 계산 — 전기 대비 % (전기=0이면 신규 100% 처리) */
+function growthRate(current: number, prev: number): number | null {
+  if (current === 0 && prev === 0) return null
+  if (prev === 0) return 100
+  return Math.round(((current - prev) / prev) * 100)
+}
+
+/** 매출 배열 합산 (amount는 cents 단위) */
+function sumAmount(rows: { amount: number | null }[]): number {
+  return rows.reduce((s, o) => s + (o.amount ?? 0), 0) / 100
+}
+
 const statusColors: Record<string, string> = {
-  paid: 'text-emerald-400 bg-emerald-400/10',
-  pending: 'text-amber-400 bg-amber-400/10',
-  refunded: 'text-blue-400 bg-blue-400/10',
+  paid:      'text-emerald-400 bg-emerald-400/10',
+  pending:   'text-amber-400 bg-amber-400/10',
+  refunded:  'text-blue-400 bg-blue-400/10',
   cancelled: 'text-red-400 bg-red-400/10',
-  active: 'text-emerald-400 bg-emerald-400/10',
-  open: 'text-amber-400 bg-amber-400/10',
-  answered: 'text-blue-400 bg-blue-400/10',
-  closed: 'text-[#475569] bg-[#1E293B]',
-  admin: 'text-amber-400 bg-amber-400/10',
-  user: 'text-[#94A3B8] bg-[#1E293B]',
+  active:    'text-emerald-400 bg-emerald-400/10',
+  open:      'text-amber-400 bg-amber-400/10',
+  answered:  'text-blue-400 bg-blue-400/10',
+  closed:    'text-[#475569] bg-[#1E293B]',
+  admin:     'text-amber-400 bg-amber-400/10',
+  user:      'text-[#94A3B8] bg-[#1E293B]',
 }
 
 export default async function AdminPage() {
   const adminClient = createAdminClient()
 
-  // 병렬 통계 쿼리
+  // ── UTC 기준 날짜 경계 (서버 타임존 무관) ─────────────────────
+  const now = new Date()
+  const y  = now.getUTCFullYear()
+  const m  = now.getUTCMonth()
+
+  const startOfMonth     = new Date(Date.UTC(y, m,     1)).toISOString()
+  const startOfPrevMonth = new Date(Date.UTC(y, m - 1, 1)).toISOString()
+  const startOfYear      = new Date(Date.UTC(y, 0,     1)).toISOString()
+  const startOfPrevYear  = new Date(Date.UTC(y - 1, 0, 1)).toISOString()
+
+  // ── 병렬 쿼리 ────────────────────────────────────────────────
   const [
     userCountRes,
-    revenueRes,
+    revenueAllRes,
     licenseCountRes,
     ticketCountRes,
     recentOrdersRes,
+    // Users: 이번 달 / 지난달 / 올해 / 작년
+    usersMonthRes,
+    usersPrevMonthRes,
+    usersYearRes,
+    usersPrevYearRes,
+    // Revenue (paid): 이번 달 / 지난달 / 올해 / 작년
+    revMonthRes,
+    revPrevMonthRes,
+    revYearRes,
+    revPrevYearRes,
   ] = await Promise.all([
     adminClient.from('profiles').select('*', { count: 'exact', head: true }),
     adminClient.from('orders').select('amount').eq('status', 'paid'),
@@ -51,22 +89,53 @@ export default async function AdminPage() {
       .select('id, amount, status, created_at, user_id')
       .order('created_at', { ascending: false })
       .limit(8),
+
+    // Users 월간/연간
+    adminClient.from('profiles').select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfMonth),
+    adminClient.from('profiles').select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfPrevMonth).lt('created_at', startOfMonth),
+    adminClient.from('profiles').select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfYear),
+    adminClient.from('profiles').select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfPrevYear).lt('created_at', startOfYear),
+
+    // Revenue 월간/연간 (paid only)
+    adminClient.from('orders').select('amount').eq('status', 'paid')
+      .gte('created_at', startOfMonth),
+    adminClient.from('orders').select('amount').eq('status', 'paid')
+      .gte('created_at', startOfPrevMonth).lt('created_at', startOfMonth),
+    adminClient.from('orders').select('amount').eq('status', 'paid')
+      .gte('created_at', startOfYear),
+    adminClient.from('orders').select('amount').eq('status', 'paid')
+      .gte('created_at', startOfPrevYear).lt('created_at', startOfYear),
   ])
 
-  const totalUsers = userCountRes.count ?? 0
-  const totalRevenue = (revenueRes.data ?? []).reduce((s, o) => s + (o.amount ?? 0), 0) / 100
+  // ── 집계 ─────────────────────────────────────────────────────
+  const totalUsers     = userCountRes.count ?? 0
+  const totalRevenue   = sumAmount(revenueAllRes.data ?? [])
   const activeLicenses = licenseCountRes.count ?? 0
-  const openTickets = ticketCountRes.count ?? 0
-  const recentOrders = recentOrdersRes.data ?? []
+  const openTickets    = ticketCountRes.count ?? 0
+  const recentOrders   = recentOrdersRes.data ?? []
 
-  // 최근 가입자 (profiles 테이블)
+  const newUsersMonth  = usersMonthRes.count ?? 0
+  const prevUsersMonth = usersPrevMonthRes.count ?? 0
+  const newUsersYear   = usersYearRes.count ?? 0
+  const prevUsersYear  = usersPrevYearRes.count ?? 0
+
+  const revMonth     = sumAmount(revMonthRes.data ?? [])
+  const prevRevMonth = sumAmount(revPrevMonthRes.data ?? [])
+  const revYear      = sumAmount(revYearRes.data ?? [])
+  const prevRevYear  = sumAmount(revPrevYearRes.data ?? [])
+
+  // ── 최근 가입자 ───────────────────────────────────────────────
   const { data: recentUsers } = await adminClient
     .from('profiles')
     .select('id, name, role, created_at')
     .order('created_at', { ascending: false })
     .limit(5)
 
-  // 주문자 이메일 조회 (auth admin)
+  // ── 주문자 이메일 ─────────────────────────────────────────────
   let emailMap: Map<string, string> = new Map()
   try {
     const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 })
@@ -75,37 +144,89 @@ export default async function AdminPage() {
     // 이메일 조회 실패 시 무시
   }
 
-  const stats = [
-    { label: 'Total Users', value: fmt(totalUsers), icon: Users, color: 'text-[#38BDF8]', bg: 'bg-[#38BDF8]/10' },
-    { label: 'Total Revenue', value: fmtCurrency(totalRevenue), icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'Active Licenses', value: fmt(activeLicenses), icon: Key, color: 'text-violet-400', bg: 'bg-violet-400/10' },
-    { label: 'Open Tickets', value: fmt(openTickets), icon: MessageSquare, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  ]
-
   return (
     <div className="p-6 space-y-8">
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Welcome back. Here's what's happening.</p>
+        <p className="text-sm text-[#94A3B8] mt-1">Welcome back. Here&apos;s what&apos;s happening.</p>
       </div>
 
-      {/* 통계 카드 */}
+      {/* 통계 카드 4개 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => {
-          const Icon = s.icon
-          return (
-            <div key={s.label} className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-[#94A3B8]">{s.label}</p>
-                <span className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
-                  <Icon size={17} className={s.color} />
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-white">{s.value}</p>
-            </div>
-          )
-        })}
+
+        {/* ① Total Users — 월간/연간 신규 서브 지표 */}
+        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#94A3B8]">Total Users</p>
+            <span className="w-9 h-9 rounded-xl bg-[#38BDF8]/10 flex items-center justify-center">
+              <Users size={17} className="text-[#38BDF8]" />
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-white">{fmt(totalUsers)}</p>
+          <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
+            <SubMetric
+              label="New (Month)"
+              value={fmt(newUsersMonth)}
+              growth={growthRate(newUsersMonth, prevUsersMonth)}
+            />
+            <SubMetric
+              label="New (Year)"
+              value={fmt(newUsersYear)}
+              growth={growthRate(newUsersYear, prevUsersYear)}
+            />
+          </div>
+        </div>
+
+        {/* ② Total Revenue — 월간/연간 매출 서브 지표 */}
+        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#94A3B8]">Total Revenue</p>
+            <span className="w-9 h-9 rounded-xl bg-emerald-400/10 flex items-center justify-center">
+              <DollarSign size={17} className="text-emerald-400" />
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-white">{fmtCurrency(totalRevenue)}</p>
+          <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
+            <SubMetric
+              label="Revenue (Month)"
+              value={fmtCurrency(revMonth)}
+              growth={growthRate(revMonth, prevRevMonth)}
+            />
+            <SubMetric
+              label="Revenue (Year)"
+              value={fmtCurrency(revYear)}
+              growth={growthRate(revYear, prevRevYear)}
+            />
+          </div>
+        </div>
+
+        {/* ③ Active Licenses */}
+        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#94A3B8]">Active Licenses</p>
+            <span className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center">
+              <Key size={17} className="text-violet-400" />
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-white">{fmt(activeLicenses)}</p>
+        </div>
+
+        {/* ④ Open Tickets — 아이콘 클릭 → /admin/support */}
+        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-[#94A3B8]">Open Tickets</p>
+            <Link
+              href="/admin/support"
+              title="View support tickets"
+              className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center hover:bg-amber-400/25 hover:scale-105 transition-all cursor-pointer"
+            >
+              <MessageSquare size={17} className="text-amber-400" />
+            </Link>
+          </div>
+          <p className="text-2xl font-bold text-white">{fmt(openTickets)}</p>
+        </div>
+
       </div>
 
       {/* 두 컬럼 테이블 */}
@@ -187,6 +308,41 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── SubMetric: 카드 하단 월간/연간 미니 지표 행 ─────────────────
+function SubMetric({
+  label,
+  value,
+  growth,
+}: {
+  label: string
+  value: string
+  growth: number | null
+}) {
+  const positive = growth !== null && growth >= 0
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] text-[#475569] shrink-0">{label}</span>
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="text-[11px] font-medium text-[#94A3B8] truncate">{value}</span>
+        {growth !== null && (
+          <span
+            className={`flex items-center gap-0.5 text-[10px] font-semibold shrink-0 ${
+              positive ? 'text-emerald-400' : 'text-red-400'
+            }`}
+          >
+            {positive
+              ? <TrendingUp size={10} />
+              : <TrendingDown size={10} />
+            }
+            {Math.abs(growth)}%
+          </span>
+        )}
       </div>
     </div>
   )
