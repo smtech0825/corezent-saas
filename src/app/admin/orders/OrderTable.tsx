@@ -38,15 +38,21 @@ interface Props {
 }
 
 function getStatusBadge(status: string, expiresAt: string | null): { label: string; cls: string } {
-  // 구독 취소 상태이거나 만료일이 현재보다 이전이면 'expired' 표시
+  // 1순위: refunded는 항상 refunded 표시
+  if (status === 'refunded') {
+    return { label: 'refunded', cls: 'text-blue-400 bg-blue-400/10' }
+  }
+  // 2순위: 만료일이 지났거나 cancelled → expired
   const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false
   if (status === 'cancelled' || isExpired) {
     return { label: 'expired', cls: 'text-red-400 bg-red-400/10' }
   }
+  // 3순위: paid → active
+  if (status === 'paid') {
+    return { label: 'active', cls: 'text-emerald-400 bg-emerald-400/10' }
+  }
   const map: Record<string, { label: string; cls: string }> = {
-    paid:     { label: 'paid',     cls: 'text-emerald-400 bg-emerald-400/10' },
-    pending:  { label: 'pending',  cls: 'text-amber-400 bg-amber-400/10' },
-    refunded: { label: 'refunded', cls: 'text-blue-400 bg-blue-400/10' },
+    pending: { label: 'pending', cls: 'text-amber-400 bg-amber-400/10' },
   }
   return map[status] ?? { label: status, cls: 'text-[#94A3B8] bg-[#1E293B]' }
 }
