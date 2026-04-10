@@ -15,6 +15,7 @@ import {
   products,
   FILTER_LABELS,
   BADGE_STYLES,
+  CATEGORY_BADGE,
   type FilterCategory,
 } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
@@ -76,11 +77,11 @@ export default function PricingClient({ dbData }: Props) {
             One plan, everything included. Switch anytime.
           </p>
 
-          {/* 월간/연간 토글 */}
-          <div className="inline-flex items-center gap-1 border border-[#1E293B] bg-[#111A2E] rounded-full p-1.5">
+          {/* 월간/연간 토글 — transition-colors만 사용해 레이아웃 겹침 방지 */}
+          <div className="inline-flex items-center border border-[#1E293B] bg-[#111A2E] rounded-full p-1.5 gap-0.5">
             <button
               onClick={() => setAnnual(false)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 !annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
               }`}
             >
@@ -88,13 +89,13 @@ export default function PricingClient({ dbData }: Props) {
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
               }`}
             >
               Annual
               <span
-                className={`text-xs font-bold px-2 py-0.5 rounded-full transition-all ${
+                className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-200 ${
                   annual ? 'bg-[#0B1120]/20 text-[#0B1120]' : 'bg-emerald-500/15 text-emerald-400'
                 }`}
               >
@@ -134,11 +135,12 @@ export default function PricingClient({ dbData }: Props) {
                 annual ? product.lemonSqueezy.annual : product.lemonSqueezy.monthly,
                 userId,
               )
-              // DB 데이터에서 tags, pricing_features 조회
+              // DB 데이터에서 pricing_features 조회
               const slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
               const db = dbData[slug]
-              const tags = db?.tags ?? []
               const displayFeatures = db?.pricing_features?.length ? db.pricing_features : product.features
+              // 제품별 정확한 할인율 계산 (소수점 반올림)
+              const savePct = Math.round((1 - product.annualMonthlyPrice / product.monthlyPrice) * 100)
 
               return (
                 <div
@@ -168,8 +170,15 @@ export default function PricingClient({ dbData }: Props) {
                       </div>
                     )}
 
-                    {/* 제품명 + 태그라인 */}
-                    <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
+                    {/* 제품명 + 카테고리 배지 + 태그라인 */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <h3 className="text-2xl font-bold text-white">{product.name}</h3>
+                      {product.category && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
+                          {product.category}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
 
                     {/* 가격 */}
@@ -185,11 +194,11 @@ export default function PricingClient({ dbData }: Props) {
                       </div>
                       {annual ? (
                         <p className="text-xs text-emerald-400 mt-1.5 font-medium">
-                          Billed ${product.annualPrice}/year · Save {SAVE_PCT}%
+                          Billed ${product.annualPrice}/year · Save {savePct}%
                         </p>
                       ) : (
                         <p className="text-xs text-[#475569] mt-1.5">
-                          or ${product.annualPrice}/year (save {SAVE_PCT}%)
+                          or ${product.annualPrice}/year (save {savePct}%)
                         </p>
                       )}
                     </div>

@@ -12,6 +12,7 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import DynamicIcon from '@/components/DynamicIcon'
+import { CATEGORY_BADGE } from '@/lib/products'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -109,8 +110,15 @@ export default function ProductList({ products }: Props) {
                   )}
                 </div>
 
-                {/* 이름 & 태그라인 */}
-                <h3 className="text-xl font-bold text-white mb-1">{product.name}</h3>
+                {/* 이름 + 카테고리 배지 & 태그라인 */}
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="text-xl font-bold text-white">{product.name}</h3>
+                  {product.category && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
+                      {product.category}
+                    </span>
+                  )}
+                </div>
                 {product.tagline && (
                   <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
                 )}

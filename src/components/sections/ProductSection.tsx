@@ -7,11 +7,13 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { CATEGORY_BADGE } from '@/lib/products'
 
 interface ProductCard {
   name: string
   tagline: string
   description: string
+  category: string
   tags: string[]
   monthlyPrice: string | null
   annualPrice: string | null
@@ -26,6 +28,7 @@ const COMING_SOON: ProductCard[] = [
     tagline: 'New Product in Development',
     description:
       'We are working on our next software product. Sign up to be notified when it launches.',
+    category: '',
     tags: [],
     monthlyPrice: null,
     annualPrice: null,
@@ -37,6 +40,7 @@ const COMING_SOON: ProductCard[] = [
     tagline: 'More tools on the way',
     description:
       'CoreZent is continuously expanding its product lineup. Stay tuned for more powerful software tools.',
+    category: '',
     tags: [],
     monthlyPrice: null,
     annualPrice: null,
@@ -48,10 +52,10 @@ const COMING_SOON: ProductCard[] = [
 export default async function ProductSection() {
   const client = createAdminClient()
 
-  // 모든 상품 + 활성 가격 조회
+  // 모든 상품 + 활성 가격 조회 (category 포함)
   const { data: rawProducts } = await client
     .from('products')
-    .select('name, tagline, description, tags, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('name, tagline, description, category, tags, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
@@ -66,6 +70,7 @@ export default async function ProductSection() {
       name: p.name as string,
       tagline: (p.tagline as string) ?? '',
       description: (p.description as string) ?? '',
+      category: (p.category as string) ?? '',
       tags: ((p.tags ?? []) as string[]),
       monthlyPrice: monthly ? `$${monthly.price.toFixed(2)}` : null,
       annualPrice: annual ? `$${annual.price}` : null,
@@ -136,8 +141,15 @@ export default async function ProductSection() {
                   {product.available ? 'Available now' : 'Coming soon'}
                 </div>
 
-                {/* Name & tagline */}
-                <h3 className="text-xl font-bold text-white mb-1">{product.name}</h3>
+                {/* Name + 카테고리 배지 */}
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="text-xl font-bold text-white">{product.name}</h3>
+                  {product.category && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
+                      {product.category}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
 
                 {/* Description — 3줄 클램프 + more → /product 이동 */}

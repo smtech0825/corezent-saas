@@ -40,6 +40,15 @@ export const BADGE_STYLES: Record<string, string> = {
   'Best Value': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
 }
 
+/** 카테고리 배지 색상 — admin/products와 동일한 팔레트 */
+export const CATEGORY_BADGE: Record<string, string> = {
+  desktop:            'bg-violet-400/10 text-violet-400 border-violet-400/20',
+  'web-tool':         'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20',
+  web:                'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20',
+  'chrome-extension': 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+  mobile:             'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
+}
+
 // ─── 제품 목록 ───────────────────────────────────────────────────────────────
 
 export const products: Product[] = [
