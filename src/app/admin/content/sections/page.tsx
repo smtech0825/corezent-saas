@@ -9,30 +9,37 @@ import SectionsManager from './SectionsManager'
 
 export const dynamic = 'force-dynamic'
 
-// 기본 섹션 목록 (DB에 없을 경우 초기화용)
+// 기본 섹션 목록 — label은 코드 값을 정본으로 사용 (DB 값 무시)
 const defaultSections = [
-  { name: 'hero',         label: 'Hero Section',         is_visible: true, order_index: 0 },
-  { name: 'product',      label: 'Product Section',      is_visible: true, order_index: 1 },
-  { name: 'how_it_works', label: 'How It Works Section', is_visible: true, order_index: 2 },
-  { name: 'features',     label: 'Features Section',     is_visible: true, order_index: 3 },
-  { name: 'pricing',      label: 'Pricing Section',      is_visible: true, order_index: 4 },
-  { name: 'testimonials', label: 'Testimonials Section', is_visible: true, order_index: 5 },
-  { name: 'faq',          label: 'FAQ Section',          is_visible: true, order_index: 6 },
-  { name: 'cta',          label: 'CTA Section',          is_visible: true, order_index: 7 },
+  { name: 'hero',         label: 'Hero',          is_visible: true, order_index: 0 },
+  { name: 'product',      label: 'Product',       is_visible: true, order_index: 1 },
+  { name: 'how_it_works', label: 'How It Works',  is_visible: true, order_index: 2 },
+  { name: 'features',     label: 'Features',      is_visible: true, order_index: 3 },
+  { name: 'pricing',      label: 'Pricing',       is_visible: true, order_index: 4 },
+  { name: 'testimonials', label: 'Testimonials',  is_visible: true, order_index: 5 },
+  { name: 'faq',          label: 'FAQ',           is_visible: true, order_index: 6 },
+  { name: 'cta',          label: 'CTA',           is_visible: true, order_index: 7 },
 ]
 
 export default async function SectionsPage() {
   const adminClient = createAdminClient()
 
+  // label은 DB 값 대신 코드의 defaultSections를 정본으로 사용 (구 한글 레이블 방지)
   const { data: dbSections } = await adminClient
     .from('front_sections')
-    .select('name, label, is_visible, order_index')
+    .select('name, is_visible, order_index')
     .order('order_index')
 
-  // DB에 없는 섹션은 기본값으로 보완 후 order_index 기준 정렬
   const dbMap = new Map((dbSections ?? []).map((s) => [s.name, s]))
   const sections = defaultSections
-    .map((def) => ({ ...def, ...(dbMap.get(def.name) ?? {}) }))
+    .map((def) => {
+      const db = dbMap.get(def.name)
+      return {
+        ...def,                                                  // label은 코드 값 사용
+        is_visible:  db ? db.is_visible  : def.is_visible,      // DB 가시성 우선
+        order_index: db ? db.order_index : def.order_index,     // DB 순서 우선
+      }
+    })
     .sort((a, b) => a.order_index - b.order_index)
 
   return (

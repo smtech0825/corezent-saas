@@ -19,9 +19,12 @@ export async function POST(request: Request) {
     }
 
     const adminClient = createAdminClient()
+
+    // upsert 대신 update 사용: label 등 필수 컬럼 누락으로 인한 INSERT 실패 방지
     const { error } = await adminClient
       .from('front_sections')
-      .upsert({ name, is_visible }, { onConflict: 'name' })
+      .update({ is_visible })
+      .eq('name', name)
 
     if (error) throw error
 

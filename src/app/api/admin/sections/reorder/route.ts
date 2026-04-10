@@ -17,18 +17,20 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient()
 
-    // 배열 순서(index)를 order_index로 저장
+    // upsert 대신 update 사용: label 등 필수 컬럼 누락으로 인한 INSERT 실패 방지
+    // order_index만 덮어쓰고 나머지 컬럼(label, is_visible)은 보존
     const results = await Promise.all(
       ordered.map((name, idx) =>
         adminClient
           .from('front_sections')
-          .upsert({ name, order_index: idx }, { onConflict: 'name' })
+          .update({ order_index: idx })
+          .eq('name', name)
       )
     )
 
     const failed = results.filter(({ error }) => error)
     if (failed.length > 0) {
-      console.error('[sections/reorder] partial failure:', failed.map((f) => f.error))
+      console.error('[sections/reorder] errors:', failed.map((f) => f.error))
       throw new Error('Some order updates failed')
     }
 
