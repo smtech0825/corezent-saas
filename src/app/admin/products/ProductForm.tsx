@@ -16,6 +16,7 @@ export interface PriceEntry {
   type: 'subscription' | 'one_time'
   interval: 'monthly' | 'annual' | ''
   price: string
+  lemon_squeezy_variant_id: string
 }
 
 export interface ProductFeatureEntry {
@@ -46,7 +47,7 @@ interface Props {
   submitLabel: string
 }
 
-const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '' })
+const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '' })
 
 /** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
 function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
@@ -238,7 +239,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   function updatePrice(idx: number, key: keyof PriceEntry, value: string) {
     const updated = form.prices.map((p, i) => {
       if (i !== idx) return p
-      const next = { ...p, [key]: value }
+      const next: PriceEntry = { ...p, [key]: value }
       if (key === 'type' && value === 'one_time') next.interval = ''
       if (key === 'type' && value === 'subscription' && !next.interval) next.interval = 'monthly'
       return next
@@ -571,40 +572,51 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
 
         {form.prices.map((price, idx) => (
           <div key={idx} className="flex items-end gap-3 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
-            <div className="flex-1 grid grid-cols-3 gap-3">
-              <Field label="Type">
-                <select
-                  value={price.type}
-                  onChange={(e) => updatePrice(idx, 'type', e.target.value)}
-                  className={selectCls}
-                >
-                  <option value="subscription">Subscription</option>
-                  <option value="one_time">One-time</option>
-                </select>
-              </Field>
+            <div className="flex-1 space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Type">
+                  <select
+                    value={price.type}
+                    onChange={(e) => updatePrice(idx, 'type', e.target.value)}
+                    className={selectCls}
+                  >
+                    <option value="subscription">Subscription</option>
+                    <option value="one_time">One-time</option>
+                  </select>
+                </Field>
 
-              <Field label="Interval">
-                <select
-                  value={price.interval}
-                  onChange={(e) => updatePrice(idx, 'interval', e.target.value)}
-                  disabled={price.type === 'one_time'}
-                  className={selectCls + (price.type === 'one_time' ? ' opacity-40 cursor-not-allowed' : '')}
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </Field>
+                <Field label="Interval">
+                  <select
+                    value={price.interval}
+                    onChange={(e) => updatePrice(idx, 'interval', e.target.value)}
+                    disabled={price.type === 'one_time'}
+                    className={selectCls + (price.type === 'one_time' ? ' opacity-40 cursor-not-allowed' : '')}
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </Field>
 
-              <Field label="Price (USD)">
+                <Field label="Price (USD)">
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    required
+                    value={price.price}
+                    onChange={(e) => updatePrice(idx, 'price', e.target.value)}
+                    placeholder="0.00"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+
+              <Field label="Lemon Squeezy Variant ID">
                 <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  required
-                  value={price.price}
-                  onChange={(e) => updatePrice(idx, 'price', e.target.value)}
-                  placeholder="0.00"
-                  className={inputCls}
+                  value={price.lemon_squeezy_variant_id}
+                  onChange={(e) => updatePrice(idx, 'lemon_squeezy_variant_id', e.target.value)}
+                  placeholder="e.g. 123456"
+                  className={inputCls + ' font-mono text-xs'}
                 />
               </Field>
             </div>
