@@ -29,6 +29,7 @@ export interface Order {
   status: string
   created_at: string
   expires_at: string | null
+  period: string | null
 }
 
 interface Props {
@@ -126,6 +127,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                     <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Customer</th>
                     <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Amount</th>
                     <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Period</th>
                     <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Date</th>
                     <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Expire Date</th>
                   </tr>
@@ -146,6 +148,19 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${badge.cls}`}>
                             {badge.label}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {o.period ? (
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+                              o.period === 'annual'
+                                ? 'text-violet-400 bg-violet-400/10 border border-violet-400/20'
+                                : 'text-cyan-400 bg-cyan-400/10 border border-cyan-400/20'
+                            }`}>
+                              {o.period === 'annual' ? 'Annual' : 'Monthly'}
+                            </span>
+                          ) : (
+                            <span className="text-[#475569]">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-[#475569] whitespace-nowrap">{fmtDate(o.created_at)}</td>
                         <td className="px-4 py-3">

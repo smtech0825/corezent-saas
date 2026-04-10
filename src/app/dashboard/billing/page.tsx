@@ -37,7 +37,7 @@ export default async function BillingPage({
   const [{ data: subscriptions, count: subTotal }, { data: orders, count: ordTotal }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id', { count: 'exact' })
+      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id, lemon_squeezy_subscription_id', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(subOffset, subOffset + SUB_PAGE_SIZE - 1),
@@ -135,13 +135,14 @@ export default async function BillingPage({
                 const isNew       = !!changelog && (lastVer == null || lastVer !== changelog.version)
                 const hasDownload = !!changelog && Object.values(changelog.download_urls).some(Boolean)
                 return {
-                  id:               sub.id,
+                  id:                   sub.id,
                   productId,
-                  productName:      priceNameMap.get(sub.product_price_id) ?? 'Unknown',
-                  billingInterval:  sub.billing_interval,
-                  currentPeriodEnd: sub.current_period_end ?? null,
-                  status:           sub.status,
-                  manualUrl:        priceManualMap.get(sub.product_price_id) ?? null,
+                  productName:          priceNameMap.get(sub.product_price_id) ?? 'Unknown',
+                  billingInterval:      sub.billing_interval,
+                  currentPeriodEnd:     sub.current_period_end ?? null,
+                  status:               sub.status,
+                  lsSubscriptionId:     sub.lemon_squeezy_subscription_id ?? null,
+                  manualUrl:            priceManualMap.get(sub.product_price_id) ?? null,
                   changelog,
                   isNew,
                   hasDownload,
