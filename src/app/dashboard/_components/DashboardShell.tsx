@@ -8,16 +8,16 @@
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import DashboardSidebar from './DashboardSidebar'
-
 import { ToastProvider } from '@/components/common/Toast'
 
 interface Props {
   user: { email: string; name: string; initials: string }
   supportBadge?: number
+  isAdmin?: boolean
   children: React.ReactNode
 }
 
-export default function DashboardShell({ user, supportBadge = 0, children }: Props) {
+export default function DashboardShell({ user, supportBadge = 0, isAdmin = false, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -26,7 +26,7 @@ export default function DashboardShell({ user, supportBadge = 0, children }: Pro
         {/* 데스크톱 사이드바 */}
         <div className="hidden lg:flex lg:flex-col">
           <div className="h-screen sticky top-0">
-            <DashboardSidebar user={user} supportBadge={supportBadge} />
+            <DashboardSidebar user={user} supportBadge={supportBadge} isAdmin={isAdmin} />
           </div>
         </div>
 
@@ -38,7 +38,12 @@ export default function DashboardShell({ user, supportBadge = 0, children }: Pro
               onClick={() => setSidebarOpen(false)}
             />
             <div className="relative z-10 flex flex-col h-full">
-              <DashboardSidebar user={user} supportBadge={supportBadge} onClose={() => setSidebarOpen(false)} />
+              <DashboardSidebar
+                user={user}
+                supportBadge={supportBadge}
+                isAdmin={isAdmin}
+                onClose={() => setSidebarOpen(false)}
+              />
             </div>
           </div>
         )}

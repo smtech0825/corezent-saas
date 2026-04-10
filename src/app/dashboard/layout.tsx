@@ -1,10 +1,11 @@
 /**
  * @파일: dashboard/layout.tsx
- * @설명: 대시보드 공통 레이아웃 — 세션 확인 + 지원 뱃지 카운트
+ * @설명: 대시보드 공통 레이아웃 — 세션 확인 + role 조회 + 지원 뱃지 카운트
  */
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import DashboardShell from './_components/DashboardShell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -13,14 +14,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?redirect=/dashboard')
 
-  const { data: profile } = await supabase
+  // role 포함하여 프로필 조회 (RLS 우회 위해 adminClient 사용)
+  const adminClient = createAdminClient()
+  const { data: profile } = await adminClient
     .from('profiles')
-    .select('name, avatar_url')
+    .select('name, avatar_url, role')
     .eq('id', user.id)
     .single()
 
-  const name = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'User'
+  const name     = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'User'
   const initials = name[0].toUpperCase()
+  const isAdmin  = profile?.role === 'admin'
 
   // 미읽은 관리자 답변 뱃지 카운트
   let supportBadge = 0
@@ -53,6 +57,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <DashboardShell
       user={{ email: user.email ?? '', name, initials }}
       supportBadge={supportBadge}
+      isAdmin={isAdmin}
     >
       {children}
     </DashboardShell>
