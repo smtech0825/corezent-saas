@@ -7,7 +7,7 @@
  */
 
 import { useState, useMemo, Fragment } from 'react'
-import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
 import RoleSelect from './RoleSelect'
 import { changeRole, withdrawUser } from './actions'
 
@@ -19,6 +19,7 @@ interface Order {
   amount: number
   status: string
   created_at: string
+  cancelReason: string | null
 }
 
 interface UserData {
@@ -308,22 +309,35 @@ export default function UserTable({ users }: Props) {
                                 </thead>
                                 <tbody>
                                   {u.orders.map((o) => (
-                                    <tr key={o.id} className="border-b border-[#1E293B]/20 last:border-0 hover:bg-[#111A2E]/60">
-                                      <td className="px-4 py-2.5 font-mono text-[#475569]">
-                                        #{o.id.slice(0, 8).toUpperCase()}
-                                      </td>
-                                      <td className="px-4 py-2.5 text-white font-medium">
-                                        {fmtCurrency(o.amount)}
-                                      </td>
-                                      <td className="px-4 py-2.5">
-                                        <span className={`capitalize font-semibold ${orderStatusStyle[o.status] ?? 'text-[#94A3B8]'}`}>
-                                          {o.status}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-2.5 text-[#475569] whitespace-nowrap">
-                                        {fmtDate(o.created_at)}
-                                      </td>
-                                    </tr>
+                                    <Fragment key={o.id}>
+                                      <tr className="border-b border-[#1E293B]/20 last:border-0 hover:bg-[#111A2E]/60">
+                                        <td className="px-4 py-2.5 font-mono text-[#475569]">
+                                          #{o.id.slice(0, 8).toUpperCase()}
+                                        </td>
+                                        <td className="px-4 py-2.5 text-white font-medium">
+                                          {fmtCurrency(o.amount)}
+                                        </td>
+                                        <td className="px-4 py-2.5">
+                                          <span className={`capitalize font-semibold ${orderStatusStyle[o.status] ?? 'text-[#94A3B8]'}`}>
+                                            {o.status}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-2.5 text-[#475569] whitespace-nowrap">
+                                          {fmtDate(o.created_at)}
+                                        </td>
+                                      </tr>
+                                      {/* 취소 사유 표시 (cancelled 구독에 연결된 주문) */}
+                                      {o.cancelReason && (
+                                        <tr className="border-b border-[#1E293B]/20 last:border-0">
+                                          <td colSpan={4} className="px-4 pb-2.5 pt-0">
+                                            <div className="flex items-start gap-1.5 pl-1">
+                                              <MessageSquare size={11} className="text-slate-500 mt-0.5 shrink-0" />
+                                              <span className="text-xs text-slate-400 leading-relaxed">{o.cancelReason}</span>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </Fragment>
                                   ))}
                                 </tbody>
                               </table>

@@ -36,6 +36,19 @@ export default async function UsersPage() {
     ordersMap.get(o.user_id)!.push(o)
   })
 
+  // 구독 취소 사유 — order_id 기준 매핑 (UserTable 아코디언에서 표시용)
+  const { data: cancelledSubs } = await adminClient
+    .from('subscriptions')
+    .select('order_id, cancellation_reason')
+    .not('cancellation_reason', 'is', null)
+
+  const cancelReasonMap = new Map<string, string>()
+  ;(cancelledSubs ?? []).forEach((s) => {
+    if (s.order_id && s.cancellation_reason) {
+      cancelReasonMap.set(s.order_id as string, s.cancellation_reason as string)
+    }
+  })
+
   const users = (profiles ?? []).map((p) => ({
     id:         p.id,
     name:       p.name ?? '',
@@ -44,7 +57,10 @@ export default async function UsersPage() {
     country:    p.country ?? '',
     created_at: p.created_at,
     status:     (p.status as string) ?? 'active',
-    orders:     ordersMap.get(p.id) ?? [],
+    orders:     (ordersMap.get(p.id) ?? []).map((o) => ({
+      ...o,
+      cancelReason: cancelReasonMap.get(o.id) ?? null,
+    })),
   }))
 
   return <UserTable users={users} />

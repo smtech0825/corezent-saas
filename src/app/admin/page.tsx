@@ -11,6 +11,7 @@ import {
   Users, DollarSign, Key, MessageSquare,
   TrendingUp, TrendingDown, UserPlus,
 } from 'lucide-react'
+import ChurnAnalysis, { type CancelEntry } from './ChurnAnalysis'
 
 export const dynamic = 'force-dynamic'
 
@@ -143,6 +144,19 @@ export default async function AdminPage() {
   } catch {
     // 이메일 조회 실패 시 무시
   }
+
+  // ── 구독 취소 사유 (Churn Analysis) ──────────────────────────
+  const { data: cancelledSubs } = await adminClient
+    .from('subscriptions')
+    .select('cancellation_reason, updated_at, user_id')
+    .not('cancellation_reason', 'is', null)
+    .order('updated_at', { ascending: false })
+
+  const cancelEntries: CancelEntry[] = (cancelledSubs ?? []).map((s) => ({
+    reason:    s.cancellation_reason as string,
+    email:     emailMap.get(s.user_id as string) ?? '—',
+    updatedAt: s.updated_at as string,
+  }))
 
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
@@ -309,6 +323,9 @@ export default async function AdminPage() {
           )}
         </div>
       </div>
+
+      {/* Churn Analysis */}
+      <ChurnAnalysis entries={cancelEntries} />
     </div>
   )
 }
