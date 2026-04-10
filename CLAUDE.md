@@ -360,6 +360,7 @@ npm run dev   # Turbopack 개발 서버 (localhost:3000)
     - 변경된 파일 목록 (링크 포함)
     - 주요 변경 사항 요약 (bullet)
     - 확인 URL: `netstat`으로 실제 리스닝 중인 포트를 확인한 후 정확한 URL을 안내한다 (예: `http://localhost:3000/pricing`)
+14. **⚠️ 작업 완료 후 반드시 git push**: 코드 수정 및 커밋이 끝나면 항상 `git push origin main`을 실행해 Vercel 자동 배포를 트리거해야 한다. push 없이 커밋만 하면 배포가 이루어지지 않는다. push까지 완료해야 작업이 끝난 것으로 간주한다.
 
 ---
 
