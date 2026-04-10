@@ -3,10 +3,9 @@
 /**
  * @컴포넌트: SectionsManager
  * @설명: 랜딩 페이지 섹션 가시성 및 순서 관리
- *        - 드래그 앤 드롭으로 order_index 변경 → /api/admin/sections/reorder 호출
- *        - 토글로 is_visible 변경 → /api/admin/sections/toggle 호출
+ *        - 토글 → /api/admin/sections/toggle (upsert: 전체 필드 전송)
+ *        - 드래그 → /api/admin/sections/reorder (upsert: 전체 필드 전송)
  *        - 낙관적 UI: 즉시 반영 후 실패 시 롤백
- *        - API 성공 시 revalidatePath('/') → 랜딩 페이지 캐시 즉시 무효화
  */
 
 import { useState, useTransition } from 'react'
@@ -29,21 +28,27 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
   const [saveError, setSaveError]   = useState<string | null>(null)
 
   // ── 가시성 토글 ─────────────────────────────────────────────────────────────
-  function handleToggle(name: string, current: boolean) {
-    const next = !current
+  function handleToggle(idx: number) {
+    const section = items[idx]
+    const next = !section.is_visible
     // 낙관적 업데이트
-    setItems((prev) => prev.map((s) => (s.name === name ? { ...s, is_visible: next } : s)))
+    setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: next } : s)))
     setSaveError(null)
 
     startTransition(async () => {
       const res = await fetch('/api/admin/sections/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, is_visible: next }),
+        body: JSON.stringify({
+          name: section.name,
+          is_visible: next,
+          label: section.label,
+          order_index: section.order_index,
+        }),
       })
       if (!res.ok) {
         // 실패 시 원래 값으로 롤백
-        setItems((prev) => prev.map((s) => (s.name === name ? { ...s, is_visible: current } : s)))
+        setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: section.is_visible } : s)))
         setSaveError('Visibility update failed. Please try again.')
       }
     })
@@ -70,7 +75,9 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
     const reordered = [...items]
     const [moved] = reordered.splice(dragging, 1)
     reordered.splice(toIdx, 0, moved)
-    setItems(reordered)
+    // order_index 재정렬
+    const updated = reordered.map((s, i) => ({ ...s, order_index: i }))
+    setItems(updated)
     setDragging(null)
     setDragOver(null)
     setSaveError(null)
@@ -79,7 +86,13 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
       const res = await fetch('/api/admin/sections/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ordered: reordered.map((s) => s.name) }),
+        body: JSON.stringify({
+          sections: updated.map((s) => ({
+            name: s.name,
+            label: s.label,
+            is_visible: s.is_visible,
+          })),
+        }),
       })
       if (!res.ok) {
         // 실패 시 원래 순서로 롤백
@@ -125,7 +138,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
               {section.is_visible ? 'Visible' : 'Hidden'}
             </span>
             <button
-              onClick={() => handleToggle(section.name, section.is_visible)}
+              onClick={() => handleToggle(idx)}
               disabled={isPending}
               className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden disabled:opacity-60 ${
                 section.is_visible ? 'bg-emerald-500' : 'bg-[#1E293B]'

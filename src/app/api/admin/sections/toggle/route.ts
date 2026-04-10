@@ -1,6 +1,6 @@
 /**
  * @파일: api/admin/sections/toggle/route.ts
- * @설명: 섹션 가시성 토글 API — DB 업데이트 후 랜딩 페이지 캐시 재검증
+ * @설명: 섹션 가시성 토글 API — upsert로 행 없으면 자동 생성, 캐시 재검증
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -9,9 +9,11 @@ import { revalidatePath } from 'next/cache'
 
 export async function POST(request: Request) {
   try {
-    const { name, is_visible } = (await request.json()) as {
+    const { name, is_visible, label, order_index } = (await request.json()) as {
       name: string
       is_visible: boolean
+      label: string
+      order_index: number
     }
 
     if (!name || typeof is_visible !== 'boolean') {
@@ -20,15 +22,17 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient()
 
-    // upsert 대신 update 사용: label 등 필수 컬럼 누락으로 인한 INSERT 실패 방지
+    // upsert: 행이 없으면 INSERT, 있으면 UPDATE (label·order_index 포함으로 NOT NULL 제약 충족)
     const { error } = await adminClient
       .from('front_sections')
-      .update({ is_visible })
-      .eq('name', name)
+      .upsert(
+        { name, is_visible, label: label || name, order_index: order_index ?? 0 },
+        { onConflict: 'name' },
+      )
 
     if (error) throw error
 
-    // 랜딩 페이지 캐시 즉시 무효화 (일반 사용자 화면에 즉시 반영)
+    // 랜딩 페이지 캐시 즉시 무효화
     revalidatePath('/', 'layout')
 
     return NextResponse.json({ ok: true })

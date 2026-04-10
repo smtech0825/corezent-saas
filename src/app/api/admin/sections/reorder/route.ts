@@ -1,31 +1,43 @@
 /**
  * @파일: api/admin/sections/reorder/route.ts
- * @설명: 섹션 순서 변경 API — order_index 일괄 업데이트 후 랜딩 페이지 캐시 재검증
+ * @설명: 섹션 순서 변경 API — upsert로 행 없으면 자동 생성, 캐시 재검증
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
+interface SectionItem {
+  name: string
+  label: string
+  is_visible: boolean
+}
+
 export async function POST(request: Request) {
   try {
-    const { ordered } = (await request.json()) as { ordered: string[] }
+    const { sections } = (await request.json()) as { sections: SectionItem[] }
 
-    if (!Array.isArray(ordered) || ordered.length === 0) {
+    if (!Array.isArray(sections) || sections.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()
 
-    // upsert 대신 update 사용: label 등 필수 컬럼 누락으로 인한 INSERT 실패 방지
-    // order_index만 덮어쓰고 나머지 컬럼(label, is_visible)은 보존
+    // upsert: 행이 없으면 INSERT, 있으면 UPDATE (label·is_visible 포함으로 NOT NULL 제약 충족)
     const results = await Promise.all(
-      ordered.map((name, idx) =>
+      sections.map((s, idx) =>
         adminClient
           .from('front_sections')
-          .update({ order_index: idx })
-          .eq('name', name)
-      )
+          .upsert(
+            {
+              name: s.name,
+              label: s.label || s.name,
+              is_visible: s.is_visible,
+              order_index: idx,
+            },
+            { onConflict: 'name' },
+          ),
+      ),
     )
 
     const failed = results.filter(({ error }) => error)
@@ -34,7 +46,7 @@ export async function POST(request: Request) {
       throw new Error('Some order updates failed')
     }
 
-    // 랜딩 페이지 캐시 즉시 무효화 (변경된 순서 즉시 반영)
+    // 랜딩 페이지 캐시 즉시 무효화
     revalidatePath('/', 'layout')
 
     return NextResponse.json({ ok: true })
