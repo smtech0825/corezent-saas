@@ -1,4 +1,10 @@
+/**
+ * @컴포넌트: Footer
+ * @설명: 사이트 하단 푸터 — DB의 footer_info를 fetch해 whitespace-pre-wrap으로 출력
+ */
+
 import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const footerLinks = {
   Product: [
@@ -18,7 +24,17 @@ const footerLinks = {
   ],
 }
 
-export default function Footer() {
+export default async function Footer() {
+  const adminClient = createAdminClient()
+  const { data: rows } = await adminClient
+    .from('front_settings')
+    .select('key, value')
+    .in('key', ['footer_info', 'footer_copyright'])
+
+  const map = new Map((rows ?? []).map((r) => [r.key, r.value ?? '']))
+  const footerInfo  = map.get('footer_info') ?? ''
+  const copyright   = map.get('footer_copyright') ?? `© ${new Date().getFullYear()} CoreZent Inc. All rights reserved.`
+
   return (
     <footer className="border-t border-[#1E293B] bg-[#0B1120]">
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -56,13 +72,16 @@ export default function Footer() {
         </div>
 
         {/* 하단 바 */}
-        <div className="mt-12 pt-8 border-t border-[#1E293B] flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[#94A3B8]">
-            © {new Date().getFullYear()} CoreZent Inc. All rights reserved.
-          </p>
-          <p className="text-xs text-[#94A3B8]">
-            사업자등록번호: 000-00-00000 | 대표: CoreZent
-          </p>
+        <div className="mt-12 pt-8 border-t border-[#1E293B] flex flex-col sm:flex-row justify-between items-start gap-4">
+          <p className="text-xs text-[#94A3B8] shrink-0">{copyright}</p>
+          {footerInfo && (
+            <p
+              className="text-xs text-[#94A3B8] sm:text-right"
+              style={{ whiteSpace: 'pre-wrap' }}
+            >
+              {footerInfo}
+            </p>
+          )}
         </div>
       </div>
     </footer>
