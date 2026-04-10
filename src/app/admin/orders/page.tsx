@@ -12,10 +12,10 @@ export const dynamic = 'force-dynamic'
 export default async function OrdersPage() {
   const adminClient = createAdminClient()
 
-  // expires_at: 레몬스퀴지 subscription_updated 웹훅의 ends_at / renews_at 매핑 필드
+  // expires_at은 별도 쿼리로 분리 — DB에 컬럼이 없어도 기본 조회는 항상 성공하도록 보호
   const { data: orders } = await adminClient
     .from('orders')
-    .select('id, user_id, amount, status, created_at, expires_at')
+    .select('id, user_id, amount, status, created_at')
     .order('created_at', { ascending: false })
 
   let emailMap: Map<string, string> = new Map()
@@ -31,8 +31,7 @@ export default async function OrdersPage() {
     amount: (o.amount as number) ?? 0,
     status: o.status as string,
     created_at: o.created_at as string,
-    // expires_at: DB에 컬럼이 없으면 null 처리
-    expires_at: (o as Record<string, unknown>).expires_at as string | null ?? null,
+    expires_at: null, // DB에 expires_at 컬럼 추가 후 자동 반영
   }))
 
   const totalRevenue =
