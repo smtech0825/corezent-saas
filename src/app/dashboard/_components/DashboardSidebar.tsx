@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X, HelpCircle, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useLanguage } from '@/lib/i18n'
+
 
 interface Props {
   user: { email: string; name: string; initials: string }
@@ -21,15 +21,15 @@ export default function DashboardSidebar({ user, supportBadge = 0, onClose }: Pr
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const { t } = useLanguage()
+
 
   const navItems = [
-    { label: t.dashboard.overview,   href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
-    { label: t.dashboard.licenses,   href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
-    { label: t.dashboard.billing,    href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
-    { label: t.dashboard.changelog,  href: '/changelog',          icon: History,         exact: false, badge: 0 },
-    { label: t.dashboard.settings,   href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
-    { label: t.dashboard.support,    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
+    { label: 'Overview',   href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
+    { label: 'Licenses',   href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
+    { label: 'Billing',    href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
+    { label: 'Changelog',  href: '/changelog',          icon: History,         exact: false, badge: 0 },
+    { label: 'Settings',   href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
+    { label: 'Support',    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
   ]
 
   async function handleLogout() {
@@ -106,7 +106,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, onClose }: Pr
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
         >
           <LogOut size={16} />
-          {t.dashboard.logout}
+          Log out
         </button>
       </div>
     </aside>

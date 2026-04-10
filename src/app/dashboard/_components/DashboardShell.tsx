@@ -2,13 +2,13 @@
 
 /**
  * @컴포넌트: DashboardShell
- * @설명: 대시보드 외부 쉘 — 모바일 햄버거, 데스크톱 상단 헤더, 언어 선택기, ToastProvider
+ * @설명: 대시보드 외부 쉘 — 모바일 햄버거, 데스크톱 상단 헤더, ToastProvider
  */
 
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import DashboardSidebar from './DashboardSidebar'
-import LanguageSelector from '@/components/LanguageSelector'
+
 import { ToastProvider } from '@/components/common/Toast'
 
 interface Props {
@@ -61,8 +61,8 @@ export default function DashboardShell({ user, supportBadge = 0, children }: Pro
             {/* 데스크톱: 빈 공간 */}
             <div className="hidden lg:block" />
 
-            {/* 우측: 언어 선택기 */}
-            <LanguageSelector align="right" />
+            {/* 우측: 예비 공간 */}
+            <div />
           </div>
 
           {/* 페이지 콘텐츠 */}

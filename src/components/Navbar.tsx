@@ -7,7 +7,6 @@
  *        - 로고, 메뉴 링크 (i18n)
  *        - 비로그인: Log in / Get started
  *        - 로그인 시: 아바타 드롭다운 (My Page, Settings, Log out)
- *        - 언어 선택 드롭다운 (실제 작동)
  *        - 모바일 햄버거 메뉴
  */
 
@@ -16,13 +15,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Zap, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useLanguage } from '@/lib/i18n'
-import LanguageSelector from '@/components/LanguageSelector'
+
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export default function Navbar() {
   const router = useRouter()
-  const { t } = useLanguage()
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
@@ -43,13 +40,13 @@ export default function Navbar() {
 
   // 네비게이션 링크 (번역 적용)
   const navLinks: { label: string; href: string; external?: boolean }[] = [
-    { label: t.nav.about, href: '/about' },
-    { label: t.nav.product, href: '/product' },
-    { label: t.nav.pricing, href: '/pricing' },
-    { label: t.nav.changelog, href: '/changelog' },
-    { label: t.nav.manual, href: 'https://sites.google.com/view/corezent', external: true },
-    { label: t.nav.faq, href: '/faq' },
-    { label: t.nav.contact, href: '/contact' },
+    { label: 'About', href: '/about' },
+    { label: 'Product', href: '/product' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'Changelog', href: '/changelog' },
+    { label: 'Manual', href: 'https://sites.google.com/view/corezent', external: true },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Contact', href: '/contact' },
   ]
 
   // 배너 데이터 로드
@@ -218,7 +215,7 @@ export default function Navbar() {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
                     >
                       <LayoutDashboard size={14} />
-                      {t.nav.myPage}
+                      My Page
                     </Link>
                     <Link
                       href="/dashboard/settings"
@@ -226,14 +223,14 @@ export default function Navbar() {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
                     >
                       <User size={14} />
-                      {t.nav.settings}
+                      Settings
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors border-t border-[#1E293B]"
                     >
                       <LogOut size={14} />
-                      {t.nav.logout}
+                      Log out
                     </button>
                   </div>
                 )}
@@ -245,21 +242,18 @@ export default function Navbar() {
                   href="/auth/login"
                   className="hidden lg:block text-sm text-[#94A3B8] hover:text-white transition-colors px-2"
                 >
-                  {t.nav.login}
+                  Log in
                 </Link>
                 <Link
                   href="/auth/register"
                   className="hidden lg:inline-flex items-center gap-1.5 bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#0ea5e9] transition-colors"
                 >
-                  {t.nav.getStarted}
+                  Get started
                 </Link>
               </>
             )}
 
-            {/* 언어 선택 드롭다운 */}
-            <div className="hidden lg:block">
-              <LanguageSelector align="right" />
-            </div>
+
 
             {/* 모바일 햄버거 */}
             <button
@@ -306,13 +300,13 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="text-sm text-[#94A3B8] hover:text-white"
                   >
-                    {t.nav.myPage}
+                    My Page
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="text-left text-sm text-red-400 hover:text-red-300"
                   >
-                    {t.nav.logout}
+                    Log out
                   </button>
                 </>
               ) : (
@@ -321,20 +315,17 @@ export default function Navbar() {
                     href="/auth/login"
                     className="text-sm text-[#94A3B8] hover:text-white"
                   >
-                    {t.nav.login}
+                    Log in
                   </Link>
                   <Link
                     href="/auth/register"
                     className="inline-flex justify-center bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg"
                   >
-                    {t.nav.getStarted}
+                    Get started
                   </Link>
                 </>
               )}
-              {/* 모바일 언어 선택 */}
-              <div className="pt-1">
-                <LanguageSelector align="left" />
-              </div>
+
             </div>
           </div>
         )}
