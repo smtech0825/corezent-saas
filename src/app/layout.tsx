@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Analytics from '@/components/Analytics'
+import CookieConsentBanner from '@/components/CookieConsentBanner'
 
 export const metadata: Metadata = {
   title: {
@@ -19,6 +21,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        {/* 분석 스크립트 (쿠키 동의 시에만 로드) */}
+        <Analytics />
+        {/* GDPR/CCPA 쿠키 동의 배너 */}
+        <CookieConsentBanner />
       </body>
     </html>
   )

@@ -45,7 +45,16 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
+    // 로그인 후 돌아갈 경로를 쿠키에도 저장 (OAuth 플로우에서 query param이 유실될 때 대비)
+    const res = NextResponse.redirect(url)
+    res.cookies.set('return_to', pathname, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 600, // 10분
+      path: '/',
+    })
+    return res
   }
 
   // 관리자 경로: 로그인 여부만 체크 (role 검증은 admin/layout.tsx에서 service role key로 처리)

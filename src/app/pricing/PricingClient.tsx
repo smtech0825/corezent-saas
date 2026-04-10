@@ -20,6 +20,22 @@ import {
 } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
+import { getUtmData, type UtmData } from '@/lib/cookies'
+
+// 전역 분석 도구 타입 선언
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void
+    posthog?: { capture: (event: string, props?: Record<string, unknown>) => void }
+    fbq?: (...args: unknown[]) => void
+  }
+}
+
+/** 통합 이벤트 트래킹 헬퍼 */
+function track(event: string, props?: Record<string, unknown>) {
+  window.gtag?.('event', event, props)
+  window.posthog?.capture(event, props)
+}
 
 interface DbProductData {
   tags: string[]
@@ -41,13 +57,15 @@ export default function PricingClient({ dbData }: Props) {
   const [annual, setAnnual] = useState(false)
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('all')
   const [userId, setUserId] = useState<string | null>(null)
+  const [utmData, setUtmData] = useState<UtmData | null>(null)
 
-  // 로그인 사용자 ID 조회 (체크아웃 URL에 주입)
+  // 로그인 사용자 ID + UTM 데이터 조회
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
+    setUtmData(getUtmData())
   }, [])
 
   const filtered = useMemo(
@@ -80,7 +98,7 @@ export default function PricingClient({ dbData }: Props) {
           {/* 월간/연간 토글 — transition-colors만 사용해 레이아웃 겹침 방지 */}
           <div className="inline-flex items-center border border-[#1E293B] bg-[#111A2E] rounded-full p-1.5 gap-0.5">
             <button
-              onClick={() => setAnnual(false)}
+              onClick={() => { setAnnual(false); track('pricing_toggle', { plan: 'monthly' }) }}
               className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 !annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
               }`}
@@ -88,7 +106,7 @@ export default function PricingClient({ dbData }: Props) {
               Monthly
             </button>
             <button
-              onClick={() => setAnnual(true)}
+              onClick={() => { setAnnual(true); track('pricing_toggle', { plan: 'annual' }) }}
               className={`whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
               }`}
@@ -134,6 +152,7 @@ export default function PricingClient({ dbData }: Props) {
               const checkoutUrl = buildCheckoutUrl(
                 annual ? product.lemonSqueezy.annual : product.lemonSqueezy.monthly,
                 userId,
+                utmData,
               )
               // DB 데이터에서 pricing_features 조회
               const slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -206,6 +225,10 @@ export default function PricingClient({ dbData }: Props) {
                     {/* 구매 버튼 — 비로그인 시 회원가입 페이지로 이동 */}
                     <Link
                       href={userId ? checkoutUrl : '/auth/register'}
+                      onClick={() => {
+                        track('initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly' })
+                        window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
+                      }}
                       className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold mb-8 bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200"
                     >
                       Get started

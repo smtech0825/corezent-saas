@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 
@@ -14,8 +15,19 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')
   const tokenHash = url.searchParams.get('token_hash')
   const type = url.searchParams.get('type') as 'magiclink' | 'email' | 'signup' | 'recovery' | null
-  const redirect = url.searchParams.get('redirect') ?? '/'
   const origin = url.origin
+
+  // 돌아갈 경로 결정: return_to 쿠키 → ?redirect 쿼리 → 기본값 '/'
+  const cookieStore = await cookies()
+  const returnToCookie = cookieStore.get('return_to')?.value
+  const redirectParam  = url.searchParams.get('redirect') ?? '/'
+  const redirect = returnToCookie ?? redirectParam
+
+  // return_to 쿠키 삭제 헬퍼 (리다이렉트 응답에 적용)
+  function withCookieCleared(res: NextResponse): NextResponse {
+    if (returnToCookie) res.cookies.delete('return_to')
+    return res
+  }
 
   const supabase = await createClient()
 
@@ -23,7 +35,7 @@ export async function GET(request: Request) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     console.log('[callback] code exchange error:', error)
-    if (!error) return NextResponse.redirect(`${origin}${redirect}`)
+    if (!error) return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
   }
 
@@ -68,7 +80,7 @@ export async function GET(request: Request) {
           }).catch((err) => console.error('[email] 웰컴 이메일 발송 실패:', err))
         }
       }
-      return NextResponse.redirect(`${origin}${redirect}`)
+      return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
     return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
   }
