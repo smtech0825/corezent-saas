@@ -1,17 +1,12 @@
 /**
  * @파일: admin/licenses/page.tsx
- * @설명: 관리자 라이선스 관리 — 발급된 모든 라이선스 목록 및 상태 관리
+ * @설명: 관리자 라이선스 관리 — 서버에서 전체 데이터 수집 후 클라이언트로 전달
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { revalidatePath } from 'next/cache'
+import LicenseTable, { type License } from './LicenseTable'
 
 export const dynamic = 'force-dynamic'
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 function maskKey(key: string) {
   const parts = key.split('-')
@@ -19,119 +14,62 @@ function maskKey(key: string) {
   return `${parts[0]}-****-****-${parts[3]}`
 }
 
-const statusColors: Record<string, string> = {
-  active: 'text-emerald-400 bg-emerald-400/10',
-  inactive: 'text-[#475569] bg-[#1E293B]',
-  revoked: 'text-red-400 bg-red-400/10',
-  expired: 'text-amber-400 bg-amber-400/10',
-}
-
-async function revokeKey(formData: FormData) {
-  'use server'
-  const id = formData.get('id') as string
-  if (!id) return
-  const adminClient = createAdminClient()
-  await adminClient.from('licenses').update({ status: 'revoked' }).eq('id', id)
-  revalidatePath('/admin/licenses')
-}
-
-async function activateKey(formData: FormData) {
-  'use server'
-  const id = formData.get('id') as string
-  if (!id) return
-  const adminClient = createAdminClient()
-  await adminClient.from('licenses').update({ status: 'active' }).eq('id', id)
-  revalidatePath('/admin/licenses')
-}
-
 export default async function LicensesPage() {
   const adminClient = createAdminClient()
 
+  // 라이선스 목록 (order_id 포함)
   const { data: licenses } = await adminClient
     .from('licenses')
-    .select('id, user_id, serial_key, status, max_devices, expires_at, created_at')
+    .select('id, user_id, serial_key, status, expires_at, created_at, order_id')
     .order('created_at', { ascending: false })
 
-  let emailMap: Map<string, string> = new Map()
+  // 구독 정보 조회 — Period(monthly/annual), Renewal Date
+  const orderIds = (licenses ?? [])
+    .map((l) => l.order_id as string | null)
+    .filter((id): id is string => Boolean(id))
+
+  type SubRow = { order_id: string | null; current_period_end: string | null; product_prices: { interval: string }[] | null }
+  let subMap = new Map<string, { interval: string | null; renewalDate: string | null }>()
+
+  if (orderIds.length > 0) {
+    const { data: subs } = await adminClient
+      .from('subscriptions')
+      .select('order_id, current_period_end, product_prices(interval)')
+      .in('order_id', orderIds)
+
+    ;((subs as unknown) as SubRow[] ?? []).forEach((s) => {
+      if (!s.order_id) return
+      const pp = s.product_prices as { interval: string }[] | { interval: string } | null
+      const interval = Array.isArray(pp)
+        ? (pp[0]?.interval ?? null)
+        : (pp?.interval ?? null)
+      subMap.set(s.order_id, {
+        interval,
+        renewalDate: s.current_period_end ?? null,
+      })
+    })
+  }
+
+  // 이메일 맵 (auth.users)
+  let emailMap = new Map<string, string>()
   try {
     const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 })
     emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']))
   } catch { /* 무시 */ }
 
-  const list = (licenses ?? []).map((l) => ({
-    ...l,
-    email: emailMap.get(l.user_id) ?? '—',
-  }))
+  const list: License[] = (licenses ?? []).map((l) => {
+    const sub = l.order_id ? subMap.get(l.order_id as string) : undefined
+    return {
+      id:          l.id as string,
+      serialKey:   maskKey(l.serial_key as string),
+      email:       emailMap.get(l.user_id as string) ?? '—',
+      status:      l.status as string,
+      period:      sub?.interval ?? null,
+      renewalDate: sub?.renewalDate ?? null,
+      expiresAt:   l.expires_at as string | null,
+      createdAt:   l.created_at as string,
+    }
+  })
 
-  return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Licenses</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">{list.length} total licenses</p>
-      </div>
-
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-        {list.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#475569]">No licenses issued yet.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1E293B]">
-                  <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">Serial Key</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">User</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Max Devices</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Expires</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((l) => (
-                  <tr key={l.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
-                    <td className="px-6 py-3">
-                      <span className="font-mono text-xs text-[#94A3B8]">{maskKey(l.serial_key)}</span>
-                    </td>
-                    <td className="px-4 py-3 text-[#94A3B8] truncate max-w-[180px]">{l.email}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColors[l.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
-                        {l.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[#475569]">{l.max_devices}</td>
-                    <td className="px-4 py-3 text-[#475569] whitespace-nowrap">{fmtDate(l.expires_at)}</td>
-                    <td className="px-4 py-3">
-                      {l.status === 'active' ? (
-                        <form action={revokeKey}>
-                          <input type="hidden" name="id" value={l.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 px-2 py-1 rounded-lg transition-colors"
-                          >
-                            Revoke
-                          </button>
-                        </form>
-                      ) : l.status === 'revoked' ? (
-                        <form action={activateKey}>
-                          <input type="hidden" name="id" value={l.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/20 hover:border-emerald-400/40 px-2 py-1 rounded-lg transition-colors"
-                          >
-                            Restore
-                          </button>
-                        </form>
-                      ) : (
-                        <span className="text-xs text-[#475569]">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+  return <LicenseTable licenses={list} />
 }
