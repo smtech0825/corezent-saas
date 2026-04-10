@@ -18,6 +18,26 @@ import { createClient } from '@/lib/supabase/client'
 
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+// ── 컬러 해싱 — 유저 이름 기반 다크 파스텔 배경 ──────────────────
+const AVATAR_PALETTES = [
+  { bg: 'bg-indigo-900/60',  border: 'border-indigo-700/40'  },
+  { bg: 'bg-emerald-900/60', border: 'border-emerald-700/40' },
+  { bg: 'bg-amber-900/60',   border: 'border-amber-700/40'   },
+  { bg: 'bg-rose-900/60',    border: 'border-rose-700/40'    },
+  { bg: 'bg-violet-900/60',  border: 'border-violet-700/40'  },
+  { bg: 'bg-cyan-900/60',    border: 'border-cyan-700/40'    },
+  { bg: 'bg-teal-900/60',    border: 'border-teal-700/40'    },
+  { bg: 'bg-sky-900/60',     border: 'border-sky-700/40'     },
+]
+
+function hashColor(str: string) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return AVATAR_PALETTES[Math.abs(hash) % AVATAR_PALETTES.length]
+}
+
 export default function Navbar() {
   const router = useRouter()
 
@@ -25,6 +45,7 @@ export default function Navbar() {
   const [userOpen, setUserOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | null>(null)
 
   // 공지 배너 데이터 (DB에서 로드)
   const [banner, setBanner] = useState({
@@ -76,11 +97,12 @@ export default function Navbar() {
       if (data.user) {
         supabase
           .from('profiles')
-          .select('avatar_url')
+          .select('avatar_url, name')
           .eq('id', data.user.id)
           .single()
           .then(({ data: profile }) => {
             setAvatarUrl(profile?.avatar_url ?? null)
+            setUserName(profile?.name ?? null)
           })
       }
     })
@@ -111,9 +133,10 @@ export default function Navbar() {
     router.refresh()
   }
 
-  const initials = user
-    ? (user.user_metadata?.name?.[0] ?? user.email?.[0] ?? 'U').toUpperCase()
-    : 'U'
+  // 유저 이름 → 이메일 @앞 → 'U' 순서로 이니셜 추출
+  const displayName = userName ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? ''
+  const initials = displayName ? displayName[0].toUpperCase() : 'U'
+  const avatarColor = hashColor(displayName || user?.email || 'user')
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 flex flex-col">
@@ -183,16 +206,16 @@ export default function Navbar() {
               <div ref={userRef} className="relative hidden lg:block">
                 <button
                   onClick={() => setUserOpen(!userOpen)}
-                  className="flex items-center gap-2 border border-[#1E293B] hover:border-[#38BDF8]/40 rounded-lg px-2 py-1.5 transition-colors"
+                  className="flex items-center gap-2.5 border border-[#1E293B] hover:border-[#38BDF8]/40 rounded-xl px-4 py-2 transition-colors min-w-[88px] justify-center"
                 >
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt="avatar"
-                      className="w-7 h-7 rounded-full object-cover"
+                      className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="w-7 h-7 rounded-full bg-[#38BDF8]/20 border border-[#38BDF8]/30 flex items-center justify-center text-xs font-bold text-[#38BDF8]">
+                    <span className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-semibold text-slate-200 ${avatarColor.bg} ${avatarColor.border}`}>
                       {initials}
                     </span>
                   )}
