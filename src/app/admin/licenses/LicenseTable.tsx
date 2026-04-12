@@ -12,6 +12,7 @@ export interface License {
   id: string
   serialKey: string    // masked (XXXX-****-****-XXXX)
   email: string
+  productName: string
   status: string       // 'active' | 'expired' | 'revoked'
   period: string | null  // 'monthly' | 'annual' | null
   renewalDate: string | null
@@ -162,6 +163,7 @@ export default function LicenseTable({ licenses }: Props) {
               <thead>
                 <tr className="border-b border-[#1E293B]">
                   <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Serial Key</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Product</th>
                   <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">User</th>
                   <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Status</th>
                   <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Period</th>
@@ -179,6 +181,7 @@ export default function LicenseTable({ licenses }: Props) {
                       <td className="px-6 py-3">
                         <span className="font-mono text-xs text-[#94A3B8] whitespace-nowrap">{l.serialKey}</span>
                       </td>
+                      <td className="px-4 py-3 text-white text-sm truncate max-w-[140px]">{l.productName || '—'}</td>
                       <td className="px-4 py-3 text-[#94A3B8] text-sm truncate max-w-[200px]">{l.email}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>

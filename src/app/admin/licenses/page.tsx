@@ -17,10 +17,10 @@ function maskKey(key: string) {
 export default async function LicensesPage() {
   const adminClient = createAdminClient()
 
-  // 라이선스 목록 (order_id 포함)
+  // 라이선스 목록 (order_id + product 이름 포함)
   const { data: licenses } = await adminClient
     .from('licenses')
-    .select('id, user_id, serial_key, status, expires_at, created_at, order_id')
+    .select('id, user_id, serial_key, status, expires_at, created_at, order_id, products(name)')
     .order('created_at', { ascending: false })
 
   // 구독 정보 조회 — Period(monthly/annual), Renewal Date
@@ -63,6 +63,7 @@ export default async function LicensesPage() {
       id:          l.id as string,
       serialKey:   maskKey(l.serial_key as string),
       email:       emailMap.get(l.user_id as string) ?? '—',
+      productName: ((l as Record<string, unknown>).products as { name: string } | null)?.name ?? '',
       status:      l.status as string,
       period:      sub?.interval ?? null,
       renewalDate: sub?.renewalDate ?? null,

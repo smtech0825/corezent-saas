@@ -1,6 +1,7 @@
 /**
  * @파일: dashboard/licenses/page.tsx
  * @설명: 라이선스 목록 — 서버사이드 페이지네이션 (10개/페이지)
+ *        구독형 라이선스는 subscription.current_period_end(갱신일)를 만료일로 표시
  */
 
 import { createClient } from '@/lib/supabase/server'
@@ -29,14 +30,31 @@ export default async function LicensesPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const [{ data: licenses, count }] = await Promise.all([
-    supabase
-      .from('licenses')
-      .select('id, serial_key, status, expires_at, created_at, products(name, slug)', { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1),
-  ])
+  const { data: licenses, count } = await supabase
+    .from('licenses')
+    .select('id, serial_key, status, expires_at, created_at, order_id, products(name, slug)', { count: 'exact' })
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  // 구독 갱신일 조회 — order_id로 subscription.current_period_end 매핑
+  const orderIds = (licenses ?? [])
+    .map((l: Record<string, unknown>) => l.order_id as string | null)
+    .filter((id): id is string => Boolean(id))
+
+  const renewalMap = new Map<string, string>()
+  if (orderIds.length > 0) {
+    const { data: subs } = await supabase
+      .from('subscriptions')
+      .select('order_id, current_period_end, status')
+      .in('order_id', orderIds)
+
+    ;(subs ?? []).forEach((s: Record<string, unknown>) => {
+      const oid = s.order_id as string | null
+      const end = s.current_period_end as string | null
+      if (oid && end) renewalMap.set(oid, end)
+    })
+  }
 
   const total = count ?? 0
 
@@ -54,7 +72,7 @@ export default async function LicensesPage({
         <>
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_160px_140px_140px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+            <div className="hidden md:grid grid-cols-[1fr_140px_100px_140px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
               <span>License Key</span>
               <span>Product</span>
               <span>Status</span>
@@ -62,44 +80,50 @@ export default async function LicensesPage({
             </div>
 
             {/* 라이선스 목록 */}
-            {licenses.map((lic: any) => (
-              <div
-                key={lic.id}
-                className="grid grid-cols-1 md:grid-cols-[1fr_160px_140px_140px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
-              >
-                {/* 시리얼 키 */}
-                <div className="flex items-center gap-2">
-                  <Key size={14} className="text-[#38BDF8] shrink-0 hidden md:block" />
-                  <span className="font-mono text-sm text-white tracking-wider truncate">
-                    {lic.serial_key}
-                  </span>
-                  <LicenseCopyButton serialKey={lic.serial_key} />
-                </div>
+            {licenses.map((lic: any) => {
+              // 구독 갱신일 우선, 없으면 license.expires_at
+              const renewalDate = lic.order_id ? renewalMap.get(lic.order_id) : null
+              const effectiveExpiry = renewalDate ?? lic.expires_at
 
-                {/* 제품명 */}
-                <div>
-                  <span className="text-sm text-[#94A3B8]">{lic.products?.name ?? '—'}</span>
-                </div>
-
-                {/* 상태 */}
-                <div>
-                  <LicenseStatusBadge status={lic.status} />
-                </div>
-
-                {/* 만료일 */}
-                <div>
-                  {lic.status === 'revoked' || lic.status === 'expired' || lic.status === 'cancelled' ? (
-                    <span className="text-sm text-[#94A3B8]">Cancelled</span>
-                  ) : lic.expires_at ? (
-                    <span className="text-sm text-[#94A3B8]">
-                      {new Date(lic.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              return (
+                <div
+                  key={lic.id}
+                  className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px_140px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                >
+                  {/* 시리얼 키 */}
+                  <div className="flex items-center gap-2">
+                    <Key size={14} className="text-[#38BDF8] shrink-0 hidden md:block" />
+                    <span className="font-mono text-sm text-white tracking-wider truncate">
+                      {lic.serial_key}
                     </span>
-                  ) : (
-                    <span className="text-sm text-[#475569]">Lifetime</span>
-                  )}
+                    <LicenseCopyButton serialKey={lic.serial_key} />
+                  </div>
+
+                  {/* 제품명 */}
+                  <div>
+                    <span className="text-sm text-[#94A3B8]">{lic.products?.name ?? '—'}</span>
+                  </div>
+
+                  {/* 상태 */}
+                  <div>
+                    <LicenseStatusBadge status={lic.status} />
+                  </div>
+
+                  {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
+                  <div>
+                    {lic.status === 'revoked' || lic.status === 'expired' || lic.status === 'cancelled' ? (
+                      <span className="text-sm text-[#94A3B8]">Cancelled</span>
+                    ) : effectiveExpiry ? (
+                      <span className="text-sm text-[#94A3B8]">
+                        {new Date(effectiveExpiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-[#475569]">Lifetime</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <Pagination
