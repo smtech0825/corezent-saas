@@ -14,7 +14,7 @@ const footerLinks = {
     { label: 'About', href: '/about' },
   ],
   Resources: [
-    { label: 'Documentation', href: '/manuals' },
+    { label: 'Documentation', href: 'https://sites.google.com/view/corezent' },
     { label: 'Support', href: '/dashboard/support' },
   ],
   Legal: [
@@ -58,12 +58,23 @@ export default async function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.href.startsWith('http') ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
