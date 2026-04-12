@@ -77,6 +77,45 @@ export function generateSerialKey(): string {
   return `${segment()}-${segment()}-${segment()}-${segment()}`
 }
 
+/**
+ * @함수명: fetchLsLicenseKey
+ * @설명: LS API를 호출하여 주문에 연결된 라이선스 키를 가져옵니다.
+ *        Pro 제품처럼 LS가 자동 발급한 라이선스 키를 조회할 때 사용합니다.
+ * @매개변수: lsOrderId - Lemon Squeezy 주문 ID (숫자 문자열)
+ * @반환값: 라이선스 키 문자열 또는 null (미발견/에러 시)
+ */
+export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | null> {
+  const apiKey = process.env.LEMON_SQUEEZY_API_KEY
+  if (!apiKey) {
+    console.warn('[LS API] LEMON_SQUEEZY_API_KEY 미설정 — 라이선스 키 조회 건너뜀')
+    return null
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.lemonsqueezy.com/v1/license-keys?filter[order_id]=${lsOrderId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/vnd.api+json',
+        },
+      },
+    )
+
+    if (!res.ok) {
+      console.error(`[LS API] 라이선스 키 조회 실패: ${res.status}`)
+      return null
+    }
+
+    const json = await res.json()
+    const keys = json.data as Array<{ attributes: { key: string } }> | undefined
+    return keys?.[0]?.attributes?.key ?? null
+  } catch (err) {
+    console.error('[LS API] 라이선스 키 조회 오류:', err)
+    return null
+  }
+}
+
 // ─── Lemon Squeezy 웹훅 이벤트 타입 ──────────────────────────────────────────
 
 export interface LSWebhookMeta {

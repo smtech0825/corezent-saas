@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
   verifyLSWebhook,
   generateSerialKey,
+  fetchLsLicenseKey,
   type LSWebhookPayload,
   type LSOrderAttributes,
   type LSSubscriptionAttributes,
@@ -203,7 +204,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 주문 생성 완료: ${order.id}`)
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
-    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name)
+    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId)
   }
 }
 
@@ -306,7 +307,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
   if (productPrice?.product_id && orderId) {
-    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name)
+    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId)
   }
 }
 
@@ -490,8 +491,10 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
 /**
  * @함수명: createLicense
- * @설명: 주문/구독 완료 후 고유 시리얼 키를 생성하고 이메일로 발송합니다.
- *        Pro 제품은 Sheets G열에 TRUE 기록.
+ * @설명: 주문/구독 완료 후 라이선스를 생성하고 이메일로 발송합니다.
+ *        일반 제품: CoreZent에서 시리얼 키 자체 생성
+ *        Pro 제품: LS에서 자동 발급한 라이선스 키를 API로 조회하여 사용
+ *        Sheets G열에 Pro면 TRUE 기록.
  */
 async function createLicense(
   userId: string,
@@ -499,6 +502,7 @@ async function createLicense(
   productId: string,
   userEmail: string,
   userName: string,
+  lsOrderId?: string,
 ) {
   const admin = createAdminClient()
 
@@ -519,15 +523,40 @@ async function createLicense(
     .eq('id', productId)
     .single()
 
-  let serialKey = generateSerialKey()
-  for (let i = 0; i < 5; i++) {
-    const { data: dup } = await admin
-      .from('licenses')
-      .select('id')
-      .eq('serial_key', serialKey)
-      .single()
-    if (!dup) break
+  // 제품명 기반 라이선스 방식 판별
+  // GeniePost(일반)만 CoreZent 자체 시리얼 키 생성, 나머지(Pro + 모든 신규 상품)는 LS 자동 발급 키 사용
+  const productName = (product?.name ?? '').toLowerCase()
+  const isPro = !productName.includes('geniepost') || productName.includes('pro')
+  // isPro === true: LS 라이선스 사용 (Pro 및 모든 신규 상품)
+  // isPro === false: GeniePost 일반만 자체 생성
+
+  let serialKey: string
+  let lsLicenseKey: string | null = null
+
+  if (isPro && lsOrderId) {
+    // LS API로 자동 발급된 라이선스 키 조회
+    const lsKey = await fetchLsLicenseKey(lsOrderId)
+    if (lsKey) {
+      serialKey = lsKey
+      lsLicenseKey = lsKey
+      console.log(`[LS Webhook] LS 라이선스 키 조회 완료: ${lsKey.slice(0, 8)}...`)
+    } else {
+      // LS 키 조회 실패 시 자체 생성으로 폴백
+      console.warn(`[LS Webhook] LS 키 조회 실패 — 자체 생성으로 폴백`)
+      serialKey = generateSerialKey()
+    }
+  } else {
+    // GeniePost 일반: CoreZent 자체 시리얼 키 생성 (충돌 시 재시도)
     serialKey = generateSerialKey()
+    for (let i = 0; i < 5; i++) {
+      const { data: dup } = await admin
+        .from('licenses')
+        .select('id')
+        .eq('serial_key', serialKey)
+        .single()
+      if (!dup) break
+      serialKey = generateSerialKey()
+    }
   }
 
   // 만료일: 구독인 경우 subscription.current_period_end 사용, 아니면 license_duration_days
@@ -548,17 +577,20 @@ async function createLicense(
     expiresAt = d.toISOString()
   }
 
+  const licenseInsert: Record<string, unknown> = {
+    user_id: userId,
+    order_id: orderId,
+    product_id: productId,
+    serial_key: serialKey,
+    status: 'active',
+    max_devices: product?.max_devices ?? null,
+    expires_at: expiresAt,
+  }
+  if (lsLicenseKey) licenseInsert.lemon_squeezy_license_key = lsLicenseKey
+
   const { data: license, error: licErr } = await admin
     .from('licenses')
-    .insert({
-      user_id: userId,
-      order_id: orderId,
-      product_id: productId,
-      serial_key: serialKey,
-      status: 'active',
-      max_devices: product?.max_devices ?? null,
-      expires_at: expiresAt,
-    })
+    .insert(licenseInsert)
     .select('id')
     .single()
 
@@ -566,10 +598,7 @@ async function createLicense(
     throw new Error(`라이선스 생성 실패: ${licErr?.message}`)
   }
 
-  console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey})`)
-
-  // Pro 제품 감지 (제품명에 'pro'가 포함되면 Pro로 판별)
-  const isPro = (product?.name ?? '').toLowerCase().includes('pro')
+  console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey})${isPro ? ' [Pro]' : ''}`)
 
   // 주문 확인 이메일 발송
   try {
