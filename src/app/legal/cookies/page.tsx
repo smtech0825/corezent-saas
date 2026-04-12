@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Cookie Policy — CoreZent',
@@ -76,7 +77,10 @@ const sections = [
   },
 ]
 
-export default function CookiesPage() {
+export default async function CookiesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const supportHref = user ? '/dashboard/support' : '/auth/login'
   return (
     <div className="min-h-screen bg-[#0B1120]">
       {/* 헤더 */}
@@ -199,12 +203,12 @@ export default function CookiesPage() {
               </a>
             </p>
           </div>
-          <a
-            href="mailto:support@corezent.com"
+          <Link
+            href={supportHref}
             className="shrink-0 bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
           >
             Contact Support
-          </a>
+          </Link>
         </div>
       </div>
     </div>
