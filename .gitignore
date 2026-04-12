@@ -22,6 +22,7 @@ dist/
 build/
 node_modules/
 .next/
+tsconfig.tsbuildinfo
 
 # Claude 설정
 .claude/
