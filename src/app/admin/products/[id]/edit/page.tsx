@@ -31,7 +31,7 @@ export default async function EditProductPage({
   // is_active=true 인 가격만 조회 후 type+interval 기준 중복 제거
   const { data: rawPrices } = await client
     .from('product_prices')
-    .select('id, type, interval, price, lemon_squeezy_variant_id')
+    .select('id, type, interval, price, lemon_squeezy_variant_id, checkout_url')
     .eq('product_id', id)
     .eq('is_active', true)
     .order('id', { ascending: true })
@@ -71,6 +71,7 @@ export default async function EditProductPage({
       interval: (p.interval ?? '') as 'monthly' | 'annual' | '',
       price: String(p.price),
       lemon_squeezy_variant_id: (p.lemon_squeezy_variant_id as string) ?? '',
+      checkout_url: (p.checkout_url as string) ?? '',
     }))
 
   const initialData: ProductFormData = {
@@ -137,6 +138,7 @@ export default async function EditProductPage({
           interval: price.type === 'subscription' ? price.interval || null : null,
           price: parseFloat(price.price),
           lemon_squeezy_variant_id: price.lemon_squeezy_variant_id || null,
+          checkout_url: price.checkout_url || null,
           is_active: true,
         })
         .eq('id', price.id!)
@@ -152,6 +154,7 @@ export default async function EditProductPage({
           interval: p.type === 'subscription' ? p.interval || null : null,
           price: parseFloat(p.price),
           lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
+          checkout_url: p.checkout_url || null,
           is_active: true,
         }))
       )

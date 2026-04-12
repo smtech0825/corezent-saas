@@ -17,6 +17,7 @@ export interface PriceEntry {
   interval: 'monthly' | 'annual' | ''
   price: string
   lemon_squeezy_variant_id: string
+  checkout_url: string
 }
 
 export interface ProductFeatureEntry {
@@ -47,7 +48,7 @@ interface Props {
   submitLabel: string
 }
 
-const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '' })
+const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '' })
 
 /** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
 function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
@@ -611,11 +612,20 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 </Field>
               </div>
 
-              <Field label="Lemon Squeezy Variant ID">
+              <Field label="Lemon Squeezy Variant ID (for webhook matching)">
                 <input
                   value={price.lemon_squeezy_variant_id}
                   onChange={(e) => updatePrice(idx, 'lemon_squeezy_variant_id', e.target.value)}
                   placeholder="e.g. 123456"
+                  className={inputCls + ' font-mono text-xs'}
+                />
+              </Field>
+
+              <Field label="Checkout URL (purchase button link)">
+                <input
+                  value={price.checkout_url}
+                  onChange={(e) => updatePrice(idx, 'checkout_url', e.target.value)}
+                  placeholder="https://corezent.lemonsqueezy.com/checkout/buy/..."
                   className={inputCls + ' font-mono text-xs'}
                 />
               </Field>

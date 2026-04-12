@@ -45,6 +45,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
         interval: p.type === 'subscription' ? p.interval || null : null,
         price: parseFloat(p.price),
         lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
+        checkout_url: p.checkout_url || null,
         is_active: true,
       }))
 

@@ -16,12 +16,6 @@ export const metadata: Metadata = {
   description: 'Simple, transparent pricing. Pick the tools you need or bundle everything for maximum savings.',
 }
 
-/** LS 체크아웃 기본 URL 빌드 — variant_id가 URL이면 그대로, 숫자면 조립 */
-function buildLsBaseUrl(variantId: string | null): string {
-  if (!variantId) return '#'
-  if (variantId.startsWith('http')) return variantId
-  return `https://corezent.lemonsqueezy.com/buy/${variantId}`
-}
 
 export default async function PricingPage() {
   const client = createAdminClient()
@@ -35,13 +29,13 @@ export default async function PricingPage() {
       .order('order_index'),
     client
       .from('product_prices')
-      .select('product_id, type, interval, price, lemon_squeezy_variant_id')
+      .select('product_id, type, interval, price, checkout_url')
       .eq('is_active', true),
   ])
 
   // 가격을 product_id별로 그룹화
   const priceMap = new Map<string, Array<{
-    type: string; interval: string | null; price: number; lemon_squeezy_variant_id: string | null
+    type: string; interval: string | null; price: number; checkout_url: string | null
   }>>()
 
   for (const p of (dbPrices ?? []) as Array<Record<string, unknown>>) {
@@ -51,7 +45,7 @@ export default async function PricingPage() {
       type: p.type as string,
       interval: (p.interval as string) ?? null,
       price: p.price as number,
-      lemon_squeezy_variant_id: (p.lemon_squeezy_variant_id as string) ?? null,
+      checkout_url: (p.checkout_url as string) ?? null,
     })
   }
 
@@ -79,8 +73,8 @@ export default async function PricingPage() {
       monthlyPrice,
       annualMonthlyPrice,
       annualPrice,
-      monthlyCheckoutUrl:   buildLsBaseUrl(monthly?.lemon_squeezy_variant_id ?? oneTime?.lemon_squeezy_variant_id ?? null),
-      annualCheckoutUrl:    buildLsBaseUrl(annual?.lemon_squeezy_variant_id ?? null),
+      monthlyCheckoutUrl:   monthly?.checkout_url ?? oneTime?.checkout_url ?? '#',
+      annualCheckoutUrl:    annual?.checkout_url ?? '#',
       hasAnnualPlan:        !!annual,
       isOneTime:            !monthly && !annual && !!oneTime,
     }
