@@ -2,22 +2,16 @@
 
 /**
  * @컴포넌트: PricingClient
- * @설명: 요금제 페이지 인터랙티브 영역
+ * @설명: 요금제 페이지 인터랙티브 영역 — DB에서 가져온 제품 데이터를 렌더링
  *        - 연간/월간 결제 토글
- *        - 제품 카드 그리드
+ *        - 카테고리 필터
  *        - 로그인 사용자의 경우 checkout URL에 user_id 자동 주입
  */
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Zap } from 'lucide-react'
-import {
-  products,
-  FILTER_LABELS,
-  BADGE_STYLES,
-  CATEGORY_BADGE,
-  type FilterCategory,
-} from '@/lib/products'
+import { BADGE_STYLES, CATEGORY_BADGE } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
@@ -37,26 +31,41 @@ function track(event: string, props?: Record<string, unknown>) {
   window.posthog?.capture(event, props)
 }
 
-interface DbProductData {
-  tags: string[]
-  pricing_features: string[]
-  tagline: string | null
+// ── DB에서 받는 제품 인터페이스 ──────────────────────────────────
+
+export interface PricingProduct {
+  id: string
+  slug: string
+  name: string
+  category: string
+  tagline: string
+  pricingFeatures: string[]
+  monthlyPrice: number
+  annualMonthlyPrice: number
+  annualPrice: number
+  monthlyCheckoutUrl: string
+  annualCheckoutUrl: string
+  hasAnnualPlan: boolean
+  isOneTime: boolean
 }
 
 interface Props {
-  dbData: Record<string, DbProductData>
+  products: PricingProduct[]
 }
 
-const FILTER_CATEGORIES: FilterCategory[] = ['all', 'chrome-extension', 'desktop', 'web-tool']
+// 카테고리 필터 레이블
+const FILTER_LABELS: Record<string, string> = {
+  all: 'All',
+  'chrome-extension': 'Chrome Extension',
+  desktop: 'Desktop',
+  web: 'Web',
+  'web-tool': 'Web Tool',
+  mobile: 'Mobile',
+}
 
-// 연간 절약률 계산 (첫 번째 제품 기준)
-const SAVE_PCT = products[0]
-  ? Math.round((1 - products[0].annualMonthlyPrice / products[0].monthlyPrice) * 100)
-  : 25
-
-export default function PricingClient({ dbData }: Props) {
+export default function PricingClient({ products }: Props) {
   const [annual, setAnnual] = useState(false)
-  const [activeCategory, setActiveCategory] = useState<FilterCategory>('all')
+  const [activeCategory, setActiveCategory] = useState('all')
   const [userId, setUserId] = useState<string | null>(null)
   const [utmData, setUtmData] = useState<UtmData | null>(null)
 
@@ -69,15 +78,32 @@ export default function PricingClient({ dbData }: Props) {
     setUtmData(getUtmData())
   }, [])
 
+  // 카테고리 필터링
   const filtered = useMemo(
     () =>
       activeCategory === 'all'
         ? products
         : products.filter((p) => p.category === activeCategory),
-    [activeCategory],
+    [activeCategory, products],
   )
 
-  const hasMultipleCategories = new Set(products.map((p) => p.category)).size > 1
+  // 존재하는 카테고리만 탭으로 표시
+  const categories = useMemo(() => {
+    const cats = new Set(products.map((p) => p.category))
+    return ['all', ...cats]
+  }, [products])
+
+  const hasMultipleCategories = categories.length > 2 // 'all' + 1개 이상
+
+  // 연간 할인이 있는 첫 번째 제품 기준 Save % 계산
+  const savePct = useMemo(() => {
+    const withAnnual = products.find((p) => p.hasAnnualPlan && p.monthlyPrice > 0)
+    if (!withAnnual) return 0
+    return Math.round((1 - withAnnual.annualMonthlyPrice / withAnnual.monthlyPrice) * 100)
+  }, [products])
+
+  // 연간 플랜이 있는 제품이 하나라도 있는지
+  const hasAnyAnnualPlan = products.some((p) => p.hasAnnualPlan)
 
   return (
     <div className="pt-32 sm:pt-36 pb-24 px-4 sm:px-6">
@@ -96,38 +122,42 @@ export default function PricingClient({ dbData }: Props) {
             One plan, everything included. Switch anytime.
           </p>
 
-          {/* 월간/연간 토글 — transition-colors만 사용해 레이아웃 겹침 방지 */}
-          <div className="inline-flex items-center border border-[#1E293B] bg-[#111A2E] rounded-full p-1.5 gap-0.5">
-            <button
-              onClick={() => { setAnnual(false); track('pricing_toggle', { plan: 'monthly' }) }}
-              className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                !annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => { setAnnual(true); track('pricing_toggle', { plan: 'annual' }) }}
-              className={`whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
-              }`}
-            >
-              Annual
-              <span
-                className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-200 ${
-                  annual ? 'bg-[#0B1120]/20 text-[#0B1120]' : 'bg-emerald-500/15 text-emerald-400'
+          {/* 월간/연간 토글 — 연간 플랜이 있는 제품이 하나라도 있을 때만 표시 */}
+          {hasAnyAnnualPlan && (
+            <div className="inline-flex items-center border border-[#1E293B] bg-[#111A2E] rounded-full p-1.5 gap-0.5">
+              <button
+                onClick={() => { setAnnual(false); track('pricing_toggle', { plan: 'monthly' }) }}
+                className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                  !annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
                 }`}
               >
-                Save {SAVE_PCT}%
-              </span>
-            </button>
-          </div>
+                Monthly
+              </button>
+              <button
+                onClick={() => { setAnnual(true); track('pricing_toggle', { plan: 'annual' }) }}
+                className={`whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                  annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
+                }`}
+              >
+                Annual
+                {savePct > 0 && (
+                  <span
+                    className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-200 ${
+                      annual ? 'bg-[#0B1120]/20 text-[#0B1120]' : 'bg-emerald-500/15 text-emerald-400'
+                    }`}
+                  >
+                    Save {savePct}%
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* 카테고리 탭 (제품이 여러 카테고리일 때만 표시) */}
+        {/* 카테고리 탭 */}
         {hasMultipleCategories && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {FILTER_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -137,7 +167,7 @@ export default function PricingClient({ dbData }: Props) {
                     : 'border-[#1E293B] text-[#94A3B8] hover:text-white'
                 }`}
               >
-                {FILTER_LABELS[cat]}
+                {FILTER_LABELS[cat] ?? cat}
               </button>
             ))}
           </div>
@@ -147,20 +177,25 @@ export default function PricingClient({ dbData }: Props) {
         {filtered.length === 0 ? (
           <p className="text-center text-[#94A3B8] py-20">No products in this category.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
-            {filtered.map((product) => {
-              const price = annual ? product.annualMonthlyPrice : product.monthlyPrice
-              const checkoutUrl = buildCheckoutUrl(
-                annual ? product.lemonSqueezy.annual : product.lemonSqueezy.monthly,
-                userId,
-                utmData,
-              )
-              // DB 데이터에서 pricing_features 조회
-              const slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-              const db = dbData[slug]
-              const displayFeatures = db?.pricing_features?.length ? db.pricing_features : product.features
-              // 제품별 정확한 할인율 계산 (소수점 반올림)
-              const savePct = Math.round((1 - product.annualMonthlyPrice / product.monthlyPrice) * 100)
+          <div className={`grid gap-6 mb-20 ${
+            filtered.length === 1
+              ? 'grid-cols-1 max-w-md mx-auto'
+              : filtered.length === 2
+              ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto'
+              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          }`}>
+            {filtered.map((product, idx) => {
+              const isAnnualView = annual && product.hasAnnualPlan
+              const displayPrice = isAnnualView ? product.annualMonthlyPrice : product.monthlyPrice
+              const baseCheckoutUrl = isAnnualView
+                ? product.annualCheckoutUrl
+                : product.monthlyCheckoutUrl
+              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, utmData)
+
+              // 제품별 할인율
+              const productSavePct = product.hasAnnualPlan && product.monthlyPrice > 0
+                ? Math.round((1 - product.annualMonthlyPrice / product.monthlyPrice) * 100)
+                : 0
 
               return (
                 <div
@@ -177,20 +212,16 @@ export default function PricingClient({ dbData }: Props) {
                   />
 
                   <div className="relative z-10 flex flex-col flex-1">
-                    {/* 뱃지 */}
-                    {product.badge && (
+                    {/* 첫 번째 제품에 Popular 뱃지 */}
+                    {idx === 0 && (
                       <div className="mb-4">
-                        <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                            BADGE_STYLES[product.badge] ?? 'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20'
-                          }`}
-                        >
-                          {product.badge}
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${BADGE_STYLES['Popular']}`}>
+                          Popular
                         </span>
                       </div>
                     )}
 
-                    {/* 제품명 + 카테고리 배지 + 태그라인 */}
+                    {/* 제품명 + 카테고리 배지 */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
                       <h3 className="text-2xl font-bold text-white">{product.name}</h3>
                       {product.category && (
@@ -199,31 +230,46 @@ export default function PricingClient({ dbData }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{db?.tagline || product.tagline}</p>
+                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
 
                     {/* 가격 */}
                     <div className="mb-8">
-                      {annual && (
-                        <p className="text-sm text-[#94A3B8] line-through mb-0.5">
-                          ${product.monthlyPrice.toFixed(2)}/mo
-                        </p>
-                      )}
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-5xl font-bold text-white">${price.toFixed(2)}</span>
-                        <span className="text-[#94A3B8] text-base">/mo</span>
-                      </div>
-                      {annual ? (
-                        <p className="text-xs text-emerald-400 mt-1.5 font-medium">
-                          Billed ${product.annualPrice}/year · Save {savePct}%
-                        </p>
+                      {product.isOneTime ? (
+                        /* 일회성 구매 */
+                        <>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-5xl font-bold text-white">${product.monthlyPrice.toFixed(2)}</span>
+                          </div>
+                          <p className="text-xs text-[#475569] mt-1.5">One-time purchase</p>
+                        </>
                       ) : (
-                        <p className="text-xs text-[#475569] mt-1.5">
-                          or ${product.annualPrice}/year (save {savePct}%)
-                        </p>
+                        /* 구독형 */
+                        <>
+                          {isAnnualView && (
+                            <p className="text-sm text-[#94A3B8] line-through mb-0.5">
+                              ${product.monthlyPrice.toFixed(2)}/mo
+                            </p>
+                          )}
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-5xl font-bold text-white">${displayPrice.toFixed(2)}</span>
+                            <span className="text-[#94A3B8] text-base">/mo</span>
+                          </div>
+                          {product.hasAnnualPlan ? (
+                            isAnnualView ? (
+                              <p className="text-xs text-emerald-400 mt-1.5 font-medium">
+                                Billed ${product.annualPrice}/year · Save {productSavePct}%
+                              </p>
+                            ) : (
+                              <p className="text-xs text-[#475569] mt-1.5">
+                                or ${product.annualPrice}/year (save {productSavePct}%)
+                              </p>
+                            )
+                          ) : null}
+                        </>
                       )}
                     </div>
 
-                    {/* 구매 버튼 — 비로그인 시 회원가입 페이지로 이동 */}
+                    {/* 구매 버튼 */}
                     <Link
                       href={userId ? checkoutUrl : '/auth/register'}
                       onClick={() => {
@@ -236,25 +282,27 @@ export default function PricingClient({ dbData }: Props) {
                       <ArrowRight size={14} />
                     </Link>
 
-                    {/* 기능 목록 (DB pricing_features 우선, 없으면 하드코딩 features 사용) */}
-                    <ul className="space-y-3 flex-1">
-                      {displayFeatures.map((feature) => {
-                        const colonIdx = feature.indexOf(':')
-                        const [title, desc] = colonIdx !== -1
-                          ? [feature.slice(0, colonIdx).trim(), feature.slice(colonIdx + 1).trim()]
-                          : [feature, null]
-                        return (
-                          <li key={feature} className="flex items-start gap-3">
-                            <Check size={15} className="text-[#38BDF8] mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-[#94A3B8] leading-relaxed">
-                              {desc ? (
-                                <><strong className="text-[#F1F5F9]">{title}:</strong> {desc}</>
-                              ) : title}
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
+                    {/* 기능 목록 */}
+                    {product.pricingFeatures.length > 0 && (
+                      <ul className="space-y-3 flex-1">
+                        {product.pricingFeatures.map((feature) => {
+                          const colonIdx = feature.indexOf(':')
+                          const [title, desc] = colonIdx !== -1
+                            ? [feature.slice(0, colonIdx).trim(), feature.slice(colonIdx + 1).trim()]
+                            : [feature, null]
+                          return (
+                            <li key={feature} className="flex items-start gap-3">
+                              <Check size={15} className="text-[#38BDF8] mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-[#94A3B8] leading-relaxed">
+                                {desc ? (
+                                  <><strong className="text-[#F1F5F9]">{title}:</strong> {desc}</>
+                                ) : title}
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )

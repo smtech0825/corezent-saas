@@ -1,8 +1,13 @@
+/**
+ * @파일: pricing/page.tsx
+ * @설명: 요금제 페이지 — DB에서 제품 + 가격 동적 조회 후 PricingClient에 전달
+ */
+
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
-import PricingClient from './PricingClient'
+import PricingClient, { type PricingProduct } from './PricingClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,32 +16,82 @@ export const metadata: Metadata = {
   description: 'Simple, transparent pricing. Pick the tools you need or bundle everything for maximum savings.',
 }
 
+/** LS 체크아웃 기본 URL 빌드 — variant_id가 URL이면 그대로, 숫자면 조립 */
+function buildLsBaseUrl(variantId: string | null): string {
+  if (!variantId) return '#'
+  if (variantId.startsWith('http')) return variantId
+  return `https://corezent.lemonsqueezy.com/buy/${variantId}`
+}
 
 export default async function PricingPage() {
-  // DB에서 tags, pricing_features 조회 (slug 기준 매핑)
   const client = createAdminClient()
-  const { data: dbProducts } = await client
-    .from('products')
-    .select('slug, tags, pricing_features, tagline')
-    .eq('is_active', true)
 
-  const dbMap: Record<string, { tags: string[]; pricing_features: string[]; tagline: string | null }> = {}
-  for (const p of dbProducts ?? []) {
-    if (p.slug) {
-      dbMap[p.slug as string] = {
-        tags: (p.tags ?? []) as string[],
-        pricing_features: (p.pricing_features ?? []) as string[],
-        tagline: (p.tagline as string) ?? null,
-      }
-    }
+  // 제품 + 가격 병렬 조회
+  const [{ data: dbProducts }, { data: dbPrices }] = await Promise.all([
+    client
+      .from('products')
+      .select('id, slug, name, category, tagline, pricing_features, order_index')
+      .eq('is_active', true)
+      .order('order_index'),
+    client
+      .from('product_prices')
+      .select('product_id, type, interval, price, lemon_squeezy_variant_id')
+      .eq('is_active', true),
+  ])
+
+  // 가격을 product_id별로 그룹화
+  const priceMap = new Map<string, Array<{
+    type: string; interval: string | null; price: number; lemon_squeezy_variant_id: string | null
+  }>>()
+
+  for (const p of (dbPrices ?? []) as Array<Record<string, unknown>>) {
+    const pid = p.product_id as string
+    if (!priceMap.has(pid)) priceMap.set(pid, [])
+    priceMap.get(pid)!.push({
+      type: p.type as string,
+      interval: (p.interval as string) ?? null,
+      price: p.price as number,
+      lemon_squeezy_variant_id: (p.lemon_squeezy_variant_id as string) ?? null,
+    })
   }
+
+  // PricingProduct 배열 조립
+  const products: PricingProduct[] = ((dbProducts ?? []) as Array<Record<string, unknown>>).map((p) => {
+    const prices = priceMap.get(p.id as string) ?? []
+    const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual  = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    const oneTime = prices.find((pr) => pr.type === 'one_time')
+
+    // 월간 가격: monthly 우선, 없으면 one_time
+    const monthlyPrice = monthly?.price ?? oneTime?.price ?? 0
+    // 연간 가격: annual 엔트리 값 (없으면 월간×12)
+    const annualPrice = annual?.price ?? monthlyPrice * 12
+    // 연간 결제 시 월 환산 가격
+    const annualMonthlyPrice = annual ? annualPrice / 12 : monthlyPrice
+
+    return {
+      id:                   p.id as string,
+      slug:                 (p.slug as string) ?? '',
+      name:                 (p.name as string) ?? '',
+      category:             (p.category as string) ?? 'desktop',
+      tagline:              (p.tagline as string) ?? '',
+      pricingFeatures:      ((p.pricing_features ?? []) as string[]).filter(Boolean),
+      monthlyPrice,
+      annualMonthlyPrice,
+      annualPrice,
+      monthlyCheckoutUrl:   buildLsBaseUrl(monthly?.lemon_squeezy_variant_id ?? oneTime?.lemon_squeezy_variant_id ?? null),
+      annualCheckoutUrl:    buildLsBaseUrl(annual?.lemon_squeezy_variant_id ?? null),
+      hasAnnualPlan:        !!annual,
+      isOneTime:            !monthly && !annual && !!oneTime,
+    }
+  })
 
   return (
     <div className="min-h-screen bg-[#0B1120] font-sans">
       <Navbar />
 
       <main>
-        <PricingClient dbData={dbMap} />
+        <PricingClient products={products} />
       </main>
 
       <Footer />
