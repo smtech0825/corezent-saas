@@ -46,8 +46,8 @@ export default async function Footer() {
               <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">C</span>
               CoreZent
             </div>
-            <p className="text-sm text-[#94A3B8] leading-relaxed">
-              Software subscription &amp; license management for modern teams.
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Next-generation AI automation tools designed to save your time and scale your digital workflow.
             </p>
           </div>
 
