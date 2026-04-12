@@ -1,7 +1,7 @@
 /**
  * @파일: lib/sheets.ts
  * @설명: Google Sheets API 헬퍼 — 라이선스 행 추가 및 상태/만료일 업데이트
- *        웹사이트 구매 완료 시 라이선스 관리 시트에 자동으로 데이터를 기입합니다.
+ *        A(ID/이메일), B(Serial No), C(HWID), D(만료일), E(상태), F(남은일), G(Pro)
  */
 
 import { google } from 'googleapis'
@@ -44,12 +44,14 @@ async function findRowBySerial(
 /**
  * @함수명: appendLicenseRow
  * @설명: 구매 완료 후 라이선스 관리 시트에 새 행을 추가합니다.
- *        A(ID=이메일), B(Serial No), C(HWID=빈칸), D(만료일), E(대기), F(남은일 수식)
+ *        A(ID=이메일), B(Serial No), C(HWID=빈칸), D(만료일), E(상태), F(남은일 수식), G(Pro)
  */
 export async function appendLicenseRow(params: {
   email:     string
   serialKey: string
-  expiresAt: string | null  // ISO 문자열 or null(영구)
+  expiresAt: string | null
+  isPro?:    boolean
+  status?:   '대기' | '활성'
 }): Promise<void> {
   if (!SPREADSHEET_ID || !TAB_NAME) {
     console.warn('[Sheets] 환경변수 미설정 — 시트 기입 건너뜀')
@@ -69,18 +71,21 @@ export async function appendLicenseRow(params: {
     ? new Date(params.expiresAt).toISOString().split('T')[0]
     : ''
 
+  const initialStatus = params.status ?? '활성'
+
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${TAB_NAME}!A${nextRow}:F${nextRow}`,
+    range: `${TAB_NAME}!A${nextRow}:G${nextRow}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [[
-        params.email,
-        params.serialKey,
-        '',                                                     // C: HWID (프로그램이 최초 인증 시 자동 입력)
-        expirationDate,                                         // D: 만료일 (YYYY-MM-DD)
-        '대기',                                                  // E: 상태
-        expirationDate ? `=D${nextRow}-TODAY()` : '',           // F: 남은 일수 수식
+        params.email,                                             // A: ID (이메일)
+        params.serialKey,                                         // B: Serial No
+        '',                                                       // C: HWID (프로그램이 최초 인증 시 자동 입력)
+        expirationDate,                                           // D: 만료일 (YYYY-MM-DD)
+        initialStatus,                                            // E: 상태 (LS 구매 시 '활성')
+        expirationDate ? `=D${nextRow}-TODAY()` : '',             // F: 남은 일수 수식
+        params.isPro ? 'TRUE' : '',                               // G: Pro 플래그
       ]],
     },
   })
@@ -116,11 +121,11 @@ export async function updateLicenseExpiry(params: {
   })
 }
 
-// ─── 상태 업데이트 (취소/환불 시) ────────────────────────────────────────────
+// ─── 상태 업데이트 (취소/환불/갱신 시) ────────────────────────────────────────
 
 /**
  * @함수명: updateLicenseStatus
- * @설명: 구독 취소·환불 시 시트의 E열(상태)을 '중지'로 업데이트합니다.
+ * @설명: 구독 상태 변경 시 시트의 E열(상태)을 업데이트합니다.
  */
 export async function updateLicenseStatus(params: {
   serialKey: string

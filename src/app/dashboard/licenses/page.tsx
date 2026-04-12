@@ -42,17 +42,21 @@ export default async function LicensesPage({
     .map((l: Record<string, unknown>) => l.order_id as string | null)
     .filter((id): id is string => Boolean(id))
 
-  const renewalMap = new Map<string, string>()
+  const renewalMap = new Map<string, { end: string | null; interval: string | null }>()
   if (orderIds.length > 0) {
     const { data: subs } = await supabase
       .from('subscriptions')
-      .select('order_id, current_period_end, status')
+      .select('order_id, current_period_end, status, billing_interval')
       .in('order_id', orderIds)
 
     ;(subs ?? []).forEach((s: Record<string, unknown>) => {
       const oid = s.order_id as string | null
-      const end = s.current_period_end as string | null
-      if (oid && end) renewalMap.set(oid, end)
+      if (oid) {
+        renewalMap.set(oid, {
+          end: (s.current_period_end as string) ?? null,
+          interval: (s.billing_interval as string) ?? null,
+        })
+      }
     })
   }
 
@@ -72,23 +76,25 @@ export default async function LicensesPage({
         <>
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_140px_100px_140px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
               <span>License Key</span>
               <span>Product</span>
               <span>Status</span>
+              <span>Period</span>
               <span>Expires</span>
             </div>
 
             {/* 라이선스 목록 */}
             {licenses.map((lic: any) => {
               // 구독 갱신일 우선, 없으면 license.expires_at
-              const renewalDate = lic.order_id ? renewalMap.get(lic.order_id) : null
-              const effectiveExpiry = renewalDate ?? lic.expires_at
+              const subInfo = lic.order_id ? renewalMap.get(lic.order_id) : null
+              const effectiveExpiry = subInfo?.end ?? lic.expires_at
+              const period = subInfo?.interval ?? null
 
               return (
                 <div
                   key={lic.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px_140px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
                 >
                   {/* 시리얼 키 */}
                   <div className="flex items-center gap-2">
@@ -107,6 +113,21 @@ export default async function LicensesPage({
                   {/* 상태 */}
                   <div>
                     <LicenseStatusBadge status={lic.status} />
+                  </div>
+
+                  {/* Period */}
+                  <div>
+                    {period ? (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                        period === 'annual'
+                          ? 'text-violet-400 bg-violet-400/10 border-violet-400/20'
+                          : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
+                      }`}>
+                        {period === 'annual' ? 'Annual' : 'Monthly'}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#475569]">—</span>
+                    )}
                   </div>
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}

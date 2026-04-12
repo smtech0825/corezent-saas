@@ -4,11 +4,14 @@
  *        주문/구독 이벤트를 수신하여 DB(orders, licenses, subscriptions)에 동기화합니다.
  *
  * 처리하는 이벤트:
- *   - order_created        → orders + licenses 생성
- *   - subscription_created → subscriptions 생성
- *   - subscription_updated → 구독 상태 업데이트
- *   - subscription_cancelled → 취소 처리
- *   - subscription_expired → 만료 처리
+ *   - order_created              → orders + licenses 생성
+ *   - subscription_created       → subscriptions 생성
+ *   - subscription_updated       → 구독 상태/만료일 업데이트 + license.expires_at 동기화
+ *   - subscription_cancelled     → 취소 처리 + license expired
+ *   - subscription_expired       → 만료 처리 + license expired
+ *   - subscription_payment_failed → 결제 실패 → license expired + Sheets 중지
+ *   - subscription_paused/unpaused → 일시정지/해제
+ *   - order_refunded             → 환불 처리
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -23,15 +26,12 @@ import {
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 
-// Vercel Edge에서는 rawBody를 text로 읽어야 서명 검증이 가능
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
-  // 1. 원시 본문 읽기 (서명 검증용)
   const rawBody = await req.text()
   const signature = req.headers.get('x-signature') ?? ''
 
-  // 2. 서명 검증
   if (!verifyLSWebhook(rawBody, signature)) {
     console.error('[LS Webhook] 서명 검증 실패')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
       case 'subscription_expired':
         await handleSubscriptionCancelled(payload)
         break
+      case 'subscription_payment_failed':
+        await handlePaymentFailed(payload)
+        break
       case 'subscription_paused':
         await handleSubscriptionStatusChange(payload, 'paused')
         break
@@ -76,7 +79,6 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error(`[LS Webhook] 이벤트 처리 중 오류 (${eventName}):`, err)
-    // 500을 반환하면 LS가 재시도하므로 200으로 응답 (중복 처리 방지)
     return NextResponse.json({ received: true, error: String(err) }, { status: 200 })
   }
 
@@ -85,17 +87,12 @@ export async function POST(req: NextRequest) {
 
 // ─── 사용자 조회 ────────────────────────────────────────────────────────────
 
-/**
- * @함수명: findUserId
- * @설명: custom_data.user_id → 이메일 순서로 사용자를 조회합니다.
- */
 async function findUserId(
   customUserId: string | undefined,
   email: string,
 ): Promise<string | null> {
   const admin = createAdminClient()
 
-  // 1순위: 체크아웃 시 주입된 user_id
   if (customUserId) {
     const { data } = await admin
       .from('profiles')
@@ -105,9 +102,29 @@ async function findUserId(
     if (data) return data.id
   }
 
-  // 2순위: 이메일로 auth.users 조회 (helper function 사용)
   const { data } = await admin.rpc('get_user_id_by_email', { p_email: email })
   return data ?? null
+}
+
+// ─── 구독 ID로 연결된 라이선스 시리얼 키 조회 (Sheets 업데이트용) ─────────────
+
+async function findLicenseByLsSubId(lsSubId: string): Promise<{ serialKey: string; licenseId: string; orderId: string } | null> {
+  const admin = createAdminClient()
+  const { data: sub } = await admin
+    .from('subscriptions')
+    .select('order_id')
+    .eq('lemon_squeezy_subscription_id', lsSubId)
+    .single()
+  if (!sub?.order_id) return null
+
+  const { data: lic } = await admin
+    .from('licenses')
+    .select('id, serial_key')
+    .eq('order_id', sub.order_id)
+    .single()
+  if (!lic) return null
+
+  return { serialKey: lic.serial_key, licenseId: lic.id, orderId: sub.order_id }
 }
 
 // ─── order_created 핸들러 ──────────────────────────────────────────────────
@@ -116,7 +133,6 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   const attrs = payload.data.attributes as LSOrderAttributes
   const lsOrderId = String(payload.data.id)
 
-  // paid 상태인 주문만 처리
   if (attrs.status !== 'paid') {
     console.log(`[LS Webhook] 주문 ${lsOrderId} 상태가 paid가 아님: ${attrs.status}`)
     return
@@ -124,7 +140,6 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   const admin = createAdminClient()
 
-  // 중복 처리 방지
   const { data: existing } = await admin
     .from('orders')
     .select('id')
@@ -135,17 +150,12 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     return
   }
 
-  // 사용자 조회
-  const userId = await findUserId(
-    payload.meta.custom_data?.user_id,
-    attrs.user_email,
-  )
+  const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 사용자 없음: ${attrs.user_email}`)
     return
   }
 
-  // variant_id로 product_price 조회
   const variantId = String(attrs.first_order_item?.variant_id)
   const { data: productPrice } = await admin
     .from('product_prices')
@@ -153,13 +163,11 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     .eq('lemon_squeezy_variant_id', variantId)
     .single()
 
-  // 번들 조회 시도 (variant_id가 product_prices에 없을 경우)
   let bundleId: string | null = null
   let productPriceId: string | null = productPrice?.id ?? null
   let productId: string | null = productPrice?.product_id ?? null
 
   if (!productPriceId) {
-    // 번들에서 조회
     const { data: bundleData } = await admin
       .from('bundles')
       .select('id')
@@ -172,12 +180,11 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음. 주문만 기록.`)
   }
 
-  // 주문 생성 (product_price/bundle 미매칭시 lemon_squeezy_order_id로만 기록)
   const orderInsert: Record<string, unknown> = {
     user_id: userId,
     lemon_squeezy_order_id: lsOrderId,
     status: 'paid',
-    amount: attrs.total,    // cents
+    amount: attrs.total,
     currency: attrs.currency,
   }
   if (productPriceId) orderInsert.product_price_id = productPriceId
@@ -195,8 +202,6 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   console.log(`[LS Webhook] 주문 생성 완료: ${order.id}`)
 
-  // 구독형 제품은 subscription_created에서 라이선스 생성
-  // 일회성 결제만 여기서 라이선스 생성
   if (productPriceId && productId && productPrice?.type === 'one_time') {
     await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name)
   }
@@ -210,7 +215,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 
   const admin = createAdminClient()
 
-  // 중복 처리 방지
   const { data: existing } = await admin
     .from('subscriptions')
     .select('id')
@@ -221,17 +225,12 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     return
   }
 
-  // 사용자 조회
-  const userId = await findUserId(
-    payload.meta.custom_data?.user_id,
-    attrs.user_email,
-  )
+  const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 구독 사용자 없음: ${attrs.user_email}`)
     return
   }
 
-  // variant_id로 product_price 조회
   const variantId = String(attrs.variant_id)
   const { data: productPrice } = await admin
     .from('product_prices')
@@ -239,7 +238,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     .eq('lemon_squeezy_variant_id', variantId)
     .single()
 
-  // 번들 조회
   let bundleId: string | null = null
   if (!productPrice) {
     const { data: bundleData } = await admin
@@ -250,7 +248,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     if (bundleData) bundleId = bundleData.id
   }
 
-  // LS order_id로 우리 DB 주문 조회 — 없으면 직접 생성 (이벤트 순서 역전 대비)
   const lsOrderId = String(attrs.order_id)
   let orderId: string | null = null
   const { data: existingOrder } = await admin
@@ -280,7 +277,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     orderId = newOrder?.id ?? null
   }
 
-  // billing_interval: product_price.interval 기준
   const billingInterval = productPrice?.interval === 'annual' ? 'annual' : 'monthly'
 
   const subInsert: Record<string, unknown> = {
@@ -309,7 +305,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 
   console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
-  // 구독형 라이선스 생성
   if (productPrice?.product_id && orderId) {
     await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name)
   }
@@ -320,12 +315,13 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
   const attrs = payload.data.attributes as LSSubscriptionAttributes
   const lsSubId = String(payload.data.id)
+  const newStatus = mapLSSubStatus(attrs.status)
 
   const admin = createAdminClient()
   const { error } = await admin
     .from('subscriptions')
     .update({
-      status: mapLSSubStatus(attrs.status),
+      status: newStatus,
       current_period_end: attrs.renews_at ?? null,
       cancel_at_period_end: attrs.cancelled,
       customer_portal_url: attrs.urls?.customer_portal ?? null,
@@ -334,29 +330,30 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
     .eq('lemon_squeezy_subscription_id', lsSubId)
 
   if (error) throw new Error(`구독 업데이트 실패: ${error.message}`)
-  console.log(`[LS Webhook] 구독 업데이트 완료: ${lsSubId}`)
+  console.log(`[LS Webhook] 구독 업데이트 완료: ${lsSubId} → ${newStatus}`)
 
-  // Google Sheets 만료일 갱신 (구독 갱신 시)
-  if (attrs.renews_at) {
+  // 라이선스 조회 (Sheets 업데이트 + DB 동기화)
+  const licInfo = await findLicenseByLsSubId(lsSubId)
+
+  // 구독 갱신 시 → license.expires_at 동기화 + Sheets 만료일 갱신 + 상태 '활성'
+  if (attrs.renews_at && licInfo) {
     try {
-      const { data: sub } = await admin
-        .from('subscriptions')
-        .select('order_id')
-        .eq('lemon_squeezy_subscription_id', lsSubId)
-        .single()
-      if (sub?.order_id) {
-        const { data: lic } = await admin
-          .from('licenses')
-          .select('serial_key')
-          .eq('order_id', sub.order_id)
-          .single()
-        if (lic?.serial_key) {
-          await updateLicenseExpiry({ serialKey: lic.serial_key, expiresAt: attrs.renews_at })
-          console.log(`[LS Webhook] Sheets 만료일 갱신 완료: ${lic.serial_key}`)
-        }
+      // DB license.expires_at를 구독 갱신일과 동기화
+      await admin
+        .from('licenses')
+        .update({ expires_at: attrs.renews_at, status: 'active' })
+        .eq('id', licInfo.licenseId)
+
+      await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
+
+      // 구독이 active이면 Sheets 상태도 '활성' 유지
+      if (newStatus === 'active') {
+        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '활성' })
       }
+
+      console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey}`)
     } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets 만료일 갱신 실패:', sheetsErr)
+      console.error('[LS Webhook] Sheets/DB 동기화 실패:', sheetsErr)
     }
   }
 }
@@ -366,9 +363,9 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
 async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
   const attrs = payload.data.attributes as LSSubscriptionAttributes
   const lsSubId = String(payload.data.id)
+  const isCancelled = payload.meta.event_name === 'subscription_cancelled'
 
   const admin = createAdminClient()
-  const isCancelled = payload.meta.event_name === 'subscription_cancelled'
 
   const { error } = await admin
     .from('subscriptions')
@@ -383,26 +380,56 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
   if (error) throw new Error(`구독 취소 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 취소/만료 처리 완료: ${lsSubId}`)
 
-  // Google Sheets 상태 → 중지
-  try {
-    const { data: sub } = await admin
-      .from('subscriptions')
-      .select('order_id')
-      .eq('lemon_squeezy_subscription_id', lsSubId)
-      .single()
-    if (sub?.order_id) {
-      const { data: lic } = await admin
-        .from('licenses')
-        .select('serial_key')
-        .eq('order_id', sub.order_id)
-        .single()
-      if (lic?.serial_key) {
-        await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
-      }
+  // 연결된 라이선스 상태도 expired로 변경
+  const licInfo = await findLicenseByLsSubId(lsSubId)
+  if (licInfo) {
+    await admin
+      .from('licenses')
+      .update({ status: 'expired' })
+      .eq('id', licInfo.licenseId)
+
+    try {
+      await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
+      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey}`)
+    } catch (sheetsErr) {
+      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
     }
-  } catch (sheetsErr) {
-    console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+  }
+}
+
+// ─── subscription_payment_failed 핸들러 ──────────────────────────────────────
+
+async function handlePaymentFailed(payload: LSWebhookPayload) {
+  const lsSubId = String(payload.data.id)
+
+  const admin = createAdminClient()
+
+  // 구독 상태를 expired로 업데이트
+  const { error } = await admin
+    .from('subscriptions')
+    .update({
+      status: 'expired',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('lemon_squeezy_subscription_id', lsSubId)
+
+  if (error) throw new Error(`결제 실패 처리 실패: ${error.message}`)
+  console.log(`[LS Webhook] 결제 실패 처리 완료: ${lsSubId}`)
+
+  // 연결된 라이선스 상태도 expired로 변경 + Sheets 중지
+  const licInfo = await findLicenseByLsSubId(lsSubId)
+  if (licInfo) {
+    await admin
+      .from('licenses')
+      .update({ status: 'expired' })
+      .eq('id', licInfo.licenseId)
+
+    try {
+      await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
+      console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey}`)
+    } catch (sheetsErr) {
+      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+    }
   }
 }
 
@@ -425,7 +452,6 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
   const lsOrderId = String(payload.data.id)
   const admin = createAdminClient()
 
-  // 주문 상태를 refunded로 업데이트
   const { data: order, error } = await admin
     .from('orders')
     .update({ status: 'refunded' })
@@ -436,7 +462,6 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
   if (error) throw new Error(`환불 처리 실패: ${error.message}`)
   if (!order) return
 
-  // 해당 주문의 라이선스를 revoked로 변경
   const { data: lic } = await admin
     .from('licenses')
     .update({ status: 'revoked' })
@@ -444,7 +469,6 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
     .select('serial_key')
     .single()
 
-  // 해당 주문의 구독을 cancelled로 변경
   await admin
     .from('subscriptions')
     .update({ status: 'cancelled', updated_at: new Date().toISOString() })
@@ -452,7 +476,6 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
   console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
 
-  // Google Sheets 상태 → 중지
   if (lic?.serial_key) {
     try {
       await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
@@ -468,6 +491,7 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 /**
  * @함수명: createLicense
  * @설명: 주문/구독 완료 후 고유 시리얼 키를 생성하고 이메일로 발송합니다.
+ *        Pro 제품은 Sheets G열에 TRUE 기록.
  */
 async function createLicense(
   userId: string,
@@ -478,7 +502,6 @@ async function createLicense(
 ) {
   const admin = createAdminClient()
 
-  // 이미 이 주문에 라이선스가 있는지 확인
   const { data: existing } = await admin
     .from('licenses')
     .select('id, serial_key')
@@ -490,14 +513,12 @@ async function createLicense(
     return
   }
 
-  // 제품 정보 조회 (max_devices, license_duration_days)
   const { data: product } = await admin
     .from('products')
     .select('name, max_devices, license_duration_days')
     .eq('id', productId)
     .single()
 
-  // 고유 시리얼 키 생성 (충돌 시 재시도)
   let serialKey = generateSerialKey()
   for (let i = 0; i < 5; i++) {
     const { data: dup } = await admin
@@ -509,9 +530,19 @@ async function createLicense(
     serialKey = generateSerialKey()
   }
 
-  // 만료일 계산
+  // 만료일: 구독인 경우 subscription.current_period_end 사용, 아니면 license_duration_days
   let expiresAt: string | null = null
-  if (product?.license_duration_days) {
+
+  // 먼저 이 주문에 연결된 구독의 갱신일 확인
+  const { data: linkedSub } = await admin
+    .from('subscriptions')
+    .select('current_period_end')
+    .eq('order_id', orderId)
+    .single()
+
+  if (linkedSub?.current_period_end) {
+    expiresAt = linkedSub.current_period_end
+  } else if (product?.license_duration_days) {
     const d = new Date()
     d.setDate(d.getDate() + product.license_duration_days)
     expiresAt = d.toISOString()
@@ -537,6 +568,9 @@ async function createLicense(
 
   console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey})`)
 
+  // Pro 제품 감지 (제품명에 'pro'가 포함되면 Pro로 판별)
+  const isPro = (product?.name ?? '').toLowerCase().includes('pro')
+
   // 주문 확인 이메일 발송
   try {
     await sendEmail({
@@ -550,16 +584,20 @@ async function createLicense(
     })
     console.log(`[LS Webhook] 주문 확인 이메일 발송: ${userEmail}`)
   } catch (mailErr) {
-    // 이메일 실패는 무시 (라이선스는 이미 생성됨)
     console.error('[LS Webhook] 이메일 발송 실패:', mailErr)
   }
 
-  // Google Sheets 라이선스 행 추가
+  // Google Sheets 라이선스 행 추가 (상태 '활성', Pro면 G열 TRUE)
   try {
-    await appendLicenseRow({ email: userEmail, serialKey, expiresAt })
-    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey}`)
+    await appendLicenseRow({
+      email: userEmail,
+      serialKey,
+      expiresAt,
+      isPro,
+      status: '활성',
+    })
+    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey} (isPro: ${isPro})`)
   } catch (sheetsErr) {
-    // Sheets 실패는 무시 (라이선스는 이미 생성됨)
     console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
   }
 }
@@ -572,7 +610,7 @@ function mapLSSubStatus(lsStatus: string): string {
     paused:   'paused',
     cancelled: 'cancelled',
     expired:  'expired',
-    past_due: 'active',   // past_due는 active로 유지 (결제 재시도 중)
+    past_due: 'active',
     trialing: 'active',
     unpaid:   'paused',
   }
