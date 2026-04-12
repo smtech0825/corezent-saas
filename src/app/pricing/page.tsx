@@ -17,15 +17,16 @@ export default async function PricingPage() {
   const client = createAdminClient()
   const { data: dbProducts } = await client
     .from('products')
-    .select('slug, tags, pricing_features')
+    .select('slug, tags, pricing_features, tagline')
     .eq('is_active', true)
 
-  const dbMap: Record<string, { tags: string[]; pricing_features: string[] }> = {}
+  const dbMap: Record<string, { tags: string[]; pricing_features: string[]; tagline: string | null }> = {}
   for (const p of dbProducts ?? []) {
     if (p.slug) {
       dbMap[p.slug as string] = {
         tags: (p.tags ?? []) as string[],
         pricing_features: (p.pricing_features ?? []) as string[],
+        tagline: (p.tagline as string) ?? null,
       }
     }
   }

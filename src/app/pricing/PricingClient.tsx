@@ -40,6 +40,7 @@ function track(event: string, props?: Record<string, unknown>) {
 interface DbProductData {
   tags: string[]
   pricing_features: string[]
+  tagline: string | null
 }
 
 interface Props {
@@ -198,7 +199,7 @@ export default function PricingClient({ dbData }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
+                    <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{db?.tagline || product.tagline}</p>
 
                     {/* 가격 */}
                     <div className="mb-8">
