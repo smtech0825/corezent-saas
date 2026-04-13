@@ -10,6 +10,8 @@ import './globals.css'
 import Analytics from '@/components/Analytics'
 import CookieConsentBanner from '@/components/CookieConsentBanner'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { Analytics as VercelAnalytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 // ─── 동적 메타데이터 (DB SEO 설정 반영) ─────────────────────────────────────
 
@@ -73,6 +75,9 @@ export default async function RootLayout({
         <Analytics />
         {/* GDPR/CCPA 쿠키 동의 배너 */}
         <CookieConsentBanner />
+        {/* Vercel Analytics & Speed Insights */}
+        <VercelAnalytics />
+        <SpeedInsights />
         {/* DB SEO Settings의 GA Tracking ID — 유효한 경우에만 로드 */}
         {isValidGaId && (
           <>
