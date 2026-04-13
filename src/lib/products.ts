@@ -33,6 +33,13 @@ export const FILTER_LABELS: Record<FilterCategory, string> = {
   'web-tool': 'Web Tool',
 }
 
+/** 상품 뱃지 색상 스타일 (blue/green/yellow) */
+export const PRODUCT_BADGE_COLORS: Record<string, string> = {
+  blue:   'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20',
+  green:  'text-[#34D399] bg-[#34D399]/10 border-[#34D399]/20',
+  yellow: 'text-[#FBBF24] bg-[#FBBF24]/10 border-[#FBBF24]/20',
+}
+
 /** 뱃지 색상 스타일 */
 export const BADGE_STYLES: Record<string, string> = {
   Popular:    'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20',

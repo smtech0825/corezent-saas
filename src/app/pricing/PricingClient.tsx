@@ -10,8 +10,8 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ArrowRight, Zap } from 'lucide-react'
-import { BADGE_STYLES, CATEGORY_BADGE } from '@/lib/products'
+import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
+import { BADGE_STYLES, CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
@@ -39,6 +39,8 @@ export interface PricingProduct {
   name: string
   category: string
   tagline: string
+  badgeText: string | null
+  badgeColor: string
   pricingFeatures: string[]
   monthlyPrice: number
   annualMonthlyPrice: number
@@ -212,11 +214,12 @@ export default function PricingClient({ products }: Props) {
                   />
 
                   <div className="relative z-10 flex flex-col flex-1">
-                    {/* 첫 번째 제품에 Popular 뱃지 */}
-                    {idx === 0 && (
+                    {/* DB 뱃지 — badge_text가 있을 때만 표시 */}
+                    {product.badgeText && (
                       <div className="mb-4">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${BADGE_STYLES['Popular']}`}>
-                          Popular
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border ${PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue}`}>
+                          <Sparkles size={11} />
+                          {product.badgeText}
                         </span>
                       </div>
                     )}

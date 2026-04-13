@@ -24,7 +24,7 @@ export default async function PricingPage() {
   const [{ data: dbProducts }, { data: dbPrices }] = await Promise.all([
     client
       .from('products')
-      .select('id, slug, name, category, tagline, pricing_features, order_index')
+      .select('id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index')
       .eq('is_active', true)
       .order('order_index'),
     client
@@ -69,6 +69,8 @@ export default async function PricingPage() {
       name:                 (p.name as string) ?? '',
       category:             (p.category as string) ?? 'desktop',
       tagline:              (p.tagline as string) ?? '',
+      badgeText:            (p.badge_text as string) ?? null,
+      badgeColor:           (p.badge_color as string) ?? 'blue',
       pricingFeatures:      ((p.pricing_features ?? []) as string[]).filter(Boolean),
       monthlyPrice,
       annualMonthlyPrice,

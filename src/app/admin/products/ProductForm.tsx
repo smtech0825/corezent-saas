@@ -33,6 +33,8 @@ export interface ProductFormData {
   tagline: string
   description: string
   category: string
+  badge_text: string
+  badge_color: 'blue' | 'green' | 'yellow'
   logo_url: string
   manual_url: string
   is_active: boolean
@@ -161,6 +163,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       tagline: '',
       description: '',
       category: 'desktop',
+      badge_text: '',
+      badge_color: 'blue',
       logo_url: '',
       manual_url: '',
       is_active: true,
@@ -333,6 +337,76 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             </select>
           </Field>
         </div>
+
+        {/* Badge — 색상 선택 + 텍스트 입력 */}
+        <Field label="Badge">
+          <div className="space-y-2.5">
+            {/* 색상 선택 */}
+            <div className="flex items-center gap-2">
+              {([
+                { value: 'blue',   hex: '#38BDF8', label: 'Blue' },
+                { value: 'green',  hex: '#34D399', label: 'Green' },
+                { value: 'yellow', hex: '#FBBF24', label: 'Yellow' },
+              ] as const).map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => set('badge_color', c.value)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                    form.badge_color === c.value
+                      ? 'ring-1 ring-offset-1 ring-offset-[#0B1120]'
+                      : 'opacity-50 hover:opacity-80'
+                  }`}
+                  style={{
+                    color: c.hex,
+                    backgroundColor: `${c.hex}15`,
+                    borderColor: `${c.hex}30`,
+                    ...(form.badge_color === c.value ? { ringColor: c.hex } : {}),
+                  }}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.hex }} />
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {/* 텍스트 입력 */}
+            <div className="flex items-center gap-2">
+              <input
+                value={form.badge_text}
+                onChange={(e) => set('badge_text', e.target.value)}
+                placeholder='e.g. Available now, Coming soon, Beta (비우면 뱃지 숨김)'
+                maxLength={30}
+                className={inputCls}
+              />
+              {form.badge_text && (
+                <button
+                  type="button"
+                  onClick={() => set('badge_text', '')}
+                  className="shrink-0 p-2 text-[#475569] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+            {/* 미리보기 */}
+            {form.badge_text && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-[#475569]">Preview:</span>
+                <span
+                  className="inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold"
+                  style={{
+                    color: { blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color],
+                    backgroundColor: `${{ blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color]}15`,
+                    borderColor: `${{ blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color]}30`,
+                  }}
+                >
+                  <Sparkles size={11} />
+                  {form.badge_text}
+                </span>
+              </div>
+            )}
+          </div>
+        </Field>
 
         {/* Logo — URL 입력 또는 파일 업로드 */}
         <Field label="Logo">

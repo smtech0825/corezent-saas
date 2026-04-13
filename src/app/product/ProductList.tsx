@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import DynamicIcon from '@/components/DynamicIcon'
-import { CATEGORY_BADGE } from '@/lib/products'
+import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -33,6 +33,8 @@ interface Product {
   tags: string[]
   product_features: ProductFeature[]
   logo_url: string | null
+  badgeText: string | null
+  badgeColor: string
   is_active: boolean
   monthlyPrice: number | null
   annualPrice: number | null
@@ -87,16 +89,19 @@ export default function ProductList({ products }: Props) {
               <div className="relative z-10 flex flex-col flex-1 p-7">
                 {/* 로고 + 뱃지 */}
                 <div className="flex items-start justify-between mb-5">
-                  <div
-                    className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold ${
-                      product.is_active
-                        ? 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20'
-                        : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
-                    }`}
-                  >
-                    {product.is_active ? <Sparkles size={11} /> : <Clock size={11} />}
-                    {product.is_active ? 'Available now' : 'Coming soon'}
-                  </div>
+                  {(() => {
+                    const text = product.badgeText ?? (product.is_active ? null : 'Coming soon')
+                    if (!text) return <div />
+                    const colorCls = product.is_active
+                      ? (PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue)
+                      : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                    return (
+                      <div className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold ${colorCls}`}>
+                        {product.is_active ? <Sparkles size={11} /> : <Clock size={11} />}
+                        {text}
+                      </div>
+                    )
+                  })()}
 
                   {product.logo_url && (
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0">

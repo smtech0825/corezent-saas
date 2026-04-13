@@ -50,7 +50,7 @@ export default async function HomePage() {
     client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
     client
       .from('products')
-      .select('name, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
+      .select('name, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
       .eq('is_active', true)
       .order('order_index'),
   ])
@@ -77,6 +77,8 @@ export default async function HomePage() {
     const annualPrice  = annual?.price ?? 0
     return {
       name:               pricingRaw.name as string,
+      badgeText:          (pricingRaw.badge_text as string) ?? null,
+      badgeColor:         (pricingRaw.badge_color as string) ?? 'blue',
       pricingFeatures:    ((pricingRaw.pricing_features ?? []) as string[]).filter(Boolean),
       monthlyPrice,
       annualPrice,

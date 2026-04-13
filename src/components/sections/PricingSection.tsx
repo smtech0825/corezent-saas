@@ -8,12 +8,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ArrowRight } from 'lucide-react'
+import { Check, ArrowRight, Sparkles } from 'lucide-react'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
+import { PRODUCT_BADGE_COLORS } from '@/lib/products'
 
 export interface PricingSectionProduct {
   name: string
+  badgeText: string | null
+  badgeColor: string
   pricingFeatures: string[]
   monthlyPrice: number
   annualPrice: number
@@ -66,6 +69,12 @@ function PricingCard({ product, annual, userId, highlighted }: CardProps) {
       />
 
       <div className="relative z-10">
+        {product.badgeText && (
+          <div className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold mb-3 ${PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue}`}>
+            <Sparkles size={11} />
+            {product.badgeText}
+          </div>
+        )}
         <p className="text-[#94A3B8] text-sm mb-2">{product.name}</p>
 
         {/* 가격 */}

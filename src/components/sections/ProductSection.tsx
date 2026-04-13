@@ -7,7 +7,7 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { CATEGORY_BADGE } from '@/lib/products'
+import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
 
 interface ProductCard {
   name: string
@@ -15,6 +15,8 @@ interface ProductCard {
   description: string
   category: string
   tags: string[]
+  badgeText: string | null
+  badgeColor: string
   monthlyPrice: string | null
   annualPrice: string | null
   href: string
@@ -30,6 +32,8 @@ const COMING_SOON: ProductCard[] = [
       'We are working on our next software product. Sign up to be notified when it launches.',
     category: '',
     tags: [],
+    badgeText: null,
+    badgeColor: 'blue',
     monthlyPrice: null,
     annualPrice: null,
     href: '/auth/register',
@@ -42,6 +46,8 @@ const COMING_SOON: ProductCard[] = [
       'CoreZent is continuously expanding its product lineup. Stay tuned for more powerful software tools.',
     category: '',
     tags: [],
+    badgeText: null,
+    badgeColor: 'blue',
     monthlyPrice: null,
     annualPrice: null,
     href: '/auth/register',
@@ -55,7 +61,7 @@ export default async function ProductSection() {
   // 모든 상품 + 활성 가격 조회 (category 포함)
   const { data: rawProducts } = await client
     .from('products')
-    .select('name, tagline, description, category, tags, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('name, tagline, description, category, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
@@ -72,6 +78,8 @@ export default async function ProductSection() {
       description: (p.description as string) ?? '',
       category: (p.category as string) ?? '',
       tags: ((p.tags ?? []) as string[]),
+      badgeText: (p.badge_text as string) ?? null,
+      badgeColor: (p.badge_color as string) ?? 'blue',
       monthlyPrice: monthly ? `$${monthly.price.toFixed(2)}` : null,
       annualPrice: annual ? `$${annual.price}` : null,
       href: '/pricing',
@@ -129,17 +137,21 @@ export default async function ProductSection() {
               )}
 
               <div className="relative z-10 flex flex-col flex-1">
-                {/* Badge */}
-                <div
-                  className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${
-                    product.available
-                      ? 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20'
-                      : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
-                  }`}
-                >
-                  {product.available ? <Sparkles size={11} /> : <Clock size={11} />}
-                  {product.available ? 'Available now' : 'Coming soon'}
-                </div>
+                {/* Badge — DB badge_text 우선, 없으면 기본값 */}
+                {(() => {
+                  const text = product.badgeText ?? (product.available ? null : 'Coming soon')
+                  if (!text && product.available) return null
+                  if (!text) return null
+                  const colorCls = product.available
+                    ? (PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue)
+                    : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                  return (
+                    <div className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${colorCls}`}>
+                      {product.available ? <Sparkles size={11} /> : <Clock size={11} />}
+                      {text}
+                    </div>
+                  )
+                })()}
 
                 {/* Name + 카테고리 배지 */}
                 <div className="flex items-center gap-2 flex-wrap mb-1">
