@@ -6,10 +6,12 @@ import HeroSection from '@/components/sections/HeroSection'
 import ProductSection from '@/components/sections/ProductSection'
 import HowItWorksSection from '@/components/sections/HowItWorksSection'
 import FeaturesSection from '@/components/sections/FeaturesSection'
-import PricingSection from '@/components/sections/PricingSection'
+import PricingSection, { type PricingSectionProduct } from '@/components/sections/PricingSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import CTASection from '@/components/sections/CTASection'
 import FAQSection from '@/components/sections/FAQSection'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'CoreZent — Software Built for You',
@@ -33,13 +35,19 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
     client.from('front_faqs').select('id, question, answer').eq('is_published', true).order('order_index'),
     client.from('front_content').select('key, value'),
     client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
+    client
+      .from('products')
+      .select('name, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
+      .eq('is_active', true)
+      .order('order_index')
+      .limit(1),
   ])
 
   // DB 섹션과 기본값 병합 후 order_index 기준 정렬
@@ -52,6 +60,31 @@ export default async function HomePage() {
   const testimonials = testimonialsRes.data ?? []
   const faqs         = faqsRes.data ?? []
   const steps        = stepsRes.data ?? []
+
+  // 첫 번째 상품 기반 랜딩 Pricing 섹션 데이터 빌드
+  let featuredProduct: PricingSectionProduct | null = null
+  const pricingRaw = (pricingRes.data ?? [])[0] as Record<string, unknown> | undefined
+  if (pricingRaw) {
+    type PriceRow = { type: string; interval: string | null; price: number; checkout_url: string | null; is_active: boolean }
+    const prices = ((pricingRaw.product_prices ?? []) as PriceRow[]).filter((pr) => pr.is_active)
+    const monthly  = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual   = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    const oneTime  = prices.find((pr) => pr.type === 'one_time')
+    const monthlyPrice = monthly?.price ?? 0
+    const annualPrice  = annual?.price ?? 0
+    featuredProduct = {
+      name:               pricingRaw.name as string,
+      pricingFeatures:    ((pricingRaw.pricing_features ?? []) as string[]).filter(Boolean),
+      monthlyPrice,
+      annualPrice,
+      annualMonthlyPrice: annual ? annualPrice / 12 : monthlyPrice,
+      monthlyCheckoutUrl: monthly?.checkout_url ?? oneTime?.checkout_url ?? '#',
+      annualCheckoutUrl:  annual?.checkout_url ?? '#',
+      hasAnnualPlan:      !!annual,
+      isOneTime:          !monthly && !annual && !!oneTime,
+      oneTimeCheckoutUrl: oneTime?.checkout_url ?? '#',
+    }
+  }
 
   // front_content key-value 맵 생성
   const contentMap = Object.fromEntries((contentRes.data ?? []).map((c) => [c.key, c.value]))
@@ -84,7 +117,7 @@ export default async function HomePage() {
     product:      <ProductSection />,
     how_it_works: <HowItWorksSection steps={steps.length > 0 ? steps : undefined} />,
     features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
-    pricing:      <PricingSection />,
+    pricing:      <PricingSection product={featuredProduct} />,
     testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
     faq:          <FAQSection faqs={faqs} />,
     cta:          <CTASection content={ctaContent} />,

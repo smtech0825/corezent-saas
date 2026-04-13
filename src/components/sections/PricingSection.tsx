@@ -2,32 +2,34 @@
 
 /**
  * @컴포넌트: PricingSection
- * @설명: 랜딩 페이지 가격 섹션 — 월간/연간 토글
+ * @설명: 랜딩 페이지 가격 섹션 — DB에서 조회한 첫 번째 상품 데이터 표시
+ *        월간/연간 토글, 사용자 ID → checkout URL에 주입
  */
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight } from 'lucide-react'
-import { products } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 
-const genie = products.find((p) => p.id === 'geniepost-desktop')
-const MONTHLY = genie?.monthlyPrice ?? 6.99
-const ANNUAL = genie?.annualPrice ?? 69
-const ANNUAL_MONTHLY = genie?.annualMonthlyPrice ?? 5.75
-const SAVE_PCT = Math.round((1 - ANNUAL_MONTHLY / MONTHLY) * 100)
+export interface PricingSectionProduct {
+  name: string
+  pricingFeatures: string[]
+  monthlyPrice: number
+  annualPrice: number
+  annualMonthlyPrice: number
+  monthlyCheckoutUrl: string
+  annualCheckoutUrl: string
+  hasAnnualPlan: boolean
+  isOneTime: boolean
+  oneTimeCheckoutUrl: string
+}
 
-const features = [
-  'Unlimited AI post generation',
-  'Direct WordPress publishing',
-  'SEO metadata & optimization',
-  'Content scheduling',
-  'Post management dashboard',
-  'Email support',
-]
+interface Props {
+  product: PricingSectionProduct | null
+}
 
-export default function PricingSection() {
+export default function PricingSection({ product }: Props) {
   const [annual, setAnnual] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -38,10 +40,23 @@ export default function PricingSection() {
     })
   }, [])
 
-  const checkoutUrl = buildCheckoutUrl(
-    annual ? (genie?.lemonSqueezy.annual ?? '') : (genie?.lemonSqueezy.monthly ?? ''),
-    userId,
-  )
+  // 상품 데이터 없으면 섹션 숨김
+  if (!product) return null
+
+  const MONTHLY = product.monthlyPrice
+  const ANNUAL  = product.annualPrice
+  const ANNUAL_MONTHLY = product.annualMonthlyPrice
+  const SAVE_PCT = product.hasAnnualPlan && MONTHLY > 0
+    ? Math.round((1 - ANNUAL_MONTHLY / MONTHLY) * 100)
+    : 0
+
+  const rawUrl = product.isOneTime
+    ? product.oneTimeCheckoutUrl
+    : annual && product.hasAnnualPlan
+      ? product.annualCheckoutUrl
+      : product.monthlyCheckoutUrl
+
+  const checkoutUrl = buildCheckoutUrl(rawUrl, userId)
 
   return (
     <section id="pricing" className="relative py-32 px-6">
@@ -68,27 +83,31 @@ export default function PricingSection() {
           </p>
         </div>
 
-        {/* Toggle */}
-        <div className="flex items-center justify-center gap-4 mb-12">
-          <span className={`text-sm transition-colors ${!annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
-            Monthly
-          </span>
-          <button
-            onClick={() => setAnnual(!annual)}
-            className="relative w-12 h-6 rounded-full transition-colors"
-            style={{ backgroundColor: annual ? '#38BDF8' : '#1E293B' }}
-            aria-label="Toggle annual billing"
-          >
-            <span
-              className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
-              style={{ transform: annual ? 'translateX(28px)' : 'translateX(4px)' }}
-            />
-          </button>
-          <span className={`text-sm transition-colors ${annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
-            Annual{' '}
-            <span className="text-emerald-400 text-xs font-medium">Save ~8%</span>
-          </span>
-        </div>
+        {/* Toggle — 구독 상품이고 연간 플랜이 있을 때만 표시 */}
+        {!product.isOneTime && product.hasAnnualPlan && (
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <span className={`text-sm transition-colors ${!annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className="relative w-12 h-6 rounded-full transition-colors"
+              style={{ backgroundColor: annual ? '#38BDF8' : '#1E293B' }}
+              aria-label="Toggle annual billing"
+            >
+              <span
+                className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+                style={{ transform: annual ? 'translateX(28px)' : 'translateX(4px)' }}
+              />
+            </button>
+            <span className={`text-sm transition-colors ${annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
+              Annual{' '}
+              {SAVE_PCT > 0 && (
+                <span className="text-emerald-400 text-xs font-medium">Save ~{SAVE_PCT}%</span>
+              )}
+            </span>
+          </div>
+        )}
 
         {/* Pricing card */}
         <div className="max-w-sm mx-auto">
@@ -100,21 +119,36 @@ export default function PricingSection() {
             />
 
             <div className="relative z-10">
-              <p className="text-[#94A3B8] text-sm mb-2">GeniePost</p>
+              <p className="text-[#94A3B8] text-sm mb-2">{product.name}</p>
 
               {/* Price */}
-              <div className="flex items-end gap-2 mb-1">
-                <span className="text-5xl font-bold text-white">
-                  {annual ? `$${ANNUAL}` : `$${MONTHLY.toFixed(2)}`}
-                </span>
-                <span className="text-[#94A3B8] text-base mb-2">
-                  {annual ? '/year' : '/month'}
-                </span>
-              </div>
+              {product.isOneTime ? (
+                <div className="flex items-end gap-2 mb-1">
+                  <span className="text-5xl font-bold text-white">
+                    ${MONTHLY > 0 ? MONTHLY.toFixed(2) : '—'}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-end gap-2 mb-1">
+                  <span className="text-5xl font-bold text-white">
+                    {annual && product.hasAnnualPlan
+                      ? `$${ANNUAL}`
+                      : `$${MONTHLY.toFixed(2)}`}
+                  </span>
+                  <span className="text-[#94A3B8] text-base mb-2">
+                    {annual && product.hasAnnualPlan ? '/year' : '/month'}
+                  </span>
+                </div>
+              )}
+
               <p className="text-xs text-[#475569] mb-7">
-                {annual
-                  ? `~$${ANNUAL_MONTHLY.toFixed(2)}/month, billed annually · Save ${SAVE_PCT}%`
-                  : `Billed monthly · or $${ANNUAL}/year (save ${SAVE_PCT}%)`}
+                {product.isOneTime
+                  ? 'One-time purchase · Lifetime access'
+                  : annual && product.hasAnnualPlan
+                    ? `~$${ANNUAL_MONTHLY.toFixed(2)}/month, billed annually${SAVE_PCT > 0 ? ` · Save ${SAVE_PCT}%` : ''}`
+                    : product.hasAnnualPlan
+                      ? `Billed monthly · or $${ANNUAL}/year${SAVE_PCT > 0 ? ` (save ${SAVE_PCT}%)` : ''}`
+                      : 'Billed monthly'}
               </p>
 
               {/* CTA */}
@@ -127,16 +161,18 @@ export default function PricingSection() {
               </Link>
 
               {/* Features */}
-              <ul className="flex flex-col gap-3">
-                {features.map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-sm text-[#94A3B8]">
-                    <span className="w-4 h-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                      <Check size={10} className="text-emerald-400" />
-                    </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
+              {product.pricingFeatures.length > 0 && (
+                <ul className="flex flex-col gap-3">
+                  {product.pricingFeatures.map((f) => (
+                    <li key={f} className="flex items-center gap-3 text-sm text-[#94A3B8]">
+                      <span className="w-4 h-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                        <Check size={10} className="text-emerald-400" />
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
