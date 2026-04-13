@@ -91,7 +91,7 @@ export default function PricingSection({ product }: Props) {
             </span>
             <button
               onClick={() => setAnnual(!annual)}
-              className="relative w-12 h-6 rounded-full transition-colors"
+              className="relative w-12 h-6 rounded-full transition-colors overflow-hidden"
               style={{ backgroundColor: annual ? '#38BDF8' : '#1E293B' }}
               aria-label="Toggle annual billing"
             >
