@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, inquiryEmailHtml } from '@/lib/email'
 
@@ -42,6 +43,12 @@ setInterval(() => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: NextRequest) {
+  // BotID 검증 — 봇으로 판별되면 즉시 차단
+  const botCheck = await checkBotId()
+  if (botCheck.isBot) {
+    return NextResponse.json({ error: 'Access denied.' }, { status: 403 })
+  }
+
   // Rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (isRateLimited(ip)) {

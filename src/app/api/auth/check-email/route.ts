@@ -5,9 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
+  // BotID 검증
+  const botCheck = await checkBotId()
+  if (botCheck.isBot) {
+    return NextResponse.json({ status: 'not_found' })
+  }
+
   try {
     const { email } = await req.json()
     if (!email || typeof email !== 'string') {
