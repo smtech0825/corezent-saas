@@ -110,9 +110,9 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       return
     }
 
-    // 로컬 상태 업데이트
+    // 로컬 상태 업데이트 — 신규 항목은 DB에서 받은 실제 UUID 사용
     const saved: ChangelogEntry = {
-      id: editingId ?? `tmp-${Date.now()}`,
+      id: editingId ?? result.id ?? crypto.randomUUID(),
       version: form.version.trim(),
       release_date: form.release_date,
       is_latest: form.is_latest,

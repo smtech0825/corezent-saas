@@ -28,7 +28,7 @@ export async function upsertChangelog(
   productId: string,
   data: ChangelogFormData,
   changelogId?: string
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; id?: string }> {
   const client = createAdminClient()
 
   const payload = {
@@ -47,14 +47,20 @@ export async function upsertChangelog(
     },
   }
 
-  let error
   if (changelogId) {
-    ;({ error } = await client.from('changelogs').update(payload).eq('id', changelogId))
+    const { error } = await client.from('changelogs').update(payload).eq('id', changelogId)
+    if (error) return { error: error.message }
   } else {
-    ;({ error } = await client.from('changelogs').insert(payload))
+    const { error, data: inserted } = await client
+      .from('changelogs')
+      .insert(payload)
+      .select('id')
+      .single()
+    if (error) return { error: error.message }
+    revalidatePath('/admin/products')
+    revalidatePath('/changelog')
+    return { id: inserted?.id as string }
   }
-
-  if (error) return { error: error.message }
 
   revalidatePath('/admin/products')
   revalidatePath('/changelog')
