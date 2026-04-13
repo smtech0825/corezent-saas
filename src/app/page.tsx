@@ -1,15 +1,21 @@
 import type { Metadata } from 'next'
+import lazy from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+// Hero는 즉시 표시 필요 — 정적 import 유지
 import HeroSection from '@/components/sections/HeroSection'
-import ProductSection from '@/components/sections/ProductSection'
-import HowItWorksSection from '@/components/sections/HowItWorksSection'
-import FeaturesSection from '@/components/sections/FeaturesSection'
-import PricingSection, { type PricingSectionProduct } from '@/components/sections/PricingSection'
-import TestimonialsSection from '@/components/sections/TestimonialsSection'
-import CTASection from '@/components/sections/CTASection'
-import FAQSection from '@/components/sections/FAQSection'
+// 타입만 import (런타임 코드 없음)
+import type { PricingSectionProduct } from '@/components/sections/PricingSection'
+
+// Below-fold 섹션 — 별도 JS 청크로 분리 (초기 번들 절감)
+const ProductSection      = lazy(() => import('@/components/sections/ProductSection'))
+const HowItWorksSection   = lazy(() => import('@/components/sections/HowItWorksSection'))
+const FeaturesSection     = lazy(() => import('@/components/sections/FeaturesSection'))
+const PricingSection      = lazy(() => import('@/components/sections/PricingSection'))
+const TestimonialsSection = lazy(() => import('@/components/sections/TestimonialsSection'))
+const FAQSection          = lazy(() => import('@/components/sections/FAQSection'))
+const CTASection          = lazy(() => import('@/components/sections/CTASection'))
 
 export const dynamic = 'force-dynamic'
 
