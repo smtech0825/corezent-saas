@@ -13,7 +13,20 @@
  *   SUPABASE_SERVICE_ROLE_KEY (서버 전용)
  */
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@supabase/supabase-js'
+
+// 라이선스 데이터(license_keys / hwid_mapping)는 별도 Supabase 프로젝트에 보관.
+// CoreZent 본체용 createAdminClient(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)와
+// 다른 프로젝트이므로 라이선스 전용 admin client를 별도 환경변수로 분리한다.
+//   - LICENSE_SUPABASE_URL              : 라이선스 데이터가 있는 Supabase 프로젝트 URL
+//   - LICENSE_SUPABASE_SERVICE_ROLE_KEY : 그 프로젝트의 service_role 키 (RLS 우회)
+function createLicenseAdminClient() {
+  return createClient(
+    process.env.LICENSE_SUPABASE_URL!,
+    process.env.LICENSE_SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
 
 // ─── 타입 ────────────────────────────────────────────────────────────────
 
@@ -50,7 +63,7 @@ export async function findLicenseByKey(key: string): Promise<SupabaseLicense | n
   if (!trimmed) return null
 
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { data, error } = await admin
       .from('license_keys')
       .select('license_key, tier, source, buyer_email, expires_at, is_active')
@@ -86,7 +99,7 @@ export async function getHwidsForKey(key: string): Promise<HwidEntry[]> {
   if (!trimmed) return []
 
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { data, error } = await admin
       .from('hwid_mapping')
       .select('hwid, registered_at, device_name')
@@ -142,7 +155,7 @@ export async function registerHwid(
       return { ok: false, reason: 'HWID_LIMIT_REACHED' }
     }
 
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { error } = await admin.from('hwid_mapping').insert({
       license_key: k,
       hwid:        h,
@@ -167,7 +180,7 @@ export async function resetHwidsForKey(key: string): Promise<void> {
   if (!k) return
 
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { error } = await admin.from('hwid_mapping').delete().eq('license_key', k)
     if (error) {
       console.error('[supabase-license] resetHwidsForKey error:', error)
@@ -188,7 +201,7 @@ export async function insertLicense(input: {
   source:     'lemon_squeezy' | 'manual'
 }): Promise<void> {
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
 
     // 중복 키 무시 (idempotent — 웹훅 재전송 대비)
     const { data: existing } = await admin
@@ -226,7 +239,7 @@ export async function updateLicenseExpiry(key: string, expiresAt: string): Promi
   if (!k) return
 
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { error } = await admin
       .from('license_keys')
       .update({ expires_at: expiresAt })
@@ -247,7 +260,7 @@ export async function setLicenseActive(key: string, isActive: boolean): Promise<
   if (!k) return
 
   try {
-    const admin = createAdminClient()
+    const admin = createLicenseAdminClient()
     const { error } = await admin
       .from('license_keys')
       .update({ is_active: isActive })
