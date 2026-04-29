@@ -354,14 +354,16 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   onClick={() => set('badge_color', c.value)}
                   className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                     form.badge_color === c.value
-                      ? 'ring-1 ring-offset-1 ring-offset-[#0B1120]'
+                      ? ''
                       : 'opacity-50 hover:opacity-80'
                   }`}
                   style={{
                     color: c.hex,
                     backgroundColor: `${c.hex}15`,
-                    borderColor: `${c.hex}30`,
-                    ...(form.badge_color === c.value ? { ringColor: c.hex } : {}),
+                    borderColor: form.badge_color === c.value ? c.hex : `${c.hex}30`,
+                    ...(form.badge_color === c.value
+                      ? { boxShadow: `0 0 0 2px ${c.hex}40` }
+                      : {}),
                   }}
                 >
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.hex }} />
