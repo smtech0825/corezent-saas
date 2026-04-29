@@ -1,27 +1,32 @@
 /**
  * POST /api/license/validate
  *
- * Request:  { key: string, hwid: string }
- * Response: ApiValidateResult
- *   { valid, tier?, expiresAt?, remainingDays?, error?, errorCode? }
+ * Request:  { key: string, hwid: string, product?: 'geniepost' | 'geniestock' }
+ * Response: { valid, tier?, expiresAt?, remainingDays?, error?, errorCode? }
  *
- * 로직:
- *   1. Google Sheets B열에서 key 검색
- *   2. 중지(stopped) → STOPPED
- *   3. 만료(expired 또는 날짜 초과) → EXPIRED
- *   4. HWID 비어있음 → 첫 활성화: C열에 HWID 기록 + E열 'active'
- *   5. HWID 일치 → 정상 반환
- *   6. HWID 불일치 → HWID_MISMATCH
+ * 분기:
+ *   - product === 'geniestock'  → Supabase 기반 검증 (티어별 다중 PC 지원)
+ *   - 그 외 (없음 or 'geniepost') → 기존 Google Sheets 검증 (변경 없음)
+ *
+ * 응답 shape는 두 경로 모두 동일하므로 앱 코드 변경 불필요.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { findByKey, patchCell, isStopped, isExpired, calcRemainingDays } from '../_lib'
+import {
+  findLicenseByKey as supaFindLicenseByKey,
+  getHwidsForKey as supaGetHwidsForKey,
+  registerHwid as supaRegisterHwid,
+  isExpired as supaIsExpired,
+  calcRemainingDays as supaCalcRemainingDays,
+} from '../_lib_supabase'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const key  = (body?.key  as string | undefined)?.trim()
-    const hwid = (body?.hwid as string | undefined)?.trim()
+    const key     = (body?.key     as string | undefined)?.trim()
+    const hwid    = (body?.hwid    as string | undefined)?.trim()
+    const product = (body?.product as string | undefined)?.trim().toLowerCase()
 
     if (!key || !hwid) {
       return NextResponse.json(
@@ -30,6 +35,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ─── GenieStock 경로 (Supabase) ──────────────────────────────────────
+    if (product === 'geniestock') {
+      return await validateGenieStock(key, hwid)
+    }
+
+    // ─── 기존 GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────
     const row = await findByKey(key)
 
     if (!row) {
@@ -83,4 +94,59 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     )
   }
+}
+
+// ─── GenieStock 검증 (Supabase) ────────────────────────────────────────────
+
+async function validateGenieStock(key: string, hwid: string) {
+  // 1. 라이선스 조회
+  const license = await supaFindLicenseByKey(key)
+  if (!license) {
+    return NextResponse.json({
+      valid: false,
+      error: '등록되지 않은 라이선스 키예요.',
+      errorCode: 'NOT_FOUND',
+    }, { status: 404 })
+  }
+
+  // 2. 활성 여부
+  if (!license.isActive) {
+    return NextResponse.json({
+      valid: false,
+      error: '사용이 중지된 라이선스 키예요. 고객센터에 문의해주세요.',
+      errorCode: 'STOPPED',
+    })
+  }
+
+  // 3. 만료 여부
+  if (supaIsExpired(license)) {
+    return NextResponse.json({
+      valid: false,
+      error: '만료된 라이선스 키예요. 갱신 후 다시 시도해주세요.',
+      errorCode: 'EXPIRED',
+    })
+  }
+
+  // 4. HWID 검사 (이미 등록된 기기는 통과, 신규는 한도 내 등록)
+  const hwids = await supaGetHwidsForKey(key)
+  const alreadyRegistered = hwids.some((h) => h.hwid === hwid)
+
+  if (!alreadyRegistered) {
+    const result = await supaRegisterHwid(key, hwid)
+    if (!result.ok) {
+      return NextResponse.json({
+        valid: false,
+        error: '다른 PC에서 이미 인증된 키예요. PC 변경이 필요하면 사용 PC 변경을 진행해주세요.',
+        errorCode: 'HWID_MISMATCH',
+      })
+    }
+  }
+
+  // 5. 성공
+  return NextResponse.json({
+    valid: true,
+    tier: license.tier,
+    expiresAt:     license.expiresAt ? new Date(license.expiresAt).toISOString() : undefined,
+    remainingDays: supaCalcRemainingDays(license.expiresAt),
+  })
 }

@@ -26,8 +26,33 @@ import {
 } from '@/lib/lemonsqueezy'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
+import {
+  findLicenseByKey as supaFindLicenseByKey,
+  insertLicense as supaInsertLicense,
+  updateLicenseExpiry as supaUpdateLicenseExpiry,
+  setLicenseActive as supaSetLicenseActive,
+  type Tier as SupaTier,
+} from '../../license/_lib_supabase'
 
 export const runtime = 'nodejs'
+
+// ─── GenieStock 식별 헬퍼 ───────────────────────────────────────────────────
+// LS 상품 등록 규칙:
+//   - 이름에 "GenieStock" 포함 → product = 'geniestock'
+//   - "Max" / "Pro" / "Lite" 키워드로 tier 결정 (대소문자 무시)
+// 새 GenieStock 상품 추가 시 이름만 규칙에 맞추면 코드 수정 없이 자동 처리됨.
+
+function isGenieStockProduct(productName: string | null | undefined): boolean {
+  return (productName ?? '').toLowerCase().includes('geniestock')
+}
+
+function tierFromProductName(productName: string | null | undefined): SupaTier | null {
+  const n = (productName ?? '').toLowerCase()
+  if (n.includes('max'))  return 'max'
+  if (n.includes('pro'))  return 'pro'
+  if (n.includes('lite')) return 'lite'
+  return null
+}
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -336,25 +361,34 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
   // 라이선스 조회 (Sheets 업데이트 + DB 동기화)
   const licInfo = await findLicenseByLsSubId(lsSubId)
 
-  // 구독 갱신 시 → license.expires_at 동기화 + Sheets 만료일 갱신 + 상태 '활성'
+  // 구독 갱신 시 → license.expires_at 동기화 + (GenieStock: Supabase / GeniePost: Sheets) 갱신
   if (attrs.renews_at && licInfo) {
     try {
-      // DB license.expires_at를 구독 갱신일과 동기화
+      // DB license.expires_at를 구독 갱신일과 동기화 (양쪽 공통)
       await admin
         .from('licenses')
         .update({ expires_at: attrs.renews_at, status: 'active' })
         .eq('id', licInfo.licenseId)
 
-      await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
-
-      // 구독이 active이면 Sheets 상태도 '활성' 유지
-      if (newStatus === 'active') {
-        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '활성' })
+      // 라우팅: license_key가 Supabase에 존재하면 GenieStock, 아니면 GeniePost
+      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
+      if (supaLicense) {
+        // GenieStock 경로 — Supabase에 만료일/활성 동기화
+        await supaUpdateLicenseExpiry(licInfo.serialKey, attrs.renews_at)
+        if (newStatus === 'active') {
+          await supaSetLicenseActive(licInfo.serialKey, true)
+        }
+        console.log(`[LS Webhook] GenieStock Supabase 만료일 동기화 완료: ${licInfo.serialKey}`)
+      } else {
+        // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
+        await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
+        if (newStatus === 'active') {
+          await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '활성' })
+        }
+        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey}`)
       }
-
-      console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey}`)
-    } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets/DB 동기화 실패:', sheetsErr)
+    } catch (syncErr) {
+      console.error('[LS Webhook] Sheets/DB 동기화 실패:', syncErr)
     }
   }
 }
@@ -390,10 +424,17 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
       .eq('id', licInfo.licenseId)
 
     try {
-      await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey}`)
-    } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+      // 라우팅: GenieStock(Supabase) vs GeniePost(Sheets)
+      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
+      if (supaLicense) {
+        await supaSetLicenseActive(licInfo.serialKey, false)
+        console.log(`[LS Webhook] GenieStock Supabase 비활성화 완료: ${licInfo.serialKey}`)
+      } else {
+        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey}`)
+      }
+    } catch (syncErr) {
+      console.error('[LS Webhook] 비활성화 동기화 실패:', syncErr)
     }
   }
 }
@@ -417,7 +458,7 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
   if (error) throw new Error(`결제 실패 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 결제 실패 처리 완료: ${lsSubId}`)
 
-  // 연결된 라이선스 상태도 expired로 변경 + Sheets 중지
+  // 연결된 라이선스 상태도 expired로 변경 + (GenieStock: Supabase / GeniePost: Sheets) 중지
   const licInfo = await findLicenseByLsSubId(lsSubId)
   if (licInfo) {
     await admin
@@ -426,10 +467,16 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       .eq('id', licInfo.licenseId)
 
     try {
-      await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-      console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey}`)
-    } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
+      if (supaLicense) {
+        await supaSetLicenseActive(licInfo.serialKey, false)
+        console.log(`[LS Webhook] 결제 실패 → GenieStock Supabase 비활성화: ${licInfo.serialKey}`)
+      } else {
+        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
+        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey}`)
+      }
+    } catch (syncErr) {
+      console.error('[LS Webhook] 결제 실패 동기화 실패:', syncErr)
     }
   }
 }
@@ -479,10 +526,16 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
   if (lic?.serial_key) {
     try {
-      await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
-      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
-    } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets 상태 업데이트 실패:', sheetsErr)
+      const supaLicense = await supaFindLicenseByKey(lic.serial_key)
+      if (supaLicense) {
+        await supaSetLicenseActive(lic.serial_key, false)
+        console.log(`[LS Webhook] 환불 → GenieStock Supabase 비활성화: ${lic.serial_key}`)
+      } else {
+        await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
+      }
+    } catch (syncErr) {
+      console.error('[LS Webhook] 환불 동기화 실패:', syncErr)
     }
   }
 }
@@ -523,9 +576,104 @@ async function createLicense(
     .eq('id', productId)
     .single()
 
+  const productNameRaw = product?.name ?? ''
+
+  // ─── GenieStock 분기 (Supabase 경로) ────────────────────────────────────
+  // 상품명에 "GenieStock" 포함 시 Supabase에 라이선스 등록, Sheets append는 스킵.
+  // 시트는 GeniePost 전용. CoreZent 내부 licenses 테이블에는 동일하게 INSERT.
+  if (isGenieStockProduct(productNameRaw)) {
+    const tier = tierFromProductName(productNameRaw)
+    if (!tier) {
+      console.error(`[LS Webhook] GenieStock 상품에서 tier 추출 실패: "${productNameRaw}"`)
+      return
+    }
+
+    // 키 생성: LS 자동 발급 키 우선, 실패 시 자체 생성
+    let serialKey: string
+    let lsLicenseKey: string | null = null
+    if (lsOrderId) {
+      const lsKey = await fetchLsLicenseKey(lsOrderId)
+      if (lsKey) {
+        serialKey = lsKey
+        lsLicenseKey = lsKey
+      } else {
+        console.warn('[LS Webhook] GenieStock LS 키 조회 실패 — 자체 생성 폴백')
+        serialKey = generateSerialKey()
+      }
+    } else {
+      serialKey = generateSerialKey()
+    }
+
+    // 만료일: 구독 갱신일 우선, 없으면 license_duration_days
+    let gsExpiresAt: string | null = null
+    const { data: gsLinkedSub } = await admin
+      .from('subscriptions')
+      .select('current_period_end')
+      .eq('order_id', orderId)
+      .single()
+    if (gsLinkedSub?.current_period_end) {
+      gsExpiresAt = gsLinkedSub.current_period_end
+    } else if (product?.license_duration_days) {
+      const d = new Date()
+      d.setDate(d.getDate() + product.license_duration_days)
+      gsExpiresAt = d.toISOString()
+    }
+
+    // Supabase license_keys INSERT
+    try {
+      await supaInsertLicense({
+        licenseKey: serialKey,
+        tier,
+        buyerEmail: userEmail,
+        expiresAt:  gsExpiresAt,
+        source:     'lemon_squeezy',
+      })
+      console.log(`[LS Webhook] GenieStock Supabase 등록 완료: ${serialKey} (tier=${tier})`)
+    } catch (supaErr) {
+      console.error('[LS Webhook] GenieStock Supabase 등록 실패:', supaErr)
+    }
+
+    // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용)
+    const gsLicenseInsert: Record<string, unknown> = {
+      user_id:    userId,
+      order_id:   orderId,
+      product_id: productId,
+      serial_key: serialKey,
+      status:     'active',
+      max_devices: product?.max_devices ?? null,
+      expires_at: gsExpiresAt,
+    }
+    if (lsLicenseKey) gsLicenseInsert.lemon_squeezy_license_key = lsLicenseKey
+
+    const { error: gsLicErr } = await admin.from('licenses').insert(gsLicenseInsert)
+    if (gsLicErr) {
+      console.error(`[LS Webhook] GenieStock CoreZent licenses INSERT 실패: ${gsLicErr.message}`)
+    }
+
+    // 주문 확인 이메일 (GeniePost와 동일 템플릿)
+    try {
+      await sendEmail({
+        to: userEmail,
+        subject: `Your ${productNameRaw || 'GenieStock'} License Key`,
+        html: orderConfirmationEmailHtml({
+          userName,
+          productName: productNameRaw || 'GenieStock',
+          serialKey,
+        }),
+      })
+      console.log(`[LS Webhook] GenieStock 이메일 발송: ${userEmail}`)
+    } catch (mailErr) {
+      console.error('[LS Webhook] GenieStock 이메일 실패:', mailErr)
+    }
+
+    // Sheets append SKIP (GenieStock은 시트 사용 안 함)
+    return
+  }
+
+  // ─── GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────────────
   // 제품명 기반 라이선스 방식 판별
   // GeniePost(일반)만 CoreZent 자체 시리얼 키 생성, 나머지(Pro + 모든 신규 상품)는 LS 자동 발급 키 사용
-  const productName = (product?.name ?? '').toLowerCase()
+  const productName = productNameRaw.toLowerCase()
   const isPro = !productName.includes('geniepost') || productName.includes('pro')
   // isPro === true: LS 라이선스 사용 (Pro 및 모든 신규 상품)
   // isPro === false: GeniePost 일반만 자체 생성
