@@ -100,11 +100,12 @@ export async function getHwidsForKey(key: string): Promise<HwidEntry[]> {
 
   try {
     const admin = createLicenseAdminClient()
+    // GenieStock Supabase의 hwid_mapping 테이블은 표준 created_at 컬럼을 사용 (registered_at 아님).
     const { data, error } = await admin
       .from('hwid_mapping')
-      .select('hwid, registered_at, device_name')
+      .select('hwid, created_at, device_name')
       .eq('license_key', trimmed)
-      .order('registered_at', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('[supabase-license] getHwidsForKey error:', error)
@@ -113,7 +114,7 @@ export async function getHwidsForKey(key: string): Promise<HwidEntry[]> {
 
     return (data ?? []).map((r) => ({
       hwid:         r.hwid as string,
-      registeredAt: r.registered_at as string,
+      registeredAt: r.created_at as string,
       deviceName:   (r.device_name as string) ?? null,
     }))
   } catch (err) {
