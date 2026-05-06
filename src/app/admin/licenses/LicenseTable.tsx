@@ -200,7 +200,7 @@ export default function LicenseTable({ licenses }: Props) {
                       <td className="px-4 py-3 text-[#475569] whitespace-nowrap text-xs">{fmtDate(l.renewalDate)}</td>
                       <td className="px-4 py-3 text-[#475569] whitespace-nowrap text-xs">{fmtDate(l.expiresAt)}</td>
                       <td className="px-4 py-3">
-                        {l.status === 'active' ? (
+                        {l.status !== 'revoked' ? (
                           <button
                             onClick={() => setRevokeTarget(l)}
                             className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"

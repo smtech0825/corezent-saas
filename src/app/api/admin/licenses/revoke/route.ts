@@ -2,13 +2,21 @@
  * @파일: api/admin/licenses/revoke/route.ts
  * @설명: 라이선스 강제 만료(Revoke) API
  *        - DB 상태를 'revoked'로 업데이트
- *        - Google Sheets E열을 '중지'로 업데이트
- *        - Lemon Squeezy 라이선스 키 비활성화 (선택적, 실패해도 차단하지 않음)
+ *        - GenieStock 라이선스(Supabase license_keys 존재) → is_active=false + HWID 청소, 시트 호출 X
+ *        - GeniePost 라이선스(license_keys에 없음)        → Google Sheets E열 '중지' 업데이트
+ *        - 양쪽 공통: Lemon Squeezy 라이선스 키 비활성화 (실패해도 차단하지 않음)
+ *
+ *        GenieStock은 시트를 사용하지 않으므로(라이선스는 Supabase에 보관) 시트 분기는 명시적으로 스킵.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { updateLicenseStatus } from '@/lib/sheets'
+import {
+  findLicenseByKey as supaFindLicenseByKey,
+  setLicenseActive as supaSetLicenseActive,
+  resetHwidsForKey as supaResetHwidsForKey,
+} from '../../../license/_lib_supabase'
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +36,10 @@ export async function POST(req: NextRequest) {
     if (fetchErr || !license) {
       return NextResponse.json({ error: 'License not found' }, { status: 404 })
     }
-    if (license.status !== 'active') {
-      return NextResponse.json({ error: 'License is not active' }, { status: 400 })
+
+    // 이미 revoked면 의미 없음. expired/active는 강제 정리 허용 (환불 후 webhook 누락 케이스 대응).
+    if (license.status === 'revoked') {
+      return NextResponse.json({ error: 'License is already revoked' }, { status: 400 })
     }
 
     // ① DB 상태 업데이트 → 'revoked'
@@ -43,14 +53,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
     }
 
-    // ② Google Sheets E열 → '중지' (실패해도 계속 진행)
+    // ② 라우팅: GenieStock(Supabase) vs GeniePost(Sheets)
+    //    license_keys에 존재하면 GenieStock — 시트 호출 스킵, Supabase 동기화
+    const serialKey = license.serial_key as string
+    let isGenieStock = false
     try {
-      await updateLicenseStatus({ serialKey: license.serial_key as string, status: '중지' })
-    } catch (sheetsErr) {
-      console.error('[Revoke] Sheets update failed:', sheetsErr)
+      const supaLicense = await supaFindLicenseByKey(serialKey)
+      isGenieStock = supaLicense !== null
+    } catch (lookupErr) {
+      console.error('[Revoke] Supabase license lookup failed:', lookupErr)
+      // 조회 실패 시 안전하게 GeniePost(시트) 경로로 폴백
     }
 
-    // ③ Lemon Squeezy 라이선스 비활성화 (실패해도 계속 진행)
+    if (isGenieStock) {
+      // GenieStock — Supabase 비활성화 + HWID 청소 (시트 호출 X)
+      try {
+        await supaSetLicenseActive(serialKey, false)
+        console.log(`[Revoke] GenieStock Supabase 비활성화 완료: ${serialKey}`)
+      } catch (supaErr) {
+        console.error('[Revoke] GenieStock setLicenseActive 실패:', supaErr)
+      }
+
+      try {
+        await supaResetHwidsForKey(serialKey)
+        console.log(`[Revoke] GenieStock HWID 매핑 청소 완료: ${serialKey}`)
+      } catch (hwidErr) {
+        console.error('[Revoke] GenieStock HWID 청소 실패:', hwidErr)
+      }
+    } else {
+      // GeniePost — Google Sheets E열 '중지' (실패해도 계속 진행)
+      try {
+        await updateLicenseStatus({ serialKey, status: '중지' })
+      } catch (sheetsErr) {
+        console.error('[Revoke] Sheets update failed:', sheetsErr)
+      }
+    }
+
+    // ③ Lemon Squeezy 라이선스 비활성화 (양쪽 공통, 실패해도 계속 진행)
     const lsKey = license.lemon_squeezy_license_key as string | null
     if (lsKey) {
       try {
