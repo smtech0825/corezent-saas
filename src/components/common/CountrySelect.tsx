@@ -16,7 +16,7 @@ interface Props {
   placeholder?: string
 }
 
-export default function CountrySelect({ value, onChange, required, placeholder = 'Select country' }: Props) {
+export default function CountrySelect({ value, onChange, required, placeholder = '국가 선택' }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -115,7 +115,7 @@ export default function CountrySelect({ value, onChange, required, placeholder =
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search country..."
+              placeholder="국가 검색..."
               className="flex-1 bg-transparent text-sm text-white placeholder:text-[#475569] focus:outline-none"
             />
             {query && (
@@ -128,7 +128,7 @@ export default function CountrySelect({ value, onChange, required, placeholder =
           {/* 국가 목록 */}
           <ul className="max-h-52 overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-[#475569] text-center">No results</li>
+              <li className="px-4 py-3 text-sm text-[#475569] text-center">검색 결과 없음</li>
             ) : (
               filtered.map((c) => (
                 <li key={c.code}>

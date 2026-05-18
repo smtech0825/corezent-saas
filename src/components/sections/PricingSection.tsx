@@ -194,7 +194,7 @@ export default function PricingSection({ products }: Props) {
               onClick={() => setAnnual(!annual)}
               className="relative w-12 h-6 rounded-full transition-colors overflow-hidden"
               style={{ backgroundColor: annual ? '#38BDF8' : '#1E293B' }}
-              aria-label="Toggle annual billing"
+              aria-label="연간 결제 전환"
             >
               <span
                 className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"

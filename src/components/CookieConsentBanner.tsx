@@ -55,7 +55,7 @@ export default function CookieConsentBanner() {
           <button
             onClick={() => setShow(false)}
             className="shrink-0 text-[#475569] hover:text-white transition-colors -mt-0.5"
-            aria-label="Dismiss"
+            aria-label="닫기"
           >
             <X size={14} />
           </button>

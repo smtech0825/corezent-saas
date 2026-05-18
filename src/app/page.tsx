@@ -20,9 +20,9 @@ const CTASection          = lazy(() => import('@/components/sections/CTASection'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'CoreZent — Software Built for You',
+  title: 'CoreZent — 당신을 위해 만든 소프트웨어',
   description:
-    'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation.',
+    'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.',
 }
 
 // 섹션 기본 설정 (DB에 없을 경우 fallback)

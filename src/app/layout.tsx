@@ -25,8 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
     const map = new Map((rows ?? []).map((r) => [r.key, r.value ?? '']))
 
-    const title       = map.get('seo_meta_title')       || 'CoreZent — Software Built for You'
-    const description = map.get('seo_meta_description') || 'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation.'
+    const title       = map.get('seo_meta_title')       || 'CoreZent — 당신을 위해 만든 소프트웨어'
+    const description = map.get('seo_meta_description') || 'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.'
     const keywords    = map.get('seo_meta_keywords')    || ''
 
     return {
@@ -37,8 +37,8 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {
     // DB 조회 실패 시 기본값 사용
     return {
-      title:       { default: 'CoreZent — Software Built for You', template: '%s | CoreZent' },
-      description: 'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation.',
+      title:       { default: 'CoreZent — 당신을 위해 만든 소프트웨어', template: '%s | CoreZent' },
+      description: 'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.',
     }
   }
 }
