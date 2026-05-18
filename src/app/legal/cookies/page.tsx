@@ -1,216 +1,124 @@
 /**
  * @파일: app/legal/cookies/page.tsx
- * @설명: CoreZent 쿠키 정책 (Cookie Policy) 페이지
+ * @설명: CoreZent 쿠키 정책 페이지
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import {
+  LegalChrome,
+  LegalSection,
+  P,
+  LabelBox,
+  Bullets,
+  Note,
+  B,
+} from '../_components/legal-ui'
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy — CoreZent',
-  description: 'Learn how CoreZent uses cookies and similar tracking technologies on our website.',
+  title: { absolute: '쿠키 정책 — CoreZent' },
+  description: 'CoreZent가 웹사이트에서 쿠키를 어떻게 사용하고, 회원이 어떻게 관리할 수 있는지 안내합니다.',
 }
-
-const cookieTypes = [
-  {
-    name: 'Strictly Necessary',
-    color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-    description:
-      'Essential for you to browse the website and use its features, such as accessing secure areas (My Page), authenticating logins, and verifying software license status. Without these, services like the shopping cart and license management cannot be provided.',
-  },
-  {
-    name: 'Performance & Analytics',
-    color: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20',
-    description:
-      'Help us understand how visitors interact with our website by collecting and reporting information anonymously. We use tools like Vercel Analytics and Google Analytics to improve our site performance and user experience.',
-  },
-  {
-    name: 'Functionality',
-    color: 'text-violet-400 bg-violet-400/10 border-violet-400/20',
-    description:
-      'Allow our website to remember choices you make (such as your username or language preference) to provide a more personalized experience.',
-  },
-  {
-    name: 'Security',
-    color: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    description:
-      'Used to identify and prevent security risks, protecting your account and license data from unauthorized access.',
-  },
-]
-
-const thirdParties = [
-  {
-    name: 'Payment Processors',
-    description: 'To securely handle transactions and prevent fraud.',
-  },
-  {
-    name: 'Authentication Services (Supabase)',
-    description: 'To manage secure user login sessions.',
-  },
-]
-
-const sections = [
-  {
-    number: '1',
-    title: 'Introduction',
-    plain:
-      'CoreZent uses cookies and similar tracking technologies on www.corezent.com to enhance your browsing experience, analyze site traffic, and provide secure license management. By using our website, you consent to the use of cookies as described in this policy.',
-  },
-  {
-    number: '2',
-    title: 'What are Cookies?',
-    plain:
-      'Cookies are small text files placed on your device to store data that can be recalled by a web server in the domain that placed the cookie. We use both session cookies (which expire once you close your web browser) and persistent cookies (which stay on your device until you delete them).',
-  },
-  {
-    number: '5',
-    title: 'Your Choices Regarding Cookies',
-    plain:
-      'Most web browsers automatically accept cookies, but you can modify your browser settings to decline cookies if you prefer. Please note that if you choose to remove or reject cookies, this could affect the availability and functionality of our services, specifically logging into your account or accessing your license keys. To opt-out of being tracked by Google Analytics across all websites, visit the Google Analytics opt-out page.',
-  },
-  {
-    number: '6',
-    title: 'Changes to This Policy',
-    plain:
-      'We may update our Cookie Policy from time to time. Any changes will be posted on this page with an updated "Last Updated" date. We encourage you to review this policy periodically.',
-  },
-]
 
 export default async function CookiesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const supportHref = user ? '/dashboard/support' : '/auth/login'
+
   return (
-    <div className="min-h-screen bg-[#0B1120]">
-      {/* 헤더 */}
-      <div className="border-b border-[#1E293B]">
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg text-white">
-            <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">C</span>
-            CoreZent
-          </Link>
-          <Link href="/" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-            ← Back to Home
-          </Link>
-        </div>
-      </div>
+    <LegalChrome
+      title="쿠키 정책"
+      intro="본 정책은 CoreZent가 웹사이트(www.corezent.com)에서 쿠키와 유사한 추적 기술을 어떻게 사용하는지 안내합니다."
+      updated="시행일: 2026년 5월 18일"
+      contactTitle="쿠키 사용에 대해 궁금한 점이 있으신가요?"
+      contactDesc="support@corezent.com 으로 문의해 주세요."
+      supportHref={supportHref}
+    >
+      <LegalSection badge="1" title="들어가며">
+        <P>
+          CoreZent는 더 편리하고 안전한 서비스를 제공하기 위해 쿠키 및 유사 기술을 사용합니다. 회원이 본 웹사이트를 이용하시면 본 정책에서 안내하는 방식에 따라 쿠키가 사용되는 데 동의하시는 것으로 간주됩니다.
+        </P>
+      </LegalSection>
 
-      {/* 본문 */}
-      <div className="max-w-4xl mx-auto px-6 py-16">
+      <LegalSection badge="2" title="쿠키란 무엇인가요?">
+        <P>
+          쿠키는 웹사이트가 회원의 기기에 저장하는 작은 텍스트 파일입니다. 회원의 컴퓨터나 모바일 기기를 식별하는 데 사용되지만, 회원 개인을 직접 식별하지는 않습니다.
+        </P>
+        <P>CoreZent는 두 가지 종류의 쿠키를 사용합니다.</P>
+        <Bullets
+          items={[
+            <><B>세션 쿠키</B> — 브라우저를 닫으면 자동으로 삭제되는 임시 쿠키</>,
+            <><B>지속성 쿠키</B> — 회원이 직접 삭제하거나 만료될 때까지 기기에 남아 있는 쿠키</>,
+          ]}
+        />
+      </LegalSection>
 
-        {/* 타이틀 */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-            Legal
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-4">Cookie Policy</h1>
-          <p className="text-[#94A3B8] text-base leading-relaxed max-w-2xl">
-            This policy explains how CoreZent uses cookies and similar technologies to recognize you when you visit our website.
-          </p>
-          <p className="text-[#475569] text-sm mt-4">Last updated: April 7, 2026</p>
-        </div>
+      <LegalSection badge="3" title="CoreZent가 쿠키를 사용하는 목적">
+        <P>회사는 다음 목적으로 쿠키를 사용합니다.</P>
+        <LabelBox label="필수 쿠키 (반드시 필요)">
+          <P>
+            서비스 운영에 반드시 필요한 쿠키입니다. 로그인 상태 유지, 대시보드 접근, 라이선스 키 확인, 결제 처리 등 핵심 기능을 위해 사용되며, 이 쿠키 없이는 서비스를 정상적으로 제공할 수 없습니다.
+          </P>
+        </LabelBox>
+        <LabelBox label="기능 쿠키 (편의 기능)">
+          <P>회원이 선택한 언어, 테마 등 사용 환경을 기억하여 다음 방문 시 편리하게 이용할 수 있도록 합니다.</P>
+        </LabelBox>
+        <LabelBox label="분석 쿠키 (통계 및 성능)">
+          <P>
+            회원이 웹사이트를 어떻게 이용하는지 익명으로 분석하여 서비스를 개선하는 데 사용됩니다. 회사는 Vercel Analytics와 Google Analytics를 활용합니다.
+          </P>
+        </LabelBox>
+        <LabelBox label="보안 쿠키">
+          <P>비정상적인 접근을 감지하고 회원 계정과 라이선스 정보를 보호하는 데 사용됩니다.</P>
+        </LabelBox>
+      </LegalSection>
 
-        <div className="space-y-6">
-          {/* 섹션 1, 2 */}
-          {sections.slice(0, 2).map((section) => (
-            <div key={section.number} className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-              <div className="px-7 py-5 border-b border-[#1E293B] flex items-center gap-4">
-                <span className="w-8 h-8 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-sm font-bold flex items-center justify-center shrink-0">
-                  {section.number}
-                </span>
-                <h2 className="text-base font-semibold text-white">{section.title}</h2>
-              </div>
-              <div className="px-7 py-6">
-                <p className="text-sm text-[#94A3B8] leading-relaxed">{section.plain}</p>
-              </div>
-            </div>
-          ))}
+      <LegalSection badge="4" title="제3자 쿠키">
+        <P>회사의 자체 쿠키 외에도, 다음과 같은 제3자 서비스의 쿠키가 사용될 수 있습니다.</P>
+        <Bullets
+          items={[
+            <><B>결제대행사 (Lemon Squeezy)</B> — 안전한 결제 처리 및 사기 방지</>,
+            <><B>인증 서비스 (Supabase)</B> — 안전한 로그인 세션 관리</>,
+            <><B>분석 서비스 (Vercel Analytics, Google Analytics)</B> — 익명 통계 수집</>,
+          ]}
+        />
+        <P>각 제3자 서비스의 쿠키는 해당 업체의 정책에 따라 관리됩니다.</P>
+      </LegalSection>
 
-          {/* 섹션 3 — 쿠키 종류 카드 */}
-          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-            <div className="px-7 py-5 border-b border-[#1E293B] flex items-center gap-4">
-              <span className="w-8 h-8 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-sm font-bold flex items-center justify-center shrink-0">
-                3
-              </span>
-              <h2 className="text-base font-semibold text-white">How We Use Cookies</h2>
-            </div>
-            <div className="px-7 py-6">
-              <p className="text-sm text-[#94A3B8] leading-relaxed mb-5">
-                We use cookies for the following purposes:
-              </p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {cookieTypes.map((type) => (
-                  <div key={type.name} className="bg-[#0B1120] rounded-xl p-4">
-                    <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border mb-3 ${type.color}`}>
-                      {type.name}
-                    </span>
-                    <p className="text-sm text-[#94A3B8] leading-relaxed">{type.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 섹션 4 — 서드파티 */}
-          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-            <div className="px-7 py-5 border-b border-[#1E293B] flex items-center gap-4">
-              <span className="w-8 h-8 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-sm font-bold flex items-center justify-center shrink-0">
-                4
-              </span>
-              <h2 className="text-base font-semibold text-white">Third-Party Cookies</h2>
-            </div>
-            <div className="px-7 py-6 space-y-3">
-              <p className="text-sm text-[#94A3B8] leading-relaxed">
-                In addition to our own cookies, we may also use various third-party cookies to report usage statistics and deliver services. These may include:
-              </p>
-              {thirdParties.map((tp) => (
-                <div key={tp.name} className="flex items-start gap-3 bg-[#0B1120] rounded-xl px-4 py-3.5">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#38BDF8]/60 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-white">{tp.name}</p>
-                    <p className="text-sm text-[#94A3B8] mt-0.5">{tp.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 섹션 5, 6 */}
-          {sections.slice(2).map((section) => (
-            <div key={section.number} className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-              <div className="px-7 py-5 border-b border-[#1E293B] flex items-center gap-4">
-                <span className="w-8 h-8 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-sm font-bold flex items-center justify-center shrink-0">
-                  {section.number}
-                </span>
-                <h2 className="text-base font-semibold text-white">{section.title}</h2>
-              </div>
-              <div className="px-7 py-6">
-                <p className="text-sm text-[#94A3B8] leading-relaxed">{section.plain}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 문의 안내 */}
-        <div className="mt-10 border border-[#1E293B] bg-[#111A2E] rounded-2xl px-7 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-white mb-1">Questions about our cookie use?</p>
-            <p className="text-sm text-[#94A3B8]">
-              Email us at{' '}
-              <a href="mailto:support@corezent.com" className="text-[#38BDF8] hover:underline">
-                support@corezent.com
-              </a>
-            </p>
-          </div>
-          <Link
-            href={supportHref}
-            className="shrink-0 bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+      <LegalSection badge="5" title="쿠키 거부 및 관리 방법">
+        <P>
+          회원은 브라우저 설정을 통해 쿠키를 허용·차단·삭제할 수 있습니다. 주요 브라우저의 쿠키 관리 방법은 아래와 같습니다.
+        </P>
+        <Bullets
+          items={[
+            <><B>Chrome</B>: 설정 → 개인정보 보호 및 보안 → 쿠키 및 기타 사이트 데이터</>,
+            <><B>Edge</B>: 설정 → 쿠키 및 사이트 권한 → 쿠키 및 사이트 데이터 관리 및 삭제</>,
+            <><B>Safari</B>: 환경설정 → 개인 정보 보호 → 쿠키 및 웹 사이트 데이터</>,
+            <><B>Firefox</B>: 설정 → 개인 정보 및 보안 → 쿠키와 사이트 데이터</>,
+          ]}
+        />
+        <P>
+          <B>Google Analytics 추적을 거부</B>하시려면{' '}
+          <a
+            href="https://tools.google.com/dlpage/gaoptout"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#38BDF8] hover:underline"
           >
-            Contact Support
-          </Link>
-        </div>
-      </div>
-    </div>
+            Google Analytics 옵트아웃 페이지
+          </a>
+          에서 차단 도구를 설치하실 수 있습니다.
+        </P>
+        <Note>
+          <B>참고</B>: 필수 쿠키를 차단하실 경우 로그인, 라이선스 키 조회, 결제 등 핵심 기능을 이용하실 수 없습니다.
+        </Note>
+      </LegalSection>
+
+      <LegalSection badge="6" title="정책의 변경">
+        <P>
+          본 정책은 법령 또는 서비스 정책 변경에 따라 개정될 수 있습니다. 변경 시 본 페이지에 시행일을 명시하여 공지하며, 정기적으로 확인해 주실 것을 권장합니다.
+        </P>
+      </LegalSection>
+    </LegalChrome>
   )
 }
