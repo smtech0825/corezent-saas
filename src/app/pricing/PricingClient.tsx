@@ -229,7 +229,7 @@ export default function PricingClient({ products }: Props) {
                       <h3 className="text-2xl font-bold text-white">{product.name}</h3>
                       {product.category && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
-                          {product.category}
+                          {FILTER_LABELS[product.category] ?? product.category}
                         </span>
                       )}
                     </div>

@@ -94,7 +94,7 @@ export default function UpdatePasswordForm() {
               </div>
               <h1 className="text-2xl font-bold text-white mb-3">비밀번호가 변경되었습니다!</h1>
               <p className="text-[#94A3B8] text-sm">
-                로그인 페이지로 이동 중…
+                로그인 페이지로 이동 중...
               </p>
             </div>
           ) : (

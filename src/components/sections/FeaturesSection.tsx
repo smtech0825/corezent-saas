@@ -62,7 +62,7 @@ const defaultFeatures = [
     id: 'default-6',
     icon: 'Headphones',
     tag: '지원',
-    title: '사람이 직접 하는 진짜 지원',
+    title: '사람이 직접 응대하는 지원',
     description:
       '제품을 만든 개발자에게 직접 도움을 받으세요. 빠르고, 정확하며, 정말로 도움이 됩니다.',
   },
@@ -92,7 +92,7 @@ export default function FeaturesSection({ features }: Props) {
             CoreZent를 선택하는 이유
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            믿을 수 있는 소프트웨어.
+            믿을 수 있는 소프트웨어
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
             우리는 출시하는 모든 제품에 자부심을 갖습니다 — 정성껏 만들고,

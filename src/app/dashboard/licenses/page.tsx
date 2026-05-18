@@ -132,8 +132,10 @@ export default async function LicensesPage({
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
                   <div>
-                    {lic.status === 'revoked' || lic.status === 'expired' || lic.status === 'cancelled' ? (
-                      <span className="text-sm text-[#94A3B8]">해지됨</span>
+                    {lic.status === 'expired' ? (
+                      <span className="text-sm text-[#94A3B8]">만료</span>
+                    ) : lic.status === 'revoked' || lic.status === 'cancelled' ? (
+                      <span className="text-sm text-[#94A3B8]">해지</span>
                     ) : effectiveExpiry ? (
                       <span className="text-sm text-[#94A3B8]">
                         {new Date(effectiveExpiry).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}

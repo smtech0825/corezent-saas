@@ -46,14 +46,14 @@ export async function POST(request: NextRequest) {
   // BotID 검증 — 봇으로 판별되면 즉시 차단
   const botCheck = await checkBotId()
   if (botCheck.isBot) {
-    return NextResponse.json({ error: 'Access denied.' }, { status: 403 })
+    return NextResponse.json({ error: '접근이 거부되었습니다.' }, { status: 403 })
   }
 
   // Rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (isRateLimited(ip)) {
     return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
+      { error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' },
       { status: 429 }
     )
   }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     formData = await request.formData()
   } catch {
-    return NextResponse.json({ error: 'Invalid request format.' }, { status: 400 })
+    return NextResponse.json({ error: '요청 형식이 올바르지 않습니다.' }, { status: 400 })
   }
 
   // Honeypot 체크 — 봇이 채운 경우 조용히 성공 반환
@@ -80,25 +80,25 @@ export async function POST(request: NextRequest) {
 
   if (!email || !subject || !message) {
     return NextResponse.json(
-      { error: 'All fields (email, subject, message) are required.' },
+      { error: '모든 필수 항목을 입력해 주세요.' },
       { status: 400 }
     )
   }
 
   if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 })
+    return NextResponse.json({ error: '이메일 형식이 올바르지 않습니다.' }, { status: 400 })
   }
 
   if (subject.length > 200) {
     return NextResponse.json(
-      { error: 'Subject must be 200 characters or less.' },
+      { error: '제목은 200자 이내로 입력해 주세요.' },
       { status: 400 }
     )
   }
 
   if (message.length > 5000) {
     return NextResponse.json(
-      { error: 'Message must be 5,000 characters or less.' },
+      { error: '내용은 5,000자 이내로 입력해 주세요.' },
       { status: 400 }
     )
   }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   if (file && file.size > 0) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'Attachment must be under 5 MB.' },
+        { error: '첨부 파일은 5MB 이하만 업로드할 수 있습니다.' },
         { status: 400 }
       )
     }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       attachmentName = file.name
       attachmentSize = file.size
     } catch {
-      return NextResponse.json({ error: 'Failed to process attachment.' }, { status: 400 })
+      return NextResponse.json({ error: '첨부 파일 처리에 실패했습니다.' }, { status: 400 })
     }
   }
 

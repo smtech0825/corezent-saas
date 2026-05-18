@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         if (user.email) {
           sendEmail({
             to: user.email,
-            subject: 'Welcome to CoreZent!',
+            subject: 'CoreZent 가입을 환영합니다',
             html: welcomeEmailHtml('CoreZent'),
           }).catch((err) => console.error('[email] 웰컴 이메일 발송 실패:', err))
         }

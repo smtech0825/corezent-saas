@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       .select('id, products(name)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
-      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
+      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent 제품')
     })
   }
 

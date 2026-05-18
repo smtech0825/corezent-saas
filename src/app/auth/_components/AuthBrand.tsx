@@ -32,8 +32,8 @@ export default function AuthBrand() {
 
         {/* 슬로건 */}
         <h2 className="text-2xl font-bold text-white leading-snug mb-4">
-          당신의 소프트웨어,<br />
-          <span className="text-[#38BDF8]">하나의 계정으로.</span>
+          모든 소프트웨어를<br />
+          <span className="text-[#38BDF8]">하나의 계정으로</span>
         </h2>
         <p className="text-[#94A3B8] text-sm leading-relaxed max-w-xs mx-auto">
           모든 CoreZent 도구를 하나의 계정으로.<br />

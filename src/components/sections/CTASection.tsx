@@ -23,12 +23,12 @@ interface Props {
 
 const defaults: Required<CtaContent> = {
   eyebrow: '지금 시작하세요',
-  headline: '당신의 일에 맞는 도구를 찾으세요.',
+  headline: '내게 맞는 도구를 찾아보세요',
   subtext:
     '제품을 둘러보고, 필요한 것을 골라, 즉시 사용하세요. 품질을 중시하는 개발자들이 직접 만들었습니다.',
   btn1_text: '제품 둘러보기',
   btn1_href: '#product',
-  btn2_text: '무료 계정 만들기 →',
+  btn2_text: '무료 계정 만들기',
   btn2_href: '/auth/register',
   footnote: '신용카드 불필요 · 즉시 활성화',
 }

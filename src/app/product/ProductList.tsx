@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import DynamicIcon from '@/components/DynamicIcon'
-import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -120,7 +120,7 @@ export default function ProductList({ products }: Props) {
                   <h3 className="text-xl font-bold text-white">{product.name}</h3>
                   {product.category && (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
-                      {product.category}
+                      {CATEGORY_LABELS[product.category] ?? product.category}
                     </span>
                   )}
                 </div>

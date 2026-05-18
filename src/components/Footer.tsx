@@ -47,7 +47,7 @@ export default async function Footer() {
               CoreZent
             </div>
             <p className="text-sm text-slate-500 leading-relaxed">
-              여러분의 시간을 아끼고 디지털 워크플로를 확장하는 차세대 AI 자동화 도구.
+              여러분의 시간을 아끼고 디지털 워크플로우를 확장하는 차세대 AI 자동화 도구.
             </p>
           </div>
 

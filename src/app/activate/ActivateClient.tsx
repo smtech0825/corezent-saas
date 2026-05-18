@@ -33,6 +33,21 @@ function formatSerial(value: string): string {
   return parts.join('-')
 }
 
+/**
+ * @함수명: statusLabel
+ * @설명: DB의 영문 라이선스 상태값을 한글 라벨로 변환합니다.
+ */
+const STATUS_LABELS: Record<string, string> = {
+  active:    '활성',
+  expired:   '만료',
+  cancelled: '해지',
+  inactive:  '비활성',
+}
+function statusLabel(status?: string | null): string {
+  if (!status) return '—'
+  return STATUS_LABELS[status] ?? status
+}
+
 export default function ActivateClient() {
   const [serialKey, setSerialKey] = useState('')
   const [result, setResult] = useState<LicenseResult | null>(null)
@@ -117,7 +132,7 @@ export default function ActivateClient() {
           className="mt-4 w-full flex items-center justify-center gap-2 bg-amber-500 text-[#0B1120] font-semibold py-3 rounded-xl hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
         >
           {isPending ? (
-            <><Loader2 size={16} className="animate-spin" /> 확인 중…</>
+            <><Loader2 size={16} className="animate-spin" /> 확인 중...</>
           ) : (
             <><ShieldCheck size={16} /> 라이선스 확인</>
           )}
@@ -148,13 +163,13 @@ export default function ActivateClient() {
                     result.status === 'active' ? 'text-emerald-400' : 'text-amber-400'
                   }`}
                 >
-                  {result.status === 'active' ? '유효한 라이선스' : `라이선스 ${result.status}`}
+                  {result.status === 'active' ? '유효한 라이선스' : `라이선스 ${statusLabel(result.status)}`}
                 </span>
               </div>
 
               <div className="space-y-2 text-sm">
                 <Row label="제품" value={result.productName ?? '—'} />
-                <Row label="상태" value={result.status ?? '—'} />
+                <Row label="상태" value={statusLabel(result.status)} />
                 <Row
                   label="만료일"
                   value={
@@ -209,11 +224,11 @@ export default function ActivateClient() {
         </Link>
         <span>·</span>
         <Link href="/dashboard" className="hover:text-[#94A3B8] transition-colors">
-          내 대시보드
+          대시보드
         </Link>
         <span>·</span>
         <Link href="/dashboard/support" className="hover:text-[#94A3B8] transition-colors">
-          고객 지원
+          고객지원
         </Link>
       </div>
     </div>

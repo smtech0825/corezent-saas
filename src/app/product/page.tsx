@@ -71,10 +71,10 @@ export default async function ProductPage() {
             {/* 헤더 */}
             <div className="text-center mb-16">
               <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-                우리 제품
+                제품 소개
               </p>
               <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-                당신을 위해 일하는 소프트웨어.
+                나를 위해 일하는 소프트웨어
               </h1>
               <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
                 우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고,

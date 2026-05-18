@@ -238,7 +238,7 @@ export default function Navbar() {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
                     >
                       <LayoutDashboard size={14} />
-                      마이페이지
+                      대시보드
                     </Link>
                     <Link
                       href="/dashboard/settings"
@@ -323,7 +323,7 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="text-sm text-[#94A3B8] hover:text-white"
                   >
-                    마이페이지
+                    대시보드
                   </Link>
                   <button
                     onClick={handleLogout}

@@ -307,7 +307,7 @@ function CancellationModal({
             <textarea
               value={otherText}
               onChange={(e) => onOtherText(e.target.value)}
-              placeholder="선택: 자세한 내용을 알려주세요…"
+              placeholder="(선택) 자세한 내용을 알려주세요"
               rows={3}
               className="w-full mt-1 bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors resize-none"
             />

@@ -177,7 +177,7 @@ export default function PricingSection({ products }: Props) {
             요금제
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            간단하고 정직한 요금제.
+            간단하고 투명한 요금제
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
             하나의 플랜. 모든 기능 포함. 언제든 해지 가능.

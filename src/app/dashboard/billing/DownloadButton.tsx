@@ -96,7 +96,7 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
           ? <Loader2 size={11} className="animate-spin" />
           : <Download size={11} />
         }
-        Download
+        다운로드
         <ChevronDown size={10} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         {!done && (
           <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-400 text-[#0B1120] text-[8px] font-bold flex items-center justify-center">

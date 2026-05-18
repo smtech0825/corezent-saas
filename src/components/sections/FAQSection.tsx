@@ -32,7 +32,7 @@ export default function FAQSection({ faqs }: Props) {
             FAQ
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            자주 묻는 질문.
+            자주 묻는 질문
           </h2>
           <p className="text-[#94A3B8] text-lg">
             CoreZent 소프트웨어와 구매에 대해 알아야 할 모든 것.

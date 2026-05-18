@@ -284,7 +284,7 @@ export default function RegisterForm() {
               className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
-              {loading ? '계정 생성 중...' : '계정 만들기'}
+              {loading ? '계정을 만드는 중...' : '계정 만들기'}
             </button>
           </form>
         </div>

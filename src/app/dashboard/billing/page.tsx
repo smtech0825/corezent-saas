@@ -65,7 +65,7 @@ export default async function BillingPage({
       .select('id, products(id, name, manual_url)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
-      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent Product')
+      priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent 제품')
       priceManualMap.set(pp.id, pp.products?.manual_url ?? null)
       if (pp.products?.id) priceProductMap.set(pp.id, pp.products.id)
     })

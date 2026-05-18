@@ -72,7 +72,7 @@ export default function TestimonialsSection({ testimonials }: Props) {
             고객 후기
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            실제 사용자들이 신뢰합니다.
+            실제 사용자들이 신뢰합니다
           </h2>
           <p className="text-[#94A3B8] text-lg">
             CoreZent 소프트웨어에 대한 고객들의 생생한 후기를 확인하세요.

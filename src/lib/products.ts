@@ -27,10 +27,19 @@ export interface Product {
 
 /** 카테고리 탭 표시 레이블 */
 export const FILTER_LABELS: Record<FilterCategory, string> = {
-  all: 'All',
-  'chrome-extension': 'Chrome Extension',
-  desktop: 'Desktop',
-  'web-tool': 'Web Tool',
+  all: '전체',
+  'chrome-extension': '크롬 확장 프로그램',
+  desktop: '데스크톱',
+  'web-tool': '웹 도구',
+}
+
+/** 카테고리 슬러그 → 한글 표시 라벨 (제품 카드 배지용) */
+export const CATEGORY_LABELS: Record<string, string> = {
+  desktop:            '데스크톱',
+  'web-tool':         '웹 도구',
+  web:                '웹',
+  'chrome-extension': '크롬 확장 프로그램',
+  mobile:             '모바일',
 }
 
 /** 상품 뱃지 색상 스타일 (blue/green/yellow) */

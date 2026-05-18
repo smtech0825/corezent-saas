@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('id', user.id)
     .single()
 
-  const name     = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'User'
+  const name     = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '회원'
   const initials = name[0].toUpperCase()
   const isAdmin  = profile?.role === 'admin'
 

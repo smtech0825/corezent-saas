@@ -29,7 +29,7 @@ export default function ContactPage() {
           문의하기
         </h1>
         <p className="text-[#94A3B8] text-sm sm:text-base max-w-md mx-auto">
-          질문, 피드백, 또는 제휴 문의가 있으신가요?<br />
+          질문, 피드백, 제휴 문의 무엇이든 환영합니다.<br />
           아래 양식을 작성해 주시면 빠르게 답변드리겠습니다.
         </p>
       </section>

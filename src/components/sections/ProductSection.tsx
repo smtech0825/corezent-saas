@@ -7,7 +7,7 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
 
 interface ProductCard {
   name: string
@@ -106,10 +106,10 @@ export default async function ProductSection() {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            우리 제품
+            제품 소개
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            당신을 위해 일하는 소프트웨어.
+            나를 위해 일하는 소프트웨어
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
             우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고,
@@ -158,7 +158,7 @@ export default async function ProductSection() {
                   <h3 className="text-xl font-bold text-white">{product.name}</h3>
                   {product.category && (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
-                      {product.category}
+                      {CATEGORY_LABELS[product.category] ?? product.category}
                     </span>
                   )}
                 </div>

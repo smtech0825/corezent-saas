@@ -24,7 +24,7 @@ interface Props {
 const defaults: Required<HeroContent> = {
   badge: '여러분의 일을 더 쉽게 만드는 소프트웨어',
   headline1: '강력한 소프트웨어,',
-  headline2: '정성을 담아 만듭니다.',
+  headline2: '정성을 담아 만듭니다',
   subtext:
     'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화, 전담 지원을 제공합니다.',
   cta1_text: '제품 둘러보기',

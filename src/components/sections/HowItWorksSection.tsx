@@ -61,7 +61,7 @@ export default function HowItWorksSection({ steps }: Props) {
             이용 방법
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            처음부터 끝까지 간단하게.
+            처음부터 끝까지 간단하게
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
             복잡한 설정도, 숨겨진 절차도 없습니다. 고르고, 결제하고, 바로
