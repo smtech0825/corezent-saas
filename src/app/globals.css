@@ -2,35 +2,13 @@
 
 /* ----------------------------------------------------------
  * 폰트 정의
+ * 한국어 사이트 — Pretendard(가변 폰트)를 본문/헤딩 기본으로 사용.
+ * 한글+영문 모두 커버하며 단일 woff2로 전 weight(45~920) 지원.
  * ---------------------------------------------------------- */
 @font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-Bold.woff2') format('woff2');
-  font-weight: 700;
+  font-family: 'Pretendard';
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
   font-style: normal;
   font-display: swap;
 }
@@ -75,7 +53,7 @@
   --color-error:           #ff5252;
 
   /* 폰트 */
-  --font-sans:             'Geist', 'Inter', system-ui, sans-serif;
+  --font-sans:             'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-mono:             'JetBrains Mono', 'Fira Code', monospace;
 }
 

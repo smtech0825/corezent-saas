@@ -68,7 +68,7 @@ export default async function RootLayout({
   const isValidGaId = /^(G-|UA-)[A-Z0-9-]+$/i.test(gaId)
 
   return (
-    <html lang="en">
+    <html lang="ko">
       <body>
         {children}
         {/* 분석 스크립트 (쿠키 동의 시에만 로드) */}

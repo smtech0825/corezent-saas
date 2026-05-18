@@ -44,11 +44,11 @@ export default function CookieConsentBanner() {
             <Cookie size={13} className="text-[#38BDF8]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white leading-tight">Cookie Preferences</p>
+            <p className="text-sm font-semibold text-white leading-tight">쿠키 설정</p>
             <p className="text-[11px] text-[#94A3B8] mt-1 leading-relaxed">
-              We use essential cookies for security, and optional cookies for analytics &amp; personalization.{' '}
+              보안을 위한 필수 쿠키와 분석·맞춤화를 위한 선택 쿠키를 사용합니다.{' '}
               <Link href="/legal/cookies" className="text-[#38BDF8] hover:underline">
-                Learn more
+                자세히 보기
               </Link>
             </p>
           </div>
@@ -64,13 +64,13 @@ export default function CookieConsentBanner() {
         {/* GDPR 범주 요약 */}
         <div className="flex gap-1.5 mb-3.5">
           <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2 py-0.5">
-            ✓ Essential
+            ✓ 필수
           </span>
           <span className="text-[10px] font-medium text-[#475569] bg-[#0B1120] border border-[#1E293B] rounded-full px-2 py-0.5">
-            Analytics
+            분석
           </span>
           <span className="text-[10px] font-medium text-[#475569] bg-[#0B1120] border border-[#1E293B] rounded-full px-2 py-0.5">
-            Marketing
+            마케팅
           </span>
         </div>
 
@@ -80,13 +80,13 @@ export default function CookieConsentBanner() {
             onClick={handleEssential}
             className="flex-1 py-2 rounded-xl border border-[#1E293B] text-xs text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/30 transition-colors font-medium"
           >
-            Essential Only
+            필수만 허용
           </button>
           <button
             onClick={handleAll}
             className="flex-1 py-2 rounded-xl bg-[#38BDF8] text-[#0B1120] text-xs font-semibold hover:bg-[#0ea5e9] transition-colors"
           >
-            Accept All
+            모두 허용
           </button>
         </div>
       </div>

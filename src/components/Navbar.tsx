@@ -49,9 +49,9 @@ export default function Navbar() {
 
   // 공지 배너 데이터 (DB에서 로드)
   const [banner, setBanner] = useState({
-    text: 'Introducing GeniePost — AI-powered WordPress posting, starting at $9/month.',
-    text_mobile: 'GeniePost is here — AI WordPress posting from $9/mo.',
-    link_text: 'Learn more →',
+    text: 'GeniePost 출시 — AI 기반 WordPress 자동 포스팅, 월 $9부터.',
+    text_mobile: 'GeniePost 출시 — AI WordPress 포스팅 월 $9부터',
+    link_text: '자세히 보기 →',
     link_url: '#product',
     visible: 'true',
   })
@@ -59,15 +59,15 @@ export default function Navbar() {
   const userRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // 네비게이션 링크 (번역 적용)
+  // 네비게이션 링크
   const navLinks: { label: string; href: string; external?: boolean }[] = [
-    { label: 'About', href: '/about' },
-    { label: 'Product', href: '/product' },
-    { label: 'Pricing', href: '/pricing' },
-    { label: 'Changelog', href: '/changelog' },
-    { label: 'Manual', href: 'https://sites.google.com/view/corezent', external: true },
+    { label: '회사소개', href: '/about' },
+    { label: '제품', href: '/product' },
+    { label: '요금제', href: '/pricing' },
+    { label: '업데이트 내역', href: '/changelog' },
+    { label: '사용 설명서', href: 'https://sites.google.com/view/corezent', external: true },
     { label: 'FAQ', href: '/faq' },
-    { label: 'Contact', href: '/contact' },
+    { label: '문의하기', href: '/contact' },
   ]
 
   // 배너 데이터 로드
@@ -238,7 +238,7 @@ export default function Navbar() {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
                     >
                       <LayoutDashboard size={14} />
-                      My Page
+                      마이페이지
                     </Link>
                     <Link
                       href="/dashboard/settings"
@@ -246,14 +246,14 @@ export default function Navbar() {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
                     >
                       <User size={14} />
-                      Settings
+                      설정
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors border-t border-[#1E293B]"
                     >
                       <LogOut size={14} />
-                      Log out
+                      로그아웃
                     </button>
                   </div>
                 )}
@@ -265,13 +265,13 @@ export default function Navbar() {
                   href="/auth/login"
                   className="hidden lg:block text-sm text-[#94A3B8] hover:text-white transition-colors px-2"
                 >
-                  Log in
+                  로그인
                 </Link>
                 <Link
                   href="/auth/register"
                   className="hidden lg:inline-flex items-center gap-1.5 bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#0ea5e9] transition-colors"
                 >
-                  Get started
+                  시작하기
                 </Link>
               </>
             )}
@@ -323,13 +323,13 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="text-sm text-[#94A3B8] hover:text-white"
                   >
-                    My Page
+                    마이페이지
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="text-left text-sm text-red-400 hover:text-red-300"
                   >
-                    Log out
+                    로그아웃
                   </button>
                 </>
               ) : (
@@ -338,13 +338,13 @@ export default function Navbar() {
                     href="/auth/login"
                     className="text-sm text-[#94A3B8] hover:text-white"
                   >
-                    Log in
+                    로그인
                   </Link>
                   <Link
                     href="/auth/register"
                     className="inline-flex justify-center bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg"
                   >
-                    Get started
+                    시작하기
                   </Link>
                 </>
               )}

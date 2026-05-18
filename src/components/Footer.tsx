@@ -7,20 +7,20 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const footerLinks = {
-  Product: [
-    { label: 'Pricing', href: '/pricing' },
+  제품: [
+    { label: '요금제', href: '/pricing' },
   ],
-  Company: [
-    { label: 'About', href: '/about' },
+  회사: [
+    { label: '회사소개', href: '/about' },
   ],
-  Resources: [
-    { label: 'Documentation', href: 'https://sites.google.com/view/corezent' },
-    { label: 'Support', href: '/dashboard/support' },
+  자료: [
+    { label: '사용 설명서', href: 'https://sites.google.com/view/corezent' },
+    { label: '고객지원', href: '/dashboard/support' },
   ],
-  Legal: [
-    { label: 'Privacy Policy', href: '/legal/privacy' },
-    { label: 'Terms of Service', href: '/legal/terms' },
-    { label: 'Cookie Policy', href: '/legal/cookies' },
+  약관: [
+    { label: '개인정보처리방침', href: '/legal/privacy' },
+    { label: '이용약관', href: '/legal/terms' },
+    { label: '쿠키 정책', href: '/legal/cookies' },
   ],
 }
 
@@ -47,7 +47,7 @@ export default async function Footer() {
               CoreZent
             </div>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Next-generation AI automation tools designed to save your time and scale your digital workflow.
+              여러분의 시간을 아끼고 디지털 워크플로를 확장하는 차세대 AI 자동화 도구.
             </p>
           </div>
 
