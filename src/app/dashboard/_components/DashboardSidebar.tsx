@@ -24,12 +24,12 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
   const supabase = createClient()
 
   const navItems = [
-    { label: 'Overview',  href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
-    { label: 'Licenses',  href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
-    { label: 'Billing',   href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
-    { label: 'Changelog', href: '/changelog',          icon: History,         exact: false, badge: 0 },
-    { label: 'Settings',  href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
-    { label: 'Support',   href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
+    { label: '개요',        href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
+    { label: '라이선스',    href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
+    { label: '결제',        href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
+    { label: '업데이트 내역', href: '/changelog',         icon: History,         exact: false, badge: 0 },
+    { label: '설정',        href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
+    { label: '고객지원',    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
   ]
 
   async function handleLogout() {
@@ -110,7 +110,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/5 transition-colors mb-0.5"
           >
             <ExternalLink size={16} />
-            Go to Admin
+            관리자 페이지로 이동
           </Link>
         )}
 
@@ -119,7 +119,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
         >
           <LogOut size={16} />
-          Log out
+          로그아웃
         </button>
       </div>
     </aside>

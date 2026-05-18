@@ -13,7 +13,7 @@ import BillingSubscriptionSection, { type SubRow } from './BillingSubscriptionSe
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Billing — CoreZent',
+  title: '결제 — CoreZent',
 }
 
 const SUB_PAGE_SIZE = 5
@@ -115,15 +115,15 @@ export default async function BillingPage({
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Billing</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">Manage subscriptions and view payment history.</p>
+        <h1 className="text-2xl font-bold text-white">결제</h1>
+        <p className="text-[#94A3B8] text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
       </div>
 
       {/* 구독 섹션 */}
       <section className="mb-8">
         <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
-          Subscriptions
-          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({subTotal} total)</span>}
+          구독
+          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">(총 {subTotal}개)</span>}
         </h2>
         {subscriptions && subscriptions.length > 0 ? (
           <>
@@ -137,7 +137,7 @@ export default async function BillingPage({
                 return {
                   id:                   sub.id,
                   productId,
-                  productName:          priceNameMap.get(sub.product_price_id) ?? 'Unknown',
+                  productName:          priceNameMap.get(sub.product_price_id) ?? '알 수 없음',
                   billingInterval:      sub.billing_interval,
                   currentPeriodEnd:     sub.current_period_end ?? null,
                   status:               sub.status,
@@ -154,8 +154,8 @@ export default async function BillingPage({
         ) : (
           <EmptyCard
             icon={<Package size={20} className="text-[#475569]" />}
-            message="No subscriptions yet."
-            action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:underline">Browse plans →</Link>}
+            message="아직 구독이 없습니다."
+            action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:underline">요금제 둘러보기 →</Link>}
           />
         )}
       </section>
@@ -163,17 +163,17 @@ export default async function BillingPage({
       {/* 결제 내역 섹션 */}
       <section>
         <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
-          Payment History
-          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({ordTotal} total)</span>}
+          결제 내역
+          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">(총 {ordTotal}개)</span>}
         </h2>
         {orders && orders.length > 0 ? (
           <>
             <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
               <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
-                <span>Product</span>
-                <span>Date</span>
-                <span>Amount</span>
-                <span>Status</span>
+                <span>제품</span>
+                <span>날짜</span>
+                <span>금액</span>
+                <span>상태</span>
               </div>
               {orders.map((order: any) => (
                 <div
@@ -182,10 +182,10 @@ export default async function BillingPage({
                 >
                   <div className="flex items-center gap-3">
                     <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
-                    <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? 'Order'}</span>
+                    <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? '주문'}</span>
                   </div>
                   <span className="text-sm text-[#94A3B8]">
-                    {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(order.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-sm text-white font-medium">
                     ${((order.amount ?? 0) / 100).toFixed(2)}
@@ -197,7 +197,7 @@ export default async function BillingPage({
             <Pagination page={ordPage} total={ordTotal ?? 0} pageSize={ORD_PAGE_SIZE} buildHref={ordHref} />
           </>
         ) : (
-          <EmptyCard icon={<CreditCard size={20} className="text-[#475569]" />} message="No payment history yet." />
+          <EmptyCard icon={<CreditCard size={20} className="text-[#475569]" />} message="아직 결제 내역이 없습니다." />
         )}
       </section>
     </div>
@@ -226,9 +226,12 @@ function OrderStatusBadge({ status }: { status: string }) {
     refunded:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
     cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
   }
+  const labelMap: Record<string, string> = {
+    paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨', cancelled: '취소됨',
+  }
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium text-center ${map[status] ?? map.pending}`}>
-      {status}
+      {labelMap[status] ?? status}
     </span>
   )
 }

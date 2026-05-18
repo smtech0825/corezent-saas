@@ -34,12 +34,18 @@ const statusColors: Record<string, string> = {
   closed:   'text-[#475569] bg-[#1E293B]',
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  open:     '접수됨',
+  answered: '답변 완료',
+  closed:   '종료됨',
+}
+
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function fmtDateTime(d: string) {
-  return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 /** 읽지 않은 관리자 답변이 있는지 확인 */
@@ -110,9 +116,9 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
     })
 
     if (error) {
-      showToast('error', 'Failed to send reply. Please try again.')
+      showToast('error', '답변 전송에 실패했습니다. 다시 시도해 주세요.')
     } else {
-      showToast('success', 'Reply sent successfully.')
+      showToast('success', '답변이 전송되었습니다.')
       setReplyTexts((prev) => ({ ...prev, [ticketId]: '' }))
       // 답변 목록 갱신
       const replies = await fetchReplies(ticketId)
@@ -129,9 +135,9 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
       .eq('id', ticketId)
 
     if (error) {
-      showToast('error', 'Failed to close ticket.')
+      showToast('error', '문의 종료에 실패했습니다.')
     } else {
-      showToast('success', 'Ticket closed.')
+      showToast('success', '문의가 종료되었습니다.')
       router.refresh()
     }
     setClosing(null)
@@ -142,7 +148,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
   return (
     <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-[#1E293B]">
-        <h2 className="text-sm font-semibold text-white">Your Tickets</h2>
+        <h2 className="text-sm font-semibold text-white">내 문의 내역</h2>
       </div>
 
       <div className="divide-y divide-[#1E293B]/50">
@@ -169,14 +175,14 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                       {ticket.subject}
                     </p>
                     <p className="text-xs text-[#475569] mt-0.5">
-                      {fmtDate(ticket.created_at)} · Updated {fmtDate(ticket.updated_at)}
+                      {fmtDate(ticket.created_at)} · 업데이트 {fmtDate(ticket.updated_at)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[ticket.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
-                    {ticket.status}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[ticket.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                    {STATUS_LABELS[ticket.status] ?? ticket.status}
                   </span>
                   <ChevronDown
                     size={15}
@@ -197,7 +203,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                       {/* 메시지 스레드 */}
                       <div className="space-y-3 pt-4 mb-4">
                         {replies.length === 0 ? (
-                          <p className="text-sm text-[#475569] text-center py-4">No messages yet.</p>
+                          <p className="text-sm text-[#475569] text-center py-4">아직 메시지가 없습니다.</p>
                         ) : (
                           replies.map((reply) => (
                             <div
@@ -210,7 +216,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className={`text-xs font-semibold ${reply.is_admin ? 'text-amber-400' : 'text-[#38BDF8]'}`}>
-                                  {reply.is_admin ? '🛡 Support Team' : 'You'}
+                                  {reply.is_admin ? '🛡 고객지원팀' : '나'}
                                 </span>
                                 <span className="text-xs text-[#475569]">{fmtDateTime(reply.created_at)}</span>
                               </div>
@@ -229,7 +235,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                               rows={3}
                               value={replyTexts[ticket.id] ?? ''}
                               onChange={(e) => setReplyTexts((prev) => ({ ...prev, [ticket.id]: e.target.value }))}
-                              placeholder="Write a reply..."
+                              placeholder="답변을 작성하세요..."
                               className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 resize-none transition-colors"
                             />
                             <button
@@ -254,7 +260,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                                 ? <Loader2 size={11} className="animate-spin" />
                                 : <X size={11} />
                               }
-                              Close ticket
+                              문의 종료
                             </button>
                           </div>
                         </div>
@@ -262,7 +268,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
 
                       {ticket.status === 'closed' && (
                         <p className="text-xs text-[#475569] text-center py-2">
-                          This ticket is closed. Contact support to reopen it.
+                          종료된 문의입니다. 다시 열려면 고객센터에 문의해 주세요.
                         </p>
                       )}
                     </>

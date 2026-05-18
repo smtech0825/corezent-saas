@@ -33,16 +33,16 @@ interface Props {
 // ─── 취소 사유 옵션 ───────────────────────────────────────────────────────────
 
 const CANCEL_REASONS = [
-  "It's too expensive.",
-  "I'm missing some features I need.",
-  "It's too difficult to use.",
-  'I only needed it for a short-term project.',
-  'I found a better alternative.',
-  'Other / Prefer not to say.',
+  '가격이 너무 비쌉니다.',
+  '필요한 기능이 부족합니다.',
+  '사용하기가 너무 어렵습니다.',
+  '단기 프로젝트에만 필요했습니다.',
+  '더 나은 대안을 찾았습니다.',
+  '기타 / 답변하지 않음.',
 ] as const
 
 type CancelReason = typeof CANCEL_REASONS[number]
-const OTHER_REASON: CancelReason = 'Other / Prefer not to say.'
+const OTHER_REASON: CancelReason = '기타 / 답변하지 않음.'
 
 // ─── 취소 대상 구독 타입 ──────────────────────────────────────────────────────
 
@@ -113,11 +113,11 @@ export default function BillingSubscriptionSection({ rows }: Props) {
 
       // 낙관적 UI 업데이트
       setCancelledIds((prev) => new Set([...prev, cancelTarget.id]))
-      showToast('success', 'Your subscription has been cancelled. You can continue using the service until the end of your billing period.')
+      showToast('success', '구독이 취소되었습니다. 결제 기간이 끝날 때까지 서비스를 계속 이용하실 수 있습니다.')
       closeCancelModal()
     } catch (err) {
       console.error('[cancel]', err)
-      showToast('error', 'Failed to cancel subscription. Please try again or contact support.')
+      showToast('error', '구독 취소에 실패했습니다. 다시 시도하거나 고객센터에 문의해 주세요.')
     } finally {
       setCancelling(false)
     }
@@ -145,14 +145,14 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                     <p className="text-white font-medium">{row.productName}</p>
                     {badgeActive && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30">
-                        New
+                        NEW
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-[#475569] mt-0.5">
-                    {row.billingInterval === 'annual' ? 'Annual' : 'Monthly'} plan
+                    {row.billingInterval === 'annual' ? '연간' : '월간'} 플랜
                     {row.currentPeriodEnd &&
-                      ` · Renews ${new Date(row.currentPeriodEnd).toLocaleDateString('en-US', {
+                      ` · 갱신일 ${new Date(row.currentPeriodEnd).toLocaleDateString('ko-KR', {
                         month: 'short', day: 'numeric', year: 'numeric',
                       })}`}
                   </p>
@@ -166,7 +166,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                   className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <ExternalLink size={11} />
-                  Check License
+                  라이선스 확인
                 </Link>
                 {row.manualUrl && (
                   <a
@@ -176,7 +176,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                     className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <BookOpen size={11} />
-                    Manual
+                    사용 설명서
                   </a>
                 )}
                 {row.hasDownload && row.changelog && row.productId && (
@@ -194,7 +194,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                     onClick={() => openCancelModal(row)}
                     className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 px-3 py-1.5 rounded-lg transition-colors"
                   >
-                    Cancel Subscription
+                    구독 취소
                   </button>
                 )}
               </div>
@@ -238,7 +238,7 @@ function CancellationModal({
   cancelling, onKeep, onConfirm,
 }: ModalProps) {
   const fmtDate = target.currentPeriodEnd
-    ? new Date(target.currentPeriodEnd).toLocaleDateString('en-US', {
+    ? new Date(target.currentPeriodEnd).toLocaleDateString('ko-KR', {
         month: 'long', day: 'numeric', year: 'numeric',
       })
     : null
@@ -266,14 +266,15 @@ function CancellationModal({
 
         {/* 헤더 */}
         <div className="mb-5">
-          <h2 className="text-lg font-bold text-white">We're sorry to see you go.</h2>
+          <h2 className="text-lg font-bold text-white">떠나신다니 아쉽습니다.</h2>
           <p className="text-sm text-[#94A3B8] mt-1.5">
-            Could you tell us why you are cancelling?
+            취소하시는 이유를 알려주시겠어요?
           </p>
           {fmtDate && (
             <p className="text-xs text-[#475569] mt-2 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2">
-              Your subscription will remain active until{' '}
-              <span className="text-amber-400 font-medium">{fmtDate}</span>.
+              구독은{' '}
+              <span className="text-amber-400 font-medium">{fmtDate}</span>
+              까지 유지됩니다.
             </p>
           )}
         </div>
@@ -306,7 +307,7 @@ function CancellationModal({
             <textarea
               value={otherText}
               onChange={(e) => onOtherText(e.target.value)}
-              placeholder="Optional: tell us more…"
+              placeholder="선택: 자세한 내용을 알려주세요…"
               rows={3}
               className="w-full mt-1 bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors resize-none"
             />
@@ -321,7 +322,7 @@ function CancellationModal({
             disabled={cancelling}
             className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] transition-colors disabled:opacity-50"
           >
-            Keep My Subscription
+            구독 유지하기
           </button>
 
           {/* Cancel Subscription — ghost/destructive, 비강조 */}
@@ -331,7 +332,7 @@ function CancellationModal({
             className="w-full py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:border-red-500/60 hover:text-red-300 hover:bg-red-500/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {cancelling && <Loader2 size={14} className="animate-spin" />}
-            Cancel Subscription
+            구독 취소하기
           </button>
         </div>
       </div>
@@ -343,10 +344,10 @@ function CancellationModal({
 
 function SubStatusBadge({ status }: { status: string }) {
   const map: Record<string, { style: string; label: string }> = {
-    active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'active' },
-    paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: 'paused' },
-    cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'cancelled' },
-    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: 'expired' },
+    active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: '활성' },
+    paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: '일시정지' },
+    cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: '취소됨' },
+    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: '만료됨' },
   }
   const { style, label } = map[status] ?? map.cancelled
   return (

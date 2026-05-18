@@ -60,7 +60,7 @@ export default function SettingsPage() {
     if (error) {
       showToast('error', error.message)
     } else {
-      showToast('success', 'Profile updated successfully.')
+      showToast('success', '프로필이 업데이트되었습니다.')
     }
     setProfileLoading(false)
   }
@@ -71,11 +71,11 @@ export default function SettingsPage() {
     setPasswordError('')
 
     if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters.')
+      setPasswordError('새 비밀번호는 8자 이상이어야 합니다.')
       return
     }
     if (!currentPassword) {
-      setPasswordError('Please enter your current password.')
+      setPasswordError('현재 비밀번호를 입력해 주세요.')
       return
     }
 
@@ -88,7 +88,7 @@ export default function SettingsPage() {
     })
 
     if (authError) {
-      setPasswordError('The current password you entered is incorrect.')
+      setPasswordError('현재 비밀번호가 올바르지 않습니다.')
       setPasswordLoading(false)
       return
     }
@@ -99,7 +99,7 @@ export default function SettingsPage() {
     if (error) {
       showToast('error', error.message)
     } else {
-      showToast('success', 'Password updated successfully.')
+      showToast('success', '비밀번호가 변경되었습니다.')
       setCurrentPassword('')
       setNewPassword('')
     }
@@ -109,15 +109,15 @@ export default function SettingsPage() {
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">Manage your account details and security.</p>
+        <h1 className="text-2xl font-bold text-white">설정</h1>
+        <p className="text-[#94A3B8] text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
       </div>
 
       {/* 프로필 섹션 */}
       <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6 mb-6">
-        <h2 className="text-base font-semibold text-white mb-5">Profile</h2>
+        <h2 className="text-base font-semibold text-white mb-5">프로필</h2>
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-          <FormField label="Name">
+          <FormField label="이름">
             <input
               type="text"
               value={name}
@@ -127,51 +127,51 @@ export default function SettingsPage() {
             />
           </FormField>
 
-          <FormField label="Email">
+          <FormField label="이메일">
             <input
               type="email"
               value={email}
               disabled
               className={`${inputCls} opacity-50 cursor-not-allowed`}
             />
-            <p className="text-xs text-[#475569] mt-1.5">Email cannot be changed here.</p>
+            <p className="text-xs text-[#475569] mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
           </FormField>
 
-          <FormField label="Country">
+          <FormField label="국가">
             <CountrySelect
               value={country}
               onChange={setCountry}
-              placeholder="Select your country"
+              placeholder="국가를 선택하세요"
             />
           </FormField>
 
           <div className="flex justify-stretch sm:justify-end pt-1">
-            <SubmitButton loading={profileLoading} label="Save changes" />
+            <SubmitButton loading={profileLoading} label="변경사항 저장" />
           </div>
         </form>
       </section>
 
       {/* 비밀번호 섹션 */}
       <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6">
-        <h2 className="text-base font-semibold text-white mb-5">Change Password</h2>
+        <h2 className="text-base font-semibold text-white mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
-          <FormField label="Current Password">
+          <FormField label="현재 비밀번호">
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Your current password"
+              placeholder="현재 비밀번호"
               required
               className={inputCls}
             />
           </FormField>
 
-          <FormField label="New Password">
+          <FormField label="새 비밀번호">
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Min. 8 characters"
+              placeholder="8자 이상 입력하세요"
               required
               minLength={8}
               className={inputCls}
@@ -185,7 +185,7 @@ export default function SettingsPage() {
           )}
 
           <div className="flex justify-end">
-            <SubmitButton loading={passwordLoading} label="Update password" />
+            <SubmitButton loading={passwordLoading} label="비밀번호 변경" />
           </div>
         </form>
       </section>

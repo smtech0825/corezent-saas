@@ -10,7 +10,7 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Dashboard — CoreZent',
+  title: '대시보드 — CoreZent',
 }
 
 export default async function DashboardPage() {
@@ -55,38 +55,38 @@ export default async function DashboardPage() {
     })
   }
 
-  const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'there'
+  const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? '회원'
 
   function fmtDate(d: string | null) {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Welcome back, {name} 👋</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">Here&apos;s what&apos;s happening with your account.</p>
+        <h1 className="text-2xl font-bold text-white">{name}님, 다시 오신 것을 환영합니다 👋</h1>
+        <p className="text-[#94A3B8] text-sm mt-1">계정 현황을 확인하세요.</p>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard
           icon={<Key size={18} className="text-[#38BDF8]" />}
-          label="Total Licenses"
+          label="전체 라이선스"
           value={String(licenseCount ?? 0)}
           href="/dashboard/licenses"
         />
         <StatCard
           icon={<Package size={18} className="text-emerald-400" />}
-          label="Active Subscriptions"
+          label="활성 구독"
           value={String(subscriptions?.length ?? 0)}
           href="/dashboard/billing"
         />
         <StatCard
           icon={<CreditCard size={18} className="text-violet-400" />}
-          label="Total Orders"
+          label="전체 주문"
           value={String(orders?.length ?? 0)}
           href="/dashboard/billing"
         />
@@ -94,41 +94,41 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 활성 구독 */}
-        <Section title="Active Subscriptions" href="/dashboard/billing">
+        <Section title="활성 구독" href="/dashboard/billing">
           {subscriptions && subscriptions.length > 0 ? (
             <div className="flex flex-col gap-3">
               {subscriptions.map((sub: any) => (
                 <div key={sub.id} className="flex items-start justify-between gap-3 py-3 border-b border-[#1E293B] last:border-0">
                   <div className="min-w-0">
                     <p className="text-sm text-white font-medium truncate">
-                      {priceNameMap.get(sub.product_price_id) ?? 'Unknown'}
+                      {priceNameMap.get(sub.product_price_id) ?? '알 수 없음'}
                     </p>
                     <p className="text-xs text-[#475569] mt-0.5">
-                      {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} plan
+                      {sub.billing_interval === 'annual' ? '연간' : '월간'} 플랜
                     </p>
                     <p className="text-xs text-[#475569] mt-0.5">
-                      Started {fmtDate(sub.current_period_start)}
+                      시작일 {fmtDate(sub.current_period_start)}
                     </p>
                   </div>
                   <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                    Active
+                    활성
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState message="No active subscriptions." cta="Browse products" href="/pricing" />
+            <EmptyState message="활성 구독이 없습니다." cta="제품 둘러보기" href="/pricing" />
           )}
         </Section>
 
         {/* 최근 주문 */}
-        <Section title="Recent Orders" href="/dashboard/billing">
+        <Section title="최근 주문" href="/dashboard/billing">
           {orders && orders.length > 0 ? (
             <div className="flex flex-col gap-3">
               {orders.map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{priceNameMap.get(order.product_price_id) ?? 'Order'}</p>
+                    <p className="text-sm text-white font-medium">{priceNameMap.get(order.product_price_id) ?? '주문'}</p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {fmtDate(order.created_at)}
                     </p>
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState message="No orders yet." cta="Browse products" href="/pricing" />
+            <EmptyState message="아직 주문이 없습니다." cta="제품 둘러보기" href="/pricing" />
           )}
         </Section>
       </div>
@@ -180,7 +180,7 @@ function Section({ title, href, children }: {
     <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-white">{title}</h2>
-        <Link href={href} className="text-xs text-[#38BDF8] hover:underline">View all</Link>
+        <Link href={href} className="text-xs text-[#38BDF8] hover:underline">전체 보기</Link>
       </div>
       {children}
     </div>
@@ -203,9 +203,12 @@ function StatusBadge({ status }: { status: string }) {
     failed:    'text-red-400 bg-red-500/10 border-red-500/20',
     refunded:  'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
   }
+  const labelMap: Record<string, string> = {
+    paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨',
+  }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
-      {status}
+      {labelMap[status] ?? status}
     </span>
   )
 }

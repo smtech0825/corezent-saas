@@ -60,7 +60,7 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
               >
                 <Menu size={20} />
               </button>
-              <span className="text-white font-semibold text-sm">Dashboard</span>
+              <span className="text-white font-semibold text-sm">대시보드</span>
             </div>
 
             {/* 데스크톱: 빈 공간 */}

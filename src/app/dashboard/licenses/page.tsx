@@ -12,7 +12,7 @@ import Pagination from '@/components/common/Pagination'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'My Licenses — CoreZent',
+  title: '내 라이선스 — CoreZent',
 }
 
 const PAGE_SIZE = 10
@@ -65,10 +65,10 @@ export default async function LicensesPage({
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">My Licenses</h1>
+        <h1 className="text-2xl font-bold text-white">내 라이선스</h1>
         <p className="text-[#94A3B8] text-sm mt-1">
-          Manage your product license keys.
-          {total > 0 && <span className="ml-2 text-[#475569]">({total} total)</span>}
+          제품 라이선스 키를 관리하세요.
+          {total > 0 && <span className="ml-2 text-[#475569]">(총 {total}개)</span>}
         </p>
       </div>
 
@@ -77,11 +77,11 @@ export default async function LicensesPage({
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
             <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
-              <span>License Key</span>
-              <span>Product</span>
-              <span>Status</span>
-              <span>Period</span>
-              <span>Expires</span>
+              <span>라이선스 키</span>
+              <span>제품</span>
+              <span>상태</span>
+              <span>주기</span>
+              <span>만료일</span>
             </div>
 
             {/* 라이선스 목록 */}
@@ -123,7 +123,7 @@ export default async function LicensesPage({
                           ? 'text-violet-400 bg-violet-400/10 border-violet-400/20'
                           : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
                       }`}>
-                        {period === 'annual' ? 'Annual' : 'Monthly'}
+                        {period === 'annual' ? '연간' : '월간'}
                       </span>
                     ) : (
                       <span className="text-xs text-[#475569]">—</span>
@@ -133,13 +133,13 @@ export default async function LicensesPage({
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
                   <div>
                     {lic.status === 'revoked' || lic.status === 'expired' || lic.status === 'cancelled' ? (
-                      <span className="text-sm text-[#94A3B8]">Cancelled</span>
+                      <span className="text-sm text-[#94A3B8]">해지됨</span>
                     ) : effectiveExpiry ? (
                       <span className="text-sm text-[#94A3B8]">
-                        {new Date(effectiveExpiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {new Date(effectiveExpiry).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     ) : (
-                      <span className="text-sm text-[#475569]">Lifetime</span>
+                      <span className="text-sm text-[#475569]">평생</span>
                     )}
                   </div>
                 </div>
@@ -159,10 +159,10 @@ export default async function LicensesPage({
           <div className="w-12 h-12 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-4">
             <Key size={22} className="text-[#475569]" />
           </div>
-          <p className="text-white font-medium mb-1">No licenses yet</p>
-          <p className="text-sm text-[#475569] mb-4">Purchase a product to receive your license key.</p>
+          <p className="text-white font-medium mb-1">아직 라이선스가 없습니다</p>
+          <p className="text-sm text-[#475569] mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
           <a href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-[#38BDF8] hover:underline">
-            Browse products →
+            제품 둘러보기 →
           </a>
         </div>
       )}
@@ -172,10 +172,10 @@ export default async function LicensesPage({
 
 function LicenseStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    active:   { label: 'Active',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-    inactive: { label: 'Inactive', cls: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]' },
-    expired:  { label: 'Expired',  cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-    revoked:  { label: 'Revoked',  cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
+    active:   { label: '활성',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+    inactive: { label: '비활성', cls: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]' },
+    expired:  { label: '만료',   cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+    revoked:  { label: '해지',   cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
   }
   const { label, cls } = map[status] ?? map.inactive
   return (

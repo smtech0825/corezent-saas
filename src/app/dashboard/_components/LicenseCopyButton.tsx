@@ -20,7 +20,7 @@ export default function LicenseCopyButton({ serialKey }: { serialKey: string }) 
   return (
     <button
       onClick={handleCopy}
-      title="Copy license key"
+      title="라이선스 키 복사"
       className="p-1 text-[#475569] hover:text-[#38BDF8] transition-colors shrink-0"
     >
       {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}

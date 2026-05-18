@@ -14,10 +14,10 @@ export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 5
 
 const priorityOptions = [
-  { value: 'low', label: 'Low' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
+  { value: 'low', label: '낮음' },
+  { value: 'normal', label: '보통' },
+  { value: 'high', label: '높음' },
+  { value: 'urgent', label: '긴급' },
 ]
 
 export default async function SupportPage({
@@ -91,36 +91,36 @@ export default async function SupportPage({
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Support</h1>
+        <h1 className="text-2xl font-bold text-white">고객지원</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Submit a support request and we&apos;ll get back to you as soon as possible.
+          문의를 남겨주시면 최대한 빠르게 답변드리겠습니다.
         </p>
       </div>
 
       {/* 티켓 제출 폼 */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[#1E293B]">
-          <h2 className="text-sm font-semibold text-white">New Support Ticket</h2>
+          <h2 className="text-sm font-semibold text-white">새 문의 작성</h2>
         </div>
         <form action={submitTicket} className="px-6 py-6 space-y-4">
           {/* 제목 */}
           <div className="space-y-1.5">
             <label htmlFor="subject" className="text-xs font-medium text-[#94A3B8]">
-              Subject <span className="text-red-400">*</span>
+              제목 <span className="text-red-400">*</span>
             </label>
             <input
               id="subject"
               name="subject"
               type="text"
               required
-              placeholder="Briefly describe your issue"
+              placeholder="문의 내용을 간단히 적어주세요"
               className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
             />
           </div>
 
           {/* 우선순위 */}
           <div className="space-y-1.5">
-            <label htmlFor="priority" className="text-xs font-medium text-[#94A3B8]">Priority</label>
+            <label htmlFor="priority" className="text-xs font-medium text-[#94A3B8]">우선순위</label>
             <select
               id="priority"
               name="priority"
@@ -136,14 +136,14 @@ export default async function SupportPage({
           {/* 메시지 */}
           <div className="space-y-1.5">
             <label htmlFor="message" className="text-xs font-medium text-[#94A3B8]">
-              Message <span className="text-red-400">*</span>
+              내용 <span className="text-red-400">*</span>
             </label>
             <textarea
               id="message"
               name="message"
               required
               rows={5}
-              placeholder="Describe your issue in detail..."
+              placeholder="문의 내용을 자세히 적어주세요..."
               className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors resize-none"
             />
           </div>
@@ -153,7 +153,7 @@ export default async function SupportPage({
               type="submit"
               className="w-full sm:w-auto bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
             >
-              Submit Ticket
+              문의 제출
             </button>
           </div>
         </form>
