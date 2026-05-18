@@ -14,8 +14,8 @@ import Footer from '@/components/Footer'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Changelog — CoreZent',
-  description: 'Version history and release notes for CoreZent products.',
+  title: '업데이트 내역 — CoreZent',
+  description: 'CoreZent 제품의 버전 기록과 릴리스 노트.',
 }
 
 interface Changelog {
@@ -41,10 +41,10 @@ interface Product {
 }
 
 const CONTENT_SECTIONS = [
-  { key: 'new_features'     as const, label: 'New Features',     badge: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
-  { key: 'improvements'     as const, label: 'Improvements',     badge: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
-  { key: 'bug_fixes'        as const, label: 'Bug Fixes',        badge: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-  { key: 'breaking_changes' as const, label: 'Breaking Changes', badge: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  { key: 'new_features'     as const, label: '새로운 기능',   badge: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
+  { key: 'improvements'     as const, label: '개선 사항',     badge: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
+  { key: 'bug_fixes'        as const, label: '버그 수정',     badge: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+  { key: 'breaking_changes' as const, label: '주요 변경',     badge: 'text-red-400 bg-red-400/10 border-red-400/20' },
 ]
 
 export default async function ChangelogPage({
@@ -99,7 +99,7 @@ export default async function ChangelogPage({
       <div className="min-h-screen bg-[#0B1120] font-sans">
         <Navbar />
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-[#475569] text-sm">No changelog entries yet.</p>
+          <p className="text-[#475569] text-sm">아직 업데이트 내역이 없습니다.</p>
         </div>
         <Footer />
       </div>
@@ -113,7 +113,7 @@ export default async function ChangelogPage({
 
         {/* 사이드바 — 상품 목록 */}
         <aside className="w-56 shrink-0 hidden md:block">
-          <p className="text-xs font-semibold text-[#475569] uppercase tracking-wider mb-4 px-2">Products</p>
+          <p className="text-xs font-semibold text-[#475569] uppercase tracking-wider mb-4 px-2">제품</p>
           <nav className="space-y-1">
             {products.map((p) => {
               const isActive = p.id === selectedProduct?.id
@@ -151,7 +151,7 @@ export default async function ChangelogPage({
               className="inline-flex items-center gap-1.5 text-sm text-[#475569] hover:text-[#94A3B8] transition-colors"
             >
               <ArrowLeft size={14} />
-              Back to Home
+              홈으로 돌아가기
             </Link>
           </div>
 
@@ -181,7 +181,7 @@ export default async function ChangelogPage({
             <>
               <div className="mb-8">
                 <h1 className="text-2xl font-bold text-white">{selectedProduct.name}</h1>
-                <p className="text-sm text-[#475569] mt-1">Release notes and version history</p>
+                <p className="text-sm text-[#475569] mt-1">릴리스 노트 및 버전 기록</p>
               </div>
 
               {/* 타임라인 */}
@@ -215,11 +215,11 @@ export default async function ChangelogPage({
                             <span className="text-lg font-bold text-white font-mono">{cl.version}</span>
                             {cl.is_latest && (
                               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
-                                Latest
+                                최신
                               </span>
                             )}
                             <span className="text-sm text-[#475569]">
-                              {new Date(cl.release_date).toLocaleDateString('en-US', {
+                              {new Date(cl.release_date).toLocaleDateString('ko-KR', {
                                 year: 'numeric', month: 'long', day: 'numeric',
                               })}
                             </span>
@@ -268,7 +268,7 @@ export default async function ChangelogPage({
                           )}
 
                           {!hasAnyContent && (
-                            <p className="text-sm text-[#475569] italic">No release notes for this version.</p>
+                            <p className="text-sm text-[#475569] italic">이 버전의 릴리스 노트가 없습니다.</p>
                           )}
                         </div>
                       </div>

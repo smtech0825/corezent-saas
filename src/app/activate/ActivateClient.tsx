@@ -62,12 +62,12 @@ export default function ActivateClient() {
         .single()
 
       if (error || !license) {
-        setResult({ found: false, error: 'License key not found. Please check the key and try again.' })
+        setResult({ found: false, error: '라이선스 키를 찾을 수 없습니다. 키를 확인 후 다시 시도해 주세요.' })
         return
       }
 
       const prod = license.products as { name: string } | { name: string }[] | null
-      const productName = (Array.isArray(prod) ? prod[0]?.name : prod?.name) ?? 'CoreZent Product'
+      const productName = (Array.isArray(prod) ? prod[0]?.name : prod?.name) ?? 'CoreZent 제품'
       const isOwner = user ? user.id === license.user_id : false
 
       setResult({
@@ -88,16 +88,16 @@ export default function ActivateClient() {
         <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-5">
           <Key size={24} className="text-amber-400" />
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Activate your license</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">라이선스 활성화</h1>
         <p className="text-sm text-[#94A3B8]">
-          Enter the license key from your purchase email to verify and activate your product.
+          구매 이메일로 받은 라이선스 키를 입력하여 제품을 확인하고 활성화하세요.
         </p>
       </div>
 
       {/* 입력 폼 */}
       <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl p-6 mb-4">
         <label className="block text-xs text-[#475569] uppercase tracking-widest font-semibold mb-2">
-          License Key
+          라이선스 키
         </label>
         <input
           value={serialKey}
@@ -108,7 +108,7 @@ export default function ActivateClient() {
           className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-center text-lg font-mono tracking-widest text-white placeholder-[#1E293B] focus:outline-none focus:border-amber-500/50 transition-colors"
         />
         <p className="text-[10px] text-[#475569] mt-2 text-center">
-          Format: XXXX-XXXX-XXXX-XXXX · letters and numbers only
+          형식: XXXX-XXXX-XXXX-XXXX · 영문과 숫자만 입력
         </p>
 
         <button
@@ -117,9 +117,9 @@ export default function ActivateClient() {
           className="mt-4 w-full flex items-center justify-center gap-2 bg-amber-500 text-[#0B1120] font-semibold py-3 rounded-xl hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
         >
           {isPending ? (
-            <><Loader2 size={16} className="animate-spin" /> Checking…</>
+            <><Loader2 size={16} className="animate-spin" /> 확인 중…</>
           ) : (
-            <><ShieldCheck size={16} /> Verify License</>
+            <><ShieldCheck size={16} /> 라이선스 확인</>
           )}
         </button>
       </div>
@@ -148,28 +148,28 @@ export default function ActivateClient() {
                     result.status === 'active' ? 'text-emerald-400' : 'text-amber-400'
                   }`}
                 >
-                  {result.status === 'active' ? 'Valid license' : `License ${result.status}`}
+                  {result.status === 'active' ? '유효한 라이선스' : `라이선스 ${result.status}`}
                 </span>
               </div>
 
               <div className="space-y-2 text-sm">
-                <Row label="Product" value={result.productName ?? '—'} />
-                <Row label="Status" value={result.status ?? '—'} />
+                <Row label="제품" value={result.productName ?? '—'} />
+                <Row label="상태" value={result.status ?? '—'} />
                 <Row
-                  label="Expires"
+                  label="만료일"
                   value={
                     result.expiresAt
-                      ? new Date(result.expiresAt).toLocaleDateString('en-US', {
+                      ? new Date(result.expiresAt).toLocaleDateString('ko-KR', {
                           month: 'long',
                           day: 'numeric',
                           year: 'numeric',
                         })
-                      : 'Never (lifetime)'
+                      : '없음 (평생)'
                   }
                 />
                 <Row
-                  label="Devices"
-                  value={result.maxDevices ? `Up to ${result.maxDevices}` : 'Unlimited'}
+                  label="기기"
+                  value={result.maxDevices ? `최대 ${result.maxDevices}대` : '무제한'}
                 />
               </div>
 
@@ -178,15 +178,15 @@ export default function ActivateClient() {
                   href="/dashboard/licenses"
                   className="mt-5 flex items-center justify-center gap-2 text-sm text-[#38BDF8] hover:text-white transition-colors"
                 >
-                  View in Dashboard <ArrowRight size={13} />
+                  대시보드에서 보기 <ArrowRight size={13} />
                 </Link>
               ) : (
                 <p className="mt-4 text-xs text-[#475569] text-center">
-                  This license is registered to another account.{' '}
+                  이 라이선스는 다른 계정에 등록되어 있습니다.{' '}
                   <Link href="/auth/login" className="text-[#38BDF8] hover:underline">
-                    Sign in
-                  </Link>{' '}
-                  to manage your licenses.
+                    로그인
+                  </Link>
+                  하여 내 라이선스를 관리하세요.
                 </p>
               )}
             </>
@@ -194,7 +194,7 @@ export default function ActivateClient() {
             <div className="flex items-start gap-2">
               <XCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-red-400 mb-1">License not found</p>
+                <p className="text-sm font-semibold text-red-400 mb-1">라이선스를 찾을 수 없습니다</p>
                 <p className="text-xs text-[#94A3B8]">{result.error}</p>
               </div>
             </div>
@@ -205,15 +205,15 @@ export default function ActivateClient() {
       {/* 하단 링크 */}
       <div className="mt-6 text-center text-xs text-[#475569] space-x-4">
         <Link href="/pricing" className="hover:text-[#94A3B8] transition-colors">
-          Buy a license
+          라이선스 구매
         </Link>
         <span>·</span>
         <Link href="/dashboard" className="hover:text-[#94A3B8] transition-colors">
-          My dashboard
+          내 대시보드
         </Link>
         <span>·</span>
         <Link href="/dashboard/support" className="hover:text-[#94A3B8] transition-colors">
-          Contact support
+          고객 지원
         </Link>
       </div>
     </div>

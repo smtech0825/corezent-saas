@@ -22,14 +22,14 @@ interface Props {
 }
 
 const defaults: Required<HeroContent> = {
-  badge: 'Software built to make your work easier',
-  headline1: 'Powerful Software,',
-  headline2: 'Crafted with Care.',
+  badge: '여러분의 일을 더 쉽게 만드는 소프트웨어',
+  headline1: '강력한 소프트웨어,',
+  headline2: '정성을 담아 만듭니다.',
   subtext:
-    'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation, and dedicated support.',
-  cta1_text: 'Browse products',
+    'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화, 전담 지원을 제공합니다.',
+  cta1_text: '제품 둘러보기',
   cta1_href: '#product',
-  cta2_text: 'Create free account',
+  cta2_text: '무료 계정 만들기',
   cta2_href: '/auth/register',
 }
 
@@ -111,10 +111,10 @@ export default function HeroSection({ content }: Props) {
       {/* Value pills */}
       <div className="relative z-10 flex flex-wrap items-center justify-center gap-3">
         {[
-          'Built by developers',
-          'Instant license activation',
-          'Simple pricing',
-          'Dedicated support',
+          '개발자가 직접 제작',
+          '라이선스 즉시 활성화',
+          '간편한 요금제',
+          '전담 고객 지원',
         ].map((item) => (
           <span
             key={item}

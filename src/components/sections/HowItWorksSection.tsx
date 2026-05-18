@@ -21,25 +21,25 @@ const defaultSteps: (DbStep & { number: string })[] = [
     id: 'default-1',
     number: '01',
     icon: 'ShoppingCart',
-    title: 'Choose your software',
+    title: '소프트웨어를 선택하세요',
     description:
-      'Browse our product lineup and pick the tool that fits your needs. Simple, transparent pricing — monthly or annual.',
+      '제품 라인업을 둘러보고 필요에 맞는 도구를 고르세요. 월간·연간 중 선택할 수 있는 간단하고 투명한 요금제입니다.',
   },
   {
     id: 'default-2',
     number: '02',
     icon: 'Zap',
-    title: 'Instant access & activation',
+    title: '즉시 접근 & 활성화',
     description:
-      'Complete your purchase and get immediate access. Your license is activated instantly — no waiting, no hassle.',
+      '결제를 완료하면 바로 사용할 수 있습니다. 라이선스가 즉시 활성화되어 기다림도, 번거로움도 없습니다.',
   },
   {
     id: 'default-3',
     number: '03',
     icon: 'Headphones',
-    title: 'Use it with full support',
+    title: '완벽한 지원과 함께 사용하세요',
     description:
-      'Get started with our detailed manuals and dedicated support. We are here to help you get the most out of every product.',
+      '상세한 매뉴얼과 전담 지원으로 시작하세요. 모든 제품을 최대한 활용하실 수 있도록 도와드립니다.',
   },
 ]
 
@@ -58,14 +58,14 @@ export default function HowItWorksSection({ steps }: Props) {
         {/* Header */}
         <div className="text-center mb-20">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            How it works
+            이용 방법
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Simple from start to finish.
+            처음부터 끝까지 간단하게.
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            No complicated setup. No hidden steps. Just pick, purchase, and start
-            using your software right away.
+            복잡한 설정도, 숨겨진 절차도 없습니다. 고르고, 결제하고, 바로
+            소프트웨어를 사용하세요.
           </p>
         </div>
 

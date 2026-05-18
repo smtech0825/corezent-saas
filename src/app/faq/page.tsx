@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'FAQ — CoreZent',
-  description: 'Frequently asked questions about CoreZent software and purchases.',
+  description: 'CoreZent 소프트웨어와 구매에 대해 자주 묻는 질문.',
 }
 
 export default async function FaqPage() {
@@ -34,7 +34,7 @@ export default async function FaqPage() {
           <FAQSection faqs={faqs} />
         ) : (
           <div className="flex items-center justify-center py-40">
-            <p className="text-[#475569] text-sm">No FAQs available yet.</p>
+            <p className="text-[#475569] text-sm">아직 등록된 FAQ가 없습니다.</p>
           </div>
         )}
       </main>

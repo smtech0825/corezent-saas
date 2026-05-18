@@ -11,8 +11,8 @@ import Footer from '@/components/Footer'
 import ActivateClient from './ActivateClient'
 
 export const metadata: Metadata = {
-  title: 'Activate License — CoreZent',
-  description: 'Enter your license key to verify and activate your CoreZent product.',
+  title: '라이선스 활성화 — CoreZent',
+  description: '라이선스 키를 입력하여 CoreZent 제품을 확인하고 활성화하세요.',
 }
 
 export default function ActivatePage() {

@@ -34,7 +34,7 @@ export default function ContactForm() {
   function handleFile(f: File | null) {
     if (!f) return
     if (f.size > MAX_FILE_SIZE) {
-      showToast('error', 'File size must be under 5 MB.')
+      showToast('error', '파일 크기는 5MB 이하여야 합니다.')
       return
     }
     setFile(f)
@@ -67,7 +67,7 @@ export default function ContactForm() {
     if (sending) return
 
     if (!subject.trim() || !email.trim() || !message.trim()) {
-      showToast('error', 'Please fill in all required fields.')
+      showToast('error', '필수 항목을 모두 입력해 주세요.')
       return
     }
 
@@ -85,17 +85,17 @@ export default function ContactForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        showToast('error', data.error ?? 'Failed to send. Please try again.')
+        showToast('error', data.error ?? '전송에 실패했습니다. 다시 시도해 주세요.')
         return
       }
 
-      showToast('success', "Thank you! We'll get back to you soon.")
+      showToast('success', '감사합니다! 빠르게 답변드리겠습니다.')
       setSubject('')
       setEmail('')
       setMessage('')
       setFile(null)
     } catch {
-      showToast('error', 'Network error. Please try again.')
+      showToast('error', '네트워크 오류입니다. 다시 시도해 주세요.')
     } finally {
       setSending(false)
     }
@@ -112,7 +112,7 @@ export default function ContactForm() {
       {/* 제목 */}
       <div>
         <label htmlFor="contact-subject" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          Subject <span className="text-red-400">*</span>
+          제목 <span className="text-red-400">*</span>
         </label>
         <input
           id="contact-subject"
@@ -121,7 +121,7 @@ export default function ContactForm() {
           onChange={(e) => setSubject(e.target.value)}
           maxLength={200}
           required
-          placeholder="What's this about?"
+          placeholder="어떤 내용인가요?"
           className="w-full px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B] text-white text-sm placeholder-[#475569] focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/30 transition-colors"
         />
       </div>
@@ -129,7 +129,7 @@ export default function ContactForm() {
       {/* 이메일 */}
       <div>
         <label htmlFor="contact-email" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          Email <span className="text-red-400">*</span>
+          이메일 <span className="text-red-400">*</span>
         </label>
         <input
           id="contact-email"
@@ -145,7 +145,7 @@ export default function ContactForm() {
       {/* 내용 */}
       <div>
         <label htmlFor="contact-message" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          Message <span className="text-red-400">*</span>
+          내용 <span className="text-red-400">*</span>
         </label>
         <textarea
           id="contact-message"
@@ -154,7 +154,7 @@ export default function ContactForm() {
           maxLength={5000}
           required
           rows={6}
-          placeholder="Tell us what you need help with..."
+          placeholder="어떤 도움이 필요하신지 알려주세요..."
           className="w-full px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B] text-white text-sm placeholder-[#475569] focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/30 transition-colors resize-y min-h-[120px]"
         />
         <p className="text-right text-xs text-[#475569] mt-1">{message.length}/5,000</p>
@@ -163,7 +163,7 @@ export default function ContactForm() {
       {/* 첨부파일 — 드래그 & 드롭 */}
       <div>
         <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          Attachment <span className="text-[#475569] font-normal">(optional, max 5 MB)</span>
+          첨부파일 <span className="text-[#475569] font-normal">(선택, 최대 5MB)</span>
         </label>
 
         {!file ? (
@@ -180,9 +180,9 @@ export default function ContactForm() {
           >
             <Upload size={24} className="mx-auto text-[#475569] mb-2" />
             <p className="text-sm text-[#94A3B8]">
-              Drag & drop a file here, or <span className="text-[#38BDF8] underline underline-offset-2">browse</span>
+              파일을 여기에 끌어다 놓거나 <span className="text-[#38BDF8] underline underline-offset-2">찾아보기</span>
             </p>
-            <p className="text-xs text-[#475569] mt-1">Max 5 MB</p>
+            <p className="text-xs text-[#475569] mt-1">최대 5MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -219,12 +219,12 @@ export default function ContactForm() {
         {sending ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            Sending...
+            전송 중...
           </>
         ) : (
           <>
             <Send size={16} />
-            Send Message
+            메시지 보내기
           </>
         )}
       </button>

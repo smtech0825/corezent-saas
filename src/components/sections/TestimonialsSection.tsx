@@ -20,9 +20,9 @@ const defaultTestimonials = [
   {
     id: 'default-1',
     quote:
-      'GeniePost from CoreZent completely changed how I manage my blog. Setup took less than 10 minutes and my content has been on autopilot ever since. Brilliant product.',
-    author_name: 'Sarah Chen',
-    author_title: 'WordPress blogger & content creator',
+      'CoreZent의 GeniePost는 제 블로그 관리 방식을 완전히 바꿔놓았습니다. 설정에 10분도 안 걸렸고, 그 후로는 콘텐츠가 자동으로 운영되고 있어요. 정말 훌륭한 제품입니다.',
+    author_name: '김서연',
+    author_title: 'WordPress 블로거 & 콘텐츠 크리에이터',
     author_avatar: null,
     rating: 5,
     color: 'from-[#38BDF8] to-[#0ea5e9]',
@@ -30,9 +30,9 @@ const defaultTestimonials = [
   {
     id: 'default-2',
     quote:
-      'I love that the software is made by actual developers who care. The documentation is excellent, support is fast, and the product just works. No bloat, no nonsense.',
-    author_name: 'Marcus Lee',
-    author_title: 'Freelance Digital Marketer',
+      '품질을 진지하게 생각하는 개발자들이 직접 만든 소프트웨어라는 점이 마음에 듭니다. 문서도 훌륭하고, 지원도 빠르고, 제품이 그냥 잘 작동해요. 군더더기 없이 깔끔합니다.',
+    author_name: '이준호',
+    author_title: '프리랜서 디지털 마케터',
     author_avatar: null,
     rating: 5,
     color: 'from-[#818cf8] to-[#6c63ff]',
@@ -40,9 +40,9 @@ const defaultTestimonials = [
   {
     id: 'default-3',
     quote:
-      'Simple pricing, instant license delivery, and real support from the team that built it. CoreZent is exactly what software purchases should feel like.',
-    author_name: 'Yuki Tanaka',
-    author_title: 'Solopreneur & Indie Developer',
+      '간편한 요금제, 즉시 발급되는 라이선스, 그리고 제품을 만든 팀의 진짜 지원까지. CoreZent는 소프트웨어 구매가 어떤 느낌이어야 하는지 정확히 보여줍니다.',
+    author_name: '박지민',
+    author_title: '1인 창업가 & 인디 개발자',
     author_avatar: null,
     rating: 5,
     color: 'from-[#34d399] to-[#10b981]',
@@ -69,13 +69,13 @@ export default function TestimonialsSection({ testimonials }: Props) {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            Testimonials
+            고객 후기
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Trusted by real users.
+            실제 사용자들이 신뢰합니다.
           </h2>
           <p className="text-[#94A3B8] text-lg">
-            See what our customers are saying about CoreZent software.
+            CoreZent 소프트웨어에 대한 고객들의 생생한 후기를 확인하세요.
           </p>
         </div>
 

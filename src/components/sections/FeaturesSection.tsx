@@ -21,50 +21,50 @@ const defaultFeatures = [
   {
     id: 'default-1',
     icon: 'Code2',
-    tag: 'Built in-house',
-    title: 'Made by developers, for users',
+    tag: '자체 개발',
+    title: '개발자가 사용자를 위해 직접 제작',
     description:
-      'Every product is built and maintained by our own team — not outsourced. We use what we sell, so quality is always our priority.',
+      '모든 제품은 외주가 아닌 자체 팀이 직접 만들고 관리합니다. 우리가 파는 것을 우리가 직접 쓰기 때문에 품질이 언제나 최우선입니다.',
   },
   {
     id: 'default-2',
     icon: 'Zap',
-    tag: 'Instant',
-    title: 'License activated in seconds',
+    tag: '즉시',
+    title: '몇 초 만에 라이선스 활성화',
     description:
-      'Purchase and get immediate access. Your license is delivered and activated instantly — no waiting period.',
+      '결제하면 즉시 사용할 수 있습니다. 라이선스가 곧바로 발급·활성화되어 대기 시간이 없습니다.',
   },
   {
     id: 'default-3',
     icon: 'BookOpen',
-    tag: 'Docs',
-    title: 'Detailed manuals & guides',
+    tag: '문서',
+    title: '상세한 매뉴얼 & 가이드',
     description:
-      'Every product comes with comprehensive documentation, tutorials, and step-by-step guides to get you started fast.',
+      '모든 제품에는 빠르게 시작할 수 있도록 포괄적인 문서, 튜토리얼, 단계별 가이드가 함께 제공됩니다.',
   },
   {
     id: 'default-4',
     icon: 'CreditCard',
-    tag: 'Pricing',
-    title: 'Flexible plans, no surprises',
+    tag: '요금제',
+    title: '유연한 플랜, 예상치 못한 비용 없음',
     description:
-      'Choose monthly or annual billing. Clear pricing, no hidden fees, and easy cancellation at any time.',
+      '월간 또는 연간 결제를 선택하세요. 명확한 요금, 숨겨진 비용 없음, 언제든 간편하게 해지할 수 있습니다.',
   },
   {
     id: 'default-5',
     icon: 'Shield',
-    tag: 'Secure',
-    title: 'Safe purchase & data protection',
+    tag: '보안',
+    title: '안전한 결제 & 데이터 보호',
     description:
-      'Secure checkout, encrypted license keys, and your data is never shared or sold to third parties.',
+      '안전한 결제, 암호화된 라이선스 키, 그리고 여러분의 데이터는 절대 제3자와 공유하거나 판매하지 않습니다.',
   },
   {
     id: 'default-6',
     icon: 'Headphones',
-    tag: 'Support',
-    title: 'Real support from real people',
+    tag: '지원',
+    title: '사람이 직접 하는 진짜 지원',
     description:
-      'Get help directly from the developers who built the product. Fast, knowledgeable, and actually useful.',
+      '제품을 만든 개발자에게 직접 도움을 받으세요. 빠르고, 정확하며, 정말로 도움이 됩니다.',
   },
 ]
 
@@ -89,14 +89,14 @@ export default function FeaturesSection({ features }: Props) {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            Why CoreZent
+            CoreZent를 선택하는 이유
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Software you can trust.
+            믿을 수 있는 소프트웨어.
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            We take pride in every product we ship — built with care, supported
-            with commitment.
+            우리는 출시하는 모든 제품에 자부심을 갖습니다 — 정성껏 만들고,
+            책임감 있게 지원합니다.
           </p>
         </div>
 

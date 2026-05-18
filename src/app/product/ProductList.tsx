@@ -55,7 +55,7 @@ export default function ProductList({ products }: Props) {
   if (products.length === 0) {
     return (
       <p className="text-center text-[#94A3B8] py-20">
-        No products available yet. Check back soon!
+        아직 등록된 제품이 없습니다. 곧 다시 확인해 주세요!
       </p>
     )
   }
@@ -90,7 +90,7 @@ export default function ProductList({ products }: Props) {
                 {/* 로고 + 뱃지 */}
                 <div className="flex items-start justify-between mb-5">
                   {(() => {
-                    const text = product.badgeText ?? (product.is_active ? null : 'Coming soon')
+                    const text = product.badgeText ?? (product.is_active ? null : '출시 예정')
                     if (!text) return <div />
                     const colorCls = product.is_active
                       ? (PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue)
@@ -140,7 +140,7 @@ export default function ProductList({ products }: Props) {
                         className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
                         style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
                       >
-                        more
+                        더보기
                       </button>
                     )}
                   </div>
@@ -167,11 +167,11 @@ export default function ProductList({ products }: Props) {
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl font-bold text-white">
                           ${product.monthlyPrice.toFixed(2)}
-                          <span className="text-sm text-[#94A3B8] font-normal">/mo</span>
+                          <span className="text-sm text-[#94A3B8] font-normal">/월</span>
                         </span>
                         {product.annualPrice != null && (
                           <span className="text-xs text-[#475569]">
-                            or ${product.annualPrice}/yr
+                            또는 ${product.annualPrice}/년
                           </span>
                         )}
                       </div>
@@ -181,13 +181,13 @@ export default function ProductList({ products }: Props) {
                       className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
                     >
                       <Eye size={14} />
-                      View Details
+                      자세히 보기
                     </button>
                   </div>
                 ) : (
                   <div className="mt-auto mb-4">
                     <span className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-3 rounded-xl text-sm cursor-not-allowed">
-                      Notify me
+                      출시 알림 받기
                     </span>
                   </div>
                 )}
@@ -253,7 +253,7 @@ function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: bo
         {product.product_features.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest mb-6">
-              Features
+              주요 기능
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {product.product_features.map((feat, i) => (

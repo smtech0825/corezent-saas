@@ -11,8 +11,8 @@ import Footer from '@/components/Footer'
 import ContactFormWrapper from './ContactFormWrapper'
 
 export const metadata: Metadata = {
-  title: 'Contact — CoreZent',
-  description: 'Have a question or need help? Send us a message and we\'ll get back to you shortly.',
+  title: '문의하기 — CoreZent',
+  description: '궁금한 점이나 도움이 필요하신가요? 메시지를 보내주시면 빠르게 답변드리겠습니다.',
 }
 
 export default function ContactPage() {
@@ -26,11 +26,11 @@ export default function ContactPage() {
           <Mail size={26} className="text-[#38BDF8]" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-          Get in Touch
+          문의하기
         </h1>
         <p className="text-[#94A3B8] text-sm sm:text-base max-w-md mx-auto">
-          Have a question, feedback, or partnership inquiry?<br />
-          Fill out the form below and we&apos;ll get back to you soon.
+          질문, 피드백, 또는 제휴 문의가 있으신가요?<br />
+          아래 양식을 작성해 주시면 빠르게 답변드리겠습니다.
         </p>
       </section>
 

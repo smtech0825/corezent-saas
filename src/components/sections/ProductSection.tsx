@@ -26,10 +26,10 @@ interface ProductCard {
 // Coming Soon 플레이스홀더
 const COMING_SOON: ProductCard[] = [
   {
-    name: 'Coming Soon',
-    tagline: 'New Product in Development',
+    name: '출시 예정',
+    tagline: '새로운 제품 개발 중',
     description:
-      'We are working on our next software product. Sign up to be notified when it launches.',
+      '다음 소프트웨어 제품을 준비하고 있습니다. 출시 소식을 가장 먼저 받아보시려면 가입하세요.',
     category: '',
     tags: [],
     badgeText: null,
@@ -40,10 +40,10 @@ const COMING_SOON: ProductCard[] = [
     available: false,
   },
   {
-    name: 'Coming Soon',
-    tagline: 'More tools on the way',
+    name: '출시 예정',
+    tagline: '더 많은 도구가 준비 중',
     description:
-      'CoreZent is continuously expanding its product lineup. Stay tuned for more powerful software tools.',
+      'CoreZent는 제품 라인업을 꾸준히 확장하고 있습니다. 더 강력한 소프트웨어 도구를 기대해 주세요.',
     category: '',
     tags: [],
     badgeText: null,
@@ -106,14 +106,14 @@ export default async function ProductSection() {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            Our Products
+            우리 제품
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Software that works for you.
+            당신을 위해 일하는 소프트웨어.
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            Every product we build is designed to save time, reduce friction, and
-            deliver real results — from day one.
+            우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고,
+            실질적인 결과를 전하도록 설계되었습니다.
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export default async function ProductSection() {
               <div className="relative z-10 flex flex-col flex-1">
                 {/* Badge — DB badge_text 우선, 없으면 기본값 */}
                 {(() => {
-                  const text = product.badgeText ?? (product.available ? null : 'Coming soon')
+                  const text = product.badgeText ?? (product.available ? null : '출시 예정')
                   if (!text && product.available) return null
                   if (!text) return null
                   const colorCls = product.available
@@ -176,7 +176,7 @@ export default async function ProductSection() {
                         className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
                         style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
                       >
-                        more
+                        더보기
                       </Link>
                     )}
                   </div>
@@ -203,11 +203,11 @@ export default async function ProductSection() {
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl font-bold text-white">
                           {product.monthlyPrice}
-                          <span className="text-sm text-[#94A3B8] font-normal">/mo</span>
+                          <span className="text-sm text-[#94A3B8] font-normal">/월</span>
                         </span>
                         {product.annualPrice && (
                           <span className="text-xs text-[#475569]">
-                            or {product.annualPrice}/yr
+                            또는 {product.annualPrice}/년
                           </span>
                         )}
                       </div>
@@ -216,7 +216,7 @@ export default async function ProductSection() {
                       href={product.href}
                       className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
                     >
-                      Get started
+                      시작하기
                       <ArrowRight size={14} />
                     </Link>
                   </div>
@@ -227,7 +227,7 @@ export default async function ProductSection() {
                       className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-2.5 rounded-xl text-sm cursor-not-allowed"
                       tabIndex={-1}
                     >
-                      Notify me
+                      출시 알림 받기
                     </Link>
                   </div>
                 )}

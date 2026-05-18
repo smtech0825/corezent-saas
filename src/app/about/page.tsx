@@ -13,8 +13,8 @@ import AboutBlockSlider from './AboutBlockSlider'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'About — CoreZent',
-  description: 'Learn more about CoreZent — who we are, what we build, and why it matters.',
+  title: '회사소개 — CoreZent',
+  description: 'CoreZent를 소개합니다 — 우리는 누구이며, 무엇을 만들고, 왜 그것이 중요한지.',
 }
 
 export default async function AboutPage() {
@@ -27,7 +27,7 @@ export default async function AboutPage() {
   ])
 
   const contentMap = Object.fromEntries((contentRes.data ?? []).map((r) => [r.key, r.value]))
-  const title = contentMap['about_title'] || 'About CoreZent'
+  const title = contentMap['about_title'] || 'CoreZent 소개'
   const description = contentMap['about_description'] || ''
   const stats = statsRes.data ?? []
   const blocks = (blocksRes.data ?? []).map((b) => ({ ...b, images: (b.images ?? []) as string[] }))
@@ -100,7 +100,7 @@ export default async function AboutPage() {
         {/* 콘텐츠가 아직 없을 때 안내 */}
         {stats.length === 0 && blocks.length === 0 && !description && (
           <div className="flex items-center justify-center py-20">
-            <p className="text-[#475569] text-sm">About page content is being prepared.</p>
+            <p className="text-[#475569] text-sm">회사소개 페이지 콘텐츠를 준비 중입니다.</p>
           </div>
         )}
       </main>

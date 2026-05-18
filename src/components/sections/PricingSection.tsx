@@ -92,19 +92,19 @@ function PricingCard({ product, annual, userId, highlighted }: CardProps) {
                 : `$${MONTHLY.toFixed(2)}`}
             </span>
             <span className="text-[#94A3B8] text-base mb-2">
-              {annual && product.hasAnnualPlan ? '/year' : '/month'}
+              {annual && product.hasAnnualPlan ? '/년' : '/월'}
             </span>
           </div>
         )}
 
         <p className="text-xs text-[#475569] mb-7">
           {product.isOneTime
-            ? 'One-time purchase · Lifetime access'
+            ? '1회 구매 · 평생 이용'
             : annual && product.hasAnnualPlan
-              ? `~$${ANNUAL_MONTHLY.toFixed(2)}/month, billed annually${SAVE_PCT > 0 ? ` · Save ${SAVE_PCT}%` : ''}`
+              ? `월 약 $${ANNUAL_MONTHLY.toFixed(2)}, 연간 결제${SAVE_PCT > 0 ? ` · ${SAVE_PCT}% 절약` : ''}`
               : product.hasAnnualPlan
-                ? `Billed monthly · or $${ANNUAL}/year${SAVE_PCT > 0 ? ` (save ${SAVE_PCT}%)` : ''}`
-                : 'Billed monthly'}
+                ? `월간 결제 · 또는 연 $${ANNUAL}${SAVE_PCT > 0 ? ` (${SAVE_PCT}% 절약)` : ''}`
+                : '월간 결제'}
         </p>
 
         {/* CTA */}
@@ -112,7 +112,7 @@ function PricingCard({ product, annual, userId, highlighted }: CardProps) {
           href={checkoutUrl}
           className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200 hover:-translate-y-0.5 mb-7"
         >
-          Get started
+          시작하기
           <ArrowRight size={15} />
         </Link>
 
@@ -174,13 +174,13 @@ export default function PricingSection({ products }: Props) {
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            Pricing
+            요금제
           </p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Simple, honest pricing.
+            간단하고 정직한 요금제.
           </h2>
           <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            One plan. Everything included. Cancel anytime.
+            하나의 플랜. 모든 기능 포함. 언제든 해지 가능.
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function PricingSection({ products }: Props) {
         {hasAnyAnnual && (
           <div className="flex items-center justify-center gap-4 mb-12">
             <span className={`text-sm transition-colors ${!annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
-              Monthly
+              월간
             </span>
             <button
               onClick={() => setAnnual(!annual)}
@@ -202,7 +202,7 @@ export default function PricingSection({ products }: Props) {
               />
             </button>
             <span className={`text-sm transition-colors ${annual ? 'text-white font-medium' : 'text-[#94A3B8]'}`}>
-              Annual
+              연간
             </span>
           </div>
         )}
@@ -221,7 +221,7 @@ export default function PricingSection({ products }: Props) {
         </div>
 
         <p className="text-center text-xs text-[#475569] mt-6">
-          No credit card required to sign up.
+          가입 시 신용카드가 필요하지 않습니다.
         </p>
       </div>
     </section>

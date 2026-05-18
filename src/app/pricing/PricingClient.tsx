@@ -11,7 +11,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
-import { BADGE_STYLES, CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
@@ -57,12 +57,12 @@ interface Props {
 
 // 카테고리 필터 레이블
 const FILTER_LABELS: Record<string, string> = {
-  all: 'All',
-  'chrome-extension': 'Chrome Extension',
-  desktop: 'Desktop',
-  web: 'Web',
-  'web-tool': 'Web Tool',
-  mobile: 'Mobile',
+  all: '전체',
+  'chrome-extension': '크롬 확장프로그램',
+  desktop: '데스크톱',
+  web: '웹',
+  'web-tool': '웹 도구',
+  mobile: '모바일',
 }
 
 export default function PricingClient({ products }: Props) {
@@ -115,13 +115,13 @@ export default function PricingClient({ products }: Props) {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 border border-[#1E293B] bg-[#111A2E] rounded-full px-4 py-1.5 text-xs text-[#38BDF8] mb-6 font-medium">
             <Zap size={12} className="fill-[#38BDF8]" />
-            Transparent pricing, no hidden fees
+            투명한 요금제, 숨겨진 비용 없음
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-5">
-            Simple pricing
+            간단한 요금제
           </h1>
           <p className="text-[#94A3B8] text-lg max-w-md mx-auto mb-10">
-            One plan, everything included. Switch anytime.
+            하나의 플랜, 모든 기능 포함. 언제든 변경 가능.
           </p>
 
           {/* 월간/연간 토글 — 연간 플랜이 있는 제품이 하나라도 있을 때만 표시 */}
@@ -133,7 +133,7 @@ export default function PricingClient({ products }: Props) {
                   !annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
                 }`}
               >
-                Monthly
+                월간
               </button>
               <button
                 onClick={() => { setAnnual(true); track('pricing_toggle', { plan: 'annual' }) }}
@@ -141,14 +141,14 @@ export default function PricingClient({ products }: Props) {
                   annual ? 'bg-[#38BDF8] text-[#0B1120]' : 'text-[#94A3B8] hover:text-white'
                 }`}
               >
-                Annual
+                연간
                 {savePct > 0 && (
                   <span
                     className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-200 ${
                       annual ? 'bg-[#0B1120]/20 text-[#0B1120]' : 'bg-emerald-500/15 text-emerald-400'
                     }`}
                   >
-                    Save {savePct}%
+                    {savePct}% 절약
                   </span>
                 )}
               </button>
@@ -177,7 +177,7 @@ export default function PricingClient({ products }: Props) {
 
         {/* 제품 카드 그리드 */}
         {filtered.length === 0 ? (
-          <p className="text-center text-[#94A3B8] py-20">No products in this category.</p>
+          <p className="text-center text-[#94A3B8] py-20">이 카테고리에 제품이 없습니다.</p>
         ) : (
           <div className={`grid gap-6 mb-20 ${
             filtered.length === 1
@@ -243,28 +243,28 @@ export default function PricingClient({ products }: Props) {
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">${product.monthlyPrice.toFixed(2)}</span>
                           </div>
-                          <p className="text-xs text-[#475569] mt-1.5">One-time purchase</p>
+                          <p className="text-xs text-[#475569] mt-1.5">1회 구매</p>
                         </>
                       ) : (
                         /* 구독형 */
                         <>
                           {isAnnualView && (
                             <p className="text-sm text-[#94A3B8] line-through mb-0.5">
-                              ${product.monthlyPrice.toFixed(2)}/mo
+                              ${product.monthlyPrice.toFixed(2)}/월
                             </p>
                           )}
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-bold text-white">${displayPrice.toFixed(2)}</span>
-                            <span className="text-[#94A3B8] text-base">/mo</span>
+                            <span className="text-[#94A3B8] text-base">/월</span>
                           </div>
                           {product.hasAnnualPlan ? (
                             isAnnualView ? (
                               <p className="text-xs text-emerald-400 mt-1.5 font-medium">
-                                Billed ${product.annualPrice}/year · Save {productSavePct}%
+                                연 ${product.annualPrice} 결제 · {productSavePct}% 절약
                               </p>
                             ) : (
                               <p className="text-xs text-[#475569] mt-1.5">
-                                or ${product.annualPrice}/year (save {productSavePct}%)
+                                또는 연 ${product.annualPrice} ({productSavePct}% 절약)
                               </p>
                             )
                           ) : null}
@@ -281,7 +281,7 @@ export default function PricingClient({ products }: Props) {
                       }}
                       className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold mb-8 bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200"
                     >
-                      Get started
+                      시작하기
                       <ArrowRight size={14} />
                     </Link>
 
