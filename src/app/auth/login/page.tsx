@@ -3,8 +3,8 @@ import { Suspense } from 'react'
 import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
-  title: 'Log in — CoreZent',
-  description: 'Log in to your CoreZent account.',
+  title: '로그인 — CoreZent',
+  description: 'CoreZent 계정으로 로그인하세요.',
 }
 
 export default function LoginPage() {

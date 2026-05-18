@@ -31,11 +31,11 @@ export default function RegisterForm() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     if (!country) {
-      setError('Please select your country.')
+      setError('국가를 선택해 주세요.')
       return
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError('비밀번호는 8자 이상이어야 합니다.')
       return
     }
 
@@ -51,7 +51,7 @@ export default function RegisterForm() {
       })
       const { status: emailStatus } = await res.json()
       if (emailStatus === 'inactive') {
-        setError('This account has been deactivated. Please contact support.')
+        setError('이 계정은 비활성화되었습니다. 고객센터에 문의해 주세요.')
         setLoading(false)
         return
       }
@@ -68,7 +68,7 @@ export default function RegisterForm() {
 
     if (error) {
       if (error.message.includes('already registered')) {
-        setError('This email is already registered. Please log in.')
+        setError('이미 가입된 이메일입니다. 로그인해 주세요.')
       } else {
         setError(error.message)
       }
@@ -107,20 +107,20 @@ export default function RegisterForm() {
             <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
               <CheckCircle size={32} className="text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-3">Check your email</h1>
+            <h1 className="text-2xl font-bold text-white mb-3">이메일을 확인해 주세요</h1>
             <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
-              We sent a verification link to{' '}
-              <span className="text-white font-medium">{email}</span>.<br />
-              Click the link in the email to confirm your account.
+              <span className="text-white font-medium">{email}</span>{' '}
+              주소로 인증 링크를 보냈습니다.<br />
+              이메일의 링크를 클릭하여 계정을 인증해 주세요.
             </p>
             <p className="text-xs text-[#475569]">
-              Can&apos;t find it? Check your spam folder.
+              이메일이 보이지 않으면 스팸함을 확인해 주세요.
             </p>
             <Link
               href="/auth/login"
               className="mt-8 inline-block text-sm text-[#38BDF8] hover:underline"
             >
-              ← Back to login
+              ← 로그인으로 돌아가기
             </Link>
           </div>
         </div>
@@ -142,11 +142,11 @@ export default function RegisterForm() {
             </Link>
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-1">Create your account</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">계정 만들기</h1>
           <p className="text-[#94A3B8] text-sm mb-8">
-            Already have an account?{' '}
+            이미 계정이 있으신가요?{' '}
             <Link href="/auth/login" className="text-[#38BDF8] hover:underline">
-              Log in
+              로그인
             </Link>
           </p>
 
@@ -154,13 +154,13 @@ export default function RegisterForm() {
           <div className="flex flex-col gap-3 mb-6">
             <AuthSocialButton
               provider="google"
-              label="Sign up with Google"
+              label="Google로 가입하기"
               loading={oauthLoading === 'google'}
               onClick={() => handleOAuth('google')}
             />
             <AuthSocialButton
               provider="github"
-              label="Sign up with GitHub"
+              label="GitHub로 가입하기"
               loading={oauthLoading === 'github'}
               onClick={() => handleOAuth('github')}
             />
@@ -169,26 +169,26 @@ export default function RegisterForm() {
           {/* 구분선 */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-[#1E293B]" />
-            <span className="text-xs text-[#475569]">or continue with email</span>
+            <span className="text-xs text-[#475569]">또는 이메일로 계속하기</span>
             <div className="flex-1 h-px bg-[#1E293B]" />
           </div>
 
           {/* 이메일 폼 */}
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">Name</label>
+              <label className="block text-sm text-[#94A3B8] mb-1.5">이름</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder="이름을 입력하세요"
                 required
                 className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">Email</label>
+              <label className="block text-sm text-[#94A3B8] mb-1.5">이메일</label>
               <input
                 type="email"
                 value={email}
@@ -201,24 +201,24 @@ export default function RegisterForm() {
 
             <div>
               <label className="block text-sm text-[#94A3B8] mb-1.5">
-                Country <span className="text-red-400">*</span>
+                국가 <span className="text-red-400">*</span>
               </label>
               <CountrySelect
                 value={country}
                 onChange={setCountry}
                 required
-                placeholder="Select your country"
+                placeholder="국가를 선택하세요"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">Password</label>
+              <label className="block text-sm text-[#94A3B8] mb-1.5">비밀번호</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
+                  placeholder="8자 이상 입력하세요"
                   required
                   minLength={8}
                   className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
@@ -257,24 +257,25 @@ export default function RegisterForm() {
             )}
 
             <p className="text-xs text-[#475569] leading-relaxed">
-              By creating an account, you agree to our{' '}
+              계정을 만들면{' '}
               <a
                 href="/legal/terms"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#94A3B8] hover:text-white underline"
               >
-                Terms of Service
+                이용약관
               </a>
-              {' '}and{' '}
+              {' '}및{' '}
               <a
                 href="/legal/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#94A3B8] hover:text-white underline"
               >
-                Privacy Policy
-              </a>.
+                개인정보처리방침
+              </a>
+              에 동의하는 것으로 간주됩니다.
             </p>
 
             <button
@@ -283,7 +284,7 @@ export default function RegisterForm() {
               className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? '계정 생성 중...' : '계정 만들기'}
             </button>
           </form>
         </div>

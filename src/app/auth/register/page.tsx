@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import RegisterForm from './RegisterForm'
 
 export const metadata: Metadata = {
-  title: 'Create account — CoreZent',
-  description: 'Create your CoreZent account to get started.',
+  title: '회원가입 — CoreZent',
+  description: 'CoreZent 계정을 만들고 시작하세요.',
 }
 
 export default function RegisterPage() {

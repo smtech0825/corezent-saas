@@ -43,11 +43,11 @@ export default function UpdatePasswordForm() {
     setError('')
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError('비밀번호는 8자 이상이어야 합니다.')
       return
     }
     if (password !== confirm) {
-      setError('Passwords do not match.')
+      setError('비밀번호가 일치하지 않습니다.')
       return
     }
 
@@ -92,29 +92,29 @@ export default function UpdatePasswordForm() {
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle size={32} className="text-emerald-400" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-3">Password updated!</h1>
+              <h1 className="text-2xl font-bold text-white mb-3">비밀번호가 변경되었습니다!</h1>
               <p className="text-[#94A3B8] text-sm">
-                Redirecting to login…
+                로그인 페이지로 이동 중…
               </p>
             </div>
           ) : (
             /* 새 비밀번호 입력 */
             <>
-              <h1 className="text-2xl font-bold text-white mb-1">Set new password</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">새 비밀번호 설정</h1>
               <p className="text-[#94A3B8] text-sm mb-8">
-                Enter a new password for your account.
+                계정에 사용할 새 비밀번호를 입력해 주세요.
               </p>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
                 {/* 새 비밀번호 */}
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1.5">New password</label>
+                  <label className="block text-sm text-[#94A3B8] mb-1.5">새 비밀번호</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min. 8 characters"
+                      placeholder="8자 이상 입력하세요"
                       required
                       minLength={8}
                       className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-2.5 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
@@ -131,13 +131,13 @@ export default function UpdatePasswordForm() {
 
                 {/* 비밀번호 확인 */}
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1.5">Confirm password</label>
+                  <label className="block text-sm text-[#94A3B8] mb-1.5">비밀번호 확인</label>
                   <div className="relative">
                     <input
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
-                      placeholder="Re-enter your new password"
+                      placeholder="새 비밀번호를 다시 입력하세요"
                       required
                       className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-2.5 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
                     />
@@ -163,7 +163,7 @@ export default function UpdatePasswordForm() {
                   className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={15} className="animate-spin" />}
-                  Update password
+                  비밀번호 변경
                 </button>
               </form>
             </>

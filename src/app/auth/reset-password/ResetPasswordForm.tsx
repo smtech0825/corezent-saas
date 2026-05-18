@@ -30,7 +30,7 @@ export default function ResetPasswordForm() {
     // 가입된 이메일인지 먼저 확인
     const exists = await checkEmailRegistered(email)
     if (!exists) {
-      setError('No account found with this email address.')
+      setError('이 이메일로 가입된 계정을 찾을 수 없습니다.')
       setLoading(false)
       return
     }
@@ -66,25 +66,25 @@ export default function ResetPasswordForm() {
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle size={32} className="text-emerald-400" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-3">Check your email</h1>
+              <h1 className="text-2xl font-bold text-white mb-3">이메일을 확인해 주세요</h1>
               <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
-                We sent a password reset link to{' '}
-                <span className="text-white font-medium">{email}</span>.
+                <span className="text-white font-medium">{email}</span>{' '}
+                주소로 비밀번호 재설정 링크를 보냈습니다.
               </p>
               <Link href="/auth/login" className="text-sm text-[#38BDF8] hover:underline">
-                ← Back to login
+                ← 로그인으로 돌아가기
               </Link>
             </div>
           ) : (
             /* 이메일 입력 */
             <>
-              <h1 className="text-2xl font-bold text-white mb-1">Forgot your password?</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">비밀번호를 잊으셨나요?</h1>
               <p className="text-[#94A3B8] text-sm mb-8">
-                Enter your email and we&apos;ll send you a reset link.
+                이메일을 입력하시면 재설정 링크를 보내드립니다.
               </p>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1.5">Email</label>
+                  <label className="block text-sm text-[#94A3B8] mb-1.5">이메일</label>
                   <input
                     type="email"
                     value={email}
@@ -105,10 +105,10 @@ export default function ResetPasswordForm() {
                   className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={15} className="animate-spin" />}
-                  Send reset link
+                  재설정 링크 보내기
                 </button>
                 <Link href="/auth/login" className="text-center text-sm text-[#94A3B8] hover:text-white transition-colors">
-                  ← Back to login
+                  ← 로그인으로 돌아가기
                 </Link>
               </form>
             </>

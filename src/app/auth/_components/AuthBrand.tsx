@@ -32,20 +32,20 @@ export default function AuthBrand() {
 
         {/* 슬로건 */}
         <h2 className="text-2xl font-bold text-white leading-snug mb-4">
-          Your software,<br />
-          <span className="text-[#38BDF8]">subscribed.</span>
+          당신의 소프트웨어,<br />
+          <span className="text-[#38BDF8]">하나의 계정으로.</span>
         </h2>
         <p className="text-[#94A3B8] text-sm leading-relaxed max-w-xs mx-auto">
-          One account for all CoreZent tools.<br />
-          Manage licenses, subscriptions, and more.
+          모든 CoreZent 도구를 하나의 계정으로.<br />
+          라이선스와 구독을 한곳에서 관리하세요.
         </p>
 
         {/* 특징 3가지 */}
         <div className="mt-10 flex flex-col gap-3 text-left">
           {[
-            { icon: '⚡', text: 'Instant license activation' },
-            { icon: '🔒', text: 'Secure serial key management' },
-            { icon: '📦', text: 'All your software in one place' },
+            { icon: '⚡', text: '라이선스 즉시 활성화' },
+            { icon: '🔒', text: '안전한 시리얼 키 관리' },
+            { icon: '📦', text: '모든 소프트웨어를 한곳에' },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-3 text-sm text-[#94A3B8]">
               <span className="text-base">{icon}</span>

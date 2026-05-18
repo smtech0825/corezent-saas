@@ -79,11 +79,11 @@ export default function LoginForm() {
             </Link>
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">다시 오신 것을 환영합니다</h1>
           <p className="text-[#94A3B8] text-sm mb-8">
-            Don&apos;t have an account?{' '}
+            계정이 없으신가요?{' '}
             <Link href="/auth/register" className="text-[#38BDF8] hover:underline">
-              Sign up
+              회원가입
             </Link>
           </p>
 
@@ -91,13 +91,13 @@ export default function LoginForm() {
           <div className="flex flex-col gap-3 mb-6">
             <AuthSocialButton
               provider="google"
-              label="Continue with Google"
+              label="Google로 계속하기"
               loading={oauthLoading === 'google'}
               onClick={() => handleOAuth('google')}
             />
             <AuthSocialButton
               provider="github"
-              label="Continue with GitHub"
+              label="GitHub로 계속하기"
               loading={oauthLoading === 'github'}
               onClick={() => handleOAuth('github')}
             />
@@ -106,14 +106,14 @@ export default function LoginForm() {
           {/* 구분선 */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-[#1E293B]" />
-            <span className="text-xs text-[#475569]">or continue with email</span>
+            <span className="text-xs text-[#475569]">또는 이메일로 계속하기</span>
             <div className="flex-1 h-px bg-[#1E293B]" />
           </div>
 
           {/* 이메일 폼 */}
           <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">Email</label>
+              <label className="block text-sm text-[#94A3B8] mb-1.5">이메일</label>
               <input
                 type="email"
                 value={email}
@@ -126,9 +126,9 @@ export default function LoginForm() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm text-[#94A3B8]">Password</label>
+                <label className="block text-sm text-[#94A3B8]">비밀번호</label>
                 <Link href="/auth/reset-password" className="text-xs text-[#38BDF8] hover:underline">
-                  Forgot password?
+                  비밀번호를 잊으셨나요?
                 </Link>
               </div>
               <div className="relative">
@@ -162,7 +162,7 @@ export default function LoginForm() {
               className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
-              {loading ? 'Logging in...' : 'Log in'}
+              {loading ? '로그인 중...' : '로그인'}
             </button>
           </form>
         </div>
