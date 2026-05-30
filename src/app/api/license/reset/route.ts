@@ -1,11 +1,11 @@
 /**
  * POST /api/license/reset
  *
- * Request:  { key: string, hwid?: string, product?: 'geniepost' | 'geniestock' }
+ * Request:  { key: string, hwid?: string, product?: 'geniepost' | 'geniestock' | 'geniework' }
  * Response: { success: boolean, error?: string }
  *
  * 분기:
- *   - product === 'geniestock'  → Supabase에서 키의 모든 HWID 삭제
+ *   - product === 'geniestock' | 'geniework' → Supabase에서 키의 모든 HWID 삭제
  *   - 그 외 (없음 or 'geniepost') → 기존 Google Sheets 초기화 (변경 없음)
  *
  * 보안: HWID 대조하지 않음 (오프라인 PC 교체 지원). 남용 방지는 호출 측 책임.
@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ─── GenieStock 경로 (Supabase) ──────────────────────────────────────
-    if (product === 'geniestock') {
-      return await resetGenieStock(key)
+    // ─── Supabase 경로 (GenieStock / GenieWork) ──────────────────────────
+    if (product === 'geniestock' || product === 'geniework') {
+      return await resetSupabase(key, product)
     }
 
     // ─── 기존 GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────
@@ -69,10 +69,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── GenieStock 초기화 (Supabase) ──────────────────────────────────────────
+// ─── Supabase 초기화 (GenieStock / GenieWork 공용) ─────────────────────────
 
-async function resetGenieStock(key: string) {
-  const license = await supaFindLicenseByKey(key)
+async function resetSupabase(key: string, product: 'geniestock' | 'geniework') {
+  const license = await supaFindLicenseByKey(key, product)
   if (!license) {
     return NextResponse.json({
       success: false,

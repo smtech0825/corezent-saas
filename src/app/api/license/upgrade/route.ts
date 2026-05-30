@@ -1,11 +1,11 @@
 /**
  * POST /api/license/upgrade
  *
- * Request:  { key: string, hwid: string, product?: 'geniepost' | 'geniestock' }
+ * Request:  { key: string, hwid: string, product?: 'geniepost' | 'geniestock' | 'geniework' }
  * Response: { success, tier?, newExpiresAt?, remainingDays?, error? }
  *
  * 분기:
- *   - product === 'geniestock'  → Supabase 기반 검증 (validate와 동일 로직)
+ *   - product === 'geniestock' | 'geniework' → Supabase 기반 검증 (validate와 동일 로직)
  *   - 그 외 (없음 or 'geniepost') → 기존 Google Sheets 검증 (변경 없음)
  *
  * 사용 시나리오: Lite 키 사용 중 Pro 키를 추가 구매한 사용자가
@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ─── GenieStock 경로 (Supabase) ──────────────────────────────────────
-    if (product === 'geniestock') {
-      return await upgradeGenieStock(key, hwid)
+    // ─── Supabase 경로 (GenieStock / GenieWork) ──────────────────────────
+    if (product === 'geniestock' || product === 'geniework') {
+      return await upgradeSupabase(key, hwid, product)
     }
 
     // ─── 기존 GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────
@@ -99,11 +99,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── GenieStock 업그레이드 (Supabase) ──────────────────────────────────────
+// ─── Supabase 업그레이드 (GenieStock / GenieWork 공용) ─────────────────────
 // validate와 동일 로직: 키 검증 + HWID 미등록 시 한도 내 등록
 
-async function upgradeGenieStock(key: string, hwid: string) {
-  const license = await supaFindLicenseByKey(key)
+async function upgradeSupabase(
+  key: string,
+  hwid: string,
+  product: 'geniestock' | 'geniework',
+) {
+  const license = await supaFindLicenseByKey(key, product)
   if (!license) {
     return NextResponse.json({
       success: false,

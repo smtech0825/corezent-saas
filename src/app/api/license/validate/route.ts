@@ -1,11 +1,11 @@
 /**
  * POST /api/license/validate
  *
- * Request:  { key: string, hwid: string, product?: 'geniepost' | 'geniestock' }
+ * Request:  { key: string, hwid: string, product?: 'geniepost' | 'geniestock' | 'geniework' }
  * Response: { valid, tier?, expiresAt?, remainingDays?, error?, errorCode? }
  *
  * 분기:
- *   - product === 'geniestock'  → Supabase 기반 검증 (티어별 다중 PC 지원)
+ *   - product === 'geniestock' | 'geniework' → Supabase 기반 검증 (티어/PC대수별 다중 PC 지원)
  *   - 그 외 (없음 or 'geniepost') → 기존 Google Sheets 검증 (변경 없음)
  *
  * 응답 shape는 두 경로 모두 동일하므로 앱 코드 변경 불필요.
@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ─── GenieStock 경로 (Supabase) ──────────────────────────────────────
-    if (product === 'geniestock') {
-      return await validateGenieStock(key, hwid)
+    // ─── Supabase 경로 (GenieStock / GenieWork) ──────────────────────────
+    if (product === 'geniestock' || product === 'geniework') {
+      return await validateSupabase(key, hwid, product)
     }
 
     // ─── 기존 GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────
@@ -96,11 +96,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── GenieStock 검증 (Supabase) ────────────────────────────────────────────
+// ─── Supabase 검증 (GenieStock / GenieWork 공용) ───────────────────────────
 
-async function validateGenieStock(key: string, hwid: string) {
-  // 1. 라이선스 조회
-  const license = await supaFindLicenseByKey(key)
+async function validateSupabase(
+  key: string,
+  hwid: string,
+  product: 'geniestock' | 'geniework',
+) {
+  // 1. 라이선스 조회 (product 필터)
+  const license = await supaFindLicenseByKey(key, product)
   if (!license) {
     return NextResponse.json({
       valid: false,

@@ -30,7 +30,8 @@ function createLicenseAdminClient() {
 
 // ─── 타입 ────────────────────────────────────────────────────────────────
 
-export type Tier = 'lite' | 'pro' | 'max'
+export type Tier = 'lite' | 'pro' | 'max' | '1pc' | '3pc' | '5pc' | '10pc'
+export type SupabaseProduct = 'geniestock' | 'geniework'
 
 export interface SupabaseLicense {
   licenseKey: string
@@ -39,6 +40,7 @@ export interface SupabaseLicense {
   expiresAt: string | null
   isActive: boolean
   source: string
+  product: SupabaseProduct
 }
 
 export interface HwidEntry {
@@ -53,22 +55,30 @@ export const HWID_LIMITS: Record<Tier, number> = {
   lite: 1,
   pro:  2,
   max:  3,
+  '1pc':  1,
+  '3pc':  3,
+  '5pc':  5,
+  '10pc': 10,
 }
 
 // ─── 조회 ────────────────────────────────────────────────────────────────
 
-/** 라이선스 키로 행 조회. 없으면 null. */
-export async function findLicenseByKey(key: string): Promise<SupabaseLicense | null> {
+/** 라이선스 키로 행 조회. product 지정 시 해당 제품으로 필터. 없으면 전 제품 검색. */
+export async function findLicenseByKey(
+  key: string,
+  product?: SupabaseProduct,
+): Promise<SupabaseLicense | null> {
   const trimmed = key?.trim()
   if (!trimmed) return null
 
   try {
     const admin = createLicenseAdminClient()
-    const { data, error } = await admin
+    let q = admin
       .from('license_keys')
-      .select('license_key, tier, source, buyer_email, expires_at, is_active')
+      .select('license_key, tier, source, buyer_email, expires_at, is_active, product')
       .eq('license_key', trimmed)
-      .maybeSingle()
+    if (product) q = q.eq('product', product)
+    const { data, error } = await q.maybeSingle()
 
     if (error) {
       console.error('[supabase-license] findLicenseByKey error:', error)
@@ -77,7 +87,11 @@ export async function findLicenseByKey(key: string): Promise<SupabaseLicense | n
     if (!data) return null
 
     const rawTier = String(data.tier ?? '').toLowerCase().trim()
-    const tier: Tier = rawTier === 'max' ? 'max' : rawTier === 'pro' ? 'pro' : 'lite'
+    const validTiers: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
+    const tier: Tier = validTiers.includes(rawTier) ? (rawTier as Tier) : 'lite'
+
+    const rawProduct = String(data.product ?? 'geniestock').toLowerCase().trim()
+    const productResolved: SupabaseProduct = rawProduct === 'geniework' ? 'geniework' : 'geniestock'
 
     return {
       licenseKey:  data.license_key as string,
@@ -86,6 +100,7 @@ export async function findLicenseByKey(key: string): Promise<SupabaseLicense | n
       expiresAt:   (data.expires_at as string) ?? null,
       isActive:    Boolean(data.is_active),
       source:      String(data.source ?? ''),
+      product:     productResolved,
     }
   } catch (err) {
     console.error('[supabase-license] findLicenseByKey exception:', err)
@@ -200,6 +215,7 @@ export async function insertLicense(input: {
   buyerEmail: string
   expiresAt:  string | null
   source:     'lemon_squeezy' | 'manual'
+  product:    SupabaseProduct
 }): Promise<void> {
   try {
     const admin = createLicenseAdminClient()
@@ -222,6 +238,7 @@ export async function insertLicense(input: {
       buyer_email: input.buyerEmail,
       expires_at:  input.expiresAt,
       is_active:   true,
+      product:     input.product,
     })
 
     if (error) {

@@ -36,14 +36,17 @@ import {
 
 export const runtime = 'nodejs'
 
-// ─── GenieStock 식별 헬퍼 ───────────────────────────────────────────────────
-// LS 상품 등록 규칙:
-//   - 이름에 "GenieStock" 포함 → product = 'geniestock'
-//   - "Max" / "Pro" / "Lite" 키워드로 tier 결정 (대소문자 무시)
-// 새 GenieStock 상품 추가 시 이름만 규칙에 맞추면 코드 수정 없이 자동 처리됨.
+// ─── Supabase 라이선스 제품 식별 헬퍼 ───────────────────────────────────────
+// LS 상품명 → Supabase 경로(geniestock|geniework) 분기.
+//   - "GenieStock" 포함 → 'geniestock' (tier: lite/pro/max — Max/Pro/Lite 키워드)
+//   - "GenieWork"  포함 → 'geniework'  (tier: 1pc/3pc/5pc/10pc — NPC 키워드)
+//   - 그 외(GeniePost 등) → null → Google Sheets 경로 (절대 수정 금지)
 
-function isGenieStockProduct(productName: string | null | undefined): boolean {
-  return (productName ?? '').toLowerCase().includes('geniestock')
+function isSupabaseProduct(productName: string | null | undefined): 'geniestock' | 'geniework' | null {
+  const n = (productName ?? '').toLowerCase()
+  if (n.includes('geniestock')) return 'geniestock'
+  if (n.includes('geniework'))  return 'geniework'
+  return null
 }
 
 function tierFromProductName(productName: string | null | undefined): SupaTier | null {
@@ -51,6 +54,16 @@ function tierFromProductName(productName: string | null | undefined): SupaTier |
   if (n.includes('max'))  return 'max'
   if (n.includes('pro'))  return 'pro'
   if (n.includes('lite')) return 'lite'
+  return null
+}
+
+function tierFromGenieWork(productName: string | null | undefined): SupaTier | null {
+  const n = (productName ?? '').toLowerCase()
+  // 10pc 먼저 검사 (1pc 부분 일치 회피)
+  if (n.includes('10pc')) return '10pc'
+  if (n.includes('5pc'))  return '5pc'
+  if (n.includes('3pc'))  return '3pc'
+  if (n.includes('1pc'))  return '1pc'
   return null
 }
 
@@ -578,13 +591,17 @@ async function createLicense(
 
   const productNameRaw = product?.name ?? ''
 
-  // ─── GenieStock 분기 (Supabase 경로) ────────────────────────────────────
-  // 상품명에 "GenieStock" 포함 시 Supabase에 라이선스 등록, Sheets append는 스킵.
-  // 시트는 GeniePost 전용. CoreZent 내부 licenses 테이블에는 동일하게 INSERT.
-  if (isGenieStockProduct(productNameRaw)) {
-    const tier = tierFromProductName(productNameRaw)
+  // ─── Supabase 라이선스 분기 (GenieStock / GenieWork) ────────────────────
+  // 상품명에 "GenieStock"|"GenieWork" 포함 시 Supabase license_keys 에 등록.
+  // Sheets append 는 스킵 (시트는 GeniePost 전용 — 절대 수정 금지).
+  // CoreZent 내부 licenses 테이블에는 동일하게 INSERT (대시보드용).
+  const supaSlug = isSupabaseProduct(productNameRaw)
+  if (supaSlug) {
+    const tier = supaSlug === 'geniework'
+      ? tierFromGenieWork(productNameRaw)
+      : tierFromProductName(productNameRaw)
     if (!tier) {
-      console.error(`[LS Webhook] GenieStock 상품에서 tier 추출 실패: "${productNameRaw}"`)
+      console.error(`[LS Webhook] ${supaSlug} 상품에서 tier 추출 실패: "${productNameRaw}"`)
       return
     }
 
@@ -597,7 +614,7 @@ async function createLicense(
         serialKey = lsKey
         lsLicenseKey = lsKey
       } else {
-        console.warn('[LS Webhook] GenieStock LS 키 조회 실패 — 자체 생성 폴백')
+        console.warn(`[LS Webhook] ${supaSlug} LS 키 조회 실패 — 자체 생성 폴백`)
         serialKey = generateSerialKey()
       }
     } else {
@@ -627,10 +644,11 @@ async function createLicense(
         buyerEmail: userEmail,
         expiresAt:  gsExpiresAt,
         source:     'lemon_squeezy',
+        product:    supaSlug,
       })
-      console.log(`[LS Webhook] GenieStock Supabase 등록 완료: ${serialKey} (tier=${tier})`)
+      console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료: ${serialKey} (tier=${tier})`)
     } catch (supaErr) {
-      console.error('[LS Webhook] GenieStock Supabase 등록 실패:', supaErr)
+      console.error(`[LS Webhook] ${supaSlug} Supabase 등록 실패:`, supaErr)
     }
 
     // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용)
@@ -651,22 +669,23 @@ async function createLicense(
     }
 
     // 주문 확인 이메일 (GeniePost와 동일 템플릿)
+    const fallbackName = supaSlug === 'geniework' ? 'GenieWork' : 'GenieStock'
     try {
       await sendEmail({
         to: userEmail,
-        subject: `Your ${productNameRaw || 'GenieStock'} License Key`,
+        subject: `Your ${productNameRaw || fallbackName} License Key`,
         html: orderConfirmationEmailHtml({
           userName,
-          productName: productNameRaw || 'GenieStock',
+          productName: productNameRaw || fallbackName,
           serialKey,
         }),
       })
-      console.log(`[LS Webhook] GenieStock 이메일 발송: ${userEmail}`)
+      console.log(`[LS Webhook] ${supaSlug} 이메일 발송: ${userEmail}`)
     } catch (mailErr) {
-      console.error('[LS Webhook] GenieStock 이메일 실패:', mailErr)
+      console.error(`[LS Webhook] ${supaSlug} 이메일 실패:`, mailErr)
     }
 
-    // Sheets append SKIP (GenieStock은 시트 사용 안 함)
+    // Sheets append SKIP (Supabase 경로는 시트 사용 안 함)
     return
   }
 
