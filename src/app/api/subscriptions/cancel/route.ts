@@ -52,9 +52,9 @@ export async function POST(request: Request) {
     }
 
     // 3. Lemon Squeezy API로 구독 취소 (현재 결제 주기 종료 시점에 취소)
-    const apiKey = process.env.LEMON_SQUEEZY_API_KEY
+    const apiKey = process.env.LEMONSQUEEZY_API_KEY
     if (!apiKey) {
-      throw new Error('LEMON_SQUEEZY_API_KEY is not configured')
+      throw new Error('LEMONSQUEEZY_API_KEY is not configured')
     }
 
     const lsRes = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${lsSubId}`, {

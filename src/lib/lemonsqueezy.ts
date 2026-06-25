@@ -85,9 +85,9 @@ export function generateSerialKey(): string {
  * @반환값: 라이선스 키 문자열 또는 null (미발견/에러 시)
  */
 export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | null> {
-  const apiKey = process.env.LEMON_SQUEEZY_API_KEY
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY
   if (!apiKey) {
-    console.warn('[LS API] LEMON_SQUEEZY_API_KEY 미설정 — 라이선스 키 조회 건너뜀')
+    console.warn('[LS API] LEMONSQUEEZY_API_KEY 미설정 — 라이선스 키 조회 건너뜀')
     return null
   }
 
