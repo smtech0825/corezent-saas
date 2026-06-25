@@ -145,6 +145,33 @@ export async function findLicenseByKey(
   }
 }
 
+/**
+ * @함수명: findLicenseInAnyDb
+ * @설명: 키를 양쪽 라이선스 Supabase(기존 공유 + GW 전용)에서 찾아,
+ *        라이선스와 "어느 DB에서 찾았는지(db)"를 함께 반환한다.
+ *        - 공유 DB를 먼저 조회 → geniestock 이벤트는 GW 클라이언트를 건드리지 않음
+ *          (GW env 미설정 시에도 geniestock/geniepost 경로 안전).
+ *        - 공유 DB 조회는 product 필터가 없어, 분리 전 공유 DB에 남은 geniework 행도 잡는다.
+ *        - 양쪽 다 없으면 null → 호출 측에서 geniepost(Sheets) 경로로 처리.
+ * @매개변수: key - 라이선스 키 (UNIQUE라 한 DB에만 존재)
+ * @반환값: { license, db } 또는 null. db는 mutation 시 licenseClientFor 선택 기준.
+ */
+export async function findLicenseInAnyDb(
+  key: string,
+): Promise<{ license: SupabaseLicense; db: 'shared' | 'geniework' } | null> {
+  const shared = await findLicenseByKey(key)
+  if (shared) return { license: shared, db: 'shared' }
+
+  try {
+    const gw = await findLicenseByKey(key, 'geniework')
+    if (gw) return { license: gw, db: 'geniework' }
+  } catch (err) {
+    // GW env 미설정 등으로 GW DB 조회가 실패해도 조용히 폴백(공유/Sheets 경로 보존).
+    console.error('[supabase-license] findLicenseInAnyDb: GW DB 조회 실패(무시):', err)
+  }
+  return null
+}
+
 /** 키에 등록된 HWID 목록. product로 DB 선택(geniework=전용 Supabase). */
 export async function getHwidsForKey(
   key: string,

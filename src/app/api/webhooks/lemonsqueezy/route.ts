@@ -27,7 +27,7 @@ import {
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
-  findLicenseByKey as supaFindLicenseByKey,
+  findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
   updateLicenseExpiry as supaUpdateLicenseExpiry,
   setLicenseActive as supaSetLicenseActive,
@@ -383,15 +383,16 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
         .update({ expires_at: attrs.renews_at, status: 'active' })
         .eq('id', licInfo.licenseId)
 
-      // 라우팅: license_key가 Supabase에 존재하면 GenieStock, 아니면 GeniePost
-      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
-      if (supaLicense) {
-        // GenieStock 경로 — Supabase에 만료일/활성 동기화
-        await supaUpdateLicenseExpiry(licInfo.serialKey, attrs.renews_at)
+      // 라우팅: 키가 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
+      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
+      if (found) {
+        // GenieStock/GenieWork 경로 — 찾은 DB(found.db)에 만료일/활성 동기화
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaUpdateLicenseExpiry(licInfo.serialKey, attrs.renews_at, p)
         if (newStatus === 'active') {
-          await supaSetLicenseActive(licInfo.serialKey, true)
+          await supaSetLicenseActive(licInfo.serialKey, true, p)
         }
-        console.log(`[LS Webhook] GenieStock Supabase 만료일 동기화 완료: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${licInfo.serialKey}`)
       } else {
         // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
         await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
@@ -437,11 +438,12 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
       .eq('id', licInfo.licenseId)
 
     try {
-      // 라우팅: GenieStock(Supabase) vs GeniePost(Sheets)
-      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
-      if (supaLicense) {
-        await supaSetLicenseActive(licInfo.serialKey, false)
-        console.log(`[LS Webhook] GenieStock Supabase 비활성화 완료: ${licInfo.serialKey}`)
+      // 라우팅: 양쪽 DB(공유+GW)에서 키를 찾아 그 DB로 비활성화, 없으면 GeniePost(Sheets)
+      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
+      if (found) {
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(licInfo.serialKey, false, p)
+        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${licInfo.serialKey}`)
       } else {
         await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
         console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey}`)
@@ -480,10 +482,11 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       .eq('id', licInfo.licenseId)
 
     try {
-      const supaLicense = await supaFindLicenseByKey(licInfo.serialKey)
-      if (supaLicense) {
-        await supaSetLicenseActive(licInfo.serialKey, false)
-        console.log(`[LS Webhook] 결제 실패 → GenieStock Supabase 비활성화: ${licInfo.serialKey}`)
+      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
+      if (found) {
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(licInfo.serialKey, false, p)
+        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${licInfo.serialKey}`)
       } else {
         await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
         console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey}`)
@@ -539,10 +542,11 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
   if (lic?.serial_key) {
     try {
-      const supaLicense = await supaFindLicenseByKey(lic.serial_key)
-      if (supaLicense) {
-        await supaSetLicenseActive(lic.serial_key, false)
-        console.log(`[LS Webhook] 환불 → GenieStock Supabase 비활성화: ${lic.serial_key}`)
+      const found = await supaFindLicenseInAnyDb(lic.serial_key)
+      if (found) {
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(lic.serial_key, false, p)
+        console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key}`)
       } else {
         await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
         console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)

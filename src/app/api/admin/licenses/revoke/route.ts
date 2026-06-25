@@ -2,18 +2,18 @@
  * @파일: api/admin/licenses/revoke/route.ts
  * @설명: 라이선스 강제 만료(Revoke) API
  *        - DB 상태를 'revoked'로 업데이트
- *        - GenieStock 라이선스(Supabase license_keys 존재) → is_active=false + HWID 청소, 시트 호출 X
- *        - GeniePost 라이선스(license_keys에 없음)        → Google Sheets E열 '중지' 업데이트
+ *        - GenieStock/GenieWork 라이선스(양쪽 Supabase 중 존재) → is_active=false + HWID 청소, 시트 호출 X
+ *        - GeniePost 라이선스(양쪽 Supabase에 없음)            → Google Sheets E열 '중지' 업데이트
  *        - 양쪽 공통: Lemon Squeezy 라이선스 키 비활성화 (실패해도 차단하지 않음)
  *
- *        GenieStock은 시트를 사용하지 않으므로(라이선스는 Supabase에 보관) 시트 분기는 명시적으로 스킵.
+ *        GenieStock/GenieWork는 시트를 사용하지 않으므로(라이선스는 Supabase에 보관) 시트 분기는 명시적으로 스킵.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { updateLicenseStatus } from '@/lib/sheets'
 import {
-  findLicenseByKey as supaFindLicenseByKey,
+  findLicenseInAnyDb as supaFindLicenseInAnyDb,
   setLicenseActive as supaSetLicenseActive,
   resetHwidsForKey as supaResetHwidsForKey,
 } from '../../../license/_lib_supabase'
@@ -53,32 +53,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
     }
 
-    // ② 라우팅: GenieStock(Supabase) vs GeniePost(Sheets)
-    //    license_keys에 존재하면 GenieStock — 시트 호출 스킵, Supabase 동기화
+    // ② 라우팅: 양쪽 라이선스 DB(공유+GW)에서 키를 찾는다.
+    //    찾으면 그 DB로 비활성화 + HWID 청소(시트 호출 X), 없으면 GeniePost(Sheets).
     const serialKey = license.serial_key as string
-    let isGenieStock = false
+    let supaDbProduct: 'geniestock' | 'geniework' | null = null
     try {
-      const supaLicense = await supaFindLicenseByKey(serialKey)
-      isGenieStock = supaLicense !== null
+      const found = await supaFindLicenseInAnyDb(serialKey)
+      if (found) supaDbProduct = found.db === 'geniework' ? 'geniework' : 'geniestock'
     } catch (lookupErr) {
       console.error('[Revoke] Supabase license lookup failed:', lookupErr)
       // 조회 실패 시 안전하게 GeniePost(시트) 경로로 폴백
     }
 
-    if (isGenieStock) {
-      // GenieStock — Supabase 비활성화 + HWID 청소 (시트 호출 X)
+    if (supaDbProduct) {
+      // GenieStock/GenieWork — 찾은 DB에 비활성화 + HWID 청소 (시트 호출 X)
       try {
-        await supaSetLicenseActive(serialKey, false)
-        console.log(`[Revoke] GenieStock Supabase 비활성화 완료: ${serialKey}`)
+        await supaSetLicenseActive(serialKey, false, supaDbProduct)
+        console.log(`[Revoke] Supabase(${supaDbProduct}) 비활성화 완료: ${serialKey}`)
       } catch (supaErr) {
-        console.error('[Revoke] GenieStock setLicenseActive 실패:', supaErr)
+        console.error('[Revoke] Supabase setLicenseActive 실패:', supaErr)
       }
 
       try {
-        await supaResetHwidsForKey(serialKey)
-        console.log(`[Revoke] GenieStock HWID 매핑 청소 완료: ${serialKey}`)
+        await supaResetHwidsForKey(serialKey, supaDbProduct)
+        console.log(`[Revoke] Supabase(${supaDbProduct}) HWID 매핑 청소 완료: ${serialKey}`)
       } catch (hwidErr) {
-        console.error('[Revoke] GenieStock HWID 청소 실패:', hwidErr)
+        console.error('[Revoke] Supabase HWID 청소 실패:', hwidErr)
       }
     } else {
       // GeniePost — Google Sheets E열 '중지' (실패해도 계속 진행)
