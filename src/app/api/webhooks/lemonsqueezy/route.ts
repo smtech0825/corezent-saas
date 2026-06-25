@@ -23,12 +23,15 @@ import {
   type LSWebhookPayload,
   type LSOrderAttributes,
   type LSSubscriptionAttributes,
+  type LSLicenseKeyAttributes,
 } from '@/lib/lemonsqueezy'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
+  upsertLicenseForOrder as supaUpsertLicenseForOrder,
+  applyLsKeyForOrder as supaApplyLsKeyForOrder,
   updateLicenseExpiry as supaUpdateLicenseExpiry,
   setLicenseActive as supaSetLicenseActive,
   type Tier as SupaTier,
@@ -112,6 +115,9 @@ export async function POST(req: NextRequest) {
         break
       case 'order_refunded':
         await handleOrderRefunded(payload)
+        break
+      case 'license_key_created':
+        await handleLicenseKeyCreated(payload)
         break
       default:
         console.log(`[LS Webhook] 처리하지 않는 이벤트: ${eventName}`)
@@ -347,6 +353,88 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   if (productPrice?.product_id && orderId) {
     await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId)
   }
+}
+
+// ─── license_key_created 핸들러 (LS 자동 발급 키를 정식 키로 반영) ───────────────
+// LS "License keys" ON 제품은 구매 시 license_key_created가 별도로 도착한다(타이밍상
+// subscription_created보다 먼저 올 수 있음). 이 키를 order_id로 license_keys에 반영해
+// DB 키 = 이메일 키가 되게 한다. ★GenieWork 전용 — geniestock 오라우팅 금지.
+
+async function handleLicenseKeyCreated(payload: LSWebhookPayload) {
+  const attrs = payload.data.attributes as LSLicenseKeyAttributes
+  const lsKey       = attrs.key
+  const lsOrderId   = attrs.order_id != null ? String(attrs.order_id) : ''
+  const lsProductId = attrs.product_id != null ? String(attrs.product_id) : ''
+  const userEmail   = attrs.user_email ?? null
+
+  if (!lsKey || !lsOrderId) {
+    console.warn('[LS Webhook] license_key_created: key/order_id 누락 — skip')
+    return
+  }
+
+  // product 판별: LS product_id → product_prices.lemon_squeezy_product_id → products.name → isSupabaseProduct
+  const supaSlug = await resolveSupabaseProductByLsProductId(lsProductId)
+  if (supaSlug !== 'geniework') {
+    // geniework가 아니면 아무것도 안 함 (geniestock 오라우팅 절대 금지 · geniepost 무관)
+    console.log(`[LS Webhook] license_key_created: geniework 아님(${supaSlug ?? 'unknown'}) — skip (order_id=${lsOrderId})`)
+    return
+  }
+
+  // GW DB에 LS 키 반영 (행 있으면 UPDATE, 없으면 stub INSERT)
+  const { action } = await supaApplyLsKeyForOrder({
+    lsOrderId,
+    lsKey,
+    product: 'geniework',
+    buyerEmail: userEmail,
+  })
+  console.log(`[LS Webhook] license_key_created: geniework GW DB ${action} (order_id=${lsOrderId})`)
+
+  // 본체 licenses 행이 이미 있으면 serial_key·LS키 컬럼 동기화 (없으면 subscription_created가 finalKey로 생성)
+  await syncCoreLicenseKey(lsOrderId, lsKey)
+}
+
+// LS product_id(숫자 문자열)로 CoreZent 본체에서 제품 판별.
+// product_prices.lemon_squeezy_product_id 시드 기준 → products.name → isSupabaseProduct.
+async function resolveSupabaseProductByLsProductId(
+  lsProductId: string,
+): Promise<'geniestock' | 'geniework' | null> {
+  if (!lsProductId) return null
+  const admin = createAdminClient()
+  const { data: ppRows } = await admin
+    .from('product_prices')
+    .select('product_id')
+    .eq('lemon_squeezy_product_id', lsProductId)
+    .limit(1)
+  const corePid = ppRows?.[0]?.product_id as string | undefined
+  if (!corePid) return null
+  const { data: product } = await admin
+    .from('products')
+    .select('name')
+    .eq('id', corePid)
+    .single()
+  return isSupabaseProduct(product?.name)
+}
+
+// 본체 licenses 행이 있으면 serial_key·lemon_squeezy_license_key를 LS 키로 동기화(대시보드 일관).
+async function syncCoreLicenseKey(lsOrderId: string, lsKey: string) {
+  const admin = createAdminClient()
+  const { data: order } = await admin
+    .from('orders')
+    .select('id')
+    .eq('lemon_squeezy_order_id', lsOrderId)
+    .maybeSingle()
+  if (!order?.id) return
+  const { data: lic } = await admin
+    .from('licenses')
+    .select('id, serial_key')
+    .eq('order_id', order.id)
+    .maybeSingle()
+  if (!lic?.id || lic.serial_key === lsKey) return
+  const { error } = await admin
+    .from('licenses')
+    .update({ serial_key: lsKey, lemon_squeezy_license_key: lsKey })
+    .eq('id', lic.id)
+  if (error) console.error('[LS Webhook] 본체 licenses 키 동기화 실패:', error.message)
 }
 
 // ─── subscription_updated 핸들러 ─────────────────────────────────────────────
@@ -640,36 +728,56 @@ async function createLicense(
       gsExpiresAt = d.toISOString()
     }
 
-    // Supabase license_keys INSERT
+    // ─── 라이선스 키 저장 ───────────────────────────────────────────────────
+    // geniework: ls_order_id 기준 upsert (GW DB). license_key_created가 먼저 LS키 stub을
+    //   만들었으면 그 LS키가 보존되고(finalKey=LS키) 여기선 tier/expires/buyer만 채운다.
+    // geniestock: 기존 insert (공유 DB엔 ls_order_id 컬럼 없음 — ls_order_id 경로로 절대 안 보냄).
+    let finalKey = serialKey
+    let lemonKeyForCore: string | null = lsLicenseKey
     try {
-      await supaInsertLicense({
-        licenseKey: serialKey,
-        tier,
-        buyerEmail: userEmail,
-        expiresAt:  gsExpiresAt,
-        source:     'lemon_squeezy',
-        product:    supaSlug,
-      })
-      console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료: ${serialKey} (tier=${tier})`)
+      if (supaSlug === 'geniework' && lsOrderId) {
+        const r = await supaUpsertLicenseForOrder({
+          lsOrderId,
+          licenseKey: serialKey,
+          tier,
+          buyerEmail: userEmail,
+          expiresAt:  gsExpiresAt,
+          source:     'lemon_squeezy',
+          product:    'geniework',
+        })
+        finalKey = r.finalKey
+        if (r.wasExisting) lemonKeyForCore = finalKey  // stub의 LS키 보존됨
+        console.log(`[LS Webhook] geniework GW DB ${r.wasExisting ? '메타 갱신(LS키 보존)' : '신규 등록'} (order_id=${lsOrderId}, tier=${tier})`)
+      } else {
+        await supaInsertLicense({
+          licenseKey: serialKey,
+          tier,
+          buyerEmail: userEmail,
+          expiresAt:  gsExpiresAt,
+          source:     'lemon_squeezy',
+          product:    supaSlug,
+        })
+        console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료 (tier=${tier})`)
+      }
     } catch (supaErr) {
       console.error(`[LS Webhook] ${supaSlug} Supabase 등록 실패:`, supaErr)
     }
 
-    // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용)
+    // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용) — finalKey(LS키 우선) 사용
     const gsLicenseInsert: Record<string, unknown> = {
       user_id:    userId,
       order_id:   orderId,
       product_id: productId,
-      serial_key: serialKey,
+      serial_key: finalKey,
       status:     'active',
       max_devices: product?.max_devices ?? null,
       expires_at: gsExpiresAt,
     }
-    if (lsLicenseKey) gsLicenseInsert.lemon_squeezy_license_key = lsLicenseKey
+    if (lemonKeyForCore) gsLicenseInsert.lemon_squeezy_license_key = lemonKeyForCore
 
     const { error: gsLicErr } = await admin.from('licenses').insert(gsLicenseInsert)
     if (gsLicErr) {
-      console.error(`[LS Webhook] GenieStock CoreZent licenses INSERT 실패: ${gsLicErr.message}`)
+      console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패: ${gsLicErr.message}`)
     }
 
     // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy

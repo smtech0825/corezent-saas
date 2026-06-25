@@ -156,11 +156,29 @@ export interface LSSubscriptionAttributes {
   billing_anchor: number
 }
 
+export interface LSLicenseKeyAttributes {
+  key: string
+  key_short: string
+  status: string
+  disabled: boolean
+  order_id: number
+  order_item_id: number
+  product_id: number
+  store_id: number
+  customer_id: number
+  user_email: string
+  user_name: string
+  activation_limit: number | null
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface LSWebhookPayload {
   meta: LSWebhookMeta
   data: {
     id: string
     type: string
-    attributes: LSOrderAttributes | LSSubscriptionAttributes
+    attributes: LSOrderAttributes | LSSubscriptionAttributes | LSLicenseKeyAttributes
   }
 }

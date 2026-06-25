@@ -321,6 +321,121 @@ export async function insertLicense(input: {
   }
 }
 
+/**
+ * @함수명: upsertLicenseForOrder
+ * @설명: ls_order_id 기준 upsert (subscription_created/GenieWork 전용).
+ *        - 행 있음(license_key_created가 먼저 LS키 stub 생성) → tier·expires·buyer·product만
+ *          채우고 license_key(LS키)는 보존.
+ *        - 행 없음 → 전체 INSERT(폴백 키).
+ *        ★ls_order_id 컬럼은 GW DB에만 있으므로 product는 'geniework'만 전달할 것.
+ * @반환값: { finalKey, wasExisting } finalKey = 실제 저장된 키(stub 있었으면 LS키)
+ */
+export async function upsertLicenseForOrder(input: {
+  lsOrderId:  string
+  licenseKey: string
+  tier:       Tier
+  buyerEmail: string
+  expiresAt:  string | null
+  source:     'lemon_squeezy' | 'manual'
+  product:    SupabaseProduct
+}): Promise<{ finalKey: string; wasExisting: boolean }> {
+  const admin = licenseClientFor(input.product)
+
+  const { data: existing } = await admin
+    .from('license_keys')
+    .select('license_key')
+    .eq('ls_order_id', input.lsOrderId)
+    .eq('product', input.product)
+    .maybeSingle()
+
+  if (existing) {
+    // 행 있음 → 메타데이터만 채우고 license_key(LS키)는 덮지 않음
+    const { error } = await admin
+      .from('license_keys')
+      .update({
+        tier:        input.tier,
+        buyer_email: input.buyerEmail,
+        expires_at:  input.expiresAt,
+        product:     input.product,
+      })
+      .eq('ls_order_id', input.lsOrderId)
+      .eq('product', input.product)
+    if (error) throw new Error(`라이선스 메타 갱신 실패: ${error.message}`)
+    return { finalKey: existing.license_key as string, wasExisting: true }
+  }
+
+  // 행 없음 → 전체 INSERT
+  const { error } = await admin.from('license_keys').insert({
+    ls_order_id: input.lsOrderId,
+    license_key: input.licenseKey,
+    tier:        input.tier,
+    source:      input.source,
+    buyer_email: input.buyerEmail,
+    expires_at:  input.expiresAt,
+    is_active:   true,
+    product:     input.product,
+  })
+  if (error) throw new Error(`라이선스 등록 실패: ${error.message}`)
+  return { finalKey: input.licenseKey, wasExisting: false }
+}
+
+/**
+ * @함수명: applyLsKeyForOrder
+ * @설명: license_key_created 처리 — ls_order_id 기준으로 LS키를 license_keys에 반영.
+ *        - 행 있음 → license_key를 LS키로 UPDATE(self-gen→LS 교체) + hwid_mapping 정합 방어.
+ *        - 행 없음(선도착) → stub INSERT(tier 생략=NULL, license_key=LS키).
+ *        ★GenieWork 전용(GW DB만 ls_order_id 컬럼). 멱등(이미 LS키면 noop).
+ * @반환값: { action } 'updated' | 'inserted' | 'noop'
+ */
+export async function applyLsKeyForOrder(input: {
+  lsOrderId:  string
+  lsKey:      string
+  product:    SupabaseProduct
+  buyerEmail: string | null
+}): Promise<{ action: 'updated' | 'inserted' | 'noop' }> {
+  const admin = licenseClientFor(input.product)
+
+  const { data: existing } = await admin
+    .from('license_keys')
+    .select('license_key')
+    .eq('ls_order_id', input.lsOrderId)
+    .eq('product', input.product)
+    .maybeSingle()
+
+  if (existing) {
+    const oldKey = existing.license_key as string
+    if (oldKey === input.lsKey) return { action: 'noop' }  // 멱등 — 이미 LS키
+
+    const { error } = await admin
+      .from('license_keys')
+      .update({ license_key: input.lsKey })
+      .eq('ls_order_id', input.lsOrderId)
+      .eq('product', input.product)
+    if (error) throw new Error(`LS키 교체 실패: ${error.message}`)
+
+    // HWID 정합 방어: 옛 키 참조 매핑이 있으면 함께 갱신(첫 인증 전이라 보통 0건 → no-op)
+    const { error: hwidErr } = await admin
+      .from('hwid_mapping')
+      .update({ license_key: input.lsKey })
+      .eq('license_key', oldKey)
+    if (hwidErr) console.error('[supabase-license] applyLsKeyForOrder hwid 갱신 경고:', hwidErr)
+
+    return { action: 'updated' }
+  }
+
+  // 행 없음 → stub INSERT (tier 생략 = NULL; subscription_created가 나중에 채움)
+  const { error } = await admin.from('license_keys').insert({
+    ls_order_id: input.lsOrderId,
+    license_key: input.lsKey,
+    product:     input.product,
+    is_active:   true,
+    buyer_email: input.buyerEmail,
+    source:      'lemon_squeezy',
+  })
+  if (error) throw new Error(`stub 라이선스 등록 실패: ${error.message}`)
+  return { action: 'inserted' }
+}
+
 /** 만료일 갱신 (구독 갱신 시 LS 웹훅에서 호출). product로 DB 선택. */
 export async function updateLicenseExpiry(
   key: string,
