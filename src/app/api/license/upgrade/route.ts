@@ -130,11 +130,11 @@ async function upgradeSupabase(
   }
 
   // HWID 검사 + 한도 내 등록
-  const hwids = await supaGetHwidsForKey(key)
+  const hwids = await supaGetHwidsForKey(key, product)
   const alreadyRegistered = hwids.some((h) => h.hwid === hwid)
 
   if (!alreadyRegistered) {
-    const result = await supaRegisterHwid(key, hwid)
+    const result = await supaRegisterHwid(key, hwid, product)
     if (!result.ok) {
       return NextResponse.json({
         success: false,

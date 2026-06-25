@@ -87,6 +87,6 @@ async function resetSupabase(key: string, product: 'geniestock' | 'geniework') {
     })
   }
 
-  await supaResetHwidsForKey(key)
+  await supaResetHwidsForKey(key, product)
   return NextResponse.json({ success: true })
 }

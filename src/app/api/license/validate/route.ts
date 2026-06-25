@@ -132,11 +132,11 @@ async function validateSupabase(
   }
 
   // 4. HWID 검사 (이미 등록된 기기는 통과, 신규는 한도 내 등록)
-  const hwids = await supaGetHwidsForKey(key)
+  const hwids = await supaGetHwidsForKey(key, product)
   const alreadyRegistered = hwids.some((h) => h.hwid === hwid)
 
   if (!alreadyRegistered) {
-    const result = await supaRegisterHwid(key, hwid)
+    const result = await supaRegisterHwid(key, hwid, product)
     if (!result.ok) {
       return NextResponse.json({
         valid: false,

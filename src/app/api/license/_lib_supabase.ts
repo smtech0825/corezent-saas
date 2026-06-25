@@ -56,7 +56,8 @@ function createGenieWorkAdminClient() {
  *          - 그 외(geniestock 등·미지정) → 기존 공유 Supabase (LICENSE_SUPABASE_*)
  * @매개변수: product - 라이선스 제품 식별자 (없으면 기존 공유 DB)
  * @반환값: 선택된 Supabase admin client
- * @비고: Wave 1 시점엔 아직 어디서도 호출하지 않음 — 기존 동작 불변. Wave 2에서 연결.
+ * @비고: 라이선스 헬퍼는 전부 이 함수로 DB를 고른다. product 미지정·'geniestock'이면
+ *        기존 공유 DB라 geniestock/geniepost 동작은 그대로.
  */
 export function licenseClientFor(product?: SupabaseProduct) {
   return product === 'geniework'
@@ -108,7 +109,7 @@ export async function findLicenseByKey(
   if (!trimmed) return null
 
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     let q = admin
       .from('license_keys')
       .select('license_key, tier, source, buyer_email, expires_at, is_active, product')
@@ -144,13 +145,16 @@ export async function findLicenseByKey(
   }
 }
 
-/** 키에 등록된 HWID 목록. */
-export async function getHwidsForKey(key: string): Promise<HwidEntry[]> {
+/** 키에 등록된 HWID 목록. product로 DB 선택(geniework=전용 Supabase). */
+export async function getHwidsForKey(
+  key: string,
+  product?: SupabaseProduct,
+): Promise<HwidEntry[]> {
   const trimmed = key?.trim()
   if (!trimmed) return []
 
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     // GenieStock Supabase의 hwid_mapping 테이블은 표준 created_at 컬럼을 사용 (registered_at 아님).
     const { data, error } = await admin
       .from('hwid_mapping')
@@ -180,10 +184,13 @@ export async function getHwidsForKey(key: string): Promise<HwidEntry[]> {
  * HWID 등록.
  * - 이미 등록된 HWID면 idempotent하게 { ok: true } 반환
  * - 한도 초과 시 { ok: false, reason: 'HWID_LIMIT_REACHED' }
+ * ★ product를 내부 조회(findLicenseByKey·getHwidsForKey)에도 전달해야 한도 검사와
+ *   INSERT가 같은 DB를 본다. (안 그러면 한도=옛 DB, 등록=새 DB로 엇갈림)
  */
 export async function registerHwid(
   key: string,
   hwid: string,
+  product?: SupabaseProduct,
   deviceName?: string,
 ): Promise<{ ok: boolean; reason?: string }> {
   const k = key?.trim()
@@ -191,10 +198,10 @@ export async function registerHwid(
   if (!k || !h) return { ok: false, reason: 'INVALID_INPUT' }
 
   try {
-    const license = await findLicenseByKey(k)
+    const license = await findLicenseByKey(k, product)
     if (!license) return { ok: false, reason: 'NOT_FOUND' }
 
-    const hwids = await getHwidsForKey(k)
+    const hwids = await getHwidsForKey(k, product)
 
     // 이미 등록된 HWID — idempotent 성공
     if (hwids.some((entry) => entry.hwid === h)) {
@@ -207,7 +214,7 @@ export async function registerHwid(
       return { ok: false, reason: 'HWID_LIMIT_REACHED' }
     }
 
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     const { error } = await admin.from('hwid_mapping').insert({
       license_key: k,
       hwid:        h,
@@ -226,13 +233,13 @@ export async function registerHwid(
   }
 }
 
-/** 키의 모든 HWID 삭제 (PC 변경용). */
-export async function resetHwidsForKey(key: string): Promise<void> {
+/** 키의 모든 HWID 삭제 (PC 변경용). product로 DB 선택(geniework=전용 Supabase). */
+export async function resetHwidsForKey(key: string, product?: SupabaseProduct): Promise<void> {
   const k = key?.trim()
   if (!k) return
 
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     const { error } = await admin.from('hwid_mapping').delete().eq('license_key', k)
     if (error) {
       console.error('[supabase-license] resetHwidsForKey error:', error)
@@ -254,7 +261,7 @@ export async function insertLicense(input: {
   product:    SupabaseProduct
 }): Promise<void> {
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(input.product)
 
     // 중복 키 무시 (idempotent — 웹훅 재전송 대비)
     const { data: existing } = await admin
@@ -287,13 +294,17 @@ export async function insertLicense(input: {
   }
 }
 
-/** 만료일 갱신 (구독 갱신 시 LS 웹훅에서 호출). */
-export async function updateLicenseExpiry(key: string, expiresAt: string): Promise<void> {
+/** 만료일 갱신 (구독 갱신 시 LS 웹훅에서 호출). product로 DB 선택. */
+export async function updateLicenseExpiry(
+  key: string,
+  expiresAt: string,
+  product?: SupabaseProduct,
+): Promise<void> {
   const k = key?.trim()
   if (!k) return
 
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     const { error } = await admin
       .from('license_keys')
       .update({ expires_at: expiresAt })
@@ -308,13 +319,17 @@ export async function updateLicenseExpiry(key: string, expiresAt: string): Promi
   }
 }
 
-/** 활성 상태 토글 (취소/환불 시 LS 웹훅에서 호출). */
-export async function setLicenseActive(key: string, isActive: boolean): Promise<void> {
+/** 활성 상태 토글 (취소/환불 시 LS 웹훅에서 호출). product로 DB 선택. */
+export async function setLicenseActive(
+  key: string,
+  isActive: boolean,
+  product?: SupabaseProduct,
+): Promise<void> {
   const k = key?.trim()
   if (!k) return
 
   try {
-    const admin = createLicenseAdminClient()
+    const admin = licenseClientFor(product)
     const { error } = await admin
       .from('license_keys')
       .update({ is_active: isActive })
