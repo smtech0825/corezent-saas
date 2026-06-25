@@ -672,22 +672,10 @@ async function createLicense(
       console.error(`[LS Webhook] GenieStock CoreZent licenses INSERT 실패: ${gsLicErr.message}`)
     }
 
-    // 주문 확인 이메일 (GeniePost와 동일 템플릿)
-    const fallbackName = supaSlug === 'geniework' ? 'GenieWork' : 'GenieStock'
-    try {
-      await sendEmail({
-        to: userEmail,
-        subject: `Your ${productNameRaw || fallbackName} License Key`,
-        html: orderConfirmationEmailHtml({
-          userName,
-          productName: productNameRaw || fallbackName,
-          serialKey,
-        }),
-      })
-      console.log(`[LS Webhook] ${supaSlug} 이메일 발송: ${userEmail}`)
-    } catch (mailErr) {
-      console.error(`[LS Webhook] ${supaSlug} 이메일 실패:`, mailErr)
-    }
+    // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy
+    // "License keys" 기능 ON이라 LS가 자체 키를 구매자에게 직접 이메일로 발송한다.
+    // 서버도 보내면 이메일 2통(중복)이 되므로 서버 발송 제거.
+    // (키 생성·supaInsertLicense·CoreZent licenses 기록은 위에서 그대로 수행됨.)
 
     // Sheets append SKIP (Supabase 경로는 시트 사용 안 함)
     return
