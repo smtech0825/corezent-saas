@@ -28,6 +28,42 @@ function createLicenseAdminClient() {
   )
 }
 
+// GenieWork 전용 Supabase admin client.
+// geniestock(LICENSE_SUPABASE_*)과 물리적으로 분리된 별도 프로젝트를 본다.
+//   - GW_SUPABASE_URL              : GenieWork 전용 Supabase 프로젝트 URL
+//   - GW_SUPABASE_SERVICE_ROLE_KEY : 그 프로젝트의 service_role 키 (RLS 우회)
+// env 미설정 시 조용히 실패하지 않고 명확한 에러를 던진다.
+// (이 검사는 함수가 실제로 호출될 때만 동작하므로 geniestock 경로에는 영향 없음.)
+function createGenieWorkAdminClient() {
+  const url = process.env.GW_SUPABASE_URL
+  const serviceKey = process.env.GW_SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceKey) {
+    throw new Error(
+      'GenieWork 전용 Supabase 환경변수가 설정되지 않았어요. ' +
+      'GW_SUPABASE_URL · GW_SUPABASE_SERVICE_ROLE_KEY를 설정해주세요.',
+    )
+  }
+  return createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+/**
+ * @함수명: licenseClientFor
+ * @설명: product 값으로 알맞은 라이선스 Supabase admin client를 선택한다.
+ *        product가 DB를 결정하는 단일 지점.
+ *          - 'geniework' → 전용 Supabase (GW_SUPABASE_*)
+ *          - 그 외(geniestock 등·미지정) → 기존 공유 Supabase (LICENSE_SUPABASE_*)
+ * @매개변수: product - 라이선스 제품 식별자 (없으면 기존 공유 DB)
+ * @반환값: 선택된 Supabase admin client
+ * @비고: Wave 1 시점엔 아직 어디서도 호출하지 않음 — 기존 동작 불변. Wave 2에서 연결.
+ */
+export function licenseClientFor(product?: SupabaseProduct) {
+  return product === 'geniework'
+    ? createGenieWorkAdminClient()
+    : createLicenseAdminClient()
+}
+
 // ─── 타입 ────────────────────────────────────────────────────────────────
 
 export type Tier = 'lite' | 'pro' | 'max' | '1pc' | '3pc' | '5pc' | '10pc'
