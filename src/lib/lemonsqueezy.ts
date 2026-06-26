@@ -127,7 +127,8 @@ export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | nul
 
 export interface LSWebhookMeta {
   event_name: string
-  custom_data?: { user_id?: string }
+  // affiliate_ref: buildCheckoutUrl이 주입하는 추천인 코드. ref는 구버전 호환용.
+  custom_data?: { user_id?: string; ref?: string; affiliate_ref?: string }
 }
 
 export interface LSOrderAttributes {
@@ -181,11 +182,30 @@ export interface LSLicenseKeyAttributes {
   updated_at: string
 }
 
+// subscription_payment_success 등에서 전달되는 구독 인보이스 객체.
+// 금액은 모두 정수 cents. billing_reason으로 초기/갱신/변경을 구분.
+export interface LSSubscriptionInvoiceAttributes {
+  subscription_id: number
+  billing_reason: string   // 'initial' | 'renewal' | 'updated'
+  user_email?: string
+  currency?: string
+  subtotal?: number        // cents
+  discount_total?: number  // cents
+  tax?: number             // cents
+  total: number            // cents (적립 기준 gross)
+  status?: string
+  created_at?: string
+}
+
 export interface LSWebhookPayload {
   meta: LSWebhookMeta
   data: {
     id: string
     type: string
-    attributes: LSOrderAttributes | LSSubscriptionAttributes | LSLicenseKeyAttributes
+    attributes:
+      | LSOrderAttributes
+      | LSSubscriptionAttributes
+      | LSLicenseKeyAttributes
+      | LSSubscriptionInvoiceAttributes
   }
 }

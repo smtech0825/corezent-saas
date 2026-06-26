@@ -16,8 +16,12 @@ import { REF_COOKIE } from '@/lib/cookies'
 
 export { REF_COOKIE }
 
-// PostgREST/Postgres 에러 코드: 미마이그레이션(테이블/컬럼 없음)만 조용히 무시
-const SCHEMA_MISSING_CODES = new Set(['42P01', '42703'])
+// PostgREST/Postgres 에러 코드: 미마이그레이션(테이블/컬럼 없음)만 조용히 무시.
+//   42P01=undefined_table, 42703=undefined_column (직접 PG)
+//   PGRST205=table not in schema cache, PGRST204=column not in schema cache (Supabase 호스티드)
+// ⚠️ 한시 항목: 028/029를 dev/staging·운영 DB에 적용한 뒤 PGRST205·PGRST204는 제거할 것.
+//    (적용 후의 테이블/컬럼 누락은 실제 버그라 표면화돼야 한다. 캡처/체크아웃 경로 한정.)
+const SCHEMA_MISSING_CODES = new Set(['42P01', '42703', 'PGRST205', 'PGRST204'])
 
 /**
  * @함수명: isSchemaMissing

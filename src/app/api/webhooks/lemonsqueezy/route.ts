@@ -9,9 +9,14 @@
  *   - subscription_updated       → 구독 상태/만료일 업데이트 + license.expires_at 동기화
  *   - subscription_cancelled     → 취소 처리 + license expired
  *   - subscription_expired       → 만료 처리 + license expired
+ *   - subscription_payment_success → 갱신(renewal) 결제 성공 → 추천 커미션 반복 적립
  *   - subscription_payment_failed → 결제 실패 → license expired + Sheets 중지
+ *   - subscription_payment_refunded → 갱신 결제 환불 → 추천 커미션 반전
  *   - subscription_paused/unpaused → 일시정지/해제
- *   - order_refunded             → 환불 처리
+ *   - order_refunded             → 환불 처리 + 주문 커미션 반전
+ *
+ * 추천 커미션(Wave 4): order_created=첫 결제 적립, subscription_payment_success(renewal)=반복 적립,
+ *   order_refunded/subscription_payment_refunded=반전. 적립/반전은 스키마-누락 관용 없음(affiliate-commission.ts).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -24,7 +29,9 @@ import {
   type LSOrderAttributes,
   type LSSubscriptionAttributes,
   type LSLicenseKeyAttributes,
+  type LSSubscriptionInvoiceAttributes,
 } from '@/lib/lemonsqueezy'
+import { accrueCommission, reverseCommissionsBySource } from '@/lib/affiliate-commission'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
@@ -104,8 +111,14 @@ export async function POST(req: NextRequest) {
       case 'subscription_expired':
         await handleSubscriptionCancelled(payload)
         break
+      case 'subscription_payment_success':
+        await handleSubscriptionPaymentSuccess(payload)
+        break
       case 'subscription_payment_failed':
         await handlePaymentFailed(payload)
+        break
+      case 'subscription_payment_refunded':
+        await handleSubscriptionPaymentRefunded(payload)
         break
       case 'subscription_paused':
         await handleSubscriptionStatusChange(payload, 'paused')
@@ -250,6 +263,71 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   if (productPriceId && productId && productPrice?.type === 'one_time') {
     await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId)
   }
+
+  // 추천 커미션 적립 (일회성·구독 초기 공통의 "첫 결제"). 갱신은 subscription_payment_success.
+  // 스키마-누락 관용 없음 — 실패 시 throw로 전파(웹훅 메인 catch가 로깅).
+  await accrueCommission({
+    sourceType: 'order',
+    sourceId: lsOrderId,
+    buyerUserId: userId,
+    affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
+    grossCents: attrs.total,
+    currency: attrs.currency,
+  })
+}
+
+// ─── subscription_payment_success 핸들러 (갱신 반복 적립) ────────────────────
+// 초기 결제는 order_created가 이미 적립하므로 billing_reason='renewal'만 처리.
+// data = subscription-invoice (data.id = 인보이스 단위 멱등 키). 금액은 정수 cents.
+
+async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
+  const attrs = payload.data.attributes as LSSubscriptionInvoiceAttributes
+
+  if (attrs.billing_reason !== 'renewal') {
+    console.log(`[LS Webhook] subscription_payment_success(${attrs.billing_reason}) — 갱신 아님, 적립 skip`)
+    return
+  }
+
+  const invoiceId = String(payload.data.id)
+  const lsSubId = String(attrs.subscription_id)
+  const admin = createAdminClient()
+
+  // 구매자: 구독 행의 user_id 우선(신뢰), 폴백 custom_data.user_id
+  const { data: sub } = await admin
+    .from('subscriptions')
+    .select('user_id')
+    .eq('lemon_squeezy_subscription_id', lsSubId)
+    .maybeSingle()
+
+  let buyerUserId: string | null = (sub?.user_id as string) ?? null
+  if (!buyerUserId && payload.meta.custom_data?.user_id) {
+    buyerUserId = await findUserId(payload.meta.custom_data.user_id, attrs.user_email ?? '')
+  }
+  if (!buyerUserId) {
+    console.error(`[LS Webhook] 갱신 적립: 구매자 미상 (sub=${lsSubId}, invoice=${invoiceId})`)
+    return
+  }
+
+  await accrueCommission({
+    sourceType: 'subscription_renewal',
+    sourceId: invoiceId,
+    buyerUserId,
+    affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
+    grossCents: attrs.total,
+    currency: attrs.currency ?? '',
+    subscriptionId: lsSubId,
+  })
+}
+
+// ─── subscription_payment_refunded 핸들러 (갱신 결제 환불 → 커미션 반전) ──────
+// 갱신 환불은 order_refunded가 아니라 이 이벤트로 도착(data = subscription-invoice).
+// data.id = 갱신 인보이스 id = 갱신 커미션의 source_id 와 일치하므로 그대로 반전한다.
+// (구독/라이선스 상태는 cancelled/expired 이벤트가 담당 — 여기선 커미션만)
+
+async function handleSubscriptionPaymentRefunded(payload: LSWebhookPayload) {
+  const invoiceId = String(payload.data.id)
+  console.log(`[LS Webhook] 구독 갱신 환불 수신: invoice ${invoiceId}`)
+  await reverseCommissionsBySource('subscription_renewal', invoiceId)
 }
 
 // ─── subscription_created 핸들러 ─────────────────────────────────────────────
@@ -583,6 +661,9 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       console.error('[LS Webhook] 결제 실패 동기화 실패:', syncErr)
     }
   }
+
+  // 추천 커미션 반전(갱신 인보이스 대상). 실패한 갱신은 보통 적립 전이라 no-op이나, 매칭 시 reversed.
+  await reverseCommissionsBySource('subscription_renewal', String(payload.data.id))
 }
 
 // ─── subscription_paused / unpaused 핸들러 ───────────────────────────────────
@@ -643,6 +724,10 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
       console.error('[LS Webhook] 환불 동기화 실패:', syncErr)
     }
   }
+
+  // 추천 커미션 반전(이미 paid면 클로백·음수잔액 금지+관리자 플래그). 스키마-누락 관용 없음.
+  // order_refunded는 주문(첫 결제) 커미션을 대상으로 함 — source_type='order'로 좁힘.
+  await reverseCommissionsBySource('order', lsOrderId)
 }
 
 // ─── 라이선스 생성 ────────────────────────────────────────────────────────────
