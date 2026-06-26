@@ -146,9 +146,9 @@ export async function accrueCommission(p: AccrueParams): Promise<void> {
 /**
  * @함수명: reverseCommissionsBySource
  * @설명: 환불/실패 시 해당 source의 커미션을 reversed 처리합니다.
- *        pending/approved → 단순 reversed. 이미 paid(크레딧 전환) → 클로백 시도:
- *        잔액 충분하면 음수 원장 기록, 부족(이미 사용)하면 음수잔액 만들지 않고
- *        관리자 검토 플래그(needs_admin_review). 멱등(이미 reversed면 skip).
+ *        실제 반전·클로백(음수잔액 금지·관리자 플래그)은 원자적 RPC
+ *        reverse_affiliate_commissions(030)가 단일 트랜잭션·행 잠금으로 수행한다.
+ *        (앱 측 read-then-write 없음. 멱등: 이미 reversed면 RPC가 skip)
  */
 export async function reverseCommissionsBySource(
   sourceType: 'order' | 'subscription_renewal',
@@ -156,72 +156,49 @@ export async function reverseCommissionsBySource(
 ): Promise<void> {
   if (!sourceId) return
   const admin = createAdminClient()
-
-  // source_type까지 좁혀 교차충돌 방지(order id와 invoice id는 독립 시퀀스)
-  const { data: rows, error } = await admin
-    .from('affiliate_commissions')
-    .select('id, referrer_user_id, commission_amount_cents, status')
-    .eq('source_type', sourceType)
-    .eq('source_id', sourceId)
-  if (error) fail('커미션 조회 실패', error)
-  if (!rows || rows.length === 0) return
-
-  for (const c of rows as Array<{ id: string; referrer_user_id: string; commission_amount_cents: number; status: string }>) {
-    if (c.status === 'reversed') continue // 이미 처리 — 멱등
-    if (c.status === 'paid') {
-      await clawbackPaidCommission(admin, c)
-    } else {
-      const { error: ue } = await admin
-        .from('affiliate_commissions')
-        .update({ status: 'reversed' })
-        .eq('id', c.id)
-      if (ue) fail('커미션 reversed 실패', ue)
-    }
-  }
+  const { error } = await admin.rpc('reverse_affiliate_commissions', {
+    p_source_type: sourceType,
+    p_source_id: sourceId,
+  })
+  if (error) fail('커미션 반전 RPC 실패', error)
 }
 
-/** 이미 크레딧으로 전환된(paid) 커미션의 클로백 — 음수잔액 금지 */
-async function clawbackPaidCommission(
-  admin: Admin,
-  c: { id: string; referrer_user_id: string; commission_amount_cents: number },
-): Promise<void> {
-  // 현재 잔액 = 원장 delta 합(권위 있는 값)
-  const { data: ledger, error: le } = await admin
-    .from('store_credit_ledger')
-    .select('delta_cents')
-    .eq('user_id', c.referrer_user_id)
-  if (le) fail('원장 조회 실패', le)
-  const balance = (ledger ?? []).reduce(
-    (s: number, r: { delta_cents: number }) => s + (r.delta_cents ?? 0),
-    0,
-  )
+/**
+ * @함수명: redeemStoreCredit
+ * @설명: 스토어 크레딧을 차감합니다(체크아웃 할인 발급/사용). 원자적 RPC
+ *        redeem_store_credit(030)이 잔액 검증·음수잔액 금지·원장 기록을 한 트랜잭션으로.
+ * @매개변수: userId - 대상 사용자, amountCents - 차감액(정수 cents), ref - 참조(할인 코드 등)
+ * @반환값: { ok, balance?, reason? }
+ */
+export async function redeemStoreCredit(
+  userId: string,
+  amountCents: number,
+  ref: string,
+): Promise<{ ok: boolean; balance?: number; reason?: string }> {
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('redeem_store_credit', {
+    p_user: userId,
+    p_amount: amountCents,
+    p_ref: ref,
+  })
+  if (error) fail('크레딧 차감 RPC 실패', error)
+  return (data ?? { ok: false, reason: 'no_result' }) as { ok: boolean; balance?: number; reason?: string }
+}
 
-  if (balance >= c.commission_amount_cents) {
-    // 음수잔액 없이 클로백 가능 — 원장에 음수 기록
-    const { error: lie } = await admin.from('store_credit_ledger').insert({
-      user_id: c.referrer_user_id,
-      delta_cents: -c.commission_amount_cents,
-      reason: 'clawback',
-      ref_id: c.id,
-      balance_after_cents: balance - c.commission_amount_cents,
-    })
-    if (lie) fail('클로백 원장 기록 실패', lie)
-
-    const { error: ue } = await admin
-      .from('affiliate_commissions')
-      .update({ status: 'reversed' })
-      .eq('id', c.id)
-    if (ue) fail('커미션 reversed 실패', ue)
-  } else {
-    // 이미 사용해 잔액 부족 → 음수잔액 만들지 않고 관리자 검토 플래그
-    const { error: ue } = await admin
-      .from('affiliate_commissions')
-      .update({
-        status: 'reversed',
-        needs_admin_review: true,
-        review_reason: `환불 클로백 불가: 잔액(${balance}) < 커미션(${c.commission_amount_cents}) cents`,
-      })
-      .eq('id', c.id)
-    if (ue) fail('커미션 검토 플래그 실패', ue)
-  }
+/**
+ * @함수명: convertReferrerCommissions
+ * @설명: 추천인의 전환 가능 커미션(pending+available_at경과+합계≥min)을 크레딧으로 전환합니다.
+ *        게이트·payouts·paid·ledger 적립을 원자적 RPC convert_referrer_commissions(030)가 수행.
+ * @매개변수: referrerUserId - 추천인 user id
+ * @반환값: RPC 결과(jsonb)
+ */
+export async function convertReferrerCommissions(
+  referrerUserId: string,
+): Promise<{ ok: boolean; reason?: string; amount?: number; count?: number; total?: number; min?: number }> {
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('convert_referrer_commissions', {
+    p_referrer: referrerUserId,
+  })
+  if (error) fail('커미션 전환 RPC 실패', error)
+  return (data ?? { ok: false, reason: 'no_result' }) as { ok: boolean; reason?: string; amount?: number; count?: number; total?: number; min?: number }
 }

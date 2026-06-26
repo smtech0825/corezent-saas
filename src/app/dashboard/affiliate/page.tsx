@@ -6,7 +6,6 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { buildReferralUrl, getAffiliateConfig } from '@/lib/affiliate'
 import DynamicIcon from '@/components/DynamicIcon'
 import ReferralCopyButton from '../_components/ReferralCopyButton'
@@ -24,18 +23,14 @@ function formatCents(cents: number, currency: string): string {
   return currency === 'USD' ? `$${v}` : `${v} ${currency}`
 }
 
-const COMMISSION_STATUSES = ['pending', 'approved', 'paid', 'reversed'] as const
-type CommissionStatus = (typeof COMMISSION_STATUSES)[number]
-
 export default async function AffiliatePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // 읽기 전용 — admin 클라이언트로 본인(user.id/affiliate_code) 데이터만 조회
-  const admin = createAdminClient()
-
-  const { data: profile } = await admin
+  // 읽기 전용 — 일반 server 클라이언트(RLS)로 본인 데이터만 조회.
+  //   commissions/attributions/ledger=본인 조회 정책, affiliate_clicks=030 '본인 코드 조회' 정책.
+  const { data: profile } = await supabase
     .from('profiles')
     .select('affiliate_code')
     .eq('id', user.id)
@@ -44,22 +39,22 @@ export default async function AffiliatePage() {
 
   const [cfg, signupsRes, conversionsRes, commissionsRes, ledgerRes, clicksRes] = await Promise.all([
     getAffiliateConfig(),
-    admin.from('affiliate_attributions')
+    supabase.from('affiliate_attributions')
       .select('id', { count: 'exact', head: true })
       .eq('referrer_user_id', user.id),
-    admin.from('affiliate_commissions')
+    supabase.from('affiliate_commissions')
       .select('id', { count: 'exact', head: true })
       .eq('referrer_user_id', user.id)
       .eq('source_type', 'order')
       .neq('status', 'reversed'),
-    admin.from('affiliate_commissions')
-      .select('commission_amount_cents, status')
+    supabase.from('affiliate_commissions')
+      .select('commission_amount_cents, status, available_at')
       .eq('referrer_user_id', user.id),
-    admin.from('store_credit_ledger')
+    supabase.from('store_credit_ledger')
       .select('delta_cents')
       .eq('user_id', user.id),
     code
-      ? admin.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('referral_code', code)
+      ? supabase.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('referral_code', code)
       : Promise.resolve({ count: 0 }),
   ])
 
@@ -67,18 +62,25 @@ export default async function AffiliatePage() {
   const signups = signupsRes.count ?? 0
   const conversions = conversionsRes.count ?? 0
 
-  // 적립 현황 집계(상태별 금액 합·건수)
-  const buckets: Record<CommissionStatus, { cents: number; count: number }> = {
-    pending:  { cents: 0, count: 0 },
-    approved: { cents: 0, count: 0 },
+  // 적립 현황 집계 — pending은 보류(hold) 경과 여부로 '대기'/'지급 가능'을 구분.
+  // (전환 게이트와 동일 기준: available_at 경과한 pending이 실제 전환 대상)
+  const nowMs = Date.now()
+  const buckets = {
+    held:     { cents: 0, count: 0 }, // 보류 기간 중(아직 전환 불가)
+    eligible: { cents: 0, count: 0 }, // 전환 가능(hold 경과 pending + approved)
     paid:     { cents: 0, count: 0 },
     reversed: { cents: 0, count: 0 },
   }
-  for (const c of (commissionsRes.data ?? []) as Array<{ commission_amount_cents: number; status: string }>) {
-    const b = buckets[c.status as CommissionStatus]
-    if (b) {
-      b.cents += c.commission_amount_cents ?? 0
-      b.count += 1
+  for (const c of (commissionsRes.data ?? []) as Array<{ commission_amount_cents: number; status: string; available_at: string }>) {
+    const cents = c.commission_amount_cents ?? 0
+    let key: keyof typeof buckets | null = null
+    if (c.status === 'pending') key = new Date(c.available_at).getTime() <= nowMs ? 'eligible' : 'held'
+    else if (c.status === 'approved') key = 'eligible'
+    else if (c.status === 'paid') key = 'paid'
+    else if (c.status === 'reversed') key = 'reversed'
+    if (key) {
+      buckets[key].cents += cents
+      buckets[key].count += 1
     }
   }
 
@@ -159,8 +161,8 @@ export default async function AffiliatePage() {
       <section>
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-4">적립 현황</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatusCard tone="warning" icon="Clock"       label="대기"      sub="보류 기간 중"   cents={buckets.pending.cents}  count={buckets.pending.count}  currency={currency} />
-          <StatusCard tone="accent"  icon="CircleCheck" label="지급 가능"  sub="전환 대기"     cents={buckets.approved.cents} count={buckets.approved.count} currency={currency} />
+          <StatusCard tone="warning" icon="Clock"       label="대기"      sub="보류 기간 중"   cents={buckets.held.cents}     count={buckets.held.count}     currency={currency} />
+          <StatusCard tone="accent"  icon="CircleCheck" label="지급 가능"  sub="전환 대기"     cents={buckets.eligible.cents} count={buckets.eligible.count} currency={currency} />
           <StatusCard tone="success" icon="BadgeCheck"  label="지급 완료"  sub="크레딧 전환됨"  cents={buckets.paid.cents}     count={buckets.paid.count}     currency={currency} />
           <StatusCard tone="error"   icon="CircleX"     label="반려"      sub="환불·취소"     cents={buckets.reversed.cents} count={buckets.reversed.count} currency={currency} />
         </div>

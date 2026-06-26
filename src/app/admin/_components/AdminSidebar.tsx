@@ -14,6 +14,7 @@ import {
   Package,
   ShoppingBag,
   Key,
+  Gift,
   MessageSquare,
   Settings,
   LogOut,
@@ -37,6 +38,7 @@ const mainNav = [
   { label: '제품',       href: '/admin/products',  icon: Package },
   { label: '주문',       href: '/admin/orders',    icon: ShoppingBag },
   { label: '라이선스',   href: '/admin/licenses',  icon: Key },
+  { label: '제휴',       href: '/admin/affiliates', icon: Gift },
   { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
 ]
 

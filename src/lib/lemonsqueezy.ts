@@ -123,6 +123,64 @@ export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | nul
   }
 }
 
+/**
+ * @함수명: createLsDiscount
+ * @설명: Lemon Squeezy에 1회용 "고정 금액(cents)" 할인 코드를 생성합니다.
+ *        스토어 크레딧을 체크아웃 할인으로 반영하기 위한 1순위 경로.
+ *        실패하면 ok:false를 반환하여 호출측이 관리자 수동 발급으로 폴백하게 한다.
+ * @매개변수: code - 할인 코드, name - 할인명, amountCents - 고정 할인액(정수 cents)
+ * @반환값: { ok, code?, error? }
+ */
+export async function createLsDiscount(params: {
+  code: string
+  name: string
+  amountCents: number
+}): Promise<{ ok: boolean; code?: string; error?: string }> {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID
+  if (!apiKey || !storeId) {
+    return { ok: false, error: 'LEMONSQUEEZY_API_KEY/STORE_ID 미설정' }
+  }
+  if (!Number.isInteger(params.amountCents) || params.amountCents <= 0) {
+    return { ok: false, error: '유효하지 않은 할인 금액' }
+  }
+
+  try {
+    const res = await fetch('https://api.lemonsqueezy.com/v1/discounts', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json',
+      },
+      body: JSON.stringify({
+        data: {
+          type: 'discounts',
+          attributes: {
+            name: params.name,
+            code: params.code,
+            amount: params.amountCents, // 정수 cents
+            amount_type: 'fixed',
+            is_limited_redemptions: true,
+            max_redemptions: 1,
+          },
+          relationships: {
+            store: { data: { type: 'stores', id: String(storeId) } },
+          },
+        },
+      }),
+    })
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      return { ok: false, error: `LS 할인 생성 실패: ${res.status} ${text.slice(0, 200)}` }
+    }
+    return { ok: true, code: params.code }
+  } catch (err) {
+    return { ok: false, error: `LS 할인 생성 오류: ${String(err)}` }
+  }
+}
+
 // ─── Lemon Squeezy 웹훅 이벤트 타입 ──────────────────────────────────────────
 
 export interface LSWebhookMeta {
