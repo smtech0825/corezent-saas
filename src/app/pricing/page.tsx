@@ -7,6 +7,7 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import PricingClient, { type PricingProduct } from './PricingClient'
 
 export const dynamic = 'force-dynamic'
@@ -20,8 +21,8 @@ export const metadata: Metadata = {
 export default async function PricingPage() {
   const client = createAdminClient()
 
-  // 제품 + 가격 병렬 조회
-  const [{ data: dbProducts }, { data: dbPrices }] = await Promise.all([
+  // 제품·가격·추천인 코드 병렬 조회 (추천인은 httpOnly cz_ref를 서버에서 해석)
+  const [{ data: dbProducts }, { data: dbPrices }, affiliateRef] = await Promise.all([
     client
       .from('products')
       .select('id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index')
@@ -31,6 +32,7 @@ export default async function PricingPage() {
       .from('product_prices')
       .select('product_id, type, interval, price, checkout_url')
       .eq('is_active', true),
+    resolveCheckoutAffiliateRef(),
   ])
 
   // 가격을 product_id별로 그룹화
@@ -87,7 +89,7 @@ export default async function PricingPage() {
       <Navbar />
 
       <main>
-        <PricingClient products={products} />
+        <PricingClient products={products} affiliateRef={affiliateRef} />
       </main>
 
       <Footer />

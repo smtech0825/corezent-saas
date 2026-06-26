@@ -29,9 +29,10 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
 
 /**
  * @함수명: buildCheckoutUrl
- * @설명: Lemon Squeezy 체크아웃 URL에 user_id 및 UTM 파라미터를 custom_data로 주입합니다.
- *        웹훅에서 주문을 올바른 사용자 및 마케팅 채널에 연결하기 위해 사용합니다.
- * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM 데이터
+ * @설명: Lemon Squeezy 체크아웃 URL에 user_id·UTM·추천인(affiliate_ref)을 custom_data로 주입합니다.
+ *        웹훅에서 주문을 올바른 사용자·마케팅 채널·추천인에 연결하기 위해 사용합니다.
+ *        affiliate_ref는 서버에서 해석(httpOnly cz_ref·referred_by)된 값을 받아 주입 시점에 sanitize합니다.
+ * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터
  * @반환값: custom_data가 포함된 체크아웃 URL
  */
 export function buildCheckoutUrl(
@@ -44,6 +45,7 @@ export function buildCheckoutUrl(
     utm_content?: string
     utm_term?: string
     ref?: string
+    affiliate_ref?: string
   } | null,
 ): string {
   if (!baseUrl || baseUrl === '#') return baseUrl || '#'
@@ -58,6 +60,11 @@ export function buildCheckoutUrl(
     if (utm?.utm_content)    url.searchParams.set('checkout[custom][utm_content]',  utm.utm_content)
     if (utm?.utm_term)       url.searchParams.set('checkout[custom][utm_term]',     utm.utm_term)
     if (utm?.ref)            url.searchParams.set('checkout[custom][ref]',           utm.ref)
+    // 추천인 코드: 주입 시점에 대문자 영숫자로 sanitize, 빈 값이면 키 자체를 생략
+    if (utm?.affiliate_ref) {
+      const affRef = utm.affiliate_ref.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 32)
+      if (affRef) url.searchParams.set('checkout[custom][affiliate_ref]', affRef)
+    }
     return url.toString()
   } catch {
     return baseUrl

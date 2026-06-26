@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getAffiliateConfig, normalizeRefCode, hashIp, REF_COOKIE } from '@/lib/affiliate'
+import { getAffiliateConfig, normalizeRefCode, hashIp, isSchemaMissing, REF_COOKIE } from '@/lib/affiliate'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,14 +44,16 @@ export async function GET(
     // 클릭 기록 (분석·어뷰징). 원본 IP는 저장하지 않고 해시만.
     const admin = createAdminClient()
     const ipRaw = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
-    await admin.from('affiliate_clicks').insert({
+    const { error } = await admin.from('affiliate_clicks').insert({
       referral_code: code,
       landing_path: `/r/${code}`,
       ip_hash: hashIp(ipRaw),
       user_agent: request.headers.get('user-agent') ?? null,
     })
+    // 미마이그레이션(42P01/42703)은 무시, 그 외 실제 오류는 로깅
+    if (error && !isSchemaMissing(error)) console.error('[affiliate] 클릭 기록 오류:', error)
   } catch (err) {
-    console.error('[affiliate] 클릭 기록 실패:', err)
+    console.error('[affiliate] 클릭 기록 처리 오류:', err)
   }
 
   return res

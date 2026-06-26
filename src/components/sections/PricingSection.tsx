@@ -30,17 +30,19 @@ export interface PricingSectionProduct {
 
 interface Props {
   products: PricingSectionProduct[]
+  affiliateRef: string
 }
 
 interface CardProps {
   product: PricingSectionProduct
   annual: boolean
   userId: string | null
+  affiliateRef: string
   highlighted: boolean
 }
 
 /** 개별 상품 카드 */
-function PricingCard({ product, annual, userId, highlighted }: CardProps) {
+function PricingCard({ product, annual, userId, affiliateRef, highlighted }: CardProps) {
   const MONTHLY        = product.monthlyPrice
   const ANNUAL         = product.annualPrice
   const ANNUAL_MONTHLY = product.annualMonthlyPrice
@@ -54,7 +56,7 @@ function PricingCard({ product, annual, userId, highlighted }: CardProps) {
       ? product.annualCheckoutUrl
       : product.monthlyCheckoutUrl
 
-  const checkoutUrl = buildCheckoutUrl(rawUrl, userId)
+  const checkoutUrl = buildCheckoutUrl(rawUrl, userId, { affiliate_ref: affiliateRef })
 
   return (
     <div className={`relative border rounded-2xl p-8 overflow-hidden ${
@@ -134,7 +136,7 @@ function PricingCard({ product, annual, userId, highlighted }: CardProps) {
   )
 }
 
-export default function PricingSection({ products }: Props) {
+export default function PricingSection({ products, affiliateRef }: Props) {
   const [annual, setAnnual]   = useState(false)
   const [userId, setUserId]   = useState<string | null>(null)
 
@@ -215,6 +217,7 @@ export default function PricingSection({ products }: Props) {
               product={product}
               annual={annual}
               userId={userId}
+              affiliateRef={affiliateRef}
               highlighted={i === 0}
             />
           ))}

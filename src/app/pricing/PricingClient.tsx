@@ -53,6 +53,7 @@ export interface PricingProduct {
 
 interface Props {
   products: PricingProduct[]
+  affiliateRef: string
 }
 
 // 카테고리 필터 레이블
@@ -65,7 +66,7 @@ const FILTER_LABELS: Record<string, string> = {
   mobile: '모바일',
 }
 
-export default function PricingClient({ products }: Props) {
+export default function PricingClient({ products, affiliateRef }: Props) {
   const [annual, setAnnual] = useState(false)
   const [activeCategory, setActiveCategory] = useState('all')
   const [userId, setUserId] = useState<string | null>(null)
@@ -192,7 +193,7 @@ export default function PricingClient({ products }: Props) {
               const baseCheckoutUrl = isAnnualView
                 ? product.annualCheckoutUrl
                 : product.monthlyCheckoutUrl
-              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, utmData)
+              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef })
 
               // 제품별 할인율
               const productSavePct = product.hasAnnualPlan && product.monthlyPrice > 0

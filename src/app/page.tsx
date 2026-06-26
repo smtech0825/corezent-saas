@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import lazy from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 // Hero는 즉시 표시 필요 — 정적 import 유지
@@ -41,7 +42,7 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
@@ -53,6 +54,8 @@ export default async function HomePage() {
       .select('name, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
       .eq('is_active', true)
       .order('order_index'),
+    // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
+    resolveCheckoutAffiliateRef(),
   ])
 
   // DB 섹션과 기본값 병합 후 order_index 기준 정렬
@@ -122,7 +125,7 @@ export default async function HomePage() {
     product:      <ProductSection />,
     how_it_works: <HowItWorksSection steps={steps.length > 0 ? steps : undefined} />,
     features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
-    pricing:      <PricingSection products={featuredProducts} />,
+    pricing:      <PricingSection products={featuredProducts} affiliateRef={affiliateRef} />,
     testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
     faq:          <FAQSection faqs={faqs} />,
     cta:          <CTASection content={ctaContent} />,

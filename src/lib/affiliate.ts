@@ -1,16 +1,43 @@
 /**
  * @파일: lib/affiliate.ts
  * @설명: 추천(Affiliate) 공통 유틸 — 서버 전용.
- *        추천 코드 정규화·추천 링크 생성·IP 해시·가입 귀속 처리.
+ *        추천 코드 정규화·추천링크·IP해시·config 조회·가입 귀속·체크아웃 추천인 해석.
  *        모든 규칙값(쿠키 일수·자기추천 차단 등)은 affiliate_program_config(DB)에서 읽는다.
  *        하드코딩 금지 — 설정값이 없으면 추측하지 않고 동작을 건너뛴다.
+ *        DB 에러는 42P01(undefined_table)·42703(undefined_column)만 조용히 무시(미마이그레이션 대비),
+ *        그 외 실제 오류는 로깅/전파한다.
  */
 
 import crypto from 'crypto'
+import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { REF_COOKIE } from '@/lib/cookies'
 
 export { REF_COOKIE }
+
+// PostgREST/Postgres 에러 코드: 미마이그레이션(테이블/컬럼 없음)만 조용히 무시
+const SCHEMA_MISSING_CODES = new Set(['42P01', '42703'])
+
+/**
+ * @함수명: isSchemaMissing
+ * @설명: 028 미적용 등으로 테이블/컬럼이 없을 때 발생하는 에러인지 판별합니다.
+ * @매개변수: error - Supabase/PostgREST 에러 객체
+ * @반환값: 미마이그레이션 에러면 true
+ */
+export function isSchemaMissing(
+  error: { code?: string | null } | null | undefined,
+): boolean {
+  return !!error?.code && SCHEMA_MISSING_CODES.has(error.code)
+}
+
+/** 미마이그레이션이 아닌 실제 에러만 로깅(best-effort 경로의 가시성 확보) */
+function logIfReal(
+  context: string,
+  error: { code?: string | null; message?: string } | null | undefined,
+): void {
+  if (error && !isSchemaMissing(error)) console.error(`[affiliate] ${context}:`, error)
+}
 
 /**
  * @함수명: normalizeRefCode
@@ -36,30 +63,15 @@ export function buildReferralUrl(siteUrl: string, code: string): string {
 
 /**
  * @함수명: hashIp
- * @설명: 원본 IP를 저장하지 않기 위해 SHA-256으로 해시합니다(선택적 salt).
+ * @설명: 원본 IP를 저장하지 않기 위해 SHA-256으로 해시합니다(salt 필수).
  * @매개변수: ip - 원본 IP 문자열
- * @반환값: 해시 문자열 또는 null
+ * @반환값: 해시 문자열 또는 null(IP 없음/ salt 미설정)
  */
 export function hashIp(ip: string | null | undefined): string | null {
   if (!ip) return null
   const salt = process.env.AFFILIATE_IP_SALT
   if (!salt) return null // salt 미설정 시 약한 가명화 방지 — IP 미저장
   return crypto.createHash('sha256').update(`${salt}:${ip}`).digest('hex')
-}
-
-/**
- * @함수명: getAffiliateConfig
- * @설명: affiliate_program_config 단일 행(모든 규칙의 출처)을 조회합니다.
- * @반환값: 설정 객체 또는 null(미시드/조회 실패)
- */
-export async function getAffiliateConfig() {
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('affiliate_program_config')
-    .select('*')
-    .eq('id', true)
-    .maybeSingle()
-  return data as AffiliateConfig | null
 }
 
 export interface AffiliateConfig {
@@ -78,9 +90,26 @@ export interface AffiliateConfig {
 }
 
 /**
+ * @함수명: getAffiliateConfig
+ * @설명: affiliate_program_config 단일 행(모든 규칙의 출처)을 조회합니다.
+ * @반환값: 설정 객체 또는 null(미시드/미마이그레이션/조회 실패)
+ */
+export async function getAffiliateConfig(): Promise<AffiliateConfig | null> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('affiliate_program_config')
+    .select('*')
+    .eq('id', true)
+    .maybeSingle()
+  logIfReal('config 조회 오류', error)
+  return (data as AffiliateConfig | null) ?? null
+}
+
+/**
  * @함수명: attributeReferralOnSignup
  * @설명: 가입 직후 추천 코드를 profiles.referred_by에 기록하고 귀속 행을 생성합니다.
  *        자기추천 차단(config)·중복 귀속 방지. 실패해도 가입 흐름을 막지 않습니다(best-effort).
+ *        미마이그레이션(42P01/42703)은 조용히 종료, 그 외 오류는 로깅.
  * @매개변수: referredUserId - 신규 가입자 ID, rawCode - cz_ref 쿠키의 추천 코드
  */
 export async function attributeReferralOnSignup(
@@ -94,11 +123,12 @@ export async function attributeReferralOnSignup(
     const admin = createAdminClient()
 
     // 추천인 조회 (affiliate_code → user id). 없으면 무시.
-    const { data: referrer } = await admin
+    const { data: referrer, error: e1 } = await admin
       .from('profiles')
       .select('id')
       .eq('affiliate_code', code)
       .maybeSingle()
+    if (e1) { if (isSchemaMissing(e1)) return; throw e1 }
     if (!referrer) return
 
     // 설정 없거나 프로그램 비활성이면 귀속하지 않음(마스터 스위치)
@@ -108,30 +138,71 @@ export async function attributeReferralOnSignup(
     // 자기추천 차단
     if (cfg.self_referral_blocked && referrer.id === referredUserId) return
 
-    // referred_by 기록 (아직 없을 때만 — last-click이 아닌 가입 시점 1회 고정)
-    const { data: me } = await admin
+    // referred_by 기록 (아직 없을 때만 — 가입 시점 1회 고정)
+    const { data: me, error: e2 } = await admin
       .from('profiles')
       .select('referred_by')
       .eq('id', referredUserId)
       .maybeSingle()
+    if (e2) { if (isSchemaMissing(e2)) return; throw e2 }
     if (me && !me.referred_by) {
-      await admin.from('profiles').update({ referred_by: code }).eq('id', referredUserId)
+      const { error: e3 } = await admin
+        .from('profiles')
+        .update({ referred_by: code })
+        .eq('id', referredUserId)
+      if (e3 && !isSchemaMissing(e3)) throw e3
     }
 
     // 귀속 행 생성 (피추천인당 1건 — 이미 있으면 건너뜀)
-    const { data: existing } = await admin
+    const { data: existing, error: e4 } = await admin
       .from('affiliate_attributions')
       .select('id')
       .eq('referred_user_id', referredUserId)
       .maybeSingle()
+    if (e4) { if (isSchemaMissing(e4)) return; throw e4 }
     if (!existing) {
-      await admin.from('affiliate_attributions').insert({
+      const { error: e5 } = await admin.from('affiliate_attributions').insert({
         referrer_user_id: referrer.id,
         referred_user_id: referredUserId,
         referral_code: code,
       })
+      if (e5 && !isSchemaMissing(e5)) throw e5
     }
   } catch (err) {
-    console.error('[affiliate] 가입 귀속 실패:', err)
+    // 미마이그레이션 외 실제 오류만 도달 — 가입 흐름은 유지하되 반드시 로깅
+    console.error('[affiliate] 가입 귀속 오류:', err)
+  }
+}
+
+/**
+ * @함수명: resolveCheckoutAffiliateRef
+ * @설명: 체크아웃에 주입할 추천인 코드를 서버에서 해석합니다(httpOnly cz_ref는 서버에서만 읽음).
+ *        로그인 시 profiles.referred_by 우선, 없으면 cz_ref 쿠키. 값은 정규화(sanitize).
+ * @반환값: 정규화된 추천 코드 또는 ''(없음)
+ */
+export async function resolveCheckoutAffiliateRef(): Promise<string> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // 로그인: referred_by 우선
+    if (user) {
+      const admin = createAdminClient()
+      const { data: me, error } = await admin
+        .from('profiles')
+        .select('referred_by')
+        .eq('id', user.id)
+        .maybeSingle()
+      logIfReal('referred_by 조회 오류', error)
+      const byProfile = normalizeRefCode(me?.referred_by)
+      if (byProfile) return byProfile
+    }
+
+    // 비로그인 또는 referred_by 없음: httpOnly cz_ref 쿠키
+    const cookieStore = await cookies()
+    return normalizeRefCode(cookieStore.get(REF_COOKIE)?.value)
+  } catch (err) {
+    console.error('[affiliate] 추천인 해석 오류:', err)
+    return ''
   }
 }
