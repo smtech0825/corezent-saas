@@ -58,6 +58,7 @@ export interface AccrueParams {
   grossCents: number                     // gross 기준 금액(cents) — Wave 0 결정
   currency: string
   subscriptionId?: string | null         // 갱신 캡 카운트용(LS 구독 id)
+  orderId?: string | null                // 내부 orders.id(uuid) — 첫 order 적립 시 attribution.converted_at·order_id 기록용
 }
 
 /**
@@ -137,9 +138,25 @@ export async function accrueCommission(p: AccrueParams): Promise<void> {
     status: 'pending',
     available_at: availableAt,
   })
-  if (insErr) {
-    if (insErr.code === '23505') return // 멱등성: 같은 source 이미 적립됨
+  if (insErr && insErr.code !== '23505') {
+    // 23505(같은 source 이미 적립)는 멱등 정상 — 아래 converted_at 보정만 진행
     fail('커미션 적립 실패', insErr)
+  }
+
+  // 첫 'order' 적립에서만 attribution.converted_at(+order_id) 세팅 — 전환 지표 정확화(Wave 3a).
+  //  ① 멱등: converted_at이 NULL일 때만 기록(덮어쓰지 않음). 23505 재시도에서도 안전 보정.
+  //  ② 갱신 적립(subscription_renewal)은 미접촉(sourceType 가드).
+  //  ④ attribution 없는(가입귀속 없는) 결제는 attribution?.id 가드로 skip → 전환 집계에서 제외.
+  // (③ 마이그레이션/RPC 없이 적립과 동일 함수 경로에서 멱등 가드로 결합 — 단일 트랜잭션은 아님)
+  if (p.sourceType === 'order' && attribution?.id) {
+    const patch: Record<string, unknown> = { converted_at: new Date().toISOString() }
+    if (p.orderId) patch.order_id = p.orderId
+    const { error: convErr } = await admin
+      .from('affiliate_attributions')
+      .update(patch)
+      .eq('id', attribution.id)
+      .is('converted_at', null)
+    if (convErr) fail('attribution converted_at 세팅 실패', convErr)
   }
 }
 

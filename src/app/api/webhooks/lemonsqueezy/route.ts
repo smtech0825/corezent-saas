@@ -273,6 +273,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
     grossCents: attrs.total,
     currency: attrs.currency,
+    orderId: order.id, // 첫 order 적립 시 attribution.converted_at·order_id 기록용(내부 uuid)
   })
 }
 
