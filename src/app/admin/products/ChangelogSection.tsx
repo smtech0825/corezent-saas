@@ -29,14 +29,14 @@ const PLATFORMS = [
   { key: 'mac',     label: 'macOS' },
   { key: 'linux',   label: 'Linux' },
   { key: 'chrome_store', label: 'Chrome Store' },
-  { key: 'web',     label: 'Web' },
+  { key: 'web',     label: '웹' },
 ]
 
 const CONTENT_KEYS: { key: keyof ChangelogContent; label: string; color: string }[] = [
-  { key: 'new_features',     label: 'New Features',     color: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
-  { key: 'improvements',     label: 'Improvements',     color: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
-  { key: 'bug_fixes',        label: 'Bug Fixes',        color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-  { key: 'breaking_changes', label: 'Breaking Changes', color: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  { key: 'new_features',     label: '새 기능',       color: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
+  { key: 'improvements',     label: '개선 사항',     color: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
+  { key: 'bug_fixes',        label: '버그 수정',     color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+  { key: 'breaking_changes', label: '호환성 변경',   color: 'text-red-400 bg-red-400/10 border-red-400/20' },
 ]
 
 function emptyForm(): ChangelogFormData {
@@ -98,7 +98,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
   // ─── 저장 ─────────────────────────────────────────────────────
   async function handleSave() {
     if (!form.version.trim() || !form.release_date) {
-      setError('Version and release date are required.')
+      setError('버전과 릴리스 날짜는 필수입니다.')
       return
     }
     setSaving(true)
@@ -146,7 +146,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
   // ─── 삭제 ─────────────────────────────────────────────────────
   async function handleDelete(id: string) {
-    if (!confirm('Delete this changelog entry?')) return
+    if (!confirm('이 변경 이력 항목을 삭제하시겠습니까?')) return
     setDeletingId(id)
     const result = await deleteChangelog(id)
     if (result.error) { alert(result.error); setDeletingId(null); return }
@@ -160,8 +160,8 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       {/* 헤더 */}
       <div className="px-6 py-4 border-b border-[#1E293B] flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-white">Changelog</h2>
-          <p className="text-xs text-[#475569] mt-0.5">Manage version history and download links</p>
+          <h2 className="text-sm font-semibold text-white">변경 이력</h2>
+          <p className="text-xs text-[#475569] mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>
         </div>
         {mode === 'list' && (
           <button
@@ -170,7 +170,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
             className="inline-flex items-center gap-1.5 text-xs font-medium bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 hover:bg-[#38BDF8]/20 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Plus size={12} />
-            Add Version
+            버전 추가
           </button>
         )}
       </div>
@@ -180,7 +180,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
         <div>
           {changelogs.length === 0 ? (
             <div className="py-10 text-center text-sm text-[#475569]">
-              No changelog entries yet. Add the first version.
+              아직 변경 이력이 없습니다. 첫 버전을 추가하세요.
             </div>
           ) : (
             <div className="divide-y divide-[#1E293B]/60">
@@ -190,7 +190,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     <span className="text-sm font-mono font-semibold text-white">{entry.version}</span>
                     {entry.is_latest && (
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
-                        Latest
+                        최신
                       </span>
                     )}
                     <span className="text-xs text-[#475569]">{entry.release_date}</span>
@@ -238,7 +238,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[#94A3B8]">
-                Version <span className="text-red-400">*</span>
+                버전 <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -250,7 +250,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[#94A3B8]">
-                Release Date <span className="text-red-400">*</span>
+                릴리스 날짜 <span className="text-red-400">*</span>
               </label>
               <input
                 type="date"
@@ -273,14 +273,14 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     form.is_latest ? 'translate-x-4 bg-[#38BDF8]' : 'translate-x-0 bg-[#475569]'
                   }`} />
                 </div>
-                <span className="text-xs font-medium text-[#94A3B8]">Mark as Latest</span>
+                <span className="text-xs font-medium text-[#94A3B8]">최신으로 표시</span>
               </label>
             </div>
           </div>
 
           {/* Download URLs */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Download URLs</h3>
+            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">다운로드 URL</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PLATFORMS.map(({ key, label }) => (
                 <div key={key} className="space-y-1">
@@ -304,7 +304,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
           {/* Content — 4 categories */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Changelog Content</h3>
+            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">변경 이력 내용</h3>
             {CONTENT_KEYS.map(({ key, label, color }) => (
               <ContentListEditor
                 key={key}
@@ -323,7 +323,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               onClick={cancel}
               className="text-sm text-[#475569] hover:text-white px-4 py-2 rounded-xl border border-[#1E293B] hover:border-[#475569] transition-colors"
             >
-              Cancel
+              취소
             </button>
             <button
               type="button"
@@ -332,7 +332,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               className="inline-flex items-center gap-2 text-sm font-semibold bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] px-5 py-2 rounded-xl transition-colors disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {mode === 'add' ? 'Add Version' : 'Save Changes'}
+              {mode === 'add' ? '버전 추가' : '변경사항 저장'}
             </button>
           </div>
         </div>
@@ -367,7 +367,7 @@ function ContentListEditor({
           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${colorClass}`}>
             {label}
           </span>
-          <span className="text-xs text-[#475569]">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-[#475569]">{items.length}개 항목</span>
         </div>
         {open ? <ChevronUp size={14} className="text-[#475569]" /> : <ChevronDown size={14} className="text-[#475569]" />}
       </button>
@@ -384,7 +384,7 @@ function ContentListEditor({
                   next[i] = e.target.value
                   onChange(next)
                 }}
-                placeholder="Description..."
+                placeholder="설명..."
                 className="flex-1 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/40 transition-colors"
               />
               <button
@@ -402,7 +402,7 @@ function ContentListEditor({
             className="mt-2 text-xs text-[#475569] hover:text-[#94A3B8] flex items-center gap-1.5 transition-colors"
           >
             <Plus size={11} />
-            Add item
+            항목 추가
           </button>
         </div>
       )}

@@ -102,9 +102,9 @@ export default async function AboutAdminPage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">About Page</h1>
+        <h1 className="text-2xl font-bold text-white">소개 페이지</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Manage the About page — hero text, stats cards, and content blocks with image sliders.
+          소개 페이지를 관리합니다 — 히어로 텍스트, 통계 카드, 이미지 슬라이더가 포함된 콘텐츠 블록.
         </p>
       </div>
 

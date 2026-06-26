@@ -38,7 +38,7 @@ interface Props {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function fmtCurrency(amount: number) {
@@ -51,6 +51,13 @@ const orderStatusStyle: Record<string, string> = {
   pending:   'text-amber-400',
   refunded:  'text-blue-400',
   cancelled: 'text-red-400',
+}
+
+const orderStatusLabel: Record<string, string> = {
+  paid:      '결제됨',
+  pending:   '대기 중',
+  refunded:  '환불됨',
+  cancelled: '취소됨',
 }
 
 /** 아이콘 버튼 + 툴팁 */
@@ -148,11 +155,11 @@ export default function UserTable({ users }: Props) {
       {/* ── 헤더 + 검색바 ─────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">User Management</h1>
+          <h1 className="text-2xl font-bold text-white">사용자 관리</h1>
           <p className="text-sm text-[#94A3B8] mt-1">
             {search.trim()
-              ? `${filtered.length} of ${users.length} users`
-              : `${users.length} total users`}
+              ? `전체 ${users.length}명 중 ${filtered.length}명`
+              : `총 ${users.length}명`}
           </p>
         </div>
 
@@ -163,7 +170,7 @@ export default function UserTable({ users }: Props) {
             type="text"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search by email or name..."
+            placeholder="이메일 또는 이름으로 검색..."
             className="w-full bg-[#111A2E] border border-[#1E293B] rounded-xl pl-9 pr-8 py-2.5 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8]/50 transition-colors"
           />
           {search && (
@@ -181,20 +188,20 @@ export default function UserTable({ users }: Props) {
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {paginated.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#475569]">
-            {search ? 'No users match your search.' : 'No users found.'}
+            {search ? '검색 결과가 없습니다.' : '사용자가 없습니다.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1E293B]">
-                  <th className="text-left px-5 py-3 text-xs text-[#475569] font-medium">User</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Email / Status</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Role</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium hidden md:table-cell">Country</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium hidden lg:table-cell">Joined</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Change Role</th>
-                  <th className="text-right px-4 py-3 text-xs text-[#475569] font-medium">Actions</th>
+                  <th className="text-left px-5 py-3 text-xs text-[#475569] font-medium">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">이메일 / 상태</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">역할</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium hidden md:table-cell">국가</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium hidden lg:table-cell">가입일</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">역할 변경</th>
+                  <th className="text-right px-4 py-3 text-xs text-[#475569] font-medium">작업</th>
                 </tr>
               </thead>
 
@@ -230,7 +237,7 @@ export default function UserTable({ users }: Props) {
                               : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'inactive' ? 'bg-red-400' : 'bg-emerald-400'}`} />
-                            {u.status}
+                            {u.status === 'inactive' ? '비활성' : '활성'}
                           </span>
                         </div>
                       </td>
@@ -243,7 +250,7 @@ export default function UserTable({ users }: Props) {
                             : 'bg-[#1E293B] text-[#94A3B8]'
                         }`}>
                           {u.role === 'admin' ? <Shield size={11} /> : <User size={11} />}
-                          {u.role}
+                          {u.role === 'admin' ? '관리자' : '사용자'}
                         </span>
                       </td>
 
@@ -269,7 +276,7 @@ export default function UserTable({ users }: Props) {
                           <IconBtn
                             onClick={() => toggleExpand(u.id)}
                             active={expandedId === u.id}
-                            tooltip="Purchase History"
+                            tooltip="구매 내역"
                           >
                             <Receipt size={14} />
                           </IconBtn>
@@ -278,7 +285,7 @@ export default function UserTable({ users }: Props) {
                           <IconBtn
                             onClick={() => setWithdrawTarget(u)}
                             disabled={u.status === 'inactive'}
-                            tooltip={u.status === 'inactive' ? 'Already withdrawn' : 'Withdraw User'}
+                            tooltip={u.status === 'inactive' ? '이미 탈퇴함' : '회원 탈퇴'}
                             danger
                           >
                             <UserX size={14} />
@@ -292,19 +299,19 @@ export default function UserTable({ users }: Props) {
                       <tr className="border-b border-[#1E293B]/50">
                         <td colSpan={7} className="px-5 py-4 bg-slate-900/50">
                           <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest mb-3">
-                            Purchase History — {u.name || u.email}
+                            구매 내역 — {u.name || u.email}
                           </p>
                           {u.orders.length === 0 ? (
-                            <p className="text-sm text-[#475569] py-4 text-center">No purchase history found.</p>
+                            <p className="text-sm text-[#475569] py-4 text-center">구매 내역이 없습니다.</p>
                           ) : (
                             <div className="max-h-[340px] overflow-y-auto rounded-lg border border-[#1E293B]/60">
                               <table className="w-full text-xs">
                                 <thead className="sticky top-0 z-10 bg-[#0B1120]">
                                   <tr className="border-b border-[#1E293B]/40">
-                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">Order ID</th>
-                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">Amount</th>
-                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">Status</th>
-                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">Date</th>
+                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">주문 ID</th>
+                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">금액</th>
+                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">상태</th>
+                                    <th className="text-left px-4 py-2 text-[#475569] font-medium">날짜</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -318,8 +325,8 @@ export default function UserTable({ users }: Props) {
                                           {fmtCurrency(o.amount)}
                                         </td>
                                         <td className="px-4 py-2.5">
-                                          <span className={`capitalize font-semibold ${orderStatusStyle[o.status] ?? 'text-[#94A3B8]'}`}>
-                                            {o.status}
+                                          <span className={`font-semibold ${orderStatusStyle[o.status] ?? 'text-[#94A3B8]'}`}>
+                                            {orderStatusLabel[o.status] ?? o.status}
                                           </span>
                                         </td>
                                         <td className="px-4 py-2.5 text-[#475569] whitespace-nowrap">
@@ -409,14 +416,14 @@ export default function UserTable({ users }: Props) {
                 <UserX size={18} className="text-red-400" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Withdraw User</h3>
+                <h3 className="text-sm font-semibold text-white">회원 탈퇴</h3>
                 <p className="text-xs text-[#475569] mt-0.5 break-all">{withdrawTarget.email}</p>
               </div>
             </div>
 
             <p className="text-sm text-[#94A3B8] leading-relaxed mb-6">
-              Are you sure you want to withdraw this user?{' '}
-              They will no longer be able to log in. Their data remains visible in the admin panel.
+              이 사용자를 탈퇴 처리하시겠습니까?{' '}
+              해당 사용자는 더 이상 로그인할 수 없습니다. 데이터는 관리자 패널에 계속 표시됩니다.
             </p>
 
             <div className="flex gap-3">
@@ -425,7 +432,7 @@ export default function UserTable({ users }: Props) {
                 disabled={withdrawing}
                 className="flex-1 px-4 py-2.5 text-sm text-[#94A3B8] border border-[#1E293B] rounded-xl hover:bg-[#1E293B] transition-colors disabled:opacity-50"
               >
-                Cancel
+                취소
               </button>
               <button
                 onClick={handleWithdraw}
@@ -433,7 +440,7 @@ export default function UserTable({ users }: Props) {
                 className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {withdrawing && <Loader2 size={14} className="animate-spin" />}
-                {withdrawing ? 'Processing...' : 'Confirm'}
+                {withdrawing ? '처리 중...' : '확인'}
               </button>
             </div>
           </div>

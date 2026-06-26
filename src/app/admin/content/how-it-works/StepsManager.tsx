@@ -38,7 +38,7 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] text-[#475569] mb-1 block">Icon  (lu: / tb: / ri: / &lt;svg&gt;)</label>
+          <label className="text-[10px] text-[#475569] mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
           <input
             value={f.icon}
             onChange={(e) => setF({ ...f, icon: e.target.value })}
@@ -47,22 +47,22 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
           />
         </div>
         <div>
-          <label className="text-[10px] text-[#475569] mb-1 block">Title</label>
+          <label className="text-[10px] text-[#475569] mb-1 block">제목</label>
           <input
             value={f.title}
             onChange={(e) => setF({ ...f, title: e.target.value })}
-            placeholder="Step title"
+            placeholder="단계 제목"
             className={inputCls}
           />
         </div>
       </div>
       <div>
-        <label className="text-[10px] text-[#475569] mb-1 block">Description</label>
+        <label className="text-[10px] text-[#475569] mb-1 block">설명</label>
         <textarea
           value={f.description}
           onChange={(e) => setF({ ...f, description: e.target.value })}
           rows={3}
-          placeholder="Step description"
+          placeholder="단계 설명"
           className={`${inputCls} resize-none`}
         />
       </div>
@@ -104,7 +104,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this step?')) return
+    if (!confirm('이 단계를 삭제할까요?')) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((s) => s.id !== id))
@@ -118,7 +118,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
 
       {items.map((s, idx) => (
         <div key={s.id} className="border border-[#1E293B] bg-[#111A2E] rounded-xl overflow-hidden">
@@ -127,10 +127,10 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
               <FormFields f={form} setF={setForm} />
               <div className="flex gap-2">
                 <button onClick={() => handleUpdate(s.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
-                  <Check size={12} /> Save
+                  <Check size={12} /> 저장
                 </button>
                 <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
-                  <X size={12} /> Cancel
+                  <X size={12} /> 취소
                 </button>
               </div>
             </div>
@@ -148,7 +148,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => handleToggle(s.id, s.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${s.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#475569] bg-[#1E293B] border-[#1E293B]'}`}>
-                  {s.is_published ? 'Published' : 'Draft'}
+                  {s.is_published ? '게시됨' : '초안'}
                 </button>
                 <button onClick={() => startEdit(s)} className="p-1.5 text-[#475569] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors">
                   <Pencil size={13} />
@@ -167,16 +167,16 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
           <FormFields f={newForm} setF={setNewForm} />
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
-              <Check size={12} /> Add Step
+              <Check size={12} /> 단계 추가
             </button>
             <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
-              <X size={12} /> Cancel
+              <X size={12} /> 취소
             </button>
           </div>
         </div>
       ) : (
         <button onClick={() => { setShowNew(true); setEditingId(null) }} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
-          <Plus size={15} /> Add New Step
+          <Plus size={15} /> 새 단계 추가
         </button>
       )}
     </div>

@@ -14,7 +14,7 @@ import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 export const dynamic = 'force-dynamic'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleString('en-US', {
+  return new Date(d).toLocaleString('ko-KR', {
     month: 'short', day: 'numeric', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -108,20 +108,20 @@ export default async function TicketDetailPage({
       {/* 뒤로 + 헤더 */}
       <div>
         <Link href="/admin/support" className="text-sm text-[#475569] hover:text-[#94A3B8] transition-colors">
-          ← Back to Support
+          ← 고객지원으로 돌아가기
         </Link>
         <div className="mt-3 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-white">{ticket.subject}</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              From <span className="text-white">{userEmail}</span> · {fmtDate(ticket.created_at)}
+              보낸 사람 <span className="text-white">{userEmail}</span> · {fmtDate(ticket.created_at)}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${statusColors[ticket.status] ?? 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'}`}>
               {ticket.status}
             </span>
-            <span className="text-xs text-[#475569] capitalize">{ticket.priority} priority</span>
+            <span className="text-xs text-[#475569] capitalize">{ticket.priority} 우선순위</span>
           </div>
         </div>
       </div>
@@ -131,13 +131,13 @@ export default async function TicketDetailPage({
         {ticket.status !== 'closed' ? (
           <form action={closeTicket}>
             <button type="submit" className="text-xs text-[#94A3B8] hover:text-white border border-[#1E293B] hover:border-[#38BDF8]/30 px-3 py-2 rounded-lg transition-colors">
-              Close ticket
+              티켓 닫기
             </button>
           </form>
         ) : (
           <form action={reopenTicket}>
             <button type="submit" className="text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 px-3 py-2 rounded-lg transition-colors">
-              Reopen ticket
+              티켓 다시 열기
             </button>
           </form>
         )}
@@ -147,7 +147,7 @@ export default async function TicketDetailPage({
       <div className="space-y-3">
         {(!replies || replies.length === 0) ? (
           <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-12 text-center text-sm text-[#475569]">
-            No messages yet.
+            아직 메시지가 없습니다.
           </div>
         ) : (
           replies.map((reply) => (
@@ -161,7 +161,7 @@ export default async function TicketDetailPage({
             >
               <div className="flex items-center justify-between mb-3">
                 <span className={`text-xs font-semibold ${reply.is_admin ? 'text-amber-400' : 'text-[#38BDF8]'}`}>
-                  {reply.is_admin ? '🛡 Admin' : userEmail}
+                  {reply.is_admin ? '🛡 관리자' : userEmail}
                 </span>
                 <span className="text-xs text-[#475569]">{fmtDate(reply.created_at)}</span>
               </div>

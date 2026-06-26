@@ -47,21 +47,21 @@ export default function CtaEditor({ initial, onSave }: Props) {
 
   return (
     <div className="space-y-5">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
-      {saved && !isPending && <p className="text-xs text-emerald-400">Saved successfully.</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {saved && !isPending && <p className="text-xs text-emerald-400">저장되었습니다.</p>}
 
       <div className="space-y-1.5">
-        <label className={labelCls}>Eyebrow (small label above headline)</label>
+        <label className={labelCls}>아이브로 (헤드라인 위 작은 라벨)</label>
         <input value={form.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} placeholder="Get started today" className={inputCls} />
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>Headline</label>
+        <label className={labelCls}>헤드라인</label>
         <input value={form.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Find the right tool for your work." className={inputCls} />
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>Subtext</label>
+        <label className={labelCls}>부가 설명</label>
         <textarea
           value={form.subtext}
           onChange={(e) => set('subtext', e.target.value)}
@@ -72,28 +72,28 @@ export default function CtaEditor({ initial, onSave }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>Primary Button Text</label>
+          <label className={labelCls}>기본 버튼 텍스트</label>
           <input value={form.btn1_text} onChange={(e) => set('btn1_text', e.target.value)} placeholder="Browse products" className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>Primary Button Link</label>
+          <label className={labelCls}>기본 버튼 링크</label>
           <input value={form.btn1_href} onChange={(e) => set('btn1_href', e.target.value)} placeholder="#product" className={inputCls} />
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>Secondary Button Text</label>
+          <label className={labelCls}>보조 버튼 텍스트</label>
           <input value={form.btn2_text} onChange={(e) => set('btn2_text', e.target.value)} placeholder="Create free account →" className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>Secondary Button Link</label>
+          <label className={labelCls}>보조 버튼 링크</label>
           <input value={form.btn2_href} onChange={(e) => set('btn2_href', e.target.value)} placeholder="/auth/register" className={inputCls} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>Footnote (small text below buttons)</label>
+        <label className={labelCls}>각주 (버튼 아래 작은 텍스트)</label>
         <input value={form.footnote} onChange={(e) => set('footnote', e.target.value)} placeholder="No credit card required · Instant activation" className={inputCls} />
       </div>
 
@@ -104,7 +104,7 @@ export default function CtaEditor({ initial, onSave }: Props) {
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           <Check size={14} />
-          Save CTA
+          CTA 저장
         </button>
       </div>
     </div>

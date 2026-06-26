@@ -47,7 +47,7 @@ function SaveButton({
     >
       {isLoading && <Loader2 size={14} className="animate-spin" />}
       {isSaved   && <Check   size={14} />}
-      {isLoading ? 'Saving…' : isSaved ? 'Saved!' : 'Save'}
+      {isLoading ? '저장 중…' : isSaved ? '저장됨!' : '저장'}
     </button>
   )
 }
@@ -130,8 +130,8 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
   return (
     <div className="p-6 space-y-8 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Configure site-wide settings.</p>
+        <h1 className="text-2xl font-bold text-white">설정</h1>
+        <p className="text-sm text-[#94A3B8] mt-1">사이트 전반 설정을 구성합니다.</p>
       </div>
 
       {error && (
@@ -142,27 +142,27 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
 
       {/* ── General Settings ─────────────────────────────────────────────── */}
       <SectionCard
-        title="General Settings"
-        description="Basic site configuration"
+        title="일반 설정"
+        description="기본 사이트 구성"
         footer={<SaveButton section="general" {...btnProps} />}
       >
-        <Field label="Site Name">
+        <Field label="사이트 이름">
           <input value={values.site_name ?? ''} onChange={(e) => update('site_name', e.target.value)} className={INPUT_CLS} />
         </Field>
-        <Field label="Site URL">
+        <Field label="사이트 URL">
           <input type="url" value={values.site_url ?? ''} onChange={(e) => update('site_url', e.target.value)} className={INPUT_CLS} />
         </Field>
-        <Field label="Support Email">
+        <Field label="고객지원 이메일">
           <input type="email" value={values.support_email ?? ''} onChange={(e) => update('support_email', e.target.value)} className={INPUT_CLS} />
         </Field>
-        <Field label="Footer Copyright">
+        <Field label="푸터 저작권">
           <input value={values.footer_copyright ?? ''} onChange={(e) => update('footer_copyright', e.target.value)} className={INPUT_CLS} />
         </Field>
       </SectionCard>
 
       {/* ── Footer Information ───────────────────────────────────────────── */}
       <SectionCard
-        title="Footer Information"
+        title="푸터 정보"
         description="사이트 하단에 표시되는 사업자 정보. 줄바꿈(Enter)과 여백이 그대로 반영됩니다."
         footer={<SaveButton section="footer" {...btnProps} />}
       >
@@ -180,11 +180,11 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
 
       {/* ── SEO Settings ─────────────────────────────────────────────────── */}
       <SectionCard
-        title="SEO Settings"
-        description="Search engine optimization and analytics configuration"
+        title="SEO 설정"
+        description="검색 엔진 최적화 및 분석 설정"
         footer={<SaveButton section="seo" {...btnProps} />}
       >
-        <Field label="Google Analytics Tracking ID (UA-1xxxxx) or (G-xxxxxx)">
+        <Field label="Google Analytics 추적 ID (UA-1xxxxx) 또는 (G-xxxxxx)">
           <input
             value={values.seo_ga_tracking_id ?? ''}
             onChange={(e) => update('seo_ga_tracking_id', e.target.value)}
@@ -192,10 +192,10 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             className={INPUT_CLS}
           />
         </Field>
-        <Field label="Meta Title">
+        <Field label="메타 제목">
           <input value={values.seo_meta_title ?? ''} onChange={(e) => update('seo_meta_title', e.target.value)} className={INPUT_CLS} />
         </Field>
-        <Field label="Meta Description">
+        <Field label="메타 설명">
           <textarea
             value={values.seo_meta_description ?? ''}
             onChange={(e) => update('seo_meta_description', e.target.value)}
@@ -203,7 +203,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             className={TEXTAREA_CLS}
           />
         </Field>
-        <Field label="Meta Keywords">
+        <Field label="메타 키워드">
           <textarea
             value={values.seo_meta_keywords ?? ''}
             onChange={(e) => update('seo_meta_keywords', e.target.value)}
@@ -216,31 +216,31 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
 
       {/* ── SMTP Settings ────────────────────────────────────────────────── */}
       <SectionCard
-        title="SMTP Settings"
-        description="Email delivery configuration"
+        title="SMTP 설정"
+        description="이메일 발송 설정"
         footer={<SaveButton section="smtp" {...btnProps} />}
       >
-        <Field label="SMTP Host">
+        <Field label="SMTP 호스트">
           <input value={values.smtp_host ?? ''} onChange={(e) => update('smtp_host', e.target.value)} placeholder="smtp.example.com" className={INPUT_CLS} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="SMTP Port">
+          <Field label="SMTP 포트">
             <input type="number" value={values.smtp_port ?? ''} onChange={(e) => update('smtp_port', e.target.value)} className={INPUT_CLS} />
           </Field>
-          <Field label="Encryption">
+          <Field label="암호화">
             <input value={values.smtp_encryption ?? ''} onChange={(e) => update('smtp_encryption', e.target.value)} placeholder="tls / ssl" className={INPUT_CLS} />
           </Field>
         </div>
-        <Field label="SMTP Username">
+        <Field label="SMTP 사용자 이름">
           <input value={values.smtp_username ?? ''} onChange={(e) => update('smtp_username', e.target.value)} className={INPUT_CLS} />
         </Field>
-        <Field label="SMTP Password">
+        <Field label="SMTP 비밀번호">
           <input type="password" value={values.smtp_password ?? ''} onChange={(e) => update('smtp_password', e.target.value)} placeholder="••••••••" className={INPUT_CLS} />
         </Field>
-        <Field label="From Email">
+        <Field label="발신 이메일">
           <input value={values.smtp_from_email ?? ''} onChange={(e) => update('smtp_from_email', e.target.value)} placeholder="no-reply@corezent.com" className={INPUT_CLS} />
         </Field>
-        <Field label="From Name">
+        <Field label="발신자 이름">
           <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
         </Field>
       </SectionCard>

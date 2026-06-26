@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import AdminShell from './_components/AdminShell'
 
 export const metadata = {
-  title: 'Admin Panel — CoreZent',
+  title: '관리자 패널 — CoreZent',
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  const name = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Admin'
+  const name = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '관리자'
   const initials = name[0].toUpperCase()
 
   // 미읽음 티켓 수 (관리자 기준: is_read=false)

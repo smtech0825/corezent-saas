@@ -45,15 +45,15 @@ export default async function SectionsPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Section Settings</h1>
+        <h1 className="text-2xl font-bold text-white">섹션 설정</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Toggle visibility and drag to reorder landing page sections.
+          랜딩 페이지 섹션의 표시 여부를 토글하고 드래그하여 순서를 변경합니다.
         </p>
       </div>
 
       <div className="border border-[#1E293B] bg-[#0B1120] rounded-2xl p-4">
         <p className="text-xs text-[#475569] mb-4 px-1">
-          Drag sections to reorder them on the landing page. Changes are applied immediately.
+          섹션을 드래그하여 랜딩 페이지에서의 순서를 변경하세요. 변경사항은 즉시 적용됩니다.
         </p>
         <SectionsManager sections={sections} />
       </div>

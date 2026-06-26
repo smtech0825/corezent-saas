@@ -55,12 +55,12 @@ export default function ProductList({ products: initial, onDelete }: Props) {
         body: JSON.stringify({ ordered: next.map((p) => p.id) }),
       })
       if (res.ok) {
-        setSaveMsg('Order saved')
+        setSaveMsg('순서 저장됨')
         setTimeout(() => setSaveMsg(null), 2000)
       } else {
         // 롤백
         setItems(initial)
-        setSaveMsg('Reorder failed')
+        setSaveMsg('순서 변경 실패')
       }
     })
   }
@@ -68,9 +68,9 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   return (
     <div className="space-y-2">
       {/* 상태 메시지 */}
-      {isPending && <p className="text-xs text-amber-400 px-1">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400 px-1">저장 중…</p>}
       {saveMsg && !isPending && (
-        <p className={`text-xs px-1 ${saveMsg.includes('fail') ? 'text-red-400' : 'text-emerald-400'}`}>
+        <p className={`text-xs px-1 ${saveMsg.includes('실패') ? 'text-red-400' : 'text-emerald-400'}`}>
           {saveMsg}
         </p>
       )}
@@ -80,13 +80,13 @@ export default function ProductList({ products: initial, onDelete }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1E293B]">
-                <th className="text-left px-3 py-3 text-xs text-[#475569] font-medium w-16">Order</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Product</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Category</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Monthly</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Annual</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Actions</th>
+                <th className="text-left px-3 py-3 text-xs text-[#475569] font-medium w-16">순서</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">제품</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">카테고리</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">월간</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">연간</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
+                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">작업</th>
               </tr>
             </thead>
             <tbody>
@@ -99,7 +99,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                         onClick={() => swap(idx, idx - 1)}
                         disabled={idx === 0 || isPending}
                         className="p-0.5 text-[#475569] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                        title="Move up"
+                        title="위로 이동"
                       >
                         <ChevronUp size={14} />
                       </button>
@@ -108,7 +108,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                         onClick={() => swap(idx, idx + 1)}
                         disabled={idx === items.length - 1 || isPending}
                         className="p-0.5 text-[#475569] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                        title="Move down"
+                        title="아래로 이동"
                       >
                         <ChevronDown size={14} />
                       </button>
@@ -130,7 +130,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
                       p.is_active ? 'text-emerald-400 bg-emerald-400/10' : 'text-[#475569] bg-[#1E293B]'
                     }`}>
-                      {p.is_active ? 'active' : 'inactive'}
+                      {p.is_active ? '활성' : '비활성'}
                     </span>
                   </td>
                   <td className="px-4 py-4">
@@ -138,7 +138,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <Link
                         href={`/admin/products/${p.id}/edit`}
                         className="p-1.5 text-[#475569] hover:text-amber-400 transition-colors rounded"
-                        title="Edit"
+                        title="편집"
                       >
                         <Pencil size={14} />
                       </Link>

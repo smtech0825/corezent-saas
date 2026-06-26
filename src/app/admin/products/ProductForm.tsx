@@ -106,7 +106,7 @@ function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url
           }`}
         >
           <Upload size={11} />
-          {uploading ? '업로드 중...' : 'Upload Image (transparent PNG)'}
+          {uploading ? '업로드 중...' : '이미지 업로드 (투명 PNG)'}
           <input
             ref={fileRef}
             type="file"
@@ -269,15 +269,15 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
     <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl">
       {/* 기본 정보 */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-white">Basic Information</h2>
+        <h2 className="text-sm font-semibold text-white">기본 정보</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Product Name *">
+          <Field label="제품 이름 *">
             <input
               required
               value={form.name}
               onChange={handleNameChange}
-              placeholder="e.g. GeniePost"
+              placeholder="예: GeniePost"
               className={inputCls}
             />
           </Field>
@@ -287,66 +287,66 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               required
               value={form.slug}
               onChange={(e) => { setSlugManual(true); set('slug', e.target.value) }}
-              placeholder="e.g. geniepost"
+              placeholder="예: geniepost"
               className={inputCls}
             />
           </Field>
         </div>
 
-        <Field label="Tagline">
+        <Field label="태그라인">
           <input
             value={form.tagline}
             onChange={(e) => set('tagline', e.target.value)}
-            placeholder="Short one-line description"
+            placeholder="한 줄 소개 문구"
             className={inputCls}
           />
         </Field>
 
-        <Field label="Description (Markdown)">
+        <Field label="설명 (Markdown)">
           <textarea
             rows={5}
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
-            placeholder="Full product description..."
+            placeholder="제품 전체 설명..."
             className={inputCls + ' resize-none'}
           />
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Category *">
+          <Field label="카테고리 *">
             <select
               required
               value={form.category}
               onChange={(e) => set('category', e.target.value)}
               className={selectCls}
             >
-              <option value="desktop">Desktop</option>
-              <option value="web">Web</option>
-              <option value="chrome-extension">Chrome Extension</option>
+              <option value="desktop">데스크톱</option>
+              <option value="web">웹</option>
+              <option value="chrome-extension">크롬 익스텐션</option>
             </select>
           </Field>
 
-          <Field label="Status">
+          <Field label="상태">
             <select
               value={form.is_active ? 'true' : 'false'}
               onChange={(e) => set('is_active', e.target.value === 'true')}
               className={selectCls}
             >
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="true">활성</option>
+              <option value="false">비활성</option>
             </select>
           </Field>
         </div>
 
         {/* Badge — 색상 선택 + 텍스트 입력 */}
-        <Field label="Badge">
+        <Field label="뱃지">
           <div className="space-y-2.5">
             {/* 색상 선택 */}
             <div className="flex items-center gap-2">
               {([
-                { value: 'blue',   hex: '#38BDF8', label: 'Blue' },
-                { value: 'green',  hex: '#34D399', label: 'Green' },
-                { value: 'yellow', hex: '#FBBF24', label: 'Yellow' },
+                { value: 'blue',   hex: '#38BDF8', label: '파랑' },
+                { value: 'green',  hex: '#34D399', label: '초록' },
+                { value: 'yellow', hex: '#FBBF24', label: '노랑' },
               ] as const).map((c) => (
                 <button
                   key={c.value}
@@ -376,7 +376,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <input
                 value={form.badge_text}
                 onChange={(e) => set('badge_text', e.target.value)}
-                placeholder='e.g. Available now, Coming soon, Beta (비우면 뱃지 숨김)'
+                placeholder='예: 지금 사용 가능, 출시 예정, 베타 (비우면 뱃지 숨김)'
                 maxLength={30}
                 className={inputCls}
               />
@@ -393,7 +393,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             {/* 미리보기 */}
             {form.badge_text && (
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-[#475569]">Preview:</span>
+                <span className="text-xs text-[#475569]">미리보기:</span>
                 <span
                   className="inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold"
                   style={{
@@ -411,7 +411,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         </Field>
 
         {/* Logo — URL 입력 또는 파일 업로드 */}
-        <Field label="Logo">
+        <Field label="로고">
           <div className="space-y-2">
             {/* URL 입력 */}
             <div className="flex items-center gap-2">
@@ -471,7 +471,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={form.logo_url}
-                  alt="Logo preview"
+                  alt="로고 미리보기"
                   className="w-10 h-10 rounded-lg object-contain border border-[#1E293B] bg-[#0B1120]"
                 />
                 <span className="text-xs text-[#475569] truncate max-w-xs">{form.logo_url}</span>
@@ -480,7 +480,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           </div>
         </Field>
 
-        <Field label="Manual URL">
+        <Field label="매뉴얼 URL">
           <input
             value={form.manual_url}
             onChange={(e) => set('manual_url', e.target.value)}
@@ -494,7 +494,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Tag size={14} className="text-[#38BDF8]" />
-          <h2 className="text-sm font-semibold text-white">Tags</h2>
+          <h2 className="text-sm font-semibold text-white">태그</h2>
           <span className="text-xs text-[#475569]">— /product, /pricing 페이지에 표시 (최대 5개)</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
@@ -507,7 +507,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 next[i] = e.target.value
                 set('tags', next.filter((t, idx) => t || idx < i))
               }}
-              placeholder={`Tag ${i + 1}`}
+              placeholder={`태그 ${i + 1}`}
               className={inputCls}
             />
           ))}
@@ -518,7 +518,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-amber-400" />
-          <h2 className="text-sm font-semibold text-white">Features (only for Pricing)</h2>
+          <h2 className="text-sm font-semibold text-white">특징 (Pricing 전용)</h2>
           <span className="text-xs text-[#475569]">— /pricing 페이지에만 표시 (최대 4개)</span>
         </div>
         <div className="space-y-3">
@@ -531,7 +531,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 next[i] = e.target.value
                 set('pricing_features', next.filter((t, idx) => t || idx < i))
               }}
-              placeholder={`Feature ${i + 1} — e.g. Quad-Engine AI Generation: High-quality content powered by 4 premium AI engines.`}
+              placeholder={`특징 ${i + 1} — 예: 쿼드 엔진 AI 생성: 4개의 프리미엄 AI 엔진으로 구동되는 고품질 콘텐츠.`}
               className={inputCls}
             />
           ))}
@@ -543,7 +543,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <LayoutGrid size={14} className="text-[#38BDF8]" />
-            <h2 className="text-sm font-semibold text-white">Features (only for Product)</h2>
+            <h2 className="text-sm font-semibold text-white">특징 (Product 전용)</h2>
             <span className="text-xs text-[#475569]">— /product 확장 박스에 표시 (최대 12개)</span>
           </div>
           {form.product_features.length < 12 && (
@@ -557,13 +557,13 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               }
               className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
             >
-              <Plus size={13} /> Add Feature
+              <Plus size={13} /> 특징 추가
             </button>
           )}
         </div>
 
         {form.product_features.length === 0 && (
-          <p className="text-xs text-[#475569] py-4 text-center">No features added yet. Click + to add.</p>
+          <p className="text-xs text-[#475569] py-4 text-center">아직 추가된 특징이 없습니다. +를 눌러 추가하세요.</p>
         )}
 
         {/* 입력 폼: 3열 그리드 */}
@@ -610,7 +610,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   next[idx] = { ...next[idx], title: e.target.value }
                   set('product_features', next)
                 }}
-                placeholder="Title *"
+                placeholder="제목 *"
                 className={inputCls + ' text-xs'}
               />
 
@@ -622,7 +622,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   next[idx] = { ...next[idx], description: e.target.value }
                   set('product_features', next)
                 }}
-                placeholder="Description"
+                placeholder="설명"
                 className={inputCls + ' text-xs resize-none'}
               />
             </div>
@@ -633,48 +633,48 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       {/* 가격 플랜 */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Pricing Plans</h2>
+          <h2 className="text-sm font-semibold text-white">가격 플랜</h2>
           <button
             type="button"
             onClick={addPrice}
             className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 hover:border-amber-400/40 px-3 py-1.5 rounded-lg transition-colors"
           >
-            <Plus size={13} /> Add Plan
+            <Plus size={13} /> 플랜 추가
           </button>
         </div>
 
         {form.prices.length === 0 && (
-          <p className="text-xs text-[#475569] py-4 text-center">No pricing plans added yet.</p>
+          <p className="text-xs text-[#475569] py-4 text-center">아직 추가된 가격 플랜이 없습니다.</p>
         )}
 
         {form.prices.map((price, idx) => (
           <div key={idx} className="flex items-end gap-3 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
             <div className="flex-1 space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <Field label="Type">
+                <Field label="유형">
                   <select
                     value={price.type}
                     onChange={(e) => updatePrice(idx, 'type', e.target.value)}
                     className={selectCls}
                   >
-                    <option value="subscription">Subscription</option>
-                    <option value="one_time">One-time</option>
+                    <option value="subscription">구독</option>
+                    <option value="one_time">단일 구매</option>
                   </select>
                 </Field>
 
-                <Field label="Interval">
+                <Field label="주기">
                   <select
                     value={price.interval}
                     onChange={(e) => updatePrice(idx, 'interval', e.target.value)}
                     disabled={price.type === 'one_time'}
                     className={selectCls + (price.type === 'one_time' ? ' opacity-40 cursor-not-allowed' : '')}
                   >
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annual</option>
+                    <option value="monthly">월간</option>
+                    <option value="annual">연간</option>
                   </select>
                 </Field>
 
-                <Field label="Price (USD)">
+                <Field label="가격 (USD)">
                   <input
                     type="number"
                     min={0}
@@ -688,7 +688,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 </Field>
               </div>
 
-              <Field label="Lemon Squeezy Variant ID (for webhook matching)">
+              <Field label="Lemon Squeezy Variant ID (웹훅 매칭용)">
                 <input
                   value={price.lemon_squeezy_variant_id}
                   onChange={(e) => updatePrice(idx, 'lemon_squeezy_variant_id', e.target.value)}
@@ -697,7 +697,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 />
               </Field>
 
-              <Field label="Checkout URL (purchase button link)">
+              <Field label="Checkout URL (구매 버튼 링크)">
                 <input
                   value={price.checkout_url}
                   onChange={(e) => updatePrice(idx, 'checkout_url', e.target.value)}
@@ -731,14 +731,14 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           disabled={loading || uploading}
           className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
         >
-          {loading ? 'Saving...' : submitLabel}
+          {loading ? '저장 중...' : submitLabel}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
           className="text-sm text-[#475569] hover:text-white transition-colors px-4 py-2.5"
         >
-          Cancel
+          취소
         </button>
       </div>
     </form>

@@ -9,13 +9,13 @@ export default function PartnersPage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Partners</h1>
+        <h1 className="text-2xl font-bold text-white">파트너</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Manage partner logos shown on the landing page.
+          랜딩 페이지에 표시되는 파트너 로고를 관리합니다.
         </p>
       </div>
       <div className="border border-dashed border-[#1E293B] rounded-2xl py-20 text-center">
-        <p className="text-[#475569] text-sm">Partners management coming in Phase 2.</p>
+        <p className="text-[#475569] text-sm">파트너 관리는 Phase 2에서 제공될 예정입니다.</p>
       </div>
     </div>
   )

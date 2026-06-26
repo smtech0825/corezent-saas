@@ -59,7 +59,7 @@ function AvatarUpload({
 
     // 2MB 제한
     if (file.size > 2 * 1024 * 1024) {
-      setError('File must be under 2 MB.')
+      setError('파일은 2MB 이하여야 합니다.')
       return
     }
 
@@ -98,7 +98,7 @@ function AvatarUpload({
           <>
             <img
               src={value}
-              alt="avatar"
+              alt="아바타"
               className="w-16 h-16 rounded-full object-cover border-2 border-[#1E293B]"
             />
             <button
@@ -129,12 +129,12 @@ function AvatarUpload({
           className="flex items-center gap-2 text-xs bg-[#1E293B] hover:bg-[#2D3F55] text-[#94A3B8] hover:text-white font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
         >
           {uploading ? (
-            <><Loader2 size={12} className="animate-spin" /> Uploading…</>
+            <><Loader2 size={12} className="animate-spin" /> 업로드 중…</>
           ) : (
-            <><Upload size={12} /> {value ? 'Change photo' : 'Upload photo'}</>
+            <><Upload size={12} /> {value ? '사진 변경' : '사진 업로드'}</>
           )}
         </button>
-        <p className="text-[10px] text-[#475569]">JPG, PNG, WebP · max 2 MB</p>
+        <p className="text-[10px] text-[#475569]">JPG, PNG, WebP · 최대 2MB</p>
         {error && <p className="text-[10px] text-red-400">{error}</p>}
       </div>
 
@@ -167,20 +167,20 @@ function FormFields({
         value={f.quote}
         onChange={(e) => setF({ ...f, quote: e.target.value })}
         rows={3}
-        placeholder="Customer quote"
+        placeholder="고객 후기 내용"
         className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
       />
       <div className="grid grid-cols-2 gap-3">
         <input
           value={f.author_name}
           onChange={(e) => setF({ ...f, author_name: e.target.value })}
-          placeholder="Author name"
+          placeholder="작성자 이름"
           className={inputCls}
         />
         <input
           value={f.author_title}
           onChange={(e) => setF({ ...f, author_title: e.target.value })}
-          placeholder="Author title (e.g. CEO at ACME)"
+          placeholder="작성자 직함 (예: ACME CEO)"
           className={inputCls}
         />
       </div>
@@ -188,7 +188,7 @@ function FormFields({
       {/* 아바타 파일 업로드 */}
       <div className="bg-[#0B1120] border border-[#1E293B] rounded-lg p-3">
         <p className="text-[10px] text-[#475569] mb-2 uppercase tracking-wider font-semibold">
-          Profile Photo
+          프로필 사진
         </p>
         <AvatarUpload
           value={f.author_avatar}
@@ -197,7 +197,7 @@ function FormFields({
       </div>
 
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[#475569]">Rating</label>
+        <label className="text-xs text-[#475569]">평점</label>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -268,7 +268,7 @@ export default function TestimonialsManager({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this testimonial?')) return
+    if (!confirm('이 고객 후기를 삭제할까요?')) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((t) => t.id !== id))
@@ -284,7 +284,7 @@ export default function TestimonialsManager({
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
 
       {items.map((t) => (
         <div
@@ -300,13 +300,13 @@ export default function TestimonialsManager({
                   disabled={isPending}
                   className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
                 >
-                  <Check size={12} /> Save
+                  <Check size={12} /> 저장
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
                   className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
                 >
-                  <X size={12} /> Cancel
+                  <X size={12} /> 취소
                 </button>
               </div>
             </div>
@@ -360,7 +360,7 @@ export default function TestimonialsManager({
                   onClick={() => handleToggle(t.id, t.is_published)}
                   className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${t.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#475569] bg-[#1E293B] border-[#1E293B]'}`}
                 >
-                  {t.is_published ? 'Published' : 'Draft'}
+                  {t.is_published ? '게시됨' : '초안'}
                 </button>
                 <button
                   onClick={() => startEdit(t)}
@@ -391,7 +391,7 @@ export default function TestimonialsManager({
               }
               className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
             >
-              <Check size={12} /> Add Testimonial
+              <Check size={12} /> 고객 후기 추가
             </button>
             <button
               onClick={() => {
@@ -400,7 +400,7 @@ export default function TestimonialsManager({
               }}
               className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
             >
-              <X size={12} /> Cancel
+              <X size={12} /> 취소
             </button>
           </div>
         </div>
@@ -412,7 +412,7 @@ export default function TestimonialsManager({
           }}
           className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors"
         >
-          <Plus size={15} /> Add New Testimonial
+          <Plus size={15} /> 새 고객 후기 추가
         </button>
       )}
     </div>

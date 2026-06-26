@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 10
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const statusColors: Record<string, string> = {
@@ -64,10 +64,10 @@ export default async function SupportPage({
   }))
 
   const tabs = [
-    { label: 'All',      value: 'all' },
-    { label: 'Open',     value: 'open' },
-    { label: 'Answered', value: 'answered' },
-    { label: 'Closed',   value: 'closed' },
+    { label: '전체',    value: 'all' },
+    { label: '열림',    value: 'open' },
+    { label: '답변됨',  value: 'answered' },
+    { label: '닫힘',    value: 'closed' },
   ]
 
   const activeTab = status ?? 'all'
@@ -79,9 +79,9 @@ export default async function SupportPage({
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Support Tickets</h1>
+        <h1 className="text-2xl font-bold text-white">고객지원 티켓</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          {total ?? 0} tickets
+          티켓 {total ?? 0}개
         </p>
       </div>
 
@@ -106,19 +106,19 @@ export default async function SupportPage({
 
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {list.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#475569]">No tickets found.</div>
+          <div className="py-16 text-center text-sm text-[#475569]">티켓이 없습니다.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1E293B]">
                   <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">ID</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Subject</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">User</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Priority</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Date</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Action</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">제목</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">우선순위</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">날짜</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">작업</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,7 +155,7 @@ export default async function SupportPage({
                         href={`/admin/support/${t.id}`}
                         className="text-xs text-[#38BDF8] hover:text-white transition-colors"
                       >
-                        View →
+                        보기 →
                       </Link>
                     </td>
                   </tr>

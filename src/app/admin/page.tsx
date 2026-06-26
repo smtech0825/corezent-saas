@@ -22,7 +22,7 @@ function fmtCurrency(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 /** 성장률 계산 — 전기 대비 % (전기=0이면 신규 100% 처리) */
@@ -162,8 +162,8 @@ export default async function AdminPage() {
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Overview</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Welcome back. Here&apos;s what&apos;s happening.</p>
+        <h1 className="text-2xl font-bold text-white">개요</h1>
+        <p className="text-sm text-[#94A3B8] mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
       </div>
 
       {/* 통계 카드 4개 */}
@@ -172,7 +172,7 @@ export default async function AdminPage() {
         {/* ① Total Users — 월간/연간 신규 서브 지표 */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">Total Users</p>
+            <p className="text-sm text-[#94A3B8]">총 사용자</p>
             <span className="w-9 h-9 rounded-xl bg-[#38BDF8]/10 flex items-center justify-center">
               <Users size={17} className="text-[#38BDF8]" />
             </span>
@@ -180,12 +180,12 @@ export default async function AdminPage() {
           <p className="text-2xl font-bold text-white">{fmt(totalUsers)}</p>
           <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
             <SubMetric
-              label="New (Month)"
+              label="신규 (월간)"
               value={fmt(newUsersMonth)}
               growth={growthRate(newUsersMonth, prevUsersMonth)}
             />
             <SubMetric
-              label="New (Year)"
+              label="신규 (연간)"
               value={fmt(newUsersYear)}
               growth={growthRate(newUsersYear, prevUsersYear)}
             />
@@ -195,7 +195,7 @@ export default async function AdminPage() {
         {/* ② Total Revenue — 월간/연간 매출 서브 지표 */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">Total Revenue</p>
+            <p className="text-sm text-[#94A3B8]">총 매출</p>
             <span className="w-9 h-9 rounded-xl bg-emerald-400/10 flex items-center justify-center">
               <DollarSign size={17} className="text-emerald-400" />
             </span>
@@ -203,12 +203,12 @@ export default async function AdminPage() {
           <p className="text-2xl font-bold text-white">{fmtCurrency(totalRevenue)}</p>
           <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
             <SubMetric
-              label="Revenue (Month)"
+              label="매출 (월간)"
               value={fmtCurrency(revMonth)}
               growth={growthRate(revMonth, prevRevMonth)}
             />
             <SubMetric
-              label="Revenue (Year)"
+              label="매출 (연간)"
               value={fmtCurrency(revYear)}
               growth={growthRate(revYear, prevRevYear)}
             />
@@ -218,7 +218,7 @@ export default async function AdminPage() {
         {/* ③ Active Licenses */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">Active Licenses</p>
+            <p className="text-sm text-[#94A3B8]">활성 라이선스</p>
             <span className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center">
               <Key size={17} className="text-violet-400" />
             </span>
@@ -229,10 +229,10 @@ export default async function AdminPage() {
         {/* ④ Open Tickets — 아이콘 클릭 → /admin/support */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">Open Tickets</p>
+            <p className="text-sm text-[#94A3B8]">열린 티켓</p>
             <Link
               href="/admin/support"
-              title="View support tickets"
+              title="고객지원 티켓 보기"
               className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center hover:bg-amber-400/25 hover:scale-105 transition-all cursor-pointer"
             >
               <MessageSquare size={17} className="text-amber-400" />
@@ -250,21 +250,21 @@ export default async function AdminPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-[#94A3B8]" />
-              <h2 className="text-sm font-semibold text-white">Recent Orders</h2>
+              <h2 className="text-sm font-semibold text-white">최근 주문</h2>
             </div>
-            <a href="/admin/orders" className="text-xs text-[#38BDF8] hover:underline">View all</a>
+            <a href="/admin/orders" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
           </div>
           {recentOrders.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#475569]">No orders yet.</div>
+            <div className="py-12 text-center text-sm text-[#475569]">아직 주문이 없습니다.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1E293B]">
-                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">User</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Amount</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Date</th>
+                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">사용자</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">금액</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">날짜</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -297,12 +297,12 @@ export default async function AdminPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
             <div className="flex items-center gap-2">
               <UserPlus size={16} className="text-[#94A3B8]" />
-              <h2 className="text-sm font-semibold text-white">Recent Signups</h2>
+              <h2 className="text-sm font-semibold text-white">최근 가입자</h2>
             </div>
-            <a href="/admin/users" className="text-xs text-[#38BDF8] hover:underline">View all</a>
+            <a href="/admin/users" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
           </div>
           {(!recentUsers || recentUsers.length === 0) ? (
-            <div className="py-12 text-center text-sm text-[#475569]">No users yet.</div>
+            <div className="py-12 text-center text-sm text-[#475569]">아직 사용자가 없습니다.</div>
           ) : (
             <div className="divide-y divide-[#1E293B]/50">
               {recentUsers.map((u) => (
@@ -311,7 +311,7 @@ export default async function AdminPage() {
                     {(u.name ?? '?')[0].toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white font-medium truncate">{u.name || 'Unknown'}</p>
+                    <p className="text-sm text-white font-medium truncate">{u.name || '알 수 없음'}</p>
                     <p className="text-xs text-[#475569]">{fmtDate(u.created_at)}</p>
                   </div>
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColors[u.role] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>

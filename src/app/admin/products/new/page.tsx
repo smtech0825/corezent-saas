@@ -66,13 +66,13 @@ export default function NewProductPage() {
     <div className="p-6 space-y-6">
       <div>
         <Link href="/admin/products" className="text-sm text-[#475569] hover:text-[#94A3B8] transition-colors">
-          ← Back to Products
+          ← 제품 목록으로
         </Link>
-        <h1 className="text-2xl font-bold text-white mt-3">New Product</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Add a new software product to your catalog.</p>
+        <h1 className="text-2xl font-bold text-white mt-3">새 제품</h1>
+        <p className="text-sm text-[#94A3B8] mt-1">카탈로그에 새 소프트웨어 제품을 추가합니다.</p>
       </div>
 
-      <ProductForm onSubmit={createProduct} submitLabel="Create Product" />
+      <ProductForm onSubmit={createProduct} submitLabel="제품 생성" />
     </div>
   )
 }

@@ -18,7 +18,7 @@ export default function DeleteButton({ productId, productName, onDelete }: Props
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
-    if (!confirm(`Delete "${productName}"? This cannot be undone.`)) return
+    if (!confirm(`"${productName}" 제품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return
     setLoading(true)
     await onDelete(productId)
     setLoading(false)
@@ -29,7 +29,7 @@ export default function DeleteButton({ productId, productName, onDelete }: Props
       onClick={handleDelete}
       disabled={loading}
       className="p-1.5 text-[#475569] hover:text-red-400 transition-colors rounded disabled:opacity-50"
-      title="Delete"
+      title="삭제"
     >
       <Trash2 size={14} />
     </button>

@@ -68,9 +68,9 @@ export default async function HeroAdminPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Hero Section</h1>
+        <h1 className="text-2xl font-bold text-white">히어로 섹션</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Edit the text content of the landing page hero section.
+          랜딩 페이지 히어로 섹션의 텍스트 콘텐츠를 편집합니다.
         </p>
       </div>
 

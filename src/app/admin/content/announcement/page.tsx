@@ -56,9 +56,9 @@ export default async function AnnouncementAdminPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Announcement Banner</h1>
+        <h1 className="text-2xl font-bold text-white">공지 배너</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Edit the announcement bar shown above the navigation.
+          내비게이션 위에 표시되는 공지 바를 편집합니다.
         </p>
       </div>
 

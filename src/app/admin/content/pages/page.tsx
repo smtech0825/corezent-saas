@@ -9,13 +9,13 @@ export default function PagesPage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Pages</h1>
+        <h1 className="text-2xl font-bold text-white">페이지</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Edit static pages: Privacy Policy, Terms of Service, About.
+          정적 페이지 편집: 개인정보 처리방침, 이용약관, 소개.
         </p>
       </div>
       <div className="border border-dashed border-[#1E293B] rounded-2xl py-20 text-center">
-        <p className="text-[#475569] text-sm">Page editor coming in Phase 2.</p>
+        <p className="text-[#475569] text-sm">페이지 편집기는 Phase 2에서 제공될 예정입니다.</p>
       </div>
     </div>
   )

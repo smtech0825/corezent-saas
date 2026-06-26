@@ -62,7 +62,7 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || images.length >= max) return
-    if (file.size > 5 * 1024 * 1024) { alert('File must be under 5 MB.'); return }
+    if (file.size > 5 * 1024 * 1024) { alert('파일은 5MB 이하여야 합니다.'); return }
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
@@ -189,7 +189,7 @@ export default function AboutManager({
   }
 
   function handleDeleteStat(id: string) {
-    if (!confirm('Delete this stat?')) return
+    if (!confirm('이 통계를 삭제하시겠습니까?')) return
     startTransition(async () => {
       await onDeleteStat(id)
       setStats((prev) => prev.filter((s) => s.id !== id))
@@ -222,7 +222,7 @@ export default function AboutManager({
   }
 
   function handleDeleteBlock(id: string) {
-    if (!confirm('Delete this block?')) return
+    if (!confirm('이 블록을 삭제하시겠습니까?')) return
     startTransition(async () => {
       await onDeleteBlock(id)
       setBlocks((prev) => prev.filter((b) => b.id !== id))
@@ -231,23 +231,23 @@ export default function AboutManager({
 
   return (
     <div className="space-y-6">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
 
       {/* ────── 1. Hero ────── */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
-        <SectionHeader title="Hero — Title & Description" open={heroOpen} onToggle={() => setHeroOpen(!heroOpen)} />
+        <SectionHeader title="히어로 — 제목 및 설명" open={heroOpen} onToggle={() => setHeroOpen(!heroOpen)} />
         {heroOpen && (
           <div className="space-y-3 mt-3">
             <div>
-              <label className="text-[10px] text-[#475569] mb-1 block">Title</label>
+              <label className="text-[10px] text-[#475569] mb-1 block">제목</label>
               <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] text-[#475569] mb-1 block">Description (line breaks supported)</label>
-              <textarea value={heroDesc} onChange={(e) => setHeroDesc(e.target.value)} rows={5} placeholder="Describe your company..." className={`${inputCls} resize-none`} />
+              <label className="text-[10px] text-[#475569] mb-1 block">설명 (줄바꿈 지원)</label>
+              <textarea value={heroDesc} onChange={(e) => setHeroDesc(e.target.value)} rows={5} placeholder="회사를 소개하세요..." className={`${inputCls} resize-none`} />
             </div>
             <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
-              <Check size={12} /> Save Hero
+              <Check size={12} /> 히어로 저장
             </button>
           </div>
         )}
@@ -255,7 +255,7 @@ export default function AboutManager({
 
       {/* ────── 2. Stats Cards ────── */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
-        <SectionHeader title="Stats Cards" open={statsOpen} onToggle={() => setStatsOpen(!statsOpen)} />
+        <SectionHeader title="통계 카드" open={statsOpen} onToggle={() => setStatsOpen(!statsOpen)} />
         {statsOpen && (
           <div className="space-y-3 mt-3">
             {stats.map((s) => (
@@ -263,13 +263,13 @@ export default function AboutManager({
                 {editStatId === s.id ? (
                   <div className="p-3 space-y-2">
                     <div className="grid grid-cols-3 gap-2">
-                      <input value={statForm.icon} onChange={(e) => setStatForm({ ...statForm, icon: e.target.value })} placeholder="Icon (Users · tb:World)" className={inputCls} />
+                      <input value={statForm.icon} onChange={(e) => setStatForm({ ...statForm, icon: e.target.value })} placeholder="아이콘 (Users · tb:World)" className={inputCls} />
                       <input value={statForm.value} onChange={(e) => setStatForm({ ...statForm, value: e.target.value })} placeholder="400K+" className={inputCls} />
                       <input value={statForm.label} onChange={(e) => setStatForm({ ...statForm, label: e.target.value })} placeholder="customers" className={inputCls} />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleUpdateStat(s.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> Save</button>
-                      <button onClick={() => setEditStatId(null)} className={btnCancel}><X size={12} /> Cancel</button>
+                      <button onClick={() => handleUpdateStat(s.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> 저장</button>
+                      <button onClick={() => setEditStatId(null)} className={btnCancel}><X size={12} /> 취소</button>
                     </div>
                   </div>
                 ) : (
@@ -293,18 +293,18 @@ export default function AboutManager({
             {showNewStat ? (
               <div className="border border-amber-500/20 bg-amber-500/5 rounded-lg p-3 space-y-2">
                 <div className="grid grid-cols-3 gap-2">
-                  <input value={newStatForm.icon} onChange={(e) => setNewStatForm({ ...newStatForm, icon: e.target.value })} placeholder="Icon (Users · tb:World)" className={inputCls} />
+                  <input value={newStatForm.icon} onChange={(e) => setNewStatForm({ ...newStatForm, icon: e.target.value })} placeholder="아이콘 (Users · tb:World)" className={inputCls} />
                   <input value={newStatForm.value} onChange={(e) => setNewStatForm({ ...newStatForm, value: e.target.value })} placeholder="400K+" className={inputCls} />
                   <input value={newStatForm.label} onChange={(e) => setNewStatForm({ ...newStatForm, label: e.target.value })} placeholder="customers" className={inputCls} />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreateStat} disabled={isPending || !newStatForm.value.trim()} className={btnPrimary}><Check size={12} /> Add Stat</button>
-                  <button onClick={() => { setShowNewStat(false); setNewStatForm({ icon: '', value: '', label: '' }) }} className={btnCancel}><X size={12} /> Cancel</button>
+                  <button onClick={handleCreateStat} disabled={isPending || !newStatForm.value.trim()} className={btnPrimary}><Check size={12} /> 통계 추가</button>
+                  <button onClick={() => { setShowNewStat(false); setNewStatForm({ icon: '', value: '', label: '' }) }} className={btnCancel}><X size={12} /> 취소</button>
                 </div>
               </div>
             ) : (
               <button onClick={() => { setShowNewStat(true); setEditStatId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
-                <Plus size={15} /> Add Stat Card
+                <Plus size={15} /> 통계 카드 추가
               </button>
             )}
           </div>
@@ -313,22 +313,22 @@ export default function AboutManager({
 
       {/* ────── 3. Content Blocks (max 3) ────── */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
-        <SectionHeader title="Content Blocks (text + images)" open={blocksOpen} onToggle={() => setBlocksOpen(!blocksOpen)} />
+        <SectionHeader title="콘텐츠 블록 (텍스트 + 이미지)" open={blocksOpen} onToggle={() => setBlocksOpen(!blocksOpen)} />
         {blocksOpen && (
           <div className="space-y-3 mt-3">
             {blocks.map((b, idx) => (
               <div key={b.id} className="border border-[#1E293B] bg-[#0B1120] rounded-lg overflow-hidden">
                 {editBlockId === b.id ? (
                   <div className="p-4 space-y-3">
-                    <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="Block title (optional)" className={inputCls} />
-                    <textarea value={blockForm.description} onChange={(e) => setBlockForm({ ...blockForm, description: e.target.value })} rows={5} placeholder="Description (line breaks supported)" className={`${inputCls} resize-none`} />
+                    <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
+                    <textarea value={blockForm.description} onChange={(e) => setBlockForm({ ...blockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                     <div>
-                      <label className="text-[10px] text-[#475569] mb-1.5 block">Images (up to 3) — slider on the right</label>
+                      <label className="text-[10px] text-[#475569] mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
                       <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleUpdateBlock(b.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> Save</button>
-                      <button onClick={() => setEditBlockId(null)} className={btnCancel}><X size={12} /> Cancel</button>
+                      <button onClick={() => handleUpdateBlock(b.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> 저장</button>
+                      <button onClick={() => setEditBlockId(null)} className={btnCancel}><X size={12} /> 취소</button>
                     </div>
                   </div>
                 ) : (
@@ -343,7 +343,7 @@ export default function AboutManager({
                         {b.images.length > 0 && (
                           <div className="flex items-center gap-1 mt-1.5">
                             <ImageIcon size={11} className="text-[#475569]" />
-                            <span className="text-[10px] text-[#475569]">{b.images.length} image{b.images.length > 1 ? 's' : ''}</span>
+                            <span className="text-[10px] text-[#475569]">이미지 {b.images.length}개</span>
                           </div>
                         )}
                       </div>
@@ -360,20 +360,20 @@ export default function AboutManager({
             {blocks.length < 3 && (
               showNewBlock ? (
                 <div className="border border-amber-500/20 bg-amber-500/5 rounded-lg p-4 space-y-3">
-                  <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="Block title (optional)" className={inputCls} />
-                  <textarea value={newBlockForm.description} onChange={(e) => setNewBlockForm({ ...newBlockForm, description: e.target.value })} rows={5} placeholder="Description (line breaks supported)" className={`${inputCls} resize-none`} />
+                  <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
+                  <textarea value={newBlockForm.description} onChange={(e) => setNewBlockForm({ ...newBlockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                   <div>
-                    <label className="text-[10px] text-[#475569] mb-1.5 block">Images (up to 3)</label>
+                    <label className="text-[10px] text-[#475569] mb-1.5 block">이미지 (최대 3개)</label>
                     <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleCreateBlock} disabled={isPending} className={btnPrimary}><Check size={12} /> Add Block</button>
-                    <button onClick={() => { setShowNewBlock(false); setNewBlockForm({ title: '', description: '', images: [] }) }} className={btnCancel}><X size={12} /> Cancel</button>
+                    <button onClick={handleCreateBlock} disabled={isPending} className={btnPrimary}><Check size={12} /> 블록 추가</button>
+                    <button onClick={() => { setShowNewBlock(false); setNewBlockForm({ title: '', description: '', images: [] }) }} className={btnCancel}><X size={12} /> 취소</button>
                   </div>
                 </div>
               ) : (
                 <button onClick={() => { setShowNewBlock(true); setEditBlockId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
-                  <Plus size={15} /> Add Content Block ({blocks.length}/3)
+                  <Plus size={15} /> 콘텐츠 블록 추가 ({blocks.length}/3)
                 </button>
               )
             )}

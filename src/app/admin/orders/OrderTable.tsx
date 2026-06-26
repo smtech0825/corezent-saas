@@ -15,7 +15,7 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 const PAGE_SIZE = 15
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -40,19 +40,19 @@ interface Props {
 function getStatusBadge(status: string, expiresAt: string | null): { label: string; cls: string } {
   // 1순위: refunded는 항상 refunded 표시
   if (status === 'refunded') {
-    return { label: 'refunded', cls: 'text-blue-400 bg-blue-400/10' }
+    return { label: '환불됨', cls: 'text-blue-400 bg-blue-400/10' }
   }
   // 2순위: 만료일이 지났거나 cancelled → expired
   const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false
   if (status === 'cancelled' || isExpired) {
-    return { label: 'expired', cls: 'text-red-400 bg-red-400/10' }
+    return { label: '만료됨', cls: 'text-red-400 bg-red-400/10' }
   }
   // 3순위: paid → active
   if (status === 'paid') {
-    return { label: 'active', cls: 'text-emerald-400 bg-emerald-400/10' }
+    return { label: '활성', cls: 'text-emerald-400 bg-emerald-400/10' }
   }
   const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: 'pending', cls: 'text-amber-400 bg-amber-400/10' },
+    pending: { label: '대기 중', cls: 'text-amber-400 bg-amber-400/10' },
   }
   return map[status] ?? { label: status, cls: 'text-[#94A3B8] bg-[#1E293B]' }
 }
@@ -95,12 +95,12 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       {/* 헤더 — Total Revenue를 왼쪽 하단으로 이동 */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Orders</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">{orders.length} total orders</p>
+          <h1 className="text-2xl font-bold text-white">주문</h1>
+          <p className="text-sm text-[#94A3B8] mt-1">총 {orders.length}건의 주문</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2 tabular-nums">
             {fmtCurrency(totalRevenue)}
           </p>
-          <p className="text-xs text-[#475569] mt-0.5">Total Revenue (paid)</p>
+          <p className="text-xs text-[#475569] mt-0.5">총 매출 (결제 완료)</p>
         </div>
 
         {/* 검색 바 — 테이블 우측 상단 */}
@@ -110,7 +110,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
             <input
               value={rawSearch}
               onChange={(e) => setRawSearch(e.target.value)}
-              placeholder="Search by Order ID or email…"
+              placeholder="주문 ID 또는 이메일로 검색…"
               className="w-64 bg-[#111A2E] border border-[#1E293B] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
             />
           </div>
@@ -121,7 +121,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#475569]">
-            {search ? 'No orders match your search.' : 'No orders yet.'}
+            {search ? '검색 결과가 없습니다.' : '주문이 없습니다.'}
           </div>
         ) : (
           <>
@@ -129,13 +129,13 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1E293B]">
-                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">Order ID</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Customer</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Amount</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Status</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Period</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Date</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">Expire Date</th>
+                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">주문 ID</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">고객</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">금액</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">결제 주기</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">날짜</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">만료일</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,7 +162,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                                 ? 'text-violet-400 bg-violet-400/10 border border-violet-400/20'
                                 : 'text-cyan-400 bg-cyan-400/10 border border-cyan-400/20'
                             }`}>
-                              {o.period === 'annual' ? 'Annual' : 'Monthly'}
+                              {o.period === 'annual' ? '연간' : '월간'}
                             </span>
                           ) : (
                             <span className="text-[#475569]">—</span>
@@ -189,7 +189,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-3 border-t border-[#1E293B]">
                 <p className="text-xs text-[#475569]">
-                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} / {filtered.length}
                 </p>
                 <div className="flex items-center gap-1">
                   <button

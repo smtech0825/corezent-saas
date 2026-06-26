@@ -67,7 +67,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this FAQ?')) return
+    if (!confirm('이 FAQ를 삭제할까요?')) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((f) => f.id !== id))
@@ -83,7 +83,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
 
       {items.map((faq) => (
         <div key={faq.id} className="border border-[#1E293B] bg-[#111A2E] rounded-xl overflow-hidden">
@@ -93,14 +93,14 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                 value={form.question}
                 onChange={(e) => setForm({ ...form, question: e.target.value })}
                 className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
-                placeholder="Question"
+                placeholder="질문"
               />
               <textarea
                 value={form.answer}
                 onChange={(e) => setForm({ ...form, answer: e.target.value })}
                 rows={3}
                 className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] focus:outline-none focus:border-amber-500/50 resize-none"
-                placeholder="Answer"
+                placeholder="답변"
               />
               <div className="flex gap-2">
                 <button
@@ -108,13 +108,13 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                   disabled={isPending}
                   className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
                 >
-                  <Check size={12} /> Save
+                  <Check size={12} /> 저장
                 </button>
                 <button
                   onClick={cancelEdit}
                   className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
                 >
-                  <X size={12} /> Cancel
+                  <X size={12} /> 취소
                 </button>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                         : 'text-[#475569] bg-[#1E293B] border-[#1E293B]'
                     }`}
                   >
-                    {faq.is_published ? 'Published' : 'Draft'}
+                    {faq.is_published ? '게시됨' : '초안'}
                   </button>
                   <button
                     onClick={() => startEdit(faq)}
@@ -164,7 +164,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             value={newForm.question}
             onChange={(e) => setNewForm({ ...newForm, question: e.target.value })}
             className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50"
-            placeholder="Question"
+            placeholder="질문"
             autoFocus
           />
           <textarea
@@ -172,7 +172,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             onChange={(e) => setNewForm({ ...newForm, answer: e.target.value })}
             rows={3}
             className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
-            placeholder="Answer"
+            placeholder="답변"
           />
           <div className="flex gap-2">
             <button
@@ -180,13 +180,13 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
               disabled={isPending || !newForm.question.trim() || !newForm.answer.trim()}
               className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
             >
-              <Check size={12} /> Add FAQ
+              <Check size={12} /> FAQ 추가
             </button>
             <button
               onClick={() => { setShowNew(false); setNewForm({ question: '', answer: '' }) }}
               className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
             >
-              <X size={12} /> Cancel
+              <X size={12} /> 취소
             </button>
           </div>
         </div>
@@ -195,7 +195,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
           onClick={() => { setShowNew(true); setEditingId(null) }}
           className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors"
         >
-          <Plus size={15} /> Add New FAQ
+          <Plus size={15} /> 새 FAQ 추가
         </button>
       )}
     </div>

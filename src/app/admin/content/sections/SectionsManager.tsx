@@ -49,7 +49,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
       if (!res.ok) {
         // 실패 시 원래 값으로 롤백
         setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: section.is_visible } : s)))
-        setSaveError('Visibility update failed. Please try again.')
+        setSaveError('표시 여부 변경에 실패했습니다. 다시 시도해 주세요.')
       }
     })
   }
@@ -97,7 +97,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
       if (!res.ok) {
         // 실패 시 원래 순서로 롤백
         setItems(prev)
-        setSaveError('Reorder failed. Please try again.')
+        setSaveError('순서 변경에 실패했습니다. 다시 시도해 주세요.')
       }
     })
   }
@@ -105,7 +105,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
   return (
     <div className="space-y-2">
       {/* 상태 메시지 */}
-      {isPending && <p className="text-xs text-amber-400 px-1">Saving…</p>}
+      {isPending && <p className="text-xs text-amber-400 px-1">저장 중…</p>}
       {saveError && !isPending && (
         <p className="text-xs text-red-400 px-1">{saveError}</p>
       )}
@@ -135,7 +135,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
 
           <div className="flex items-center gap-2">
             <span className={`text-xs font-medium ${section.is_visible ? 'text-emerald-400' : 'text-[#475569]'}`}>
-              {section.is_visible ? 'Visible' : 'Hidden'}
+              {section.is_visible ? '표시' : '숨김'}
             </span>
             <button
               onClick={() => handleToggle(idx)}

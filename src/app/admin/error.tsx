@@ -25,7 +25,7 @@ export default function AdminError({
         <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
           <AlertTriangle size={24} className="text-amber-400" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
+        <h2 className="text-xl font-bold text-white mb-2">문제가 발생했습니다</h2>
         <pre className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">
           {error.message}
           {error.digest && `\nDigest: ${error.digest}`}
@@ -35,7 +35,7 @@ export default function AdminError({
           className="inline-flex items-center gap-2 bg-amber-500 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 transition-colors"
         >
           <RefreshCw size={14} />
-          Try again
+          다시 시도
         </button>
       </div>
     </div>

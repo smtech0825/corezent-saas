@@ -51,15 +51,15 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
             >
               <Menu size={20} />
             </button>
-            <span className="text-white font-semibold text-sm">Admin Panel</span>
+            <span className="text-white font-semibold text-sm">관리자 패널</span>
           </div>
           <div className="hidden lg:flex items-center gap-2">
             <span className="text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25 rounded px-2 py-1 uppercase tracking-wider">
-              Admin Panel
+              관리자 패널
             </span>
           </div>
           <div className="hidden sm:block text-xs text-[#475569] truncate max-w-[200px] lg:max-w-none">
-            Logged in as <span className="text-[#94A3B8]">{user.email}</span>
+            로그인 계정 <span className="text-[#94A3B8]">{user.email}</span>
           </div>
         </div>
 

@@ -51,22 +51,22 @@ export default async function ProductsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Products</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">{list.length} products · Reorder with arrows</p>
+          <h1 className="text-2xl font-bold text-white">제품</h1>
+          <p className="text-sm text-[#94A3B8] mt-1">{list.length}개 제품 · 화살표로 순서 변경</p>
         </div>
         <Link
           href="/admin/products/new"
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
         >
-          <Plus size={15} /> Add Product
+          <Plus size={15} /> 제품 추가
         </Link>
       </div>
 
       {list.length === 0 ? (
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-16 text-center space-y-3">
-          <p className="text-sm text-[#475569]">No products yet.</p>
+          <p className="text-sm text-[#475569]">아직 제품이 없습니다.</p>
           <Link href="/admin/products/new" className="text-xs text-amber-400 hover:text-amber-300 transition-colors">
-            + Add your first product
+            + 첫 제품 추가하기
           </Link>
         </div>
       ) : (

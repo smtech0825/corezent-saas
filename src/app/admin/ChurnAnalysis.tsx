@@ -38,7 +38,7 @@ function extractOtherText(reason: string): string | null {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 // 막대 색상 (카테고리 순서에 따라 할당)
@@ -98,7 +98,7 @@ export default function ChurnAnalysis({ entries }: Props) {
     <section className="space-y-4">
       {/* 헤더 + 필터 토글 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">Churn Analysis</h2>
+        <h2 className="text-sm font-semibold text-white">이탈 분석</h2>
         <div className="flex items-center gap-1 bg-[#0B1120] border border-[#1E293B] rounded-lg p-0.5">
           <button
             onClick={() => setPeriod('month')}
@@ -108,7 +108,7 @@ export default function ChurnAnalysis({ entries }: Props) {
                 : 'text-[#475569] hover:text-white'
             }`}
           >
-            This Month
+            이번 달
           </button>
           <button
             onClick={() => setPeriod('all')}
@@ -118,14 +118,14 @@ export default function ChurnAnalysis({ entries }: Props) {
                 : 'text-[#475569] hover:text-white'
             }`}
           >
-            All Time
+            전체 기간
           </button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-12 text-center text-sm text-[#475569]">
-          No cancellation data {period === 'month' ? 'this month' : 'yet'}.
+          취소 데이터가 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -134,13 +134,13 @@ export default function ChurnAnalysis({ entries }: Props) {
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 size={15} className="text-[#94A3B8]" />
               <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">
-                Top Cancellation Reasons
+                주요 취소 사유
               </h3>
-              <span className="text-[10px] text-[#475569] ml-auto">{filtered.length} total</span>
+              <span className="text-[10px] text-[#475569] ml-auto">총 {filtered.length}건</span>
             </div>
 
             {chartData.length === 0 ? (
-              <p className="text-sm text-[#475569] text-center py-6">No data.</p>
+              <p className="text-sm text-[#475569] text-center py-6">데이터 없음.</p>
             ) : (
               <div className="space-y-3">
                 {chartData.map((d) => (
@@ -166,14 +166,14 @@ export default function ChurnAnalysis({ entries }: Props) {
             <div className="flex items-center gap-2 mb-4">
               <MessageSquare size={15} className="text-[#94A3B8]" />
               <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">
-                Recent Feedback
+                최근 피드백
               </h3>
-              <span className="text-[10px] text-[#475569] ml-auto">{otherComments.length} comments</span>
+              <span className="text-[10px] text-[#475569] ml-auto">의견 {otherComments.length}건</span>
             </div>
 
             {otherComments.length === 0 ? (
               <p className="text-sm text-[#475569] text-center py-6 flex-1 flex items-center justify-center">
-                No written feedback {period === 'month' ? 'this month' : 'yet'}.
+                작성된 피드백이 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
               </p>
             ) : (
               <div className="flex-1 overflow-y-auto max-h-[320px] space-y-2.5 pr-1">

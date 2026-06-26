@@ -32,24 +32,24 @@ import {
 import { createClient } from '@/lib/supabase/client'
 
 const mainNav = [
-  { label: 'Overview',  href: '/admin',          icon: LayoutDashboard, exact: true },
-  { label: 'Users',     href: '/admin/users',     icon: Users },
-  { label: 'Products',  href: '/admin/products',  icon: Package },
-  { label: 'Orders',    href: '/admin/orders',    icon: ShoppingBag },
-  { label: 'Licenses',  href: '/admin/licenses',  icon: Key },
-  { label: 'Support',   href: '/admin/support',   icon: MessageSquare },
+  { label: '개요',       href: '/admin',          icon: LayoutDashboard, exact: true },
+  { label: '사용자',     href: '/admin/users',     icon: Users },
+  { label: '제품',       href: '/admin/products',  icon: Package },
+  { label: '주문',       href: '/admin/orders',    icon: ShoppingBag },
+  { label: '라이선스',   href: '/admin/licenses',  icon: Key },
+  { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
 ]
 
 const frontendNav = [
-  { label: 'Announcement',     href: '/admin/content/announcement',  icon: Bell },
-  { label: 'Section Settings', href: '/admin/content/sections',     icon: List },
-  { label: 'Hero',             href: '/admin/content/hero',         icon: Layout },
-  { label: 'About',            href: '/admin/content/about',        icon: Info },
-  { label: 'How It Works',     href: '/admin/content/how-it-works', icon: Workflow },
-  { label: 'Why',              href: '/admin/content/features',     icon: Sparkles },
-  { label: 'Testimonials',     href: '/admin/content/testimonials', icon: Quote },
-  { label: 'FAQ',              href: '/admin/content/faq',          icon: HelpCircle },
-  { label: 'CTA',              href: '/admin/content/cta',          icon: Megaphone },
+  { label: '공지 배너',    href: '/admin/content/announcement',  icon: Bell },
+  { label: '섹션 설정',    href: '/admin/content/sections',     icon: List },
+  { label: '히어로',       href: '/admin/content/hero',         icon: Layout },
+  { label: '소개',         href: '/admin/content/about',        icon: Info },
+  { label: '이용 방법',    href: '/admin/content/how-it-works', icon: Workflow },
+  { label: '특징',         href: '/admin/content/features',     icon: Sparkles },
+  { label: '고객 후기',    href: '/admin/content/testimonials', icon: Quote },
+  { label: 'FAQ',          href: '/admin/content/faq',          icon: HelpCircle },
+  { label: 'CTA',          href: '/admin/content/cta',          icon: Megaphone },
 ]
 
 interface Props {
@@ -92,7 +92,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           <span className="flex flex-col leading-none">
             <span className="text-sm">CoreZent</span>
             <span className="text-[9px] font-semibold text-amber-400 tracking-widest uppercase">
-              Admin Panel
+              관리자 패널
             </span>
           </span>
         </Link>
@@ -107,7 +107,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
         {/* 메인 */}
         <p className="px-3 mb-1 text-[10px] font-semibold text-[#475569] uppercase tracking-widest">
-          Admin
+          관리자
         </p>
         {mainNav.map((item) => {
           const Icon = item.icon
@@ -145,7 +145,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
               isFrontendActive ? 'text-amber-400' : 'text-[#475569] hover:text-[#94A3B8]'
             }`}
           >
-            <span>Frontend</span>
+            <span>프론트엔드</span>
             <ChevronDown
               size={12}
               className={`transition-transform ${frontendOpen ? 'rotate-180' : ''}`}
@@ -180,7 +180,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
         {/* 설정 */}
         <div className="mt-4">
           <p className="px-3 mb-1 text-[10px] font-semibold text-[#475569] uppercase tracking-widest">
-            System
+            시스템
           </p>
           <Link
             href="/admin/settings"
@@ -192,7 +192,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
             }`}
           >
             <Settings size={16} className={isActive('/admin/settings') ? 'text-amber-400' : ''} />
-            Settings
+            설정
           </Link>
         </div>
       </nav>
@@ -203,7 +203,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           href="/dashboard"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"
         >
-          ← User Dashboard
+          ← 사용자 대시보드
         </Link>
       </div>
 
@@ -223,7 +223,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
         >
           <LogOut size={16} />
-          Log out
+          로그아웃
         </button>
       </div>
     </aside>

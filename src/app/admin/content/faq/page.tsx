@@ -67,7 +67,7 @@ export default async function FaqPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">FAQ</h1>
         <p className="text-sm text-[#94A3B8] mt-1">
-          Manage frequently asked questions shown on the landing page.
+          랜딩 페이지에 표시되는 자주 묻는 질문을 관리합니다.
         </p>
       </div>
 

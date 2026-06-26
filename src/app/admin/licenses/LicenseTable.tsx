@@ -26,16 +26,16 @@ const PAGE_SIZE = 15
 
 function fmtDate(d: string | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString('ko-KR', {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 }
 
 function getStatusBadge(status: string) {
   switch (status) {
-    case 'active':  return { label: 'active',   cls: 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' }
-    case 'revoked': return { label: 'canceled',  cls: 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/20' }
-    case 'expired': return { label: 'expired',   cls: 'text-red-400 bg-red-400/10 border border-red-400/20' }
+    case 'active':  return { label: '활성',     cls: 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' }
+    case 'revoked': return { label: '취소됨',   cls: 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/20' }
+    case 'expired': return { label: '만료됨',   cls: 'text-red-400 bg-red-400/10 border border-red-400/20' }
     default:        return { label: status,      cls: 'text-[#94A3B8] bg-[#1E293B] border border-[#1E293B]' }
   }
 }
@@ -43,8 +43,8 @@ function getStatusBadge(status: string) {
 function getPeriodBadge(period: string | null) {
   if (!period) return null
   if (period === 'annual')
-    return { label: 'Annual',  cls: 'text-violet-400 bg-violet-400/10 border border-violet-400/20' }
-  return { label: 'Monthly', cls: 'text-[#38BDF8] bg-[#38BDF8]/10 border border-[#38BDF8]/20' }
+    return { label: '연간',  cls: 'text-violet-400 bg-violet-400/10 border border-violet-400/20' }
+  return { label: '월간', cls: 'text-[#38BDF8] bg-[#38BDF8]/10 border border-[#38BDF8]/20' }
 }
 
 interface Props {
@@ -101,14 +101,14 @@ export default function LicenseTable({ licenses }: Props) {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setRevokeError((data as { error?: string }).error ?? 'Failed to revoke license')
+        setRevokeError((data as { error?: string }).error ?? '라이선스 회수에 실패했습니다')
         setRevoking(false)
         return
       }
       // 성공 → 페이지 새로고침
       window.location.reload()
     } catch {
-      setRevokeError('Network error. Please try again.')
+      setRevokeError('네트워크 오류입니다. 다시 시도해 주세요.')
       setRevoking(false)
     }
   }
@@ -122,8 +122,8 @@ export default function LicenseTable({ licenses }: Props) {
     <div className="p-4 sm:p-6 space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Licenses</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">{licenses.length} total licenses</p>
+        <h1 className="text-2xl font-bold text-white">라이선스</h1>
+        <p className="text-sm text-[#94A3B8] mt-1">총 {licenses.length}개의 라이선스</p>
       </div>
 
       {/* 검색 + 필터 */}
@@ -134,10 +134,10 @@ export default function LicenseTable({ licenses }: Props) {
           onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
           className="bg-[#111A2E] border border-[#1E293B] text-[#94A3B8] text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#38BDF8]/50 sm:w-40 shrink-0 cursor-pointer"
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="canceled">Canceled</option>
-          <option value="expired">Expired</option>
+          <option value="all">전체 상태</option>
+          <option value="active">활성</option>
+          <option value="canceled">취소됨</option>
+          <option value="expired">만료됨</option>
         </select>
 
         {/* 이메일 검색바 */}
@@ -147,7 +147,7 @@ export default function LicenseTable({ licenses }: Props) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email..."
+            placeholder="이메일로 검색..."
             className="w-full bg-[#111A2E] border border-[#1E293B] text-[#F1F5F9] text-sm rounded-xl pl-9 pr-4 py-2.5 placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8]/50"
           />
         </div>
@@ -156,20 +156,20 @@ export default function LicenseTable({ licenses }: Props) {
       {/* 테이블 */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#475569]">No licenses found.</div>
+          <div className="py-16 text-center text-sm text-[#475569]">라이선스가 없습니다.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="border-b border-[#1E293B]">
-                  <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Serial Key</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Product</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">User</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Status</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Period</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Renewal Date</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Expires</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">Actions</th>
+                  <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">시리얼 키</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">제품</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">상태</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">결제 주기</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">갱신일</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">만료일</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">작업</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,7 +206,7 @@ export default function LicenseTable({ licenses }: Props) {
                             className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"
                           >
                             <Ban size={11} />
-                            Revoke
+                            회수
                           </button>
                         ) : (
                           <span className="text-xs text-[#475569]">—</span>
@@ -224,7 +224,7 @@ export default function LicenseTable({ licenses }: Props) {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-[#1E293B]">
             <span className="text-xs text-[#475569]">
-              {filtered.length} results · Page {page} of {totalPages}
+              {filtered.length}개 결과 · {page} / {totalPages} 페이지
             </span>
             <div className="flex gap-2">
               <button
@@ -259,7 +259,7 @@ export default function LicenseTable({ licenses }: Props) {
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-400/10 border border-red-400/20 shrink-0">
                   <Ban size={18} className="text-red-400" />
                 </div>
-                <h3 className="text-white font-semibold">Revoke License</h3>
+                <h3 className="text-white font-semibold">라이선스 회수</h3>
               </div>
               <button
                 onClick={closeModal}
@@ -271,8 +271,8 @@ export default function LicenseTable({ licenses }: Props) {
 
             {/* 경고 문구 */}
             <p className="text-sm text-[#94A3B8] mb-3 leading-relaxed">
-              Are you sure you want to revoke this license?{' '}
-              <span className="text-white font-medium">The user will immediately lose access.</span>
+              이 라이선스를 회수하시겠습니까?{' '}
+              <span className="text-white font-medium">사용자는 즉시 접근 권한을 잃게 됩니다.</span>
             </p>
             <p className="font-mono text-xs text-[#475569] bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 mb-5">
               {revokeTarget.serialKey}
@@ -292,14 +292,14 @@ export default function LicenseTable({ licenses }: Props) {
                 disabled={revoking}
                 className="flex-1 py-2.5 rounded-xl border border-[#1E293B] text-sm text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/30 transition-colors disabled:opacity-50"
               >
-                Cancel
+                취소
               </button>
               <button
                 onClick={handleRevoke}
                 disabled={revoking}
                 className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-400/30 text-sm text-red-400 hover:bg-red-500/20 hover:border-red-400/50 font-semibold transition-colors disabled:opacity-50"
               >
-                {revoking ? 'Revoking...' : 'Confirm Revoke'}
+                {revoking ? '회수 중...' : '회수 확인'}
               </button>
             </div>
           </div>

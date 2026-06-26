@@ -44,25 +44,25 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
   return (
     <div className="space-y-5">
-      {isPending && <p className="text-xs text-amber-400">Saving…</p>}
-      {saved && !isPending && <p className="text-xs text-emerald-400">Saved successfully.</p>}
+      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {saved && !isPending && <p className="text-xs text-emerald-400">저장되었습니다.</p>}
 
       {/* 표시 여부 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>Banner Visible</label>
+        <label className={labelCls}>배너 표시</label>
         <select
           value={form.visible}
           onChange={(e) => set('visible', e.target.value)}
           className={`${inputCls} cursor-pointer`}
         >
-          <option value="true">Visible</option>
-          <option value="false">Hidden</option>
+          <option value="true">표시</option>
+          <option value="false">숨김</option>
         </select>
       </div>
 
       {/* 데스크톱 텍스트 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>Banner Text (Desktop)</label>
+        <label className={labelCls}>배너 텍스트 (데스크톱)</label>
         <input
           value={form.text}
           onChange={(e) => set('text', e.target.value)}
@@ -73,7 +73,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
       {/* 모바일 텍스트 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>Banner Text (Mobile)</label>
+        <label className={labelCls}>배너 텍스트 (모바일)</label>
         <input
           value={form.text_mobile}
           onChange={(e) => set('text_mobile', e.target.value)}
@@ -85,7 +85,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
       {/* 링크 텍스트 + URL */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>Link Text</label>
+          <label className={labelCls}>링크 텍스트</label>
           <input
             value={form.link_text}
             onChange={(e) => set('link_text', e.target.value)}
@@ -94,7 +94,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>Link URL</label>
+          <label className={labelCls}>링크 URL</label>
           <input
             value={form.link_url}
             onChange={(e) => set('link_url', e.target.value)}
@@ -111,7 +111,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           <Check size={14} />
-          Save Banner
+          배너 저장
         </button>
       </div>
     </div>
