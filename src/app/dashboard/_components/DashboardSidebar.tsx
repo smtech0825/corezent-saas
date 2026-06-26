@@ -8,7 +8,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Key, CreditCard, Settings, LogOut, X, HelpCircle, History, ExternalLink } from 'lucide-react'
+import { LayoutDashboard, Key, CreditCard, Gift, Settings, LogOut, X, HelpCircle, History, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Props {
@@ -27,6 +27,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
     { label: '개요',        href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
     { label: '라이선스',    href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
     { label: '결제',        href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
+    { label: '제휴',        href: '/dashboard/affiliate', icon: Gift,            exact: false, badge: 0 },
     { label: '업데이트 내역', href: '/changelog',         icon: History,         exact: false, badge: 0 },
     { label: '설정',        href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
     { label: '고객지원',    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
