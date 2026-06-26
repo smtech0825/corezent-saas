@@ -42,11 +42,12 @@ export default async function AffiliatePage() {
     supabase.from('affiliate_attributions')
       .select('id', { count: 'exact', head: true })
       .eq('referrer_user_id', user.id),
-    supabase.from('affiliate_commissions')
+    // 전환 = 추천으로 가입해 첫 결제(converted_at 기록)한 피추천인 수.
+    //   attribution은 피추천인당 1행이므로 행 수 = distinct 인원. 환불은 무시(역사적 전환 시각 보존).
+    supabase.from('affiliate_attributions')
       .select('id', { count: 'exact', head: true })
       .eq('referrer_user_id', user.id)
-      .eq('source_type', 'order')
-      .neq('status', 'reversed'),
+      .not('converted_at', 'is', null),
     supabase.from('affiliate_commissions')
       .select('commission_amount_cents, status, available_at')
       .eq('referrer_user_id', user.id),
@@ -140,7 +141,7 @@ export default async function AffiliatePage() {
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <MetricCard icon="MousePointerClick" label="클릭" value={clicks.toLocaleString()} />
         <MetricCard icon="UserPlus"          label="가입" value={signups.toLocaleString()} />
-        <MetricCard icon="ShoppingBag"       label="전환 (첫 구매)" value={conversions.toLocaleString()} />
+        <MetricCard icon="ShoppingBag"       label="전환" value={conversions.toLocaleString()} hint="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
       </section>
 
       {/* 스토어 크레딧 잔액 */}
@@ -173,8 +174,8 @@ export default async function AffiliatePage() {
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
 
-/** 지표 카드 (클릭·가입·전환) */
-function MetricCard({ icon, label, value }: { icon: string; label: string; value: string }) {
+/** 지표 카드 (클릭·가입·전환). hint: 라벨 아래 한 줄 설명(선택) */
+function MetricCard({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
   return (
     <div className="bg-surface border border-border rounded-2xl p-5">
       <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
@@ -182,6 +183,7 @@ function MetricCard({ icon, label, value }: { icon: string; label: string; value
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
       <p className="text-xs text-text-muted mt-1">{label}</p>
+      {hint && <p className="text-xs text-text-muted/70 mt-1 leading-snug">{hint}</p>}
     </div>
   )
 }
