@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail, welcomeEmailHtml } from '@/lib/email'
+import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -70,6 +71,10 @@ export async function GET(request: Request) {
               .eq('country', '')
           }
         }
+
+        // 추천 귀속: cz_ref 쿠키의 추천 코드를 referred_by에 기록 + 귀속 행 생성
+        // (자기추천 차단·중복 방지는 유틸 내부에서 처리, 실패해도 가입 흐름 유지)
+        await attributeReferralOnSignup(user.id, cookieStore.get(REF_COOKIE)?.value)
 
         // 웰컴 이메일 발송
         if (user.email) {

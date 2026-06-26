@@ -9,6 +9,7 @@
 export const CONSENT_COOKIE  = 'cookie_consent'  // 동의 상태 (1년)
 export const UTM_COOKIE      = 'utm_data'         // UTM 파라미터 (30일)
 export const RETURN_TO_COOKIE = 'return_to'       // 로그인 후 돌아갈 경로 (서버 전용)
+export const REF_COOKIE      = 'cz_ref'           // 추천(affiliate) last-click 코드 (수명=config.cookie_days)
 
 export type ConsentLevel = 'all' | 'essential'
 
