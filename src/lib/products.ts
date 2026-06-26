@@ -72,13 +72,13 @@ export const products: Product[] = [
     id: 'geniepost-desktop',
     name: 'GeniePost',
     category: 'desktop',
-    tagline: 'AI-powered social media posting tool',
+    tagline: 'AI 기반 소셜 미디어 포스팅 도구',
     badge: 'Popular',
     features: [
-      'Quad-Engine AI Generation: High-quality content powered by 4 premium AI engines.',
-      'Rich Visual Integration: Support for up to 20 custom images per single post.',
-      'Strategic Personalization: Tailored content with customizable tone and target audience.',
-      'Seamless Automation: Fully automated process from publishing to search indexing.',
+      '쿼드 엔진 AI 생성: 4개의 프리미엄 AI 엔진으로 만드는 고품질 콘텐츠.',
+      '풍부한 비주얼 통합: 게시물 1건당 최대 20장의 맞춤 이미지 지원.',
+      '전략적 개인화: 톤과 타겟 독자를 자유롭게 설정한 맞춤형 콘텐츠.',
+      '완벽한 자동화: 게시부터 검색 색인까지 전 과정 완전 자동화.',
     ],
     monthlyPrice: 6.99,
     annualMonthlyPrice: 5.75,   // $69/year ÷ 12
