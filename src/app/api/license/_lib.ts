@@ -1,5 +1,8 @@
 /**
- * GenieStock 라이선스 API 공용 헬퍼
+ * GeniePost 라이선스 API 공용 헬퍼 (Google Sheets 경로)
+ *
+ * ⚠️ validate/route.ts가 product로 분기 — 이 헬퍼는 GeniePost(또는 product 미지정) 전용.
+ *    GenieStock·GenieWork는 별도 Supabase를 쓰는 _lib_supabase.ts가 처리한다.
  *
  * Google Sheets 컬럼 구조:
  *   A: email          (이메일)
@@ -11,7 +14,7 @@
  *   G: version / tier  (lite | pro | max)
  *
  * 환경변수:
- *   GOOGLE_SHEET_ID                — GenieStock 라이선스 전용 시트 ID
+ *   GOOGLE_SHEET_ID                — GeniePost 라이선스 검증 시트 ID
  *   GOOGLE_SHEET_TAB               — 탭 이름 (없으면 첫 번째 시트)
  *   GOOGLE_SERVICE_ACCOUNT_EMAIL   — 서비스 계정 이메일
  *   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY — 서비스 계정 개인 키

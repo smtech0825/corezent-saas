@@ -3,7 +3,7 @@
 > 마지막 업데이트: 2026-04-29
 > 이 문서는 작업 완료 시마다 함께 업데이트됩니다. 변경 시 해당 섹션만 수정하세요.
 
-CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이트**입니다. 자체 개발한 데스크톱/웹 앱(GeniePost 등)을 최종 사용자에게 직접 판매합니다 — B2B SaaS 도구가 아닙니다. 결제는 **Lemon Squeezy**, 데이터는 **Supabase**, 라이선스 관리는 **Google Sheets** + DB 이중 동기화 구조입니다.
+CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이트**입니다. 자체 개발한 데스크톱/웹 앱(GeniePost 등)을 최종 사용자에게 직접 판매합니다 — B2B SaaS 도구가 아닙니다. 결제는 **Lemon Squeezy**, 데이터는 **Supabase**, 라이선스는 **제품별로 분리**(GeniePost=Google Sheets, GenieStock·GenieWork=각각 별도 Supabase 프로젝트)되어 본체 DB와 동기화됩니다.
 
 ---
 
@@ -82,17 +82,17 @@ CoreZent_SaaS/
 │   │   │   ├── contact/            # 비회원 문의 (rate limit + honeypot + BotID)
 │   │   │   ├── subscriptions/cancel/  # LS 구독 취소
 │   │   │   ├── webhooks/lemonsqueezy/ # LS 결제 이벤트 핸들러 (8종)
-│   │   │   ├── license/            # ⭐ 데스크톱 앱이 호출 — Google Sheets 직조회
-│   │   │   │   ├── _lib.ts         # findByKey, patchCell, isStopped/isExpired
+│   │   │   ├── license/            # ⭐ 데스크톱 앱이 호출 — product로 분기
+│   │   │   │   ├── _lib.ts         # GeniePost(Google Sheets): findByKey, patchCell, isStopped/isExpired
+│   │   │   │   ├── _lib_supabase.ts # GenieStock·GenieWork(별도 Supabase): findLicenseByKey, getHwidsForKey, registerHwid
 │   │   │   │   ├── validate/       # POST { key, hwid } → 첫 활성화 OR 검증
 │   │   │   │   ├── reset/          # POST { key } → HWID 초기화 (PC 교체)
 │   │   │   │   └── upgrade/        # POST { key, hwid } → Pro 키 업그레이드
-│   │   │   ├── admin/
-│   │   │   │   ├── licenses/revoke/   # DB + Sheets + LS 동시 비활성화
-│   │   │   │   ├── settings/
-│   │   │   │   ├── products/reorder/
-│   │   │   │   └── sections/{toggle,reorder}/
-│   │   │   └── debug-dashboard/    # 개발용
+│   │   │   └── admin/
+│   │   │       ├── licenses/revoke/   # DB + Sheets + LS 동시 비활성화
+│   │   │       ├── settings/
+│   │   │       ├── products/reorder/
+│   │   │       └── sections/{toggle,reorder}/
 │   │   │
 │   │   ├── pricing/           # 요금제 (DB 동적 + 카테고리 필터)
 │   │   │   └── PricingClient.tsx
@@ -196,18 +196,23 @@ CoreZent_SaaS/
 
 ### 2.5 라이선스 시스템 (⭐ 핵심)
 
-CoreZent는 라이선스를 **2개 시트**로 관리합니다:
+라이선스 검증 저장소는 **제품별로 분리**되어 있습니다 (`validate/route.ts`가 `product`로 분기):
 
-| 시트/위치 | 용도 | 환경변수 |
-|---|---|---|
-| **CoreZent 라이선스 관리 시트** | LS 웹훅이 결제 시 자동으로 행 추가/만료일 동기화 | `GOOGLE_SHEETS_SPREADSHEET_ID` + `GOOGLE_SHEETS_TAB_NAME` |
-| **GenieStock 전용 시트** | 데스크톱 앱이 직접 호출하여 HWID 바인딩/검증 | `GOOGLE_SHEET_ID` + `GOOGLE_SHEET_TAB` |
+| 제품 | 저장소 | 환경변수 | 검증 헬퍼 |
+|---|---|---|---|
+| **GeniePost** (기본/`product` 미지정) | Google Sheets | `GOOGLE_SHEET_ID` + `GOOGLE_SHEET_TAB` | [_lib.ts](src/app/api/license/_lib.ts) — HWID C·F열 |
+| **GenieStock** | 별도 Supabase 프로젝트 | `LICENSE_SUPABASE_URL` + `LICENSE_SUPABASE_SERVICE_ROLE_KEY` | [_lib_supabase.ts](src/app/api/license/_lib_supabase.ts) — `license_keys`/`hwid_mapping`, 티어별 다중 PC |
+| **GenieWork** | 별도 Supabase 프로젝트 (GenieStock과 분리) | `GW_SUPABASE_URL` + `GW_SUPABASE_SERVICE_ROLE_KEY` | [_lib_supabase.ts](src/app/api/license/_lib_supabase.ts) |
+| **CoreZent 동기화 시트** | Google Sheets (LS 웹훅 전용) | `GOOGLE_SHEETS_SPREADSHEET_ID` + `GOOGLE_SHEETS_TAB_NAME` | [sheets.ts](src/lib/sheets.ts) — 결제 시 행 추가/만료 동기화 |
+
+> ⚠️ 세 검증 경로 모두 응답 shape가 동일해 앱 코드 변경 불필요. GeniePost(Sheets) 경로는 코드상 **수정 금지** 표시.
+> ⚠️ GenieStock·GenieWork 라이선스 DB 스키마는 `supabase/license-migrations/`에 별도로 있음 (본체 `supabase/migrations/`와 별개).
 
 | 역할 | 파일 |
 |---|---|
 | **LS 웹훅 → CoreZent 시트 동기화** | [src/lib/sheets.ts](src/lib/sheets.ts) — `appendLicenseRow` / `updateLicenseExpiry` / `updateLicenseStatus` (A이메일/B시리얼/C HWID/D만료일/E상태/F=D-TODAY()/G Pro) |
-| **앱이 호출하는 라이선스 API** | [src/app/api/license/_lib.ts](src/app/api/license/_lib.ts) — `findByKey` / `patchCell` / `isStopped` / `isExpired` / `calcRemainingDays` |
-| validate (앱 첫 실행) | [src/app/api/license/validate/route.ts](src/app/api/license/validate/route.ts) — `{key, hwid}` → HWID 빈칸이면 첫 활성화 (C+F열 업데이트), 일치하면 tier/expiresAt/remainingDays |
+| **앱이 호출하는 라이선스 API** | GeniePost: [_lib.ts](src/app/api/license/_lib.ts) (`findByKey`/`patchCell`/`isStopped`/`isExpired`/`calcRemainingDays`) · GenieStock·GenieWork: [_lib_supabase.ts](src/app/api/license/_lib_supabase.ts) (`findLicenseByKey`/`getHwidsForKey`/`registerHwid`) |
+| validate (앱 첫 실행) | [src/app/api/license/validate/route.ts](src/app/api/license/validate/route.ts) — `{key, hwid, product?}` → `product`로 분기. GeniePost: HWID 빈칸이면 첫 활성화(C+F열); GenieStock·GenieWork: Supabase `hwid_mapping`에 등록(티어별 다중 PC). 응답 shape 동일 |
 | reset (PC 교체) | [src/app/api/license/reset/route.ts](src/app/api/license/reset/route.ts) — `{key}` → C열(HWID) 빈값 + F열 'ready' (현재 HWID 대조 X — 오프라인 PC 교체 지원) |
 | upgrade (Lite→Pro) | [src/app/api/license/upgrade/route.ts](src/app/api/license/upgrade/route.ts) — 새 키 검증 + HWID 미바인딩 시 자동 바인딩 |
 | 관리자 Revoke | [src/app/api/admin/licenses/revoke/route.ts](src/app/api/admin/licenses/revoke/route.ts) — DB `status='revoked'` + 시트 E열 '중지' + LS API deactivate (선택) |
@@ -276,10 +281,12 @@ LS Webhook → /api/webhooks/lemonsqueezy
      → 사용자에게 시리얼 키 + 다운로드 링크 발송
 ```
 
-### 3.2 데스크톱 앱 → 라이선스 검증
+### 3.2 데스크톱 앱 → 라이선스 검증 (GeniePost / Google Sheets 경로)
+
+> GenieStock·GenieWork는 동일한 요청/응답 shape를 쓰되 `_lib_supabase.ts`로 별도 Supabase(`license_keys`/`hwid_mapping`)에서 검증한다 (티어별 다중 PC 허용).
 
 ```
-[GenieStock 데스크톱 앱 실행]
+[GeniePost 데스크톱 앱 실행]
    ↓
 POST /api/license/validate { key, hwid }
    ↓
@@ -418,16 +425,25 @@ POST /api/contact
 API 베이스: `https://api.lemonsqueezy.com/v1/`
 헤더: `Authorization: Bearer {API_KEY}`, `Accept: application/vnd.api+json`, `Content-Type: application/vnd.api+json`
 
-### 5.3 Google Sheets (서비스 계정 JWT)
+### 5.3 라이선스 저장소 env (Google Sheets + 라이선스 전용 Supabase)
+
+**Google Sheets (서비스 계정 JWT)**
 
 | 환경변수 | 용도 |
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | 두 시트 공통 |
 | `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | `\n` 이스케이프 → 실제 줄바꿈 변환 후 사용 |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` + `GOOGLE_SHEETS_TAB_NAME` | **CoreZent 라이선스 시트** ([sheets.ts](src/lib/sheets.ts)) — LS 웹훅 동기화 |
-| `GOOGLE_SHEET_ID` + `GOOGLE_SHEET_TAB` | **GenieStock 전용 시트** ([_lib.ts](src/app/api/license/_lib.ts)) — 앱이 호출 |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` + `GOOGLE_SHEETS_TAB_NAME` | **CoreZent 동기화 시트** ([sheets.ts](src/lib/sheets.ts)) — LS 웹훅 동기화 |
+| `GOOGLE_SHEET_ID` + `GOOGLE_SHEET_TAB` | **GeniePost 라이선스 검증 시트** ([_lib.ts](src/app/api/license/_lib.ts)) — 앱이 호출 |
 
-> ⚠️ 두 시트가 **별도 환경변수**를 사용합니다. (`SHEETS_SPREADSHEET_ID` vs `SHEET_ID`). `.env.example`에는 후자가 누락 — 실제 `.env.local`에 추가 필요.
+**라이선스 전용 Supabase (server 전용·RLS 우회, 본체 DB와 별개 프로젝트)**
+
+| 환경변수 | 용도 |
+|---|---|
+| `LICENSE_SUPABASE_URL` + `LICENSE_SUPABASE_SERVICE_ROLE_KEY` | **GenieStock 라이선스** ([_lib_supabase.ts](src/app/api/license/_lib_supabase.ts)) — `license_keys`/`hwid_mapping` |
+| `GW_SUPABASE_URL` + `GW_SUPABASE_SERVICE_ROLE_KEY` | **GenieWork 라이선스** — GenieStock과도 물리적으로 분리된 별도 프로젝트 |
+
+> ⚠️ 본체 / GenieStock / GenieWork 3개 Supabase + 2개 Google Sheets가 모두 다른 env를 쓴다 — 혼동이 가장 흔한 버그. `GOOGLE_SHEET_ID`·`GOOGLE_SHEET_TAB`는 `.env.example`에 누락되어 있으니 `.env.local`에 직접 추가.
 
 ### 5.4 Vercel BotID
 
@@ -494,7 +510,7 @@ npm run lint   # ESLint
 
 | 항목 | 제약 | 대응 |
 |---|---|---|
-| 라이선스 시트 (CoreZent vs GenieStock) | 환경변수가 분리되어 있음 (이력 상의 이유) | 향후 통합 검토 |
+| 라이선스 저장소 분산 (Sheets×2 + Supabase×3) | 제품별로 저장소·env가 분리됨 (이력 상의 이유) | 향후 통합 검토 |
 | `license_activations.last_seen_at` | 컬럼은 있으나 업데이트하는 API 없음 | 앱이 validate 호출 시 last_seen 갱신 로직 추가 필요 (TODO) |
 | Google Sheets API | 분당 60회 read, 100회 write 한도 | LS 웹훅 단발 호출이므로 현재 안전, 단 batch revoke 시 주의 |
 | LS 웹훅 멱등성 | 같은 이벤트 재전송 가능 | `lemon_squeezy_order_id` UNIQUE로 중복 INSERT 방지 |
