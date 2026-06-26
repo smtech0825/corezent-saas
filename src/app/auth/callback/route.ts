@@ -11,6 +11,11 @@ import { createClient } from '@/lib/supabase/server'
 import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 
+// OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
+// '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
+// 윈도우를 넉넉히 둬도 오귀속 위험이 없다(false-negative-safe).
+const NEW_SIGNUP_WINDOW_MS = 5 * 60 * 1000
+
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
@@ -34,9 +39,21 @@ export async function GET(request: Request) {
 
   // Google/GitHub OAuth 코드 교환
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     console.log('[callback] code exchange error:', error)
-    if (!error) return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
+    if (!error) {
+      // OAuth '확실한 신규 가입'에 한해 추천 귀속 — 이메일 가입과 동일 헬퍼 재사용(로직 복제 없음).
+      // 신규 판별: user.created_at가 콜백 직전 NEW_SIGNUP_WINDOW_MS 이내. 기존 사용자는 과거 created_at라
+      // 통과하지 않아 오귀속이 없다. 확신 없으면 skip(false-negative-safe).
+      // 자기추천 차단·referred_by 1회 기록·attribution 중복 방지는 헬퍼 내부에서 처리한다.
+      const u = data.user
+      const createdMs = u?.created_at ? new Date(u.created_at).getTime() : NaN
+      const isFreshSignup = Number.isFinite(createdMs) && Date.now() - createdMs <= NEW_SIGNUP_WINDOW_MS
+      if (u && isFreshSignup) {
+        await attributeReferralOnSignup(u.id, cookieStore.get(REF_COOKIE)?.value)
+      }
+      return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
+    }
     return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
   }
 
