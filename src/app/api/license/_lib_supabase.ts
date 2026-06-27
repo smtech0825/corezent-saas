@@ -307,12 +307,14 @@ export async function resetHwidsForKey(key: string, product?: SupabaseProduct): 
  *        키 단위 advisory lock으로 register와 직렬화 + 분당 reset rate limit +
  *        전체삭제 + 이력 기록(누적 이력은 보존). geniestock는 기존 resetHwidsForKey 사용.
  * @매개변수: key - 라이선스 키 (geniework 전용 — 항상 GW_SUPABASE)
- * @반환값: { ok, reason?, deleted? } reason: reset | RATE_LIMITED | NO_CONFIG | INVALID_INPUT
+ * @반환값: { ok, reason?, deleted?, nextAllowedAt? }
+ *          reason: reset | RATE_LIMITED | RESET_PERIOD_LIMITED | NO_CONFIG | INVALID_INPUT
+ *          nextAllowedAt: 주기 한도 초과 시 다음 reset 가능 시각(ISO) — RESET_PERIOD_LIMITED일 때만
  * @비고: 돈·접근권한 경로 — RPC 오류는 삼키지 않고 throw로 전파(fail-closed).
  */
 export async function resetHwidsForKeyGenieWork(
   key: string,
-): Promise<{ ok: boolean; reason?: string; deleted?: number }> {
+): Promise<{ ok: boolean; reason?: string; deleted?: number; nextAllowedAt?: string }> {
   const k = key?.trim()
   if (!k) return { ok: false, reason: 'INVALID_INPUT' }
 
@@ -323,8 +325,15 @@ export async function resetHwidsForKeyGenieWork(
       console.error('[supabase-license] reset_geniework_hwids RPC error:', error)
       throw new Error(`HWID 초기화 실패: ${error.message}`)
     }
-    const res = (data ?? {}) as { ok?: boolean; reason?: string; deleted?: number }
-    return { ok: Boolean(res.ok), reason: res.reason, deleted: res.deleted }
+    const res = (data ?? {}) as {
+      ok?: boolean; reason?: string; deleted?: number; next_allowed_at?: string
+    }
+    return {
+      ok: Boolean(res.ok),
+      reason: res.reason,
+      deleted: res.deleted,
+      nextAllowedAt: res.next_allowed_at ?? undefined,
+    }
   } catch (err) {
     console.error('[supabase-license] resetHwidsForKeyGenieWork exception:', err)
     throw err

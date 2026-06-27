@@ -88,16 +88,22 @@ async function resetSupabase(key: string, product: 'geniestock' | 'geniework') {
     })
   }
 
-  // ── GenieWork: 원자적 RPC(직렬화 + 분당 reset rate limit + 이력 보존) ──
+  // ── GenieWork: 원자적 RPC(직렬화 + 분당 rate limit + 주기 제한 + 이력 보존) ──
   if (product === 'geniework') {
     const r = await supaResetHwidsForKeyGenieWork(key)
     if (!r.ok) {
-      if (r.reason === 'RATE_LIMITED') {
-        return NextResponse.json({
+      // 분당 버스트(Wave 1) 또는 주기 한도(Wave 2) 초과 → 429
+      if (r.reason === 'RATE_LIMITED' || r.reason === 'RESET_PERIOD_LIMITED') {
+        const payload: Record<string, unknown> = {
           success: false,
-          error: 'PC 변경 요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+          // nextAllowedAt(주기 한도)이 있으면 날짜를 안내, 없으면(분당 버스트) 일반 안내
+          error: r.nextAllowedAt
+            ? `PC 변경 가능 횟수를 초과했어요. ${r.nextAllowedAt.slice(0, 10)} 이후 다시 시도해주세요.`
+            : 'PC 변경 요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
           errorCode: 'RESET_RATE_LIMITED',
-        }, { status: 429 })
+        }
+        if (r.nextAllowedAt) payload.nextAllowedAt = r.nextAllowedAt
+        return NextResponse.json(payload, { status: 429 })
       }
       // NO_CONFIG 등 예기치 못한 사유 — fail-closed
       console.error(`[License/reset] 초기화 거부(예상 외 사유): ${r.reason}`)
