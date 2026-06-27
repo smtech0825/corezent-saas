@@ -136,10 +136,27 @@ async function upgradeSupabase(
   if (!alreadyRegistered) {
     const result = await supaRegisterHwid(key, hwid, product)
     if (!result.ok) {
+      // 분당 호출 한도 초과 — 429로 구분
+      if (result.reason === 'RATE_LIMITED') {
+        return NextResponse.json({
+          success: false,
+          error: '요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+          errorCode: 'RATE_LIMITED',
+        }, { status: 429 })
+      }
+      // 동시 PC 한도 초과 — 기존 UX 유지
+      if (result.reason === 'HWID_LIMIT_REACHED') {
+        return NextResponse.json({
+          success: false,
+          error: '이 키는 다른 PC에서 이미 사용 중이에요.',
+        })
+      }
+      // 예기치 못한 사유 — fail-closed
+      console.error(`[License/upgrade] 등록 거부(예상 외 사유): ${result.reason}`)
       return NextResponse.json({
         success: false,
-        error: '이 키는 다른 PC에서 이미 사용 중이에요.',
-      })
+        error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+      }, { status: 500 })
     }
   }
 

@@ -16,6 +16,7 @@ import { findByKey, patchCell, isStopped } from '../_lib'
 import {
   findLicenseByKey as supaFindLicenseByKey,
   resetHwidsForKey as supaResetHwidsForKey,
+  resetHwidsForKeyGenieWork as supaResetHwidsForKeyGenieWork,
 } from '../_lib_supabase'
 
 export async function POST(req: NextRequest) {
@@ -87,6 +88,28 @@ async function resetSupabase(key: string, product: 'geniestock' | 'geniework') {
     })
   }
 
+  // ── GenieWork: 원자적 RPC(직렬화 + 분당 reset rate limit + 이력 보존) ──
+  if (product === 'geniework') {
+    const r = await supaResetHwidsForKeyGenieWork(key)
+    if (!r.ok) {
+      if (r.reason === 'RATE_LIMITED') {
+        return NextResponse.json({
+          success: false,
+          error: 'PC 변경 요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+          errorCode: 'RESET_RATE_LIMITED',
+        }, { status: 429 })
+      }
+      // NO_CONFIG 등 예기치 못한 사유 — fail-closed
+      console.error(`[License/reset] 초기화 거부(예상 외 사유): ${r.reason}`)
+      return NextResponse.json({
+        success: false,
+        error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+      }, { status: 500 })
+    }
+    return NextResponse.json({ success: true })
+  }
+
+  // ── GenieStock(기존) — 전체 삭제. 변경 없음. ──
   await supaResetHwidsForKey(key, product)
   return NextResponse.json({ success: true })
 }

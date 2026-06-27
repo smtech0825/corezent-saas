@@ -138,11 +138,29 @@ async function validateSupabase(
   if (!alreadyRegistered) {
     const result = await supaRegisterHwid(key, hwid, product)
     if (!result.ok) {
+      // 분당 호출 한도 초과 — 429로 명확히 구분(앱이 재시도 간격 조절 가능)
+      if (result.reason === 'RATE_LIMITED') {
+        return NextResponse.json({
+          valid: false,
+          error: '요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
+          errorCode: 'RATE_LIMITED',
+        }, { status: 429 })
+      }
+      // 동시 PC 한도 초과 — 기존 UX 유지
+      if (result.reason === 'HWID_LIMIT_REACHED') {
+        return NextResponse.json({
+          valid: false,
+          error: '다른 PC에서 이미 인증된 키예요. PC 변경이 필요하면 사용 PC 변경을 진행해주세요.',
+          errorCode: 'HWID_MISMATCH',
+        })
+      }
+      // NO_CONFIG 등 예기치 못한 사유 — 조용히 통과 금지(fail-closed)
+      console.error(`[License/validate] 등록 거부(예상 외 사유): ${result.reason}`)
       return NextResponse.json({
         valid: false,
-        error: '다른 PC에서 이미 인증된 키예요. PC 변경이 필요하면 사용 PC 변경을 진행해주세요.',
-        errorCode: 'HWID_MISMATCH',
-      })
+        error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+        errorCode: 'SERVER_ERROR',
+      }, { status: 500 })
     }
   }
 

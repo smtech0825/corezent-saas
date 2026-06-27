@@ -228,6 +228,30 @@ export async function registerHwid(
     const license = await findLicenseByKey(k, product)
     if (!license) return { ok: false, reason: 'NOT_FOUND' }
 
+    // 티어별 동시 한도(동시한도는 코드 유지 — tier 문자열이 단일 출처)
+    const limit = HWID_LIMITS[license.tier]
+
+    // ── GenieWork: 원자적 RPC로 처리(직렬화로 TOCTOU 차단 + 분당 rate limit) ──
+    //    "카운트→insert"를 DB 함수 한 트랜잭션(키 단위 advisory lock)에서 수행하므로
+    //    동시 신규 HWID 2건이 한도를 넘겨 insert되는 경합이 불가능하다.
+    //    geniestock는 아래 기존 read-then-insert 경로 그대로(이 RPC에 안 닿음).
+    if (product === 'geniework') {
+      const admin = licenseClientFor(product)
+      const { data, error } = await admin.rpc('register_geniework_hwid', {
+        p_license_key: k,
+        p_hwid:        h,
+        p_max:         limit,
+        p_device_name: deviceName ?? null,
+      })
+      if (error) {
+        console.error('[supabase-license] register_geniework_hwid RPC error:', error)
+        throw new Error(`HWID 등록 실패: ${error.message}`)
+      }
+      const res = (data ?? {}) as { ok?: boolean; reason?: string }
+      return { ok: Boolean(res.ok), reason: res.reason }
+    }
+
+    // ── GenieStock(기존) — read-then-insert 경로. 변경 없음. ──
     const hwids = await getHwidsForKey(k, product)
 
     // 이미 등록된 HWID — idempotent 성공
@@ -236,7 +260,6 @@ export async function registerHwid(
     }
 
     // 티어별 한도 검사
-    const limit = HWID_LIMITS[license.tier]
     if (hwids.length >= limit) {
       return { ok: false, reason: 'HWID_LIMIT_REACHED' }
     }
@@ -274,6 +297,36 @@ export async function resetHwidsForKey(key: string, product?: SupabaseProduct): 
     }
   } catch (err) {
     console.error('[supabase-license] resetHwidsForKey exception:', err)
+    throw err
+  }
+}
+
+/**
+ * @함수명: resetHwidsForKeyGenieWork
+ * @설명: GenieWork 전용 reset — 원자적 RPC(reset_geniework_hwids) 호출.
+ *        키 단위 advisory lock으로 register와 직렬화 + 분당 reset rate limit +
+ *        전체삭제 + 이력 기록(누적 이력은 보존). geniestock는 기존 resetHwidsForKey 사용.
+ * @매개변수: key - 라이선스 키 (geniework 전용 — 항상 GW_SUPABASE)
+ * @반환값: { ok, reason?, deleted? } reason: reset | RATE_LIMITED | NO_CONFIG | INVALID_INPUT
+ * @비고: 돈·접근권한 경로 — RPC 오류는 삼키지 않고 throw로 전파(fail-closed).
+ */
+export async function resetHwidsForKeyGenieWork(
+  key: string,
+): Promise<{ ok: boolean; reason?: string; deleted?: number }> {
+  const k = key?.trim()
+  if (!k) return { ok: false, reason: 'INVALID_INPUT' }
+
+  try {
+    const admin = licenseClientFor('geniework')
+    const { data, error } = await admin.rpc('reset_geniework_hwids', { p_license_key: k })
+    if (error) {
+      console.error('[supabase-license] reset_geniework_hwids RPC error:', error)
+      throw new Error(`HWID 초기화 실패: ${error.message}`)
+    }
+    const res = (data ?? {}) as { ok?: boolean; reason?: string; deleted?: number }
+    return { ok: Boolean(res.ok), reason: res.reason, deleted: res.deleted }
+  } catch (err) {
+    console.error('[supabase-license] resetHwidsForKeyGenieWork exception:', err)
     throw err
   }
 }
