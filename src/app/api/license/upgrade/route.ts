@@ -151,6 +151,14 @@ async function upgradeSupabase(
           error: '이 키는 다른 PC에서 이미 사용 중이에요.',
         })
       }
+      // 누적 PC 상한 초과 — 거쳐간 distinct PC가 한도 도달(확정 거부)
+      if (result.reason === 'LIFETIME_PC_LIMIT_REACHED') {
+        return NextResponse.json({
+          success: false,
+          error: '이 라이선스로 사용할 수 있는 PC 수를 모두 사용했어요. 고객센터에 문의해주세요.',
+          errorCode: 'LIFETIME_PC_LIMIT_REACHED',
+        })
+      }
       // 예기치 못한 사유 — fail-closed
       console.error(`[License/upgrade] 등록 거부(예상 외 사유): ${result.reason}`)
       return NextResponse.json({

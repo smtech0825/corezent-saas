@@ -154,6 +154,14 @@ async function validateSupabase(
           errorCode: 'HWID_MISMATCH',
         })
       }
+      // 누적 PC 상한 초과 — 거쳐간 distinct PC가 한도 도달(확정 거부, reset로도 회복 불가)
+      if (result.reason === 'LIFETIME_PC_LIMIT_REACHED') {
+        return NextResponse.json({
+          valid: false,
+          error: '이 라이선스로 사용할 수 있는 PC 수를 모두 사용했어요. 고객센터에 문의해주세요.',
+          errorCode: 'LIFETIME_PC_LIMIT_REACHED',
+        })
+      }
       // NO_CONFIG 등 예기치 못한 사유 — 조용히 통과 금지(fail-closed)
       console.error(`[License/validate] 등록 거부(예상 외 사유): ${result.reason}`)
       return NextResponse.json({
