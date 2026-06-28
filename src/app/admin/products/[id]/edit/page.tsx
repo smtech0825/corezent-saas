@@ -130,12 +130,16 @@ export default async function EditProductPage({
     // 폼에서 제거된 가격 → is_active=false (orders FK 참조 때문에 삭제 불가)
     const toDeactivate = [...currentIds].filter((pid) => !formIds.has(pid))
     if (toDeactivate.length > 0) {
-      await c.from('product_prices').update({ is_active: false }).in('id', toDeactivate)
+      const { error: deactivateError } = await c
+        .from('product_prices')
+        .update({ is_active: false })
+        .in('id', toDeactivate)
+      if (deactivateError) return { error: deactivateError.message }
     }
 
-    // 기존 가격 업데이트 (ID 있는 항목)
+    // 기존 가격 업데이트 (ID 있는 항목) — 에러·0행 매칭을 사용자에게 표면화 (돈 경로: 조용히 삼키지 않음)
     for (const price of data.prices.filter((p) => p.id && p.price !== '')) {
-      await c
+      const { data: updated, error: updateError } = await c
         .from('product_prices')
         .update({
           type: price.type,
@@ -146,6 +150,11 @@ export default async function EditProductPage({
           is_active: true,
         })
         .eq('id', price.id!)
+        .select('id')
+      if (updateError) return { error: updateError.message }
+      if (!updated || updated.length === 0) {
+        return { error: `가격 항목(id=${price.id})을 찾지 못해 저장에 실패했습니다.` }
+      }
     }
 
     // 신규 가격 삽입 (ID 없는 항목)
