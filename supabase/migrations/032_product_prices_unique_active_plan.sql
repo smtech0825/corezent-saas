@@ -1,0 +1,51 @@
+-- ============================================================
+-- 032_product_prices_unique_active_plan.sql
+-- ============================================================
+-- 대상 DB : 본체 CoreZent Supabase  (env: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)
+--           ⚠️ 라이선스 전용 프로젝트가 아님 — LICENSE_SUPABASE_*(GenieStock)·GW_SUPABASE_*(GenieWork)
+--              에는 절대 적용하지 말 것. product_prices 테이블은 본체 DB 에만 존재한다.
+--
+-- 목적   : product_prices 에서 같은 (product_id, type, interval) '활성' 행이 둘 이상
+--          쌓이는 것을 DB 차원에서 차단. 관리자 가격 저장이 '엉뚱한 행 갱신 / 옛값 잔존'
+--          을 일으키던 구조적 원인(중복 행)을 제거한다.
+--          (Wave 1: 저장 에러 표면화 · Wave 2: 목록 읽기 is_active 필터 와 한 세트인 Wave 3)
+--
+-- 적용 순서 (Steve 가 Supabase SQL Editor 에서 직접 실행 — CC 는 외부 DB·연결키 미접촉):
+--   [1] 선행 확인 — '활성' 중복이 0건이어야 인덱스 생성이 성공한다:
+--         SELECT product_id, type, interval, count(*)
+--         FROM   product_prices
+--         WHERE  is_active
+--         GROUP  BY product_id, type, interval
+--         HAVING count(*) > 1;
+--       → 2026-06-28 확인 결과 0행(쿼리 B). 따라서 '선정리 불필요'.
+--       → 만약 0행이 아니면 이 파일을 실행하지 말 것. 활성 중복 그룹마다 대표 1행만
+--         is_active=true 로 남기고 나머지는 is_active=false 로 정리한 뒤 [2] 를 실행.
+--         (orders·subscriptions 가 product_price_id 로 FK 참조하므로 DELETE 금지 → 비활성화만.)
+--   [2] 아래 CREATE UNIQUE INDEX 실행.
+--
+-- NULL(one_time) 처리:
+--   interval 은 one_time 행에서 NULL 이다(002_products.sql). 표준 UNIQUE 는 NULL 을 서로
+--   다른 값으로 취급해 one_time 중복을 못 막으므로, COALESCE(interval,'') 로 NULL 을 한 값
+--   으로 묶어 one_time 도 커버한다. (저장 데이터는 불변 — 표현식은 인덱스에서만 평가됨.)
+--   ※ PostgreSQL 15+ 라면 아래 '대안'(NULLS NOT DISTINCT)도 동일 효과 + 더 단순한 ON CONFLICT 타깃.
+--
+-- 시드(011_seed_geniepost.sql) 와의 관계 — 재적용 시 6.99 중복 차단 여부:
+--   011 의 INSERT ... ON CONFLICT DO NOTHING 은 '충돌 타깃'이 없어 지금까지 무력했다.
+--   (PK=uuid 는 매 INSERT 마다 새 값이라 충돌이 안 나 → 011 재적용 때마다 6.99 중복이 쌓였다.)
+--   이 부분 UNIQUE 인덱스가 생기면, 타깃 없는 ON CONFLICT DO NOTHING 은 '모든' 유효 unique
+--   인덱스를 arbiter 로 사용하므로 — 활성(is_active=true) 행을 다시 INSERT 할 때 이 인덱스와
+--   충돌하여 조용히 skip 된다. 즉 011 재적용 시 6.99 중복 INSERT 가 차단된다.
+--   011 파일 자체는 수정하지 않는다(이미 적용된 마이그레이션은 불변 이력으로 보존).
+-- ============================================================
+
+-- 같은 상품의 같은 (type, interval) '활성' 가격은 1행만 허용(one_time 의 NULL interval 포함)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_product_prices_active_plan
+  ON public.product_prices (product_id, type, COALESCE(interval, ''))
+  WHERE is_active;
+
+-- 대안 (PostgreSQL 15+ 전용 · 동일 효과 · ON CONFLICT 추론 타깃에서 COALESCE 표현식이 빠져 더 단순.
+--   단, 향후 ON CONFLICT DO UPDATE 로 전환 시엔 두 방식 모두 '부분 인덱스'라 추론절에
+--   WHERE is_active 를 함께 명시해야 함 — 완전한 단순화는 아님):
+--   CREATE UNIQUE INDEX IF NOT EXISTS uq_product_prices_active_plan
+--     ON public.product_prices (product_id, type, interval) NULLS NOT DISTINCT
+--     WHERE is_active;
