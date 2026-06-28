@@ -24,11 +24,14 @@ export default async function ProductsPage() {
 
   const { data: products } = await adminClient
     .from('products')
-    .select('id, name, slug, category, tagline, is_active, order_index, product_prices(type, interval, price)')
+    .select('id, name, slug, category, tagline, is_active, order_index, product_prices(type, interval, price, is_active)')
     .order('order_index', { ascending: true })
 
   const list: ProductRow[] = (products ?? []).map((p) => {
-    const prices = (p.product_prices ?? []) as { type: string; interval: string; price: number }[]
+    // 활성 가격만 사용 — 비활성(과거) 행을 집어 옛 가격이 표시되는 문제 방지
+    // (공개 페이지·편집 페이지와 동일하게 is_active 필터)
+    const prices = ((p.product_prices ?? []) as { type: string; interval: string; price: number; is_active: boolean }[])
+      .filter((pr) => pr.is_active)
     const monthly = prices.find((pr) => pr.interval === 'monthly')
     const annual = prices.find((pr) => pr.interval === 'annual')
     const oneTime = prices.find((pr) => pr.type === 'one_time')
