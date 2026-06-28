@@ -8,12 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { Plus } from 'lucide-react'
 import ProductList, { type ProductRow } from './ProductList'
+import { formatPrice } from '@/lib/price'
 
 export const dynamic = 'force-dynamic'
-
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
-}
 
 async function deleteProduct(id: string) {
   'use server'
@@ -42,8 +39,8 @@ export default async function ProductsPage() {
       category:      p.category,
       tagline:       p.tagline ?? '',
       is_active:     p.is_active !== false,
-      monthlyLabel:  monthly ? fmtCurrency(monthly.price) + '/mo' : oneTime ? fmtCurrency(oneTime.price) + ' once' : '—',
-      annualLabel:   annual ? fmtCurrency(annual.price) + '/yr' : '—',
+      monthlyLabel:  monthly ? formatPrice(monthly.price) + '/mo' : oneTime ? formatPrice(oneTime.price) + ' once' : '—',
+      annualLabel:   annual ? formatPrice(annual.price) + '/yr' : '—',
     }
   })
 

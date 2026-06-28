@@ -674,7 +674,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   </select>
                 </Field>
 
-                <Field label="가격 (USD)">
+                <Field label="가격 (원, KRW)">
                   <input
                     type="number"
                     min={0}
