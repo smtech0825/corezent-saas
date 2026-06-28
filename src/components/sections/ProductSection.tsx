@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ArrowRight, Sparkles, Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { formatPrice } from '@/lib/price'
 
 interface ProductCard {
   name: string
@@ -80,8 +81,8 @@ export default async function ProductSection() {
       tags: ((p.tags ?? []) as string[]),
       badgeText: (p.badge_text as string) ?? null,
       badgeColor: (p.badge_color as string) ?? 'blue',
-      monthlyPrice: monthly ? `$${monthly.price.toFixed(2)}` : null,
-      annualPrice: annual ? `$${annual.price}` : null,
+      monthlyPrice: monthly ? formatPrice(monthly.price, { vat: true }) : null,
+      annualPrice: annual ? formatPrice(annual.price) : null,
       href: '/pricing',
       available: true,
     }

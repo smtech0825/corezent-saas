@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import DynamicIcon from '@/components/DynamicIcon'
 import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { formatPrice } from '@/lib/price'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -166,12 +167,12 @@ export default function ProductList({ products }: Props) {
                     {product.monthlyPrice != null && (
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl font-bold text-white">
-                          ${product.monthlyPrice.toFixed(2)}
+                          {formatPrice(product.monthlyPrice, { vat: true })}
                           <span className="text-sm text-[#94A3B8] font-normal">/월</span>
                         </span>
                         {product.annualPrice != null && (
                           <span className="text-xs text-[#475569]">
-                            또는 ${product.annualPrice}/년
+                            또는 {formatPrice(product.annualPrice)}/년
                           </span>
                         )}
                       </div>

@@ -49,8 +49,8 @@ export default function Navbar() {
 
   // 공지 배너 데이터 (DB에서 로드)
   const [banner, setBanner] = useState({
-    text: 'GeniePost 출시 — AI 기반 WordPress 자동 포스팅, 월 $9부터.',
-    text_mobile: 'GeniePost 출시 — AI WordPress 포스팅 월 $9부터',
+    text: 'GeniePost 출시 — AI 기반 WordPress 자동 포스팅, 월 구독으로 시작하세요.',
+    text_mobile: 'GeniePost 출시 — AI WordPress 자동 포스팅 월 구독',
     link_text: '자세히 보기 →',
     link_url: '#product',
     visible: 'true',

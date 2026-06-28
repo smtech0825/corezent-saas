@@ -12,6 +12,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
 import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { formatPrice } from '@/lib/price'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
@@ -242,7 +243,7 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                         /* 일회성 구매 */
                         <>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-5xl font-bold text-white">${product.monthlyPrice.toFixed(2)}</span>
+                            <span className="text-5xl font-bold text-white">{formatPrice(product.monthlyPrice, { vat: true })}</span>
                           </div>
                           <p className="text-xs text-[#475569] mt-1.5">1회 구매</p>
                         </>
@@ -251,21 +252,21 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                         <>
                           {isAnnualView && (
                             <p className="text-sm text-[#94A3B8] line-through mb-0.5">
-                              ${product.monthlyPrice.toFixed(2)}/월
+                              {formatPrice(product.monthlyPrice)}/월
                             </p>
                           )}
                           <div className="flex items-baseline gap-1">
-                            <span className="text-5xl font-bold text-white">${displayPrice.toFixed(2)}</span>
+                            <span className="text-5xl font-bold text-white">{formatPrice(displayPrice, { vat: true })}</span>
                             <span className="text-[#94A3B8] text-base">/월</span>
                           </div>
                           {product.hasAnnualPlan ? (
                             isAnnualView ? (
                               <p className="text-xs text-emerald-400 mt-1.5 font-medium">
-                                연 ${product.annualPrice} 결제 · {productSavePct}% 절약
+                                연 {formatPrice(product.annualPrice)} 결제 · {productSavePct}% 절약
                               </p>
                             ) : (
                               <p className="text-xs text-[#475569] mt-1.5">
-                                또는 연 ${product.annualPrice} ({productSavePct}% 절약)
+                                또는 연 {formatPrice(product.annualPrice)} ({productSavePct}% 절약)
                               </p>
                             )
                           ) : null}

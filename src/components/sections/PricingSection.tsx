@@ -12,6 +12,7 @@ import { Check, ArrowRight, Sparkles } from 'lucide-react'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { formatPrice } from '@/lib/price'
 
 export interface PricingSectionProduct {
   name: string
@@ -83,15 +84,15 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         {product.isOneTime ? (
           <div className="flex items-end gap-2 mb-1">
             <span className="text-5xl font-bold text-white">
-              ${MONTHLY > 0 ? MONTHLY.toFixed(2) : '—'}
+              {MONTHLY > 0 ? formatPrice(MONTHLY, { vat: true }) : '—'}
             </span>
           </div>
         ) : (
           <div className="flex items-end gap-2 mb-1">
             <span className="text-5xl font-bold text-white">
               {annual && product.hasAnnualPlan
-                ? `$${ANNUAL}`
-                : `$${MONTHLY.toFixed(2)}`}
+                ? formatPrice(ANNUAL, { vat: true })
+                : formatPrice(MONTHLY, { vat: true })}
             </span>
             <span className="text-[#94A3B8] text-base mb-2">
               {annual && product.hasAnnualPlan ? '/년' : '/월'}
@@ -103,9 +104,9 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
           {product.isOneTime
             ? '1회 구매 · 평생 이용'
             : annual && product.hasAnnualPlan
-              ? `월 약 $${ANNUAL_MONTHLY.toFixed(2)}, 연간 결제${SAVE_PCT > 0 ? ` · ${SAVE_PCT}% 절약` : ''}`
+              ? `월 약 ${formatPrice(ANNUAL_MONTHLY)}, 연간 결제${SAVE_PCT > 0 ? ` · ${SAVE_PCT}% 절약` : ''}`
               : product.hasAnnualPlan
-                ? `월간 결제 · 또는 연 $${ANNUAL}${SAVE_PCT > 0 ? ` (${SAVE_PCT}% 절약)` : ''}`
+                ? `월간 결제 · 또는 연 ${formatPrice(ANNUAL)}${SAVE_PCT > 0 ? ` (${SAVE_PCT}% 절약)` : ''}`
                 : '월간 결제'}
         </p>
 
