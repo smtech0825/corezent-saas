@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         console.log(`[LS Webhook] 처리하지 않는 이벤트: ${eventName}`)
     }
   } catch (err) {
-    console.error(`[LS Webhook] 이벤트 처리 중 오류 (${eventName}):`, err)
+    console.error(`[LS Webhook] 이벤트 처리 중 오류 (event=${eventName}, data_id=${payload.data?.id ?? 'N/A'}):`, err)
     return NextResponse.json({ received: true, error: String(err) }, { status: 200 })
   }
 
@@ -213,7 +213,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
-    console.error(`[LS Webhook] 사용자 없음: ${attrs.user_email}`)
+    console.error(`[LS Webhook] 사용자 없음 — 주문 미생성 (order_id=${lsOrderId}, email=${attrs.user_email})`)
     return
   }
 
@@ -238,7 +238,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   }
 
   if (!productPriceId && !bundleId) {
-    console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음. 주문만 기록.`)
+    console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음 — 주문만 기록·라이선스 미생성 (order_id=${lsOrderId})`)
   }
 
   const orderInsert: Record<string, unknown> = {
@@ -354,7 +354,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
-    console.error(`[LS Webhook] 구독 사용자 없음: ${attrs.user_email}`)
+    console.error(`[LS Webhook] 구독 사용자 없음 — 구독/라이선스 미생성 (order_id=${attrs.order_id}, sub=${lsSubId}, email=${attrs.user_email})`)
     return
   }
 
@@ -784,7 +784,7 @@ async function createLicense(
       ? tierFromGenieWork(productSlug)
       : tierFromProductName(productSlug)
     if (!tier) {
-      console.error(`[LS Webhook] ${supaSlug} 상품에서 tier 추출 실패: slug="${productSlug}"`)
+      console.error(`[LS Webhook] ${supaSlug} tier 추출 실패 — 라이선스 미생성 (order_id=${lsOrderId ?? 'N/A'}, slug="${productSlug}")`)
       return
     }
 
@@ -797,7 +797,7 @@ async function createLicense(
         serialKey = lsKey
         lsLicenseKey = lsKey
       } else {
-        console.warn(`[LS Webhook] ${supaSlug} LS 키 조회 실패 — 자체 생성 폴백`)
+        console.warn(`[LS Webhook] ${supaSlug} LS 키 조회 실패 — 자체키 폴백(대시보드 자체키 표시 위험) (order_id=${lsOrderId})`)
         serialKey = generateSerialKey()
       }
     } else {
@@ -851,7 +851,7 @@ async function createLicense(
         console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료 (tier=${tier})`)
       }
     } catch (supaErr) {
-      console.error(`[LS Webhook] ${supaSlug} Supabase 등록 실패:`, supaErr)
+      console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, supaErr)
     }
 
     // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용) — finalKey(LS키 우선) 사용
@@ -868,7 +868,7 @@ async function createLicense(
 
     const { error: gsLicErr } = await admin.from('licenses').insert(gsLicenseInsert)
     if (gsLicErr) {
-      console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패: ${gsLicErr.message}`)
+      console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패 — 대시보드 미표시 (order_id=${lsOrderId ?? 'N/A'}): ${gsLicErr.message}`)
     }
 
     // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy
@@ -899,7 +899,7 @@ async function createLicense(
       console.log(`[LS Webhook] LS 라이선스 키 조회 완료: ${lsKey.slice(0, 8)}...`)
     } else {
       // LS 키 조회 실패 시 자체 생성으로 폴백
-      console.warn(`[LS Webhook] LS 키 조회 실패 — 자체 생성으로 폴백`)
+      console.warn(`[LS Webhook] LS 키 조회 실패 — 자체키 폴백(대시보드 자체키 표시 위험) (order_id=${lsOrderId})`)
       serialKey = generateSerialKey()
     }
   } else {
