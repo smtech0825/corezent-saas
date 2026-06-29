@@ -80,21 +80,21 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         )}
         <p className="text-[#94A3B8] text-sm mb-2">{product.name}</p>
 
-        {/* 가격 */}
+        {/* 가격 — 숫자는 헤드라인, "VAT 포함"은 아래 안내 문구로 분리 */}
         {product.isOneTime ? (
           <div className="flex items-end gap-2 mb-1">
-            <span className="text-5xl font-bold text-white">
-              {MONTHLY > 0 ? formatPrice(MONTHLY, { vat: true }) : '—'}
+            <span className="text-4xl font-bold text-white">
+              {MONTHLY > 0 ? formatPrice(MONTHLY) : '—'}
             </span>
           </div>
         ) : (
           <div className="flex items-end gap-2 mb-1">
-            <span className="text-5xl font-bold text-white">
+            <span className="text-4xl font-bold text-white">
               {annual && product.hasAnnualPlan
-                ? formatPrice(ANNUAL, { vat: true })
-                : formatPrice(MONTHLY, { vat: true })}
+                ? formatPrice(ANNUAL)
+                : formatPrice(MONTHLY)}
             </span>
-            <span className="text-[#94A3B8] text-base mb-2">
+            <span className="text-[#94A3B8] text-base mb-1.5">
               {annual && product.hasAnnualPlan ? '/년' : '/월'}
             </span>
           </div>
@@ -108,6 +108,7 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
               : product.hasAnnualPlan
                 ? `월간 결제 · 또는 연 ${formatPrice(ANNUAL)}${SAVE_PCT > 0 ? ` (${SAVE_PCT}% 절약)` : ''}`
                 : '월간 결제'}
+          {' · VAT 포함'}
         </p>
 
         {/* CTA */}

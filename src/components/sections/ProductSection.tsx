@@ -81,7 +81,7 @@ export default async function ProductSection() {
       tags: ((p.tags ?? []) as string[]),
       badgeText: (p.badge_text as string) ?? null,
       badgeColor: (p.badge_color as string) ?? 'blue',
-      monthlyPrice: monthly ? formatPrice(monthly.price, { vat: true }) : null,
+      monthlyPrice: monthly ? formatPrice(monthly.price) : null,
       annualPrice: annual ? formatPrice(annual.price) : null,
       href: '/pricing',
       available: true,
@@ -206,11 +206,9 @@ export default async function ProductSection() {
                           {product.monthlyPrice}
                           <span className="text-sm text-[#94A3B8] font-normal">/월</span>
                         </span>
-                        {product.annualPrice && (
-                          <span className="text-xs text-[#475569]">
-                            또는 {product.annualPrice}/년
-                          </span>
-                        )}
+                        <span className="text-xs text-[#475569]">
+                          VAT 포함{product.annualPrice ? ` · 또는 ${product.annualPrice}/년` : ''}
+                        </span>
                       </div>
                     )}
                     <Link

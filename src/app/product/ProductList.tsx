@@ -167,14 +167,12 @@ export default function ProductList({ products }: Props) {
                     {product.monthlyPrice != null && (
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl font-bold text-white">
-                          {formatPrice(product.monthlyPrice, { vat: true })}
+                          {formatPrice(product.monthlyPrice)}
                           <span className="text-sm text-[#94A3B8] font-normal">/월</span>
                         </span>
-                        {product.annualPrice != null && (
-                          <span className="text-xs text-[#475569]">
-                            또는 {formatPrice(product.annualPrice)}/년
-                          </span>
-                        )}
+                        <span className="text-xs text-[#475569]">
+                          VAT 포함{product.annualPrice != null ? ` · 또는 ${formatPrice(product.annualPrice)}/년` : ''}
+                        </span>
                       </div>
                     )}
                     <button

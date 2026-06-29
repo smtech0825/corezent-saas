@@ -237,15 +237,15 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                     </div>
                     <p className="text-sm text-[#94A3B8] leading-relaxed mb-8">{product.tagline}</p>
 
-                    {/* 가격 */}
+                    {/* 가격 — 숫자는 헤드라인, "VAT 포함"은 아래 안내 문구로 분리 */}
                     <div className="mb-8">
                       {product.isOneTime ? (
                         /* 일회성 구매 */
                         <>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-5xl font-bold text-white">{formatPrice(product.monthlyPrice, { vat: true })}</span>
+                            <span className="text-4xl font-bold text-white">{formatPrice(product.monthlyPrice)}</span>
                           </div>
-                          <p className="text-xs text-[#475569] mt-1.5">1회 구매</p>
+                          <p className="text-xs text-[#475569] mt-1.5">1회 구매 · VAT 포함</p>
                         </>
                       ) : (
                         /* 구독형 */
@@ -256,20 +256,22 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                             </p>
                           )}
                           <div className="flex items-baseline gap-1">
-                            <span className="text-5xl font-bold text-white">{formatPrice(displayPrice, { vat: true })}</span>
+                            <span className="text-4xl font-bold text-white">{formatPrice(displayPrice)}</span>
                             <span className="text-[#94A3B8] text-base">/월</span>
                           </div>
                           {product.hasAnnualPlan ? (
                             isAnnualView ? (
                               <p className="text-xs text-emerald-400 mt-1.5 font-medium">
-                                연 {formatPrice(product.annualPrice)} 결제 · {productSavePct}% 절약
+                                연 {formatPrice(product.annualPrice)} 결제 · {productSavePct}% 절약 · VAT 포함
                               </p>
                             ) : (
                               <p className="text-xs text-[#475569] mt-1.5">
-                                또는 연 {formatPrice(product.annualPrice)} ({productSavePct}% 절약)
+                                또는 연 {formatPrice(product.annualPrice)} ({productSavePct}% 절약) · VAT 포함
                               </p>
                             )
-                          ) : null}
+                          ) : (
+                            <p className="text-xs text-[#475569] mt-1.5">VAT 포함</p>
+                          )}
                         </>
                       )}
                     </div>
