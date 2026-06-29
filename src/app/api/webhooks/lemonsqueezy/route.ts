@@ -955,7 +955,7 @@ async function createLicense(
     throw new Error(`라이선스 생성 실패: ${licErr?.message}`)
   }
 
-  console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey})${isPro ? ' [Pro]' : ''}`)
+  console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey.slice(0, 8)}...)${isPro ? ' [Pro]' : ''}`)
 
   // 주문 확인 이메일 발송
   try {
