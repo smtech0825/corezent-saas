@@ -46,34 +46,37 @@ import {
 
 export const runtime = 'nodejs'
 
-// ─── Supabase 라이선스 제품 식별 헬퍼 ───────────────────────────────────────
-// LS 상품명 → Supabase 경로(geniestock|geniework) 분기.
-//   - "GenieStock" 포함 → 'geniestock' (tier: lite/pro/max — Max/Pro/Lite 키워드)
-//   - "GenieWork"  포함 → 'geniework'  (tier: 1pc/3pc/5pc/10pc — NPC 키워드)
-//   - 그 외(GeniePost 등) → null → Google Sheets 경로 (절대 수정 금지)
+// ─── Supabase 라이선스 제품 식별 헬퍼 (slug 기반 — 표시명과 무관) ─────────────
+// 분기 출처 = product.slug = {family}_{tier}_{interval} (예: geniework_1pc_monthly).
+// slug는 NOT NULL UNIQUE 안정 식별자(002:9)라 상품명을 한국어로 바꿔도 불변.
+// (로직은 기존 name 파싱과 동일 — 토큰 포함 검사. 출처만 name→slug.)
+//   - slug에 "geniestock" 포함 → 'geniestock' (tier: lite/pro/max)
+//   - slug에 "geniework"  포함 → 'geniework'  (tier: 1pc/3pc/5pc/10pc)
+//   - 그 외(geniepost 등) → null → Google Sheets 경로 (절대 수정 금지)
+//   - slug에 토큰이 없는 비표준 값이면 기존과 동일하게 null로 폴백.
 
-function isSupabaseProduct(productName: string | null | undefined): 'geniestock' | 'geniework' | null {
-  const n = (productName ?? '').toLowerCase()
-  if (n.includes('geniestock')) return 'geniestock'
-  if (n.includes('geniework'))  return 'geniework'
+function isSupabaseProduct(slug: string | null | undefined): 'geniestock' | 'geniework' | null {
+  const s = (slug ?? '').toLowerCase()
+  if (s.includes('geniestock')) return 'geniestock'
+  if (s.includes('geniework'))  return 'geniework'
   return null
 }
 
-function tierFromProductName(productName: string | null | undefined): SupaTier | null {
-  const n = (productName ?? '').toLowerCase()
-  if (n.includes('max'))  return 'max'
-  if (n.includes('pro'))  return 'pro'
-  if (n.includes('lite')) return 'lite'
+function tierFromProductName(slug: string | null | undefined): SupaTier | null {
+  const s = (slug ?? '').toLowerCase()
+  if (s.includes('max'))  return 'max'
+  if (s.includes('pro'))  return 'pro'
+  if (s.includes('lite')) return 'lite'
   return null
 }
 
-function tierFromGenieWork(productName: string | null | undefined): SupaTier | null {
-  const n = (productName ?? '').toLowerCase()
+function tierFromGenieWork(slug: string | null | undefined): SupaTier | null {
+  const s = (slug ?? '').toLowerCase()
   // 10pc 먼저 검사 (1pc 부분 일치 회피)
-  if (n.includes('10pc')) return '10pc'
-  if (n.includes('5pc'))  return '5pc'
-  if (n.includes('3pc'))  return '3pc'
-  if (n.includes('1pc'))  return '1pc'
+  if (s.includes('10pc')) return '10pc'
+  if (s.includes('5pc'))  return '5pc'
+  if (s.includes('3pc'))  return '3pc'
+  if (s.includes('1pc'))  return '1pc'
   return null
 }
 
@@ -451,7 +454,7 @@ async function handleLicenseKeyCreated(payload: LSWebhookPayload) {
     return
   }
 
-  // product 판별: LS product_id → product_prices.lemon_squeezy_product_id → products.name → isSupabaseProduct
+  // product 판별: LS product_id → product_prices.lemon_squeezy_product_id → products.slug → isSupabaseProduct
   const supaSlug = await resolveSupabaseProductByLsProductId(lsProductId)
   if (supaSlug !== 'geniework') {
     // geniework가 아니면 아무것도 안 함 (geniestock 오라우팅 절대 금지 · geniepost 무관)
@@ -473,7 +476,8 @@ async function handleLicenseKeyCreated(payload: LSWebhookPayload) {
 }
 
 // LS product_id(숫자 문자열)로 CoreZent 본체에서 제품 판별.
-// product_prices.lemon_squeezy_product_id 시드 기준 → products.name → isSupabaseProduct.
+// product_prices.lemon_squeezy_product_id 시드 기준 → products.slug → isSupabaseProduct.
+// (license_key_created 선도착 시 orders가 아직 없을 수 있어 product_id→slug 경로 사용 — orders 비의존.)
 async function resolveSupabaseProductByLsProductId(
   lsProductId: string,
 ): Promise<'geniestock' | 'geniework' | null> {
@@ -488,10 +492,10 @@ async function resolveSupabaseProductByLsProductId(
   if (!corePid) return null
   const { data: product } = await admin
     .from('products')
-    .select('name')
+    .select('slug')
     .eq('id', corePid)
     .single()
-  return isSupabaseProduct(product?.name)
+  return isSupabaseProduct(product?.slug)
 }
 
 // 본체 licenses 행이 있으면 serial_key·lemon_squeezy_license_key를 LS 키로 동기화(대시보드 일관).
@@ -763,23 +767,24 @@ async function createLicense(
 
   const { data: product } = await admin
     .from('products')
-    .select('name, max_devices, license_duration_days')
+    .select('slug, name, max_devices, license_duration_days')
     .eq('id', productId)
     .single()
 
-  const productNameRaw = product?.name ?? ''
+  // 분기 출처 = product.slug (표시명과 무관, 안정 식별자). slug={family}_{tier}_{interval}.
+  const productSlug = (product?.slug ?? '').toLowerCase()
 
   // ─── Supabase 라이선스 분기 (GenieStock / GenieWork) ────────────────────
-  // 상품명에 "GenieStock"|"GenieWork" 포함 시 Supabase license_keys 에 등록.
+  // slug에 "geniestock"|"geniework" 포함 시 Supabase license_keys 에 등록.
   // Sheets append 는 스킵 (시트는 GeniePost 전용 — 절대 수정 금지).
   // CoreZent 내부 licenses 테이블에는 동일하게 INSERT (대시보드용).
-  const supaSlug = isSupabaseProduct(productNameRaw)
+  const supaSlug = isSupabaseProduct(productSlug)
   if (supaSlug) {
     const tier = supaSlug === 'geniework'
-      ? tierFromGenieWork(productNameRaw)
-      : tierFromProductName(productNameRaw)
+      ? tierFromGenieWork(productSlug)
+      : tierFromProductName(productSlug)
     if (!tier) {
-      console.error(`[LS Webhook] ${supaSlug} 상품에서 tier 추출 실패: "${productNameRaw}"`)
+      console.error(`[LS Webhook] ${supaSlug} 상품에서 tier 추출 실패: slug="${productSlug}"`)
       return
     }
 
@@ -875,11 +880,10 @@ async function createLicense(
     return
   }
 
-  // ─── GeniePost 경로 (Google Sheets) — 절대 수정 금지 ────────────────────
-  // 제품명 기반 라이선스 방식 판별
+  // ─── GeniePost 경로 (Google Sheets) — Sheets 로직 절대 수정 금지 ──────────
+  // slug 기반 라이선스 방식 판별 (표시명과 무관 — slug={family}_{tier}_{interval})
   // GeniePost(일반)만 CoreZent 자체 시리얼 키 생성, 나머지(Pro + 모든 신규 상품)는 LS 자동 발급 키 사용
-  const productName = productNameRaw.toLowerCase()
-  const isPro = !productName.includes('geniepost') || productName.includes('pro')
+  const isPro = !productSlug.includes('geniepost') || productSlug.includes('pro')
   // isPro === true: LS 라이선스 사용 (Pro 및 모든 신규 상품)
   // isPro === false: GeniePost 일반만 자체 생성
 
