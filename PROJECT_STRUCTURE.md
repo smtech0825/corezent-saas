@@ -208,6 +208,19 @@ CoreZent_SaaS/
 > ⚠️ 세 검증 경로 모두 응답 shape가 동일해 앱 코드 변경 불필요. GeniePost(Sheets) 경로는 코드상 **수정 금지** 표시.
 > ⚠️ GenieStock·GenieWork 라이선스 DB 스키마는 `supabase/license-migrations/`에 별도로 있음 (본체 `supabase/migrations/`와 별개).
 
+**GenieWork 테스터 AI 프록시** (GW_SUPABASE 전용 — 마이그레이션 005~007 + Edge Function):
+
+테스터 키(`test*`)의 AI 호출을 서버가 대리하며 **라이선스별 USD 한도**를 강제합니다. 진짜 AI 제공사 키는 Edge Function secret(`ANTHROPIC_API_KEY`)에만 존재하고 클라/응답/로그에 절대 노출되지 않습니다.
+
+| 구성 | 내용 |
+|---|---|
+| Edge Function | [supabase/functions/tester-ai-proxy/index.ts](supabase/functions/tester-ai-proxy/index.ts) — `gate → count_tokens → reserve → generate → settle/release` |
+| 테이블 (005) | `tester_budget`(키별 `usd_cap`/`usd_spent`) · `tester_usage_log`(콜 로그) · `tester_model_price`(model→단가) · `license_program_config.tester_default_usd_cap`(기본 5.00) |
+| 테이블 (007) | `tester_reservation`(콜별 hold 원장 — open/settled/released) |
+| RPC | `tester_ai_gate`(006) · `tester_ai_reserve`/`tester_ai_settle`/`tester_ai_release`/`tester_ai_sweep_stale_reservations`(007) — 전부 `service_role` 전용, 키 단위 advisory lock으로 **cost는 DB 단가로만 계산**·**cap 하드 보장**(사전예약→정산으로 동시성 오버슈트 차단) |
+| 한도 변경(무재배포) | 전역 `UPDATE license_program_config SET tester_default_usd_cap=N` / 키별 `tester_budget.usd_cap` |
+| 에러코드 | `NOT_TESTER`·`INACTIVE`·`TESTER_BUDGET_EXCEEDED`·`TESTER_BUDGET_INSUFFICIENT`·`PRICE_NOT_CONFIGURED`·`PROVIDER_ERROR` 등 |
+
 | 역할 | 파일 |
 |---|---|
 | **LS 웹훅 → CoreZent 시트 동기화** | [src/lib/sheets.ts](src/lib/sheets.ts) — `appendLicenseRow` / `updateLicenseExpiry` / `updateLicenseStatus` (A이메일/B시리얼/C HWID/D만료일/E상태/F=D-TODAY()/G Pro) |
@@ -442,6 +455,15 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 |---|---|
 | `LICENSE_SUPABASE_URL` + `LICENSE_SUPABASE_SERVICE_ROLE_KEY` | **GenieStock 라이선스** ([_lib_supabase.ts](src/app/api/license/_lib_supabase.ts)) — `license_keys`/`hwid_mapping` |
 | `GW_SUPABASE_URL` + `GW_SUPABASE_SERVICE_ROLE_KEY` | **GenieWork 라이선스** — GenieStock과도 물리적으로 분리된 별도 프로젝트 |
+
+**GenieWork 테스터 AI 프록시 — Edge Function secret** (Next.js `.env` 아님, `supabase secrets set`으로 GW 프로젝트에만 주입)
+
+| 환경변수 | 용도 |
+|---|---|
+| `ANTHROPIC_API_KEY` | 진짜 AI 제공사 키 — 서버(Edge Function) 전용. 클라/응답/로그 미노출 |
+| `ANTHROPIC_BASE_URL`·`ANTHROPIC_VERSION` (선택) | 제공사 엔드포인트·API 버전 |
+| `TESTER_MAX_TOKENS`·`TESTER_MAX_TOKENS_CAP` (선택) | 콜당 출력 토큰 기본/상한(과지출 방지) |
+| `TESTER_USE_COUNT_TOKENS`·`TESTER_CHARS_PER_TOKEN` (선택) | 입력 토큰 정확 측정(count_tokens) on/off·폴백 추정 계수 |
 
 > ⚠️ 본체 / GenieStock / GenieWork 3개 Supabase + 2개 Google Sheets가 모두 다른 env를 쓴다 — 혼동이 가장 흔한 버그. `GOOGLE_SHEET_ID`·`GOOGLE_SHEET_TAB`는 `.env.example`에 누락되어 있으니 `.env.local`에 직접 추가.
 
