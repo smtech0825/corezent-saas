@@ -7,6 +7,7 @@
 
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatKRW, toWonAmount } from '@/lib/money'
 import {
   Users, DollarSign, Key, MessageSquare,
   TrendingUp, TrendingDown, UserPlus,
@@ -18,8 +19,9 @@ export const dynamic = 'force-dynamic'
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US').format(n)
 }
+// 매출·주문 금액은 KRW(원) 정수로 표시 — 단일 출처 lib/money.formatKRW 위임.
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  return formatKRW(n)
 }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -32,9 +34,9 @@ function growthRate(current: number, prev: number): number | null {
   return Math.round(((current - prev) / prev) * 100)
 }
 
-/** 매출 배열 합산 (amount는 cents 단위) */
+/** 매출 배열 합산 (amount는 원화 정수 — ÷100 하지 않음) */
 function sumAmount(rows: { amount: number | null }[]): number {
-  return rows.reduce((s, o) => s + (o.amount ?? 0), 0) / 100
+  return rows.reduce((s, o) => s + toWonAmount(o.amount), 0)
 }
 
 const statusColors: Record<string, string> = {
@@ -274,7 +276,7 @@ export default async function AdminPage() {
                         {emailMap.get(order.user_id) || '—'}
                       </td>
                       <td className="px-4 py-3 text-white font-medium">
-                        {fmtCurrency((order.amount ?? 0) / 100)}
+                        {fmtCurrency(order.amount ?? 0)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[order.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>

@@ -9,6 +9,7 @@ import { CreditCard, Package } from 'lucide-react'
 import Link from 'next/link'
 import Pagination from '@/components/common/Pagination'
 import BillingSubscriptionSection, { type SubRow } from './BillingSubscriptionSection'
+import { formatKRW } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
@@ -188,7 +189,7 @@ export default async function BillingPage({
                     {new Date(order.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-sm text-white font-medium">
-                    ${((order.amount ?? 0) / 100).toFixed(2)}
+                    {formatKRW(order.amount)}
                   </span>
                   <OrderStatusBadge status={order.status} />
                 </div>

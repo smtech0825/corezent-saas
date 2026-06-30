@@ -392,7 +392,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
       lemon_squeezy_order_id: lsOrderId,
       status: 'paid',
       amount: 0,
-      currency: 'USD',
+      currency: 'KRW', // 스토어 통화(KRW)로 통일 — 실제 금액·통화는 order_created가 채움(여기선 스텁)
     }
     if (productPrice) orderInsert.product_price_id = productPrice.id
     if (bundleId) orderInsert.bundle_id = bundleId

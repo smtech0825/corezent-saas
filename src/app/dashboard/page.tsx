@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { Key, CreditCard, Package, ArrowRight } from 'lucide-react'
+import { formatKRW } from '@/lib/money'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -134,7 +135,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-white">${((order.amount ?? 0) / 100).toFixed(2)}</p>
+                    <p className="text-sm text-white">{formatKRW(order.amount)}</p>
                     <StatusBadge status={order.status} />
                   </div>
                 </div>

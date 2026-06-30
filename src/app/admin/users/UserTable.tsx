@@ -9,6 +9,7 @@
 import { useState, useMemo, Fragment } from 'react'
 import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
 import RoleSelect from './RoleSelect'
+import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
 
 const PAGE_SIZE = 20
@@ -42,8 +43,8 @@ function fmtDate(d: string) {
 }
 
 function fmtCurrency(amount: number) {
-  // DB의 amount는 센트 단위 (orders 페이지와 동일한 방식)
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount / 100)
+  // DB의 amount는 원화 정수 — 단일 출처 lib/money.formatKRW 위임 (₩, ÷100 없음)
+  return formatKRW(amount)
 }
 
 const orderStatusStyle: Record<string, string> = {
