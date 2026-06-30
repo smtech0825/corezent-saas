@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatKRW, toWonAmount } from '@/lib/money'
+import { formatKRW } from '@/lib/money'
 import {
   Users, DollarSign, Key, MessageSquare,
   TrendingUp, TrendingDown, UserPlus,
@@ -34,9 +34,9 @@ function growthRate(current: number, prev: number): number | null {
   return Math.round(((current - prev) / prev) * 100)
 }
 
-/** 매출 배열 합산 (amount는 원화 정수 — ÷100 하지 않음) */
+/** 매출 배열 합산 (amount는 센트 — 합산만, ÷100·₩표기는 formatKRW에서) */
 function sumAmount(rows: { amount: number | null }[]): number {
-  return rows.reduce((s, o) => s + toWonAmount(o.amount), 0)
+  return rows.reduce((s, o) => s + (o.amount ?? 0), 0)
 }
 
 const statusColors: Record<string, string> = {
