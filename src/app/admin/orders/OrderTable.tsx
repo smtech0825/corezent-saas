@@ -17,8 +17,11 @@ const PAGE_SIZE = 15
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
+// 주문 금액은 KRW(원) 정수로 취급해 표시한다.
+// (2026-06 결정: 사이트가 ₩로 판매하므로 admin 주문 금액도 전부 ₩로 통일.
+//  orders.amount 를 원화 정수로 보고 ÷100 환산하지 않는다 — ₩ 기호·천단위 콤마·소수 0자리.)
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(n)
 }
 
 export interface Order {
@@ -148,7 +151,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                         </td>
                         <td className="px-4 py-3 text-[#94A3B8] truncate max-w-[200px]">{o.email}</td>
                         <td className="px-4 py-3 text-white font-medium tabular-nums">
-                          {fmtCurrency(o.amount / 100)}
+                          {fmtCurrency(o.amount)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${badge.cls}`}>

@@ -42,8 +42,9 @@ export default async function OrdersPage() {
     }
   })
 
+  // 주문 금액(amount)은 원화 정수로 취급 — ÷100 하지 않고 합산(전부 ₩ 표시 결정).
   const totalRevenue =
-    list.filter((o) => o.status === 'paid').reduce((s, o) => s + o.amount, 0) / 100
+    list.filter((o) => o.status === 'paid').reduce((s, o) => s + o.amount, 0)
 
   return <OrderTable orders={list} totalRevenue={totalRevenue} />
 }
