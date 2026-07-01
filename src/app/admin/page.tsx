@@ -52,6 +52,14 @@ const statusColors: Record<string, string> = {
   user:      'text-[#94A3B8] bg-[#1E293B]',
 }
 
+/** 주문 상태 표시 라벨 — UserTable.tsx의 한글 라벨과 통일 (paid=결제됨/pending=대기 중/refunded=환불됨/cancelled=취소됨) */
+const orderStatusLabel: Record<string, string> = {
+  paid:      '결제됨',
+  pending:   '대기 중',
+  refunded:  '환불됨',
+  cancelled: '취소됨',
+}
+
 export default async function AdminPage() {
   const adminClient = createAdminClient()
 
@@ -279,8 +287,8 @@ export default async function AdminPage() {
                         {fmtCurrency(order.amount ?? 0)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[order.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
-                          {order.status}
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                          {orderStatusLabel[order.status] ?? order.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-[#475569] whitespace-nowrap">
