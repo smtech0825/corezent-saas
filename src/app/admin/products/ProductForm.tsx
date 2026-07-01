@@ -678,11 +678,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   <input
                     type="number"
                     min={0}
-                    step={0.01}
+                    step={1}
                     required
                     value={price.price}
                     onChange={(e) => updatePrice(idx, 'price', e.target.value)}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={inputCls}
                   />
                 </Field>
