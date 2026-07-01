@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, CheckCircle } from 'lucide-react'
 import CountrySelect from '@/components/common/CountrySelect'
 import { useToast } from '@/components/common/Toast'
+import WithdrawSection from './WithdrawSection'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -258,6 +259,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </section>
+
+      {/* 회원 탈퇴 섹션 (위험 구역) */}
+      <WithdrawSection />
     </div>
   )
 }
