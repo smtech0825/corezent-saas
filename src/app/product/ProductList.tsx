@@ -30,6 +30,7 @@ interface Product {
   tagline: string | null
   description: string | null
   category: string
+  category_group: string | null
   features: string[]
   tags: string[]
   product_features: ProductFeature[]
@@ -48,10 +49,20 @@ interface Props {
 
 export default function ProductList({ products }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string>('all')
 
   function toggle(id: string) {
     setExpandedId((prev) => (prev === id ? null : id))
   }
+
+  // 자유입력 카테고리(category_group) 목록 — DB 값 기준(하드코딩 아님)
+  const categories = [...new Set(
+    products.map((p) => p.category_group?.trim()).filter((c): c is string => !!c),
+  )]
+  const visibleProducts =
+    activeCategory === 'all'
+      ? products
+      : products.filter((p) => (p.category_group?.trim() ?? '') === activeCategory)
 
   if (products.length === 0) {
     return (
@@ -63,9 +74,32 @@ export default function ProductList({ products }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* 카테고리 필터 탭 — 카테고리가 지정된 제품이 있을 때만 표시 */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-2">
+          {['all', ...categories].map((cat) => {
+            const active = activeCategory === cat
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
+                  active
+                    ? 'bg-[#38BDF8] text-[#0B1120] border-[#38BDF8]'
+                    : 'text-[#94A3B8] border-[#1E293B] hover:text-white hover:border-[#38BDF8]/40'
+                }`}
+              >
+                {cat === 'all' ? '전체' : cat}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* 카드 그리드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {products.map((product) => {
+        {visibleProducts.map((product) => {
           const isExpanded = expandedId === product.id
           const desc = product.description ?? ''
           const isLongDesc = desc.length > DESC_CHAR_LIMIT
@@ -122,6 +156,11 @@ export default function ProductList({ products }: Props) {
                   {product.category && (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
                       {CATEGORY_LABELS[product.category] ?? product.category}
+                    </span>
+                  )}
+                  {product.category_group && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-[#1E293B] text-[#94A3B8] border-[#1E293B]">
+                      {product.category_group}
                     </span>
                   )}
                 </div>

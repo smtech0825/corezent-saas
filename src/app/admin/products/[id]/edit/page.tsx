@@ -22,7 +22,7 @@ export default async function EditProductPage({
 
   const { data: product } = await client
     .from('products')
-    .select('id, name, slug, tagline, description, category, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features')
+    .select('id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features')
     .eq('id', id)
     .single()
 
@@ -80,6 +80,7 @@ export default async function EditProductPage({
     tagline: product.tagline ?? '',
     description: product.description ?? '',
     category: product.category ?? 'desktop',
+    category_group: (product.category_group as string) ?? '',
     badge_text: (product.badge_text as string) ?? '',
     badge_color: ((product.badge_color as string) ?? 'blue') as 'blue' | 'green' | 'yellow',
     logo_url: product.logo_url ?? '',
@@ -104,6 +105,7 @@ export default async function EditProductPage({
         tagline: data.tagline || null,
         description: data.description || null,
         category: data.category,
+        category_group: data.category_group || null,
         badge_text: data.badge_text || null,
         badge_color: data.badge_color,
         logo_url: data.logo_url || null,

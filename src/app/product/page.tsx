@@ -23,11 +23,17 @@ export default async function ProductPage() {
   const client = createAdminClient()
 
   // 활성 상품 + 가격 정보 조회 (order_index 순)
-  const { data: rawProducts } = await client
+  // category_group(마이그레이션 035) 우선 조회 → 컬럼 미적용 시 폴백(목록은 정상, 카테고리 필터만 비활성)
+  const BASE_COLS = 'id, name, tagline, description, category, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
+  const withRes = await client
     .from('products')
-    .select('id, name, tagline, description, category, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('id, name, tagline, description, category, category_group, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
+
+  const { data: rawProducts } = withRes.error
+    ? await client.from('products').select(BASE_COLS).eq('is_active', true).order('order_index', { ascending: true })
+    : withRes
 
   // 상품별 월간/연간 가격 추출
   const products = (rawProducts ?? []).map((p) => {
@@ -41,6 +47,8 @@ export default async function ProductPage() {
       tagline: p.tagline as string | null,
       description: p.description as string | null,
       category: p.category as string,
+      // 폴백(035 미적용) 시 컬럼이 없으므로 옵셔널로 안전 접근
+      category_group: ((p as { category_group?: string | null }).category_group) ?? null,
       features: (p.features ?? []) as string[],
       tags: (p.tags ?? []) as string[],
       product_features: (p.product_features ?? []) as Array<{ icon: string; image_url: string; title: string; description: string }>,

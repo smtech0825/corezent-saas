@@ -23,6 +23,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
       tagline: data.tagline || null,
       description: data.description || null,
       category: data.category,
+      category_group: data.category_group || null,
       badge_text: data.badge_text || null,
       badge_color: data.badge_color,
       logo_url: data.logo_url || null,

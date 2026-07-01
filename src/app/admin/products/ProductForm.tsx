@@ -33,6 +33,7 @@ export interface ProductFormData {
   tagline: string
   description: string
   category: string
+  category_group: string
   badge_text: string
   badge_color: 'blue' | 'green' | 'yellow'
   logo_url: string
@@ -163,6 +164,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       tagline: '',
       description: '',
       category: 'desktop',
+      category_group: '',
       badge_text: '',
       badge_color: 'blue',
       logo_url: '',
@@ -312,8 +314,17 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           />
         </Field>
 
+        <Field label="카테고리">
+          <input
+            value={form.category_group}
+            onChange={(e) => set('category_group', e.target.value)}
+            placeholder="예: 행정, 투자, 마케팅 (공개 목록 분류·필터용, 자유 입력)"
+            className={inputCls}
+          />
+        </Field>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="카테고리 *">
+          <Field label="플랫폼 유형 *">
             <select
               required
               value={form.category}
