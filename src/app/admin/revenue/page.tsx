@@ -17,15 +17,30 @@ export const metadata = { title: '매출 리포트' }
 export default async function RevenuePage() {
   const admin = createAdminClient()
 
-  const [paidRes, refundRes, subsRes] = await Promise.all([
-    admin.from('orders').select('id, amount, created_at, product_price_id').eq('status', 'paid'),
-    admin.from('orders').select('amount').eq('status', 'refunded'),
-    admin.from('subscriptions').select('status, billing_interval, order_id'),
-  ])
+  // PostgREST 기본 1000행 상한을 넘겨도 정확히 집계하도록 range로 전량 수집(과소집계 방지).
+  async function fetchAll<T>(
+    make: (from: number, to: number) => PromiseLike<{ data: T[] | null }>,
+  ): Promise<T[]> {
+    const PAGE = 1000
+    const out: T[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data } = await make(from, from + PAGE - 1)
+      const rows = (data ?? []) as T[]
+      out.push(...rows)
+      if (rows.length < PAGE) break
+    }
+    return out
+  }
 
-  const paid = (paidRes.data ?? []) as Array<{ id: string; amount: number; created_at: string; product_price_id: string | null }>
-  const refunded = (refundRes.data ?? []) as Array<{ amount: number }>
-  const subs = (subsRes.data ?? []) as Array<{ status: string; billing_interval: string | null; order_id: string | null }>
+  type PaidRow = { id: string; amount: number; created_at: string; product_price_id: string | null }
+  type RefundRow = { amount: number }
+  type SubRow = { status: string; billing_interval: string | null; order_id: string | null }
+
+  const [paid, refunded, subs] = await Promise.all([
+    fetchAll<PaidRow>((f, t) => admin.from('orders').select('id, amount, created_at, product_price_id').eq('status', 'paid').order('created_at', { ascending: false }).range(f, t)),
+    fetchAll<RefundRow>((f, t) => admin.from('orders').select('amount').eq('status', 'refunded').order('created_at', { ascending: false }).range(f, t)),
+    fetchAll<SubRow>((f, t) => admin.from('subscriptions').select('status, billing_interval, order_id').order('created_at', { ascending: false }).range(f, t)),
+  ])
 
   // 상품명 매핑 (product_price_id → products.name)
   const priceIds = [...new Set(paid.map((o) => o.product_price_id).filter(Boolean))] as string[]
