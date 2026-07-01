@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
+import OrderActions from './OrderActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -127,6 +128,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <Row label="주문일시">{fmtDateTime(order.created_at as string)}</Row>
         <Row label="상태">{badge.label}</Row>
       </section>
+
+      {/* 주문 처리 — 환불/구독취소 (실제 결제/구독 반영) */}
+      <OrderActions
+        orderId={order.id as string}
+        orderStatus={order.status as string}
+        hasLsOrderId={Boolean(order.lemon_squeezy_order_id)}
+        amountLabel={formatKRW(order.amount as number)}
+        canCancelSub={!!subscription && (subscription.status === 'active' || subscription.status === 'paused')}
+      />
 
       {/* 발급 라이선스 */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
