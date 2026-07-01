@@ -22,7 +22,7 @@ export default async function EditProductPage({
 
   const { data: product } = await client
     .from('products')
-    .select('id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features')
+    .select('id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url')
     .eq('id', id)
     .single()
 
@@ -89,6 +89,10 @@ export default async function EditProductPage({
     tags: (product.tags ?? []) as string[],
     pricing_features: (product.pricing_features ?? []) as string[],
     product_features: (product.product_features ?? []) as Array<{ icon: string; image_url: string; title: string; description: string }>,
+    hero_image_url: (product.hero_image_url as string) ?? '',
+    screenshots: (product.screenshots ?? []) as string[],
+    system_requirements: (product.system_requirements as string) ?? '',
+    version_info_url: (product.version_info_url as string) ?? '',
     prices,
   }
 
@@ -114,6 +118,10 @@ export default async function EditProductPage({
         tags: data.tags.filter(Boolean),
         pricing_features: data.pricing_features.filter(Boolean),
         product_features: data.product_features.filter((f) => f.title),
+        hero_image_url: data.hero_image_url || null,
+        screenshots: data.screenshots.filter(Boolean),
+        system_requirements: data.system_requirements || null,
+        version_info_url: data.version_info_url || null,
       })
       .eq('id', id)
 

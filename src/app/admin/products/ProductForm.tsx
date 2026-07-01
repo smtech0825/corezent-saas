@@ -8,7 +8,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface PriceEntry {
@@ -42,6 +42,10 @@ export interface ProductFormData {
   tags: string[]
   pricing_features: string[]
   product_features: ProductFeatureEntry[]
+  hero_image_url: string
+  screenshots: string[]
+  system_requirements: string
+  version_info_url: string
   prices: PriceEntry[]
 }
 
@@ -173,6 +177,10 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       tags: [],
       pricing_features: [],
       product_features: [],
+      hero_image_url: '',
+      screenshots: [],
+      system_requirements: '',
+      version_info_url: '',
       prices: [emptyPrice()],
     }
   )
@@ -252,6 +260,17 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       return next
     })
     set('prices', updated)
+  }
+
+  // 스크린샷(복수) 배열 조작
+  function addScreenshot() {
+    set('screenshots', [...form.screenshots, ''])
+  }
+  function updateScreenshot(idx: number, url: string) {
+    set('screenshots', form.screenshots.map((s, i) => (i === idx ? url : s)))
+  }
+  function removeScreenshot(idx: number) {
+    set('screenshots', form.screenshots.filter((_, i) => i !== idx))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -639,6 +658,64 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             </div>
           ))}
         </div>
+      </section>
+
+      {/* 상세 페이지 콘텐츠 (/product/[slug]에 표시) */}
+      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <ImageIcon size={14} className="text-[#38BDF8]" />
+          <h2 className="text-sm font-semibold text-white">상세 페이지 콘텐츠</h2>
+          <span className="text-xs text-[#475569]">— 상품 상세 페이지에 표시</span>
+        </div>
+
+        <Field label="대표 이미지">
+          <FeatureImageUpload value={form.hero_image_url} onChange={(url) => set('hero_image_url', url)} />
+        </Field>
+
+        <Field label="스크린샷 (복수)">
+          <div className="space-y-2">
+            {form.screenshots.map((url, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <FeatureImageUpload value={url} onChange={(u) => updateScreenshot(i, u)} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeScreenshot(i)}
+                  className="shrink-0 p-2 text-[#475569] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addScreenshot}
+              className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus size={13} /> 스크린샷 추가
+            </button>
+          </div>
+        </Field>
+
+        <Field label="시스템 요구사항">
+          <textarea
+            rows={4}
+            value={form.system_requirements}
+            onChange={(e) => set('system_requirements', e.target.value)}
+            placeholder="예: Windows 10 이상 · RAM 4GB · 500MB 저장 공간…"
+            className={inputCls + ' resize-none'}
+          />
+        </Field>
+
+        <Field label="버전정보 링크 (선택)">
+          <input
+            value={form.version_info_url}
+            onChange={(e) => set('version_info_url', e.target.value)}
+            placeholder="https://... (또는 /changelog)"
+            className={inputCls}
+          />
+        </Field>
       </section>
 
       {/* 가격 플랜 */}
