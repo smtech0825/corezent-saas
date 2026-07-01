@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US').format(n)
 }
-// 매출·주문 금액은 KRW(원) 정수로 표시 — 단일 출처 lib/money.formatKRW 위임.
+// 매출·주문 금액(amount)은 cents — formatKRW가 ÷100 후 ₩ 표기 (단일 출처 lib/money).
 function fmtCurrency(n: number) {
   return formatKRW(n)
 }

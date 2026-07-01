@@ -43,7 +43,7 @@ function fmtDate(d: string) {
 }
 
 function fmtCurrency(amount: number) {
-  // DB의 amount는 원화 정수 — 단일 출처 lib/money.formatKRW 위임 (₩, ÷100 없음)
+  // DB의 amount는 cents — formatKRW가 ÷100 후 ₩ 표기 (단일 출처 lib/money)
   return formatKRW(amount)
 }
 

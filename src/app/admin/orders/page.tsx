@@ -42,7 +42,7 @@ export default async function OrdersPage() {
     }
   })
 
-  // 주문 금액(amount)은 원화 정수로 취급 — ÷100 하지 않고 합산(전부 ₩ 표시 결정).
+  // 주문 금액(amount)은 cents — cents로 합산만 하고, ÷100·₩ 표기는 formatKRW에서 한 번(이중 방지).
   const totalRevenue =
     list.filter((o) => o.status === 'paid').reduce((s, o) => s + o.amount, 0)
 
