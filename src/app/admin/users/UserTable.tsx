@@ -7,7 +7,8 @@
  */
 
 import { useState, useMemo, Fragment } from 'react'
-import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import Link from 'next/link'
+import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react'
 import RoleSelect from './RoleSelect'
 import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
@@ -273,6 +274,15 @@ export default function UserTable({ users }: Props) {
                       {/* 액션 버튼 */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          {/* 사용자 상세 */}
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            title="사용자 상세"
+                            className="p-1.5 rounded-lg text-[#475569] hover:text-white hover:bg-[#1E293B] transition-colors"
+                          >
+                            <ExternalLink size={14} />
+                          </Link>
+
                           {/* 구매 내역 */}
                           <IconBtn
                             onClick={() => toggleExpand(u.id)}
