@@ -30,12 +30,13 @@ export async function withdrawSelf(): Promise<WithdrawResult> {
 
   const admin = createAdminClient()
 
-  // 1) 활성 구독(기간 말 취소 예약이 아닌 = 계속 청구되는 구독)이 있으면 탈퇴 차단
+  // 1) 재청구 가능 구독(active + paused=재개 시 재청구)이 있고 기간 말 취소 예약이 아니면 탈퇴 차단.
+  //    탈퇴(로그인 차단) 후 구독이 재청구되는 상황을 막기 위해 fail-closed로 paused도 포함한다.
   const { data: activeSubs, error: subErr } = await admin
     .from('subscriptions')
     .select('id, cancel_at_period_end')
     .eq('user_id', user.id)
-    .eq('status', 'active')
+    .in('status', ['active', 'paused'])
 
   if (subErr) return { ok: false, reason: 'error' }
   if ((activeSubs ?? []).some((s) => s.cancel_at_period_end !== true)) {
