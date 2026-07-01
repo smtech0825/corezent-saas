@@ -24,10 +24,10 @@ export default async function ProductPage() {
 
   // 활성 상품 + 가격 정보 조회 (order_index 순)
   // category_group(마이그레이션 035) 우선 조회 → 컬럼 미적용 시 폴백(목록은 정상, 카테고리 필터만 비활성)
-  const BASE_COLS = 'id, name, tagline, description, category, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
+  const BASE_COLS = 'id, name, slug, tagline, description, category, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
   const withRes = await client
     .from('products')
-    .select('id, name, tagline, description, category, category_group, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('id, name, slug, tagline, description, category, category_group, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
@@ -44,6 +44,7 @@ export default async function ProductPage() {
     return {
       id: p.id as string,
       name: p.name as string,
+      slug: p.slug as string,
       tagline: p.tagline as string | null,
       description: p.description as string | null,
       category: p.category as string,

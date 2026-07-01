@@ -8,10 +8,10 @@
  *        - 확장 박스: 전체 Description + product_features (아이콘/이미지 + 제목 + 설명)
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
-import DynamicIcon from '@/components/DynamicIcon'
 import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 
@@ -27,6 +27,7 @@ interface ProductFeature {
 interface Product {
   id: string
   name: string
+  slug: string
   tagline: string | null
   description: string | null
   category: string
@@ -48,12 +49,7 @@ interface Props {
 
 
 export default function ProductList({ products }: Props) {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState<string>('all')
-
-  function toggle(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id))
-  }
 
   // 자유입력 카테고리(category_group) 목록 — DB 값 기준(하드코딩 아님)
   const categories = [...new Set(
@@ -100,7 +96,6 @@ export default function ProductList({ products }: Props) {
       {/* 카드 그리드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {visibleProducts.map((product) => {
-          const isExpanded = expandedId === product.id
           const desc = product.description ?? ''
           const isLongDesc = desc.length > DESC_CHAR_LIMIT
 
@@ -175,13 +170,13 @@ export default function ProductList({ products }: Props) {
                       {desc}
                     </p>
                     {isLongDesc && (
-                      <button
-                        onClick={() => toggle(product.id)}
+                      <Link
+                        href={`/product/${product.slug}`}
                         className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
                         style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
                       >
                         더보기
-                      </button>
+                      </Link>
                     )}
                   </div>
                 )}
@@ -214,13 +209,13 @@ export default function ProductList({ products }: Props) {
                         </span>
                       </div>
                     )}
-                    <button
-                      onClick={() => toggle(product.id)}
+                    <Link
+                      href={`/product/${product.slug}`}
                       className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
                     >
                       <Eye size={14} />
                       자세히 보기
-                    </button>
+                    </Link>
                   </div>
                 ) : (
                   <div className="mt-auto mb-4">
@@ -233,101 +228,6 @@ export default function ProductList({ products }: Props) {
             </div>
           )
         })}
-      </div>
-
-      {/* 확장 상세 박스 — 카드 그리드 아래에 슬라이드 애니메이션으로 표시 */}
-      {products.map((product) => {
-        const isExpanded = expandedId === product.id
-        if (!product.is_active) return null
-
-        return (
-          <ExpandPanel
-            key={product.id}
-            product={product}
-            isExpanded={isExpanded}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-/** 확장 패널 — 슬라이드 애니메이션 */
-function ExpandPanel({ product, isExpanded }: { product: Product; isExpanded: boolean }) {
-  const contentRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
-
-  useEffect(() => {
-    if (isExpanded && contentRef.current) {
-      setHeight(contentRef.current.scrollHeight)
-    } else {
-      setHeight(0)
-    }
-  }, [isExpanded])
-
-  return (
-    <div
-      className="overflow-hidden transition-all duration-500 ease-in-out"
-      style={{ maxHeight: isExpanded ? height + 32 : 0, opacity: isExpanded ? 1 : 0 }}
-    >
-      <div
-        ref={contentRef}
-        className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-8"
-      >
-        {/* 전체 Description */}
-        <div className="mb-8">
-          <h3 className="text-lg font-bold text-white mb-1">{product.name}</h3>
-          {product.tagline && (
-            <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
-          )}
-          {product.description && (
-            <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">
-              {product.description}
-            </p>
-          )}
-        </div>
-
-        {/* Product Features 그리드 */}
-        {product.product_features.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest mb-6">
-              주요 기능
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {product.product_features.map((feat, i) => (
-                <div
-                  key={i}
-                  className="border border-[#1E293B] bg-[#0B1120] rounded-xl p-5 flex flex-col items-center text-center space-y-3"
-                >
-                  {/* 아이콘 또는 이미지 — 1.5배 크기, 가운데 정렬 */}
-                  <div className="flex items-center justify-center w-[72px] h-[72px] rounded-xl bg-[#111A2E] border border-[#1E293B]">
-                    {feat.image_url ? (
-                      <div className="relative w-12 h-12">
-                        <Image
-                          src={feat.image_url}
-                          alt={feat.title}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                    ) : feat.icon ? (
-                      <DynamicIcon name={feat.icon} size={30} className="text-[#38BDF8]" />
-                    ) : (
-                      <Sparkles size={30} className="text-[#38BDF8]" />
-                    )}
-                  </div>
-
-                  <h4 className="text-sm font-semibold text-white">{feat.title}</h4>
-                  {feat.description && (
-                    <p className="text-xs text-[#94A3B8] leading-relaxed whitespace-pre-line">
-                      {feat.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
