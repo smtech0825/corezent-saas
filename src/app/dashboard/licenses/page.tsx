@@ -5,8 +5,10 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Key } from 'lucide-react'
 import LicenseCopyButton from '../_components/LicenseCopyButton'
+import DownloadButton from '../billing/DownloadButton'
 import Pagination from '@/components/common/Pagination'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +34,7 @@ export default async function LicensesPage({
 
   const { data: licenses, count } = await supabase
     .from('licenses')
-    .select('id, serial_key, status, expires_at, created_at, order_id, products(name, slug)', { count: 'exact' })
+    .select('id, serial_key, status, expires_at, created_at, order_id, product_id, last_downloaded_version, products(name, slug)', { count: 'exact' })
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
@@ -60,6 +62,30 @@ export default async function LicensesPage({
     })
   }
 
+  // 최신 릴리스(설치파일) 조회 — product_id별 latest changelog의 download_urls·version
+  // URL은 하드코딩하지 않고 changelogs 테이블(빌링 페이지와 동일 출처)에서 읽는다.
+  const productIds = [...new Set(
+    (licenses ?? [])
+      .map((l: Record<string, unknown>) => l.product_id as string | null)
+      .filter((id): id is string => Boolean(id)),
+  )]
+
+  const changelogMap = new Map<string, { version: string; download_urls: Record<string, string> }>()
+  if (productIds.length > 0) {
+    const { data: changelogs } = await supabase
+      .from('changelogs')
+      .select('product_id, version, download_urls')
+      .in('product_id', productIds)
+      .eq('is_latest', true)
+
+    ;(changelogs ?? []).forEach((c: Record<string, unknown>) => {
+      changelogMap.set(c.product_id as string, {
+        version:       c.version as string,
+        download_urls: (c.download_urls ?? {}) as Record<string, string>,
+      })
+    })
+  }
+
   const total = count ?? 0
 
   return (
@@ -76,12 +102,13 @@ export default async function LicensesPage({
         <>
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
               <span>라이선스 키</span>
               <span>제품</span>
               <span>상태</span>
               <span>주기</span>
               <span>만료일</span>
+              <span>다운로드</span>
             </div>
 
             {/* 라이선스 목록 */}
@@ -91,10 +118,15 @@ export default async function LicensesPage({
               const effectiveExpiry = subInfo?.end ?? lic.expires_at
               const period = subInfo?.interval ?? null
 
+              // 설치파일: product의 최신 릴리스에 download_urls가 있으면 노출
+              const changelog = lic.product_id ? changelogMap.get(lic.product_id) : undefined
+              const hasDownload = !!changelog && Object.values(changelog.download_urls).some(Boolean)
+              const isNewVersion = !!changelog && (lic.last_downloaded_version == null || lic.last_downloaded_version !== changelog.version)
+
               return (
                 <div
                   key={lic.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px_auto] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
                 >
                   {/* 시리얼 키 */}
                   <div className="flex items-center gap-2">
@@ -142,6 +174,32 @@ export default async function LicensesPage({
                       </span>
                     ) : (
                       <span className="text-sm text-[#475569]">평생</span>
+                    )}
+                  </div>
+
+                  {/* 다운로드 — 최신 릴리스의 설치파일(있으면) + 릴리스 노트 딥링크 */}
+                  <div>
+                    {changelog ? (
+                      <div className="flex flex-col items-start gap-1">
+                        {hasDownload && lic.product_id && (
+                          <DownloadButton
+                            productId={lic.product_id}
+                            version={changelog.version}
+                            downloadUrls={changelog.download_urls}
+                            isNew={isNewVersion}
+                          />
+                        )}
+                        {lic.products?.slug && (
+                          <Link
+                            href={`/changelog?product=${lic.products.slug}`}
+                            className="text-[11px] text-[#475569] hover:text-[#94A3B8] transition-colors"
+                          >
+                            v{changelog.version} · 릴리스 노트
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[#475569]">—</span>
                     )}
                   </div>
                 </div>
