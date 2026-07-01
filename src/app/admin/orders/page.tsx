@@ -15,7 +15,7 @@ export default async function OrdersPage() {
   // subscriptions JOIN — current_period_end(만료일) + billing_interval(Period) 함께 조회
   const { data: orders } = await adminClient
     .from('orders')
-    .select('id, user_id, amount, status, created_at, subscriptions(current_period_end, billing_interval)')
+    .select('id, user_id, amount, currency, status, created_at, subscriptions(current_period_end, billing_interval)')
     .order('created_at', { ascending: false })
 
   let emailMap: Map<string, string> = new Map()
@@ -33,6 +33,7 @@ export default async function OrdersPage() {
       shortId:    (o.id as string).slice(0, 8).toUpperCase(),
       email:      emailMap.get(o.user_id as string) ?? '—',
       amount:     (o.amount as number) ?? 0,
+      currency:   (o.currency as string) ?? 'KRW',
       status:     o.status as string,
       created_at: o.created_at as string,
       // subscriptions.current_period_end → 만료일

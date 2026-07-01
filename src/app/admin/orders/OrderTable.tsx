@@ -11,7 +11,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
 
 const PAGE_SIZE = 15
@@ -25,6 +25,7 @@ export interface Order {
   shortId: string
   email: string
   amount: number
+  currency: string
   status: string
   created_at: string
   expires_at: string | null
@@ -62,6 +63,11 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
 
+  // 필터: 상태 · 기간(날짜 범위)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
   // 검색 디바운싱 400ms
   useEffect(() => {
     const t = setTimeout(() => {
@@ -71,14 +77,46 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
     return () => clearTimeout(t)
   }, [rawSearch])
 
-  // 검색 필터링
+  // 필터 변경 시 첫 페이지로
+  useEffect(() => { setPage(1) }, [statusFilter, dateFrom, dateTo])
+
+  // 검색 + 상태 + 기간 필터링
   const filtered = useMemo(() => {
-    if (!search.trim()) return orders
-    const q = search.toLowerCase()
-    return orders.filter(
-      (o) => o.shortId.toLowerCase().includes(q) || o.email.toLowerCase().includes(q),
+    const q = search.trim().toLowerCase()
+    const fromTs = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : null
+    const toTs = dateTo ? new Date(dateTo + 'T23:59:59.999').getTime() : null
+    return orders.filter((o) => {
+      if (q && !(o.shortId.toLowerCase().includes(q) || o.email.toLowerCase().includes(q))) return false
+      if (statusFilter && o.status !== statusFilter) return false
+      const ts = new Date(o.created_at).getTime()
+      if (fromTs !== null && ts < fromTs) return false
+      if (toTs !== null && ts > toTs) return false
+      return true
+    })
+  }, [orders, search, statusFilter, dateFrom, dateTo])
+
+  // 현재 필터 결과를 CSV로 내보내기 (표시금액 + 원시 cents·통화 병행 — 회계용)
+  function handleExport() {
+    const header = ['주문ID', '이메일', '금액(표시)', '금액(cents)', '통화', '상태', '주기', '주문일', '만료일']
+    const esc = (v: unknown) => {
+      const s = String(v ?? '')
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const lines = filtered.map((o) =>
+      [o.shortId, o.email, formatKRW(o.amount), o.amount, o.currency, o.status, o.period ?? '',
+       new Date(o.created_at).toISOString(), o.expires_at ? new Date(o.expires_at).toISOString() : '']
+        .map(esc).join(','),
     )
-  }, [orders, search])
+    // 앞에 BOM(﻿)을 붙여 Excel에서 한글이 깨지지 않게 한다.
+    const csv = '﻿' + [header.join(','), ...lines].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   // 페이지네이션
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -117,11 +155,50 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
         </div>
       </div>
 
+      {/* 필터 · 내보내기 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-[#111A2E] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#38BDF8] cursor-pointer"
+        >
+          <option value="">전체 상태</option>
+          <option value="paid">결제됨</option>
+          <option value="pending">대기 중</option>
+          <option value="refunded">환불됨</option>
+          <option value="cancelled">취소됨</option>
+        </select>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          aria-label="시작일"
+          className="bg-[#111A2E] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#38BDF8]"
+        />
+        <span className="text-[#475569] text-sm">~</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          aria-label="종료일"
+          className="bg-[#111A2E] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#38BDF8]"
+        />
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={filtered.length === 0}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#38BDF8] border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 hover:bg-[#38BDF8]/5 px-3 py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <Download size={14} /> CSV 내보내기
+        </button>
+        <span className="text-xs text-[#475569] ml-auto">{filtered.length}건</span>
+      </div>
+
       {/* 테이블 카드 */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#475569]">
-            {search ? '검색 결과가 없습니다.' : '주문이 없습니다.'}
+            {(search || statusFilter || dateFrom || dateTo) ? '조건에 맞는 주문이 없습니다.' : '주문이 없습니다.'}
           </div>
         ) : (
           <>
