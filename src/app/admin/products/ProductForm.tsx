@@ -266,7 +266,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl">
+    <form onSubmit={handleSubmit} className="space-y-8">
       {/* 기본 정보 */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
         <h2 className="text-sm font-semibold text-white">기본 정보</h2>
