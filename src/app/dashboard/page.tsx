@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Key, CreditCard, Package, ArrowRight } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
 import Link from 'next/link'
+import OnboardingChecklist from './OnboardingChecklist'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const [{ count: licenseCount }, { data: subscriptions }, { data: orders }] = await Promise.all([
+  const [{ count: licenseCount }, { data: subscriptions }, { data: orders }, { count: downloadedCount }] = await Promise.all([
     supabase
       .from('licenses')
       .select('*', { count: 'exact', head: true })
@@ -37,6 +38,12 @@ export default async function DashboardPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5),
+    // 온보딩 ① 다운로드 자동 판정 — 다운로드 기록(last_downloaded_version)이 있는 라이선스 수
+    supabase
+      .from('licenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('last_downloaded_version', 'is', null),
   ])
 
   // product_price_id로 제품명 조회
@@ -70,6 +77,12 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-white">{name}님, 다시 오신 것을 환영합니다 👋</h1>
         <p className="text-[#94A3B8] text-sm mt-1">계정 현황을 확인하세요.</p>
       </div>
+
+      {/* 온보딩 체크리스트 (구매 회원 · 닫기 전까지) */}
+      <OnboardingChecklist
+        hasLicense={(licenseCount ?? 0) > 0}
+        hasDownloaded={(downloadedCount ?? 0) > 0}
+      />
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
