@@ -12,7 +12,7 @@ import Pagination from '@/components/common/Pagination'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '내 라이선스 — CoreZent',
+  title: '내 라이선스',
 }
 
 const PAGE_SIZE = 10

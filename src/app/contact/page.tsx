@@ -11,7 +11,7 @@ import Footer from '@/components/Footer'
 import ContactFormWrapper from './ContactFormWrapper'
 
 export const metadata: Metadata = {
-  title: '문의하기 — CoreZent',
+  title: '문의하기',
   description: '궁금한 점이나 도움이 필요하신가요? 메시지를 보내주시면 빠르게 답변드리겠습니다.',
 }
 

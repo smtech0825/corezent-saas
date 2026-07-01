@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Home, ArrowLeft } from 'lucide-react'
 
 export const metadata = {
-  title: '페이지를 찾을 수 없습니다 — CoreZent',
+  title: '페이지를 찾을 수 없습니다',
 }
 
 export default function NotFound() {

@@ -11,7 +11,7 @@ import { ConvertButton, IssueDiscountForm, ResolveButton } from './AffiliateActi
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = { title: '제휴 관리 — CoreZent Admin' }
+export const metadata = { title: '제휴 관리' }
 
 /** 정수 cents → $ 표시 */
 function usd(cents: number): string {

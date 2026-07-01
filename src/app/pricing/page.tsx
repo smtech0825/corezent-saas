@@ -13,7 +13,7 @@ import PricingClient, { type PricingProduct } from './PricingClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '요금제 — CoreZent',
+  title: '요금제',
   description: '간단하고 투명한 요금제. 필요한 도구를 선택하세요.',
 }
 

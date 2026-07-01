@@ -13,7 +13,7 @@ import ReferralCopyButton from '../_components/ReferralCopyButton'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '제휴 프로그램 — CoreZent',
+  title: '제휴 프로그램',
   description: '내 추천 링크와 적립 현황, 스토어 크레딧 잔액을 확인하세요.',
 }
 

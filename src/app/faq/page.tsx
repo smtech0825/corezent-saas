@@ -12,7 +12,7 @@ import FAQSection from '@/components/sections/FAQSection'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'FAQ — CoreZent',
+  title: 'FAQ',
   description: 'CoreZent 소프트웨어와 구매에 대해 자주 묻는 질문.',
 }
 

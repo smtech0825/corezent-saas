@@ -17,7 +17,7 @@ import {
 } from '../_components/legal-ui'
 
 export const metadata: Metadata = {
-  title: { absolute: '이용약관 — CoreZent' },
+  title: '이용약관',
   description: 'CoreZent 서비스 이용에 관한 회원의 권리와 의무를 안내합니다.',
 }
 

@@ -14,7 +14,7 @@ import ProductList from './ProductList'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '제품 — CoreZent',
+  title: '제품',
   description:
     'CoreZent의 모든 소프트웨어 제품을 둘러보세요. 시간을 아껴주는 AI 자동화 도구와 생산성 앱.',
 }

@@ -13,7 +13,7 @@ import AboutBlockSlider from './AboutBlockSlider'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '회사소개 — CoreZent',
+  title: '회사소개',
   description: 'CoreZent를 소개합니다 — 우리는 누구이며, 무엇을 만들고, 왜 그것이 중요한지.',
 }
 

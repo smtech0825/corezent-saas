@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import UpdatePasswordForm from './UpdatePasswordForm'
 
 export const metadata: Metadata = {
-  title: '새 비밀번호 설정 — CoreZent',
+  title: '새 비밀번호 설정',
 }
 
 export default function UpdatePasswordPage() {

@@ -16,7 +16,7 @@ import {
 } from '../_components/legal-ui'
 
 export const metadata: Metadata = {
-  title: { absolute: '쿠키 정책 — CoreZent' },
+  title: '쿠키 정책',
   description: 'CoreZent가 웹사이트에서 쿠키를 어떻게 사용하고, 회원이 어떻게 관리할 수 있는지 안내합니다.',
 }
 

@@ -14,7 +14,7 @@ import Footer from '@/components/Footer'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '업데이트 내역 — CoreZent',
+  title: '업데이트 내역',
   description: 'CoreZent 제품의 버전 기록과 릴리스 노트.',
 }
 

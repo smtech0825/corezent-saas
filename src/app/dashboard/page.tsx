@@ -11,7 +11,7 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '대시보드 — CoreZent',
+  title: '대시보드',
 }
 
 export default async function DashboardPage() {

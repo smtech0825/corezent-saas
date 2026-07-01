@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import AdminShell from './_components/AdminShell'
 
 export const metadata = {
-  title: '관리자 패널 — CoreZent',
+  title: '관리자 패널',
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

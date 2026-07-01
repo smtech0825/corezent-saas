@@ -12,9 +12,9 @@ import TicketList from './TicketList'
 
 export const dynamic = 'force-dynamic'
 
-// 탭 제목 — 루트 title.template('%s | CoreZent') 우회 위해 absolute 사용 (legal 페이지와 동일 방식)
+// 탭 제목 — 루트 title.template('%s | CoreZent')이 브랜드를 붙이므로 페이지명만 지정
 export const metadata: Metadata = {
-  title: { absolute: '고객지원 — CoreZent' },
+  title: '고객지원',
 }
 
 const PAGE_SIZE = 5

@@ -14,7 +14,7 @@ import { formatKRW } from '@/lib/money'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '결제 — CoreZent',
+  title: '결제',
 }
 
 const SUB_PAGE_SIZE = 5

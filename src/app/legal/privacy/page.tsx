@@ -18,7 +18,7 @@ import {
 } from '../_components/legal-ui'
 
 export const metadata: Metadata = {
-  title: { absolute: '개인정보 처리방침 — CoreZent' },
+  title: '개인정보 처리방침',
   description: 'CoreZent가 회원의 개인정보를 어떻게 수집·이용·보관·파기하는지 안내합니다.',
 }
 
