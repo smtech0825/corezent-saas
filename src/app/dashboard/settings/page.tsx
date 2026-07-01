@@ -27,6 +27,10 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState('')
 
+  // 알림/마케팅 수신 동의 (profiles.marketing_opt_in — 마이그레이션 033)
+  const [marketingOptIn, setMarketingOptIn] = useState(true)
+  const [marketingLoading, setMarketingLoading] = useState(false)
+
   // 초기 로드
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -40,6 +44,17 @@ export default function SettingsPage() {
         .then(({ data: profile }) => {
           setName(profile?.name ?? data.user!.user_metadata?.name ?? '')
           setCountry(profile?.country ?? '')
+        })
+      // 수신 동의는 별도 조회 — 컬럼(033) 미적용 상태에서도 프로필 로드가 깨지지 않도록 분리
+      supabase
+        .from('profiles')
+        .select('marketing_opt_in')
+        .eq('id', data.user.id)
+        .single()
+        .then(({ data: mk, error }) => {
+          if (!error && mk) {
+            setMarketingOptIn((mk as { marketing_opt_in: boolean | null }).marketing_opt_in ?? true)
+          }
         })
     })
   }, [supabase])
@@ -104,6 +119,28 @@ export default function SettingsPage() {
       setNewPassword('')
     }
     setPasswordLoading(false)
+  }
+
+  // 알림/마케팅 수신 동의 토글 저장 (본인 프로필 RLS 업데이트)
+  async function handleToggleMarketing(next: boolean) {
+    setMarketingOptIn(next)          // 낙관적 UI
+    setMarketingLoading(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setMarketingLoading(false); return }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ marketing_opt_in: next })
+      .eq('id', user.id)
+
+    if (error) {
+      setMarketingOptIn(!next)       // 실패 시 원복
+      showToast('error', '수신 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    } else {
+      showToast('success', next ? '수신 동의로 저장되었습니다.' : '수신을 거부했습니다.')
+    }
+    setMarketingLoading(false)
   }
 
   return (
@@ -188,6 +225,38 @@ export default function SettingsPage() {
             <SubmitButton loading={passwordLoading} label="비밀번호 변경" />
           </div>
         </form>
+      </section>
+
+      {/* 알림/마케팅 수신 동의 섹션 */}
+      <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6 mt-6">
+        <h2 className="text-base font-semibold text-white mb-1.5">알림 수신 설정</h2>
+        <p className="text-sm text-[#94A3B8] mb-5">
+          제품 업데이트·혜택 등 알림/마케팅 이메일 수신 여부를 선택하세요.
+          <br className="hidden sm:block" />
+          <span className="text-xs text-[#475569]">주문·결제·보안 등 필수 안내 메일은 이 설정과 무관하게 발송됩니다.</span>
+        </p>
+        <div className="flex items-center justify-between gap-4">
+          <label htmlFor="marketing-opt-in" className="text-sm text-white cursor-pointer">
+            알림/마케팅 이메일 받기
+          </label>
+          <button
+            id="marketing-opt-in"
+            type="button"
+            role="switch"
+            aria-checked={marketingOptIn}
+            disabled={marketingLoading}
+            onClick={() => handleToggleMarketing(!marketingOptIn)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+              marketingOptIn ? 'bg-[#38BDF8]' : 'bg-[#1E293B]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                marketingOptIn ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
       </section>
     </div>
   )
