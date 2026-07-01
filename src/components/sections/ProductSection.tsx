@@ -12,9 +12,11 @@ import { formatPrice } from '@/lib/price'
 
 interface ProductCard {
   name: string
+  slug: string | null
   tagline: string
   description: string
   category: string
+  categoryGroup: string | null
   tags: string[]
   badgeText: string | null
   badgeColor: string
@@ -32,6 +34,8 @@ const COMING_SOON: ProductCard[] = [
     description:
       '다음 소프트웨어 제품을 준비하고 있습니다. 출시 소식을 가장 먼저 받아보시려면 가입하세요.',
     category: '',
+    categoryGroup: null,
+    slug: null,
     tags: [],
     badgeText: null,
     badgeColor: 'blue',
@@ -46,6 +50,8 @@ const COMING_SOON: ProductCard[] = [
     description:
       'CoreZent는 제품 라인업을 꾸준히 확장하고 있습니다. 더 강력한 소프트웨어 도구를 기대해 주세요.',
     category: '',
+    categoryGroup: null,
+    slug: null,
     tags: [],
     badgeText: null,
     badgeColor: 'blue',
@@ -59,12 +65,17 @@ const COMING_SOON: ProductCard[] = [
 export default async function ProductSection() {
   const client = createAdminClient()
 
-  // 모든 상품 + 활성 가격 조회 (category 포함)
-  const { data: rawProducts } = await client
+  // 모든 상품 + 활성 가격 조회 (category·slug 포함)
+  // category_group(마이그레이션 035) 우선 조회 → 미적용 시 폴백(랜딩 목록은 정상, 카테고리만 비활성)
+  const BASE = 'name, slug, tagline, description, category, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
+  const withRes = await client
     .from('products')
-    .select('name, tagline, description, category, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('name, slug, tagline, description, category, category_group, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
+  const { data: rawProducts } = withRes.error
+    ? await client.from('products').select(BASE).eq('is_active', true).order('order_index', { ascending: true })
+    : withRes
 
   // DB 상품 → 카드 데이터 변환
   const dbCards: ProductCard[] = (rawProducts ?? []).map((p) => {
@@ -75,9 +86,11 @@ export default async function ProductSection() {
 
     return {
       name: p.name as string,
+      slug: (p.slug as string) ?? null,
       tagline: (p.tagline as string) ?? '',
       description: (p.description as string) ?? '',
       category: (p.category as string) ?? '',
+      categoryGroup: ((p as { category_group?: string | null }).category_group) ?? null,
       tags: ((p.tags ?? []) as string[]),
       badgeText: (p.badge_text as string) ?? null,
       badgeColor: (p.badge_color as string) ?? 'blue',
@@ -162,6 +175,11 @@ export default async function ProductSection() {
                       {CATEGORY_LABELS[product.category] ?? product.category}
                     </span>
                   )}
+                  {product.categoryGroup && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-[#1E293B] text-[#94A3B8] border-[#1E293B]">
+                      {product.categoryGroup}
+                    </span>
+                  )}
                 </div>
                 <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
 
@@ -173,7 +191,7 @@ export default async function ProductSection() {
                     </p>
                     {product.available && product.description.length > 120 && (
                       <Link
-                        href="/product"
+                        href={product.slug ? `/product/${product.slug}` : '/product'}
                         className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
                         style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
                       >
