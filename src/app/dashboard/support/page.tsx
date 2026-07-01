@@ -3,6 +3,7 @@
  * @설명: 사용자 대시보드 지원 티켓 제출 및 조회 — 5개/페이지 페이지네이션, Accordion 목록
  */
 
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -10,6 +11,11 @@ import Pagination from '@/components/common/Pagination'
 import TicketList from './TicketList'
 
 export const dynamic = 'force-dynamic'
+
+// 탭 제목 — 루트 title.template('%s | CoreZent') 우회 위해 absolute 사용 (legal 페이지와 동일 방식)
+export const metadata: Metadata = {
+  title: { absolute: '고객지원 — CoreZent' },
+}
 
 const PAGE_SIZE = 5
 
