@@ -563,14 +563,14 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
         if (newStatus === 'active') {
           await supaSetLicenseActive(licInfo.serialKey, true, p)
         }
-        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
       } else {
         // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
         await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
         if (newStatus === 'active') {
           await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '활성' })
         }
-        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
       }
     } catch (syncErr) {
       console.error('[LS Webhook] Sheets/DB 동기화 실패:', syncErr)
@@ -614,10 +614,10 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
       if (found) {
         const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
         await supaSetLicenseActive(licInfo.serialKey, false, p)
-        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
       } else {
         await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey.slice(0, 8)}...`)
       }
     } catch (syncErr) {
       console.error('[LS Webhook] 비활성화 동기화 실패:', syncErr)
@@ -657,10 +657,10 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       if (found) {
         const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
         await supaSetLicenseActive(licInfo.serialKey, false, p)
-        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${licInfo.serialKey.slice(0, 8)}...`)
       } else {
         await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey}`)
+        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey.slice(0, 8)}...`)
       }
     } catch (syncErr) {
       console.error('[LS Webhook] 결제 실패 동기화 실패:', syncErr)
@@ -720,10 +720,10 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
       if (found) {
         const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
         await supaSetLicenseActive(lic.serial_key, false, p)
-        console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key}`)
+        console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key.slice(0, 8)}...`)
       } else {
         await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key}`)
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key.slice(0, 8)}...`)
       }
     } catch (syncErr) {
       console.error('[LS Webhook] 환불 동기화 실패:', syncErr)
@@ -982,7 +982,7 @@ async function createLicense(
       isPro,
       status: '활성',
     })
-    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey} (isPro: ${isPro})`)
+    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey.slice(0, 8)}... (isPro: ${isPro})`)
   } catch (sheetsErr) {
     console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
   }

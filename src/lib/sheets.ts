@@ -107,7 +107,7 @@ export async function updateLicenseExpiry(params: {
   const sheets     = getSheetsClient()
   const rowNumber  = await findRowBySerial(sheets, params.serialKey)
   if (!rowNumber) {
-    console.warn(`[Sheets] serial_key 미발견 — 만료일 업데이트 건너뜀: ${params.serialKey}`)
+    console.warn(`[Sheets] serial_key 미발견 — 만료일 업데이트 건너뜀: ${params.serialKey.slice(0, 8)}...`)
     return
   }
 
@@ -136,7 +136,7 @@ export async function updateLicenseStatus(params: {
   const sheets    = getSheetsClient()
   const rowNumber = await findRowBySerial(sheets, params.serialKey)
   if (!rowNumber) {
-    console.warn(`[Sheets] serial_key 미발견 — 상태 업데이트 건너뜀: ${params.serialKey}`)
+    console.warn(`[Sheets] serial_key 미발견 — 상태 업데이트 건너뜀: ${params.serialKey.slice(0, 8)}...`)
     return
   }
 
