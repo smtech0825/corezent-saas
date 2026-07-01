@@ -32,6 +32,7 @@ import {
   type LSSubscriptionInvoiceAttributes,
 } from '@/lib/lemonsqueezy'
 import { accrueCommission, reverseCommissionsBySource } from '@/lib/affiliate-commission'
+import { logNotification } from '@/lib/notification-log'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
@@ -140,6 +141,14 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error(`[LS Webhook] 이벤트 처리 중 오류 (event=${eventName}, data_id=${payload.data?.id ?? 'N/A'}):`, err)
+    // 실패 기록(best-effort — 기록 실패해도 웹훅 응답/흐름 불변)
+    await logNotification({
+      kind:   'webhook',
+      status: 'failure',
+      event:  eventName ?? null,
+      target: payload.data?.id ? String(payload.data.id) : null,
+      error:  String(err),
+    })
     return NextResponse.json({ received: true, error: String(err) }, { status: 200 })
   }
 

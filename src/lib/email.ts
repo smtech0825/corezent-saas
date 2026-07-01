@@ -5,6 +5,7 @@
 
 import nodemailer from 'nodemailer'
 import { createAdminClient } from './supabase/admin'
+import { logNotification } from './notification-log'
 
 // SMTP 설정을 DB에서 로드
 async function getSmtpConfig(): Promise<Map<string, string>> {
@@ -51,14 +52,22 @@ export async function sendEmail({
   const fromName = config.get('smtp_from_name') ?? 'CoreZent'
   const fromEmail = config.get('smtp_from_email') ?? 'no-reply@corezent.com'
 
-  await transporter.sendMail({
-    from: `"${fromName}" <${fromEmail}>`,
-    to,
-    subject,
-    html,
-    ...(replyTo ? { replyTo } : {}),
-    ...(attachments?.length ? { attachments } : {}),
-  })
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to,
+      subject,
+      html,
+      ...(replyTo ? { replyTo } : {}),
+      ...(attachments?.length ? { attachments } : {}),
+    })
+  } catch (err) {
+    // 발송 실패 기록(best-effort) 후 기존 동작대로 재throw
+    await logNotification({ kind: 'email', status: 'failure', event: subject, target: to, error: String(err) })
+    throw err
+  }
+  // 발송 성공 기록(best-effort)
+  await logNotification({ kind: 'email', status: 'success', event: subject, target: to })
 }
 
 // 웰컴 이메일 HTML 템플릿

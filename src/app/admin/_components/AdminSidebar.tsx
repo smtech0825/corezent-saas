@@ -30,6 +30,7 @@ import {
   Bell,
   Info,
   TrendingUp,
+  Activity,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -197,6 +198,18 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           >
             <Settings size={16} className={isActive('/admin/settings') ? 'text-amber-400' : ''} />
             설정
+          </Link>
+          <Link
+            href="/admin/logs"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive('/admin/logs')
+                ? 'bg-amber-500/10 text-amber-400'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+            }`}
+          >
+            <Activity size={16} className={isActive('/admin/logs') ? 'text-amber-400' : ''} />
+            모니터링 로그
           </Link>
         </div>
       </nav>
