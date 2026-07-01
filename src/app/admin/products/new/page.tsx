@@ -36,6 +36,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
       screenshots: data.screenshots.filter(Boolean),
       system_requirements: data.system_requirements || null,
       version_info_url: data.version_info_url || null,
+      faqs: data.faqs.filter((f) => f.question.trim() || f.answer.trim()),
     })
     .select('id')
     .single()

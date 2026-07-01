@@ -8,7 +8,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface PriceEntry {
@@ -25,6 +25,11 @@ export interface ProductFeatureEntry {
   image_url: string
   title: string
   description: string
+}
+
+export interface ProductFaqEntry {
+  question: string
+  answer: string
 }
 
 export interface ProductFormData {
@@ -46,6 +51,7 @@ export interface ProductFormData {
   screenshots: string[]
   system_requirements: string
   version_info_url: string
+  faqs: ProductFaqEntry[]
   prices: PriceEntry[]
 }
 
@@ -181,6 +187,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       screenshots: [],
       system_requirements: '',
       version_info_url: '',
+      faqs: [],
       prices: [emptyPrice()],
     }
   )
@@ -271,6 +278,17 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   }
   function removeScreenshot(idx: number) {
     set('screenshots', form.screenshots.filter((_, i) => i !== idx))
+  }
+
+  // 상품 FAQ 배열 조작
+  function addFaq() {
+    set('faqs', [...form.faqs, { question: '', answer: '' }])
+  }
+  function updateFaq(idx: number, key: 'question' | 'answer', value: string) {
+    set('faqs', form.faqs.map((f, i) => (i === idx ? { ...f, [key]: value } : f)))
+  }
+  function removeFaq(idx: number) {
+    set('faqs', form.faqs.filter((_, i) => i !== idx))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -716,6 +734,55 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             className={inputCls}
           />
         </Field>
+      </section>
+
+      {/* 상품 FAQ */}
+      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <HelpCircle size={14} className="text-[#38BDF8]" />
+            <h2 className="text-sm font-semibold text-white">상품 FAQ</h2>
+            <span className="text-xs text-[#475569]">— 상세 페이지에 표시</span>
+          </div>
+          <button
+            type="button"
+            onClick={addFaq}
+            className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Plus size={13} /> FAQ 추가
+          </button>
+        </div>
+
+        {form.faqs.length === 0 && (
+          <p className="text-xs text-[#475569] py-2 text-center">아직 추가된 FAQ가 없습니다.</p>
+        )}
+
+        {form.faqs.map((faq, idx) => (
+          <div key={idx} className="flex items-start gap-2 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
+            <div className="flex-1 space-y-2 min-w-0">
+              <input
+                value={faq.question}
+                onChange={(e) => updateFaq(idx, 'question', e.target.value)}
+                placeholder="질문"
+                className={inputCls}
+              />
+              <textarea
+                rows={2}
+                value={faq.answer}
+                onChange={(e) => updateFaq(idx, 'answer', e.target.value)}
+                placeholder="답변"
+                className={inputCls + ' resize-none'}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeFaq(idx)}
+              className="mt-0.5 p-2 text-[#475569] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
       </section>
 
       {/* 가격 플랜 */}

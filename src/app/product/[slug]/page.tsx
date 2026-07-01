@@ -23,9 +23,9 @@ export const dynamic = 'force-dynamic'
 
 // 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백)
 const FULL_COLS =
-  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, product_features, hero_image_url, screenshots, system_requirements, version_info_url, product_prices(type, interval, price, is_active)'
+  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(type, interval, price, is_active)'
 const BASE_COLS =
-  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, product_features, product_prices(type, interval, price, is_active)'
+  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(type, interval, price, is_active)'
 
 interface ProductFeature { icon: string; image_url: string; title: string; description: string }
 interface PriceRow { type: string; interval: string | null; price: number; is_active: boolean }
@@ -90,6 +90,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const annual = prices.find((p) => p.type === 'subscription' && p.interval === 'annual')
   const oneTime = prices.find((p) => p.type === 'one_time')
   const priceValue = monthly?.price ?? oneTime?.price ?? null
+
+  const pricingFeatures = (product.pricing_features ?? []) as string[]
+  const faqs = (product.faqs ?? []) as { question: string; answer: string }[]
+
+  // 요금제 비교표용 플랜 목록(있는 것만)
+  const plans: { label: string; price: number; suffix: string }[] = []
+  if (monthly) plans.push({ label: '월간', price: monthly.price, suffix: '/월' })
+  if (annual) plans.push({ label: '연간', price: annual.price, suffix: '/년' })
+  if (oneTime) plans.push({ label: '일회 구매', price: oneTime.price, suffix: '' })
 
   return (
     <>
@@ -214,12 +223,69 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
             )}
 
+            {/* 요금제 비교 */}
+            {plans.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-lg font-bold text-white mb-4">요금제</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-[#1E293B] rounded-xl overflow-hidden">
+                    <thead>
+                      <tr className="border-b border-[#1E293B] bg-[#0B1120]">
+                        <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">항목</th>
+                        {plans.map((p) => (
+                          <th key={p.label} className="text-center px-4 py-3 text-xs text-white font-semibold">{p.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-[#1E293B]/60">
+                        <td className="px-4 py-3 text-[#94A3B8]">가격</td>
+                        {plans.map((p) => (
+                          <td key={p.label} className="text-center px-4 py-3 text-white font-semibold tabular-nums">
+                            {formatPrice(p.price)}<span className="text-xs text-[#475569] font-normal">{p.suffix}</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {pricingFeatures.map((feat) => (
+                        <tr key={feat} className="border-b border-[#1E293B]/60 last:border-0">
+                          <td className="px-4 py-3 text-[#94A3B8]">{feat}</td>
+                          {plans.map((p) => (
+                            <td key={p.label} className="text-center px-4 py-3">
+                              <Check size={15} className="text-emerald-400 inline" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {pricingFeatures.length > 0 && plans.length > 1 && (
+                  <p className="text-xs text-[#475569] mt-2">모든 요금제에 동일 기능이 포함됩니다. 결제 주기만 다릅니다.</p>
+                )}
+              </div>
+            )}
+
             {/* 시스템 요구사항 */}
             {systemRequirements && (
               <div className="mb-12">
                 <h2 className="text-lg font-bold text-white mb-3">시스템 요구사항</h2>
                 <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-5">
                   <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">{systemRequirements}</p>
+                </div>
+              </div>
+            )}
+
+            {/* FAQ */}
+            {faqs.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-lg font-bold text-white mb-4">자주 묻는 질문</h2>
+                <div className="space-y-3">
+                  {faqs.map((faq, i) => (
+                    <div key={i} className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-5">
+                      <p className="text-white font-medium mb-2">{faq.question}</p>
+                      {faq.answer && <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">{faq.answer}</p>}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
