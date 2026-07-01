@@ -42,7 +42,12 @@ export default async function OrderSuccessPage() {
       .limit(1)
       .maybeSingle()
 
-    if (o) {
+    // 방금 결제만 영수증으로 표시 — 최근 30분 이내 주문만.
+    // (재구매 사용자에게 웹훅 지연 시 과거 주문이 '방금 결제'로 오인되지 않도록)
+    const RECENT_MS = 30 * 60 * 1000
+    const isRecent = o ? (Date.now() - new Date(o.created_at as string).getTime()) <= RECENT_MS : false
+
+    if (o && isRecent) {
       let productName = 'CoreZent 제품'
       if (o.product_price_id) {
         const { data: pp } = await supabase
