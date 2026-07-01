@@ -10,6 +10,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
 
@@ -56,6 +57,7 @@ function getStatusBadge(status: string, expiresAt: string | null): { label: stri
 }
 
 export default function OrderTable({ orders, totalRevenue }: Props) {
+  const router = useRouter()
   const [rawSearch, setRawSearch] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -140,7 +142,11 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                   {paged.map((o) => {
                     const badge = getStatusBadge(o.status, o.expires_at)
                     return (
-                      <tr key={o.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
+                      <tr
+                        key={o.id}
+                        onClick={() => router.push(`/admin/orders/${o.id}`)}
+                        className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors cursor-pointer"
+                      >
                         <td className="px-6 py-3">
                           <span className="font-mono text-xs text-[#94A3B8]">#{o.shortId}</span>
                         </td>
