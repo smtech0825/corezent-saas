@@ -31,14 +31,16 @@ COMMENT ON COLUMN public.product_prices.option_axis1_label IS '이 옵션 행의
 COMMENT ON COLUMN public.product_prices.option_axis2_label IS '이 옵션 행의 축2 값 (자유 텍스트, 예: 3PC용)';
 COMMENT ON COLUMN public.product_prices.license_tier       IS '라이선스 발급 tier (1pc·3pc·5pc·10pc·lite·pro·max). 비면 웹훅이 slug 파싱으로 fallback';
 
--- ── 032 UNIQUE 인덱스 재정의 — 옵션 행(같은 type/interval에 tier별 다중 행) 허용 ──
+-- ── 032 UNIQUE 인덱스 재정의 — 옵션 행(같은 type/interval에 옵션별 다중 행) 허용 ──
 -- 기존 032: (product_id, type, COALESCE(interval,'')) 활성 1행만 → 월간에 1PC·3PC 공존 불가.
--- v2: license_tier를 유일성에 포함해 "같은 상품·주기·tier"만 1행으로 제한(옵션 다중 행 허용).
--- 032의 원래 목적(같은 플랜 중복 행 방지)은 tier 축을 더해 그대로 유지된다.
+-- v2: 옵션 라벨(축1/축2)을 유일성에 포함해 "같은 상품·주기·옵션조합"만 1행으로 제한.
+--     (license_tier가 아니라 옵션 라벨로 구분 — tier가 없거나 같은 옵션도 라벨이 다르면 공존 가능.
+--      "옵션=tier" 전제에 얽매이지 않는 범용 구조. tier는 라이선스 발급용일 뿐 유일성 축이 아님.)
+-- 032의 원래 목적(같은 플랜 중복 행 방지)은 옵션 라벨 축을 더해 그대로 유지된다.
 -- (데이터 불변 — 인덱스 정의만 교체. 재적용 안전하도록 DROP IF EXISTS + CREATE IF NOT EXISTS)
 DROP INDEX IF EXISTS uq_product_prices_active_plan;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_product_prices_active_plan_v2
-  ON public.product_prices (product_id, type, COALESCE(interval, ''), COALESCE(license_tier, ''))
+  ON public.product_prices (product_id, type, COALESCE(interval, ''), COALESCE(option_axis1_label, ''), COALESCE(option_axis2_label, ''))
   WHERE is_active;
 
 -- ─── 기존 상품 이행 예시 (값 확정·실행은 Steve — orders/subscriptions FK 때문에 행 삭제 금지) ───
@@ -67,7 +69,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_product_prices_active_plan_v2
 --    WHERE slug LIKE 'geniework_%' AND slug <> 'geniework';
 --
 -- 3) 재지정 후 활성 중복이 없어야 uq_product_prices_active_plan_v2가 성립한다. 선확인:
---    SELECT product_id, type, COALESCE(interval,''), COALESCE(license_tier,''), count(*)
+--    SELECT product_id, type, COALESCE(interval,''), COALESCE(option_axis1_label,''), COALESCE(option_axis2_label,''), count(*)
 --    FROM   public.product_prices WHERE is_active
---    GROUP  BY 1,2,3,4 HAVING count(*) > 1;
+--    GROUP  BY 1,2,3,4,5 HAVING count(*) > 1;
 --    → 0행이어야 함. 아니면 대표 1행만 is_active=true로 남기고 정리 후 인덱스 생성.
+--
+-- 4) ⚠️ 라이선스 미배송 방지 — GenieStock/GenieWork 옵션 행은 license_tier가 반드시 채워져야 한다.
+--    (대표 slug엔 tier 토큰이 없어 slug fallback이 무력 → tier 공란이면 결제돼도 라이선스 미발급.)
+--    배포 후 아래로 확인(0행이어야 함):
+--    SELECT pp.id, p.slug, pp.option_axis1_label, pp.option_axis2_label, pp.license_tier
+--    FROM   public.product_prices pp JOIN public.products p ON p.id = pp.product_id
+--    WHERE  pp.is_active AND (p.slug LIKE '%geniework%' OR p.slug LIKE '%geniestock%')
+--      AND  (pp.license_tier IS NULL OR pp.license_tier = '');

@@ -885,6 +885,15 @@ async function createLicense(
         : tierFromProductName(productSlug))
     if (!tier) {
       console.error(`[LS Webhook] ${supaSlug} tier 추출 실패 — 라이선스 미생성 (order_id=${lsOrderId ?? 'N/A'}, slug="${productSlug}", license_tier="${licenseTier ?? ''}")`)
+      // 결제는 완료됐는데 tier 미결정으로 미발급 → 관리자 로그에 표면화(사일런트 실패 방지).
+      // 원인: 옵션 행 license_tier 공란/오타 + 대표 slug에 tier 토큰 없음. 해당 옵션 행에 유효 tier 필요.
+      await logNotification({
+        kind:   'webhook',
+        status: 'failure',
+        event:  'license_tier_missing',
+        target: lsOrderId ?? null,
+        error:  `${supaSlug} 라이선스 미발급 — tier 미결정. license_tier="${licenseTier ?? ''}", slug="${productSlug}". 옵션 행에 유효 tier(1pc/3pc/5pc/10pc/lite/pro/max)를 입력하세요.`,
+      })
       return
     }
 
