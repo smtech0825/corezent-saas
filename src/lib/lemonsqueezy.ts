@@ -33,7 +33,10 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
  *        웹훅에서 주문을 올바른 사용자·마케팅 채널·추천인에 연결하기 위해 사용합니다.
  *        affiliate_ref는 서버에서 해석(httpOnly cz_ref·referred_by)된 값을 받아 주입 시점에 sanitize합니다.
  *        quantity(같은 상품 N개)는 LS 공식 `quantity` URL 파라미터로 전달 — 2 이상일 때만 부착.
- * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터, quantity - 구매 수량(기본 1)
+ *        discountCode는 LS 공식 `checkout[discount_code]` 파라미터로 전달(체크아웃에 프리필,
+ *        유효성 검증·금액 계산은 LS가 수행) — 값이 있을 때만 부착.
+ * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터,
+ *           quantity - 구매 수량(기본 1), discountCode - LS 할인코드(선택)
  * @반환값: custom_data가 포함된 체크아웃 URL
  */
 export function buildCheckoutUrl(
@@ -49,6 +52,7 @@ export function buildCheckoutUrl(
     affiliate_ref?: string
   } | null,
   quantity?: number,
+  discountCode?: string,
 ): string {
   if (!baseUrl || baseUrl === '#') return baseUrl || '#'
   try {
@@ -59,6 +63,11 @@ export function buildCheckoutUrl(
     if (quantity && Number.isFinite(quantity)) {
       const q = Math.floor(quantity)
       if (q >= 2) url.searchParams.set('quantity', String(q))
+    }
+    // 할인코드: 영숫자·-·_만 허용해 sanitize, 빈 값이면 키 자체를 생략
+    if (discountCode) {
+      const code = discountCode.trim().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64)
+      if (code) url.searchParams.set('checkout[discount_code]', code)
     }
     if (userId)              url.searchParams.set('checkout[custom][user_id]',     userId)
     if (utm?.utm_source)     url.searchParams.set('checkout[custom][utm_source]',   utm.utm_source)
@@ -214,6 +223,7 @@ export interface LSOrderAttributes {
   user_email: string
   status: string      // 'paid' | 'pending' | 'refunded'
   total: number       // cents
+  discount_total?: number  // cents — 할인코드 적용 시 할인된 금액 (total은 할인 후)
   currency: string
   first_order_item: {
     product_id: number

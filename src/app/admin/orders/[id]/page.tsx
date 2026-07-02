@@ -2,7 +2,8 @@
  * @파일: admin/orders/[id]/page.tsx
  * @설명: 관리자 주문 상세 — 주문↔사용자↔상품↔라이선스↔구독을 한 화면에 조인해 표시.
  *        금액은 lib/money.formatKRW(cents ÷100 + ₩), 라이선스 키는 마스킹, 없는 필드는 "—".
- *        스키마에 없는 항목(수량·결제수단)은 "—"로 둔다.
+ *        수량·할인 금액은 038 마이그레이션 컬럼(quantity·discount_amount) 표시.
+ *        스키마에 없는 항목(결제수단)은 "—"로 둔다.
  */
 
 import { notFound } from 'next/navigation'
@@ -61,7 +62,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await admin
     .from('orders')
-    .select('id, user_id, product_price_id, bundle_id, lemon_squeezy_order_id, status, amount, currency, created_at')
+    .select('id, user_id, product_price_id, bundle_id, lemon_squeezy_order_id, status, amount, currency, created_at, quantity, discount_amount')
     .eq('id', id)
     .single()
 
@@ -120,8 +121,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {productName}
           {product?.slug && <span className="text-[#475569] ml-2 font-mono text-xs">{product.slug}</span>}
         </Row>
-        <Row label="수량">—</Row>
+        <Row label="수량">{(order.quantity as number) ?? 1}</Row>
         <Row label="금액">{formatKRW(order.amount as number)}</Row>
+        {Number(order.discount_amount ?? 0) > 0 && (
+          <Row label="할인">
+            <span className="text-emerald-400">-{formatKRW(order.discount_amount as number)}</span>
+            <span className="text-[#475569] ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
+          </Row>
+        )}
         <Row label="통화">{(order.currency as string) ?? '—'}</Row>
         <Row label="결제수단">—</Row>
         <Row label="LS order_id"><span className="font-mono text-xs">{(order.lemon_squeezy_order_id as string) ?? '—'}</span></Row>

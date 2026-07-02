@@ -244,6 +244,32 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
         </Field>
       </SectionCard>
+
+      {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}
+      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#1E293B]">
+          <h2 className="text-sm font-semibold text-white">할인코드 (Lemon Squeezy)</h2>
+          <p className="text-xs text-[#475569] mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>
+        </div>
+        <div className="p-6 space-y-3 text-sm text-[#94A3B8] leading-relaxed">
+          <p>
+            LS 대시보드 → <strong className="text-[#F1F5F9]">Store → Discounts</strong>에서 코드를 만들면
+            (정률/정액, 적용 상품, 사용 횟수·기간 제한 설정 가능) 구매자가 요금제 페이지의
+            할인코드 입력칸 또는 결제 화면에서 바로 사용할 수 있습니다.
+          </p>
+          <p className="text-xs text-[#475569]">
+            마케팅 링크로 자동 적용하려면: <code className="font-mono text-[#38BDF8]">corezent.com/pricing?discount=코드</code>
+          </p>
+          <a
+            href="https://app.lemonsqueezy.com/discounts"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-[#38BDF8] hover:underline font-medium"
+          >
+            LS 할인코드 관리 열기 ↗
+          </a>
+        </div>
+      </div>
     </div>
   )
 }

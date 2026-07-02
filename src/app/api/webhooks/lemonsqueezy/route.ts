@@ -269,6 +269,9 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음 — 주문만 기록·라이선스 미생성 (order_id=${lsOrderId})`)
   }
 
+  const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
+  const discountCents = Number(attrs.discount_total ?? 0)
+
   const orderInsert: Record<string, unknown> = {
     user_id: userId,
     lemon_squeezy_order_id: lsOrderId,
@@ -278,6 +281,10 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   }
   if (productPriceId) orderInsert.product_price_id = productPriceId
   if (bundleId) orderInsert.bundle_id = bundleId
+  // 수량·할인(cents) 기록 — 038 마이그레이션 컬럼. 기본값(1·0)이면 생략해
+  // 마이그레이션 미적용 상태에서도 일반 주문 INSERT는 깨지지 않게 한다.
+  if (quantity > 1) orderInsert.quantity = quantity
+  if (Number.isFinite(discountCents) && discountCents > 0) orderInsert.discount_amount = discountCents
 
   const { data: order, error: orderErr } = await admin
     .from('orders')
@@ -293,7 +300,6 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
     // 수량 N 주문 → 라이선스 N개 발급
-    const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
     await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity)
   }
 
@@ -405,6 +411,9 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     if (bundleData) bundleId = bundleData.id
   }
 
+  // 구독 수량(좌석) — 스텁 주문 기록·라이선스 N개 발급에 공용
+  const quantity = normalizeQuantity(attrs.first_subscription_item?.quantity)
+
   const lsOrderId = String(attrs.order_id)
   let orderId: string | null = null
   const { data: existingOrder } = await admin
@@ -426,6 +435,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     }
     if (productPrice) orderInsert.product_price_id = productPrice.id
     if (bundleId) orderInsert.bundle_id = bundleId
+    if (quantity > 1) orderInsert.quantity = quantity  // 038 마이그레이션 컬럼 — 기본값(1)이면 생략
     const { data: newOrder } = await admin
       .from('orders')
       .insert(orderInsert)
@@ -464,7 +474,6 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 
   if (productPrice?.product_id && orderId) {
     // 구독 수량(좌석) N → 라이선스 N개 발급
-    const quantity = normalizeQuantity(attrs.first_subscription_item?.quantity)
     await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId, quantity)
   }
 }

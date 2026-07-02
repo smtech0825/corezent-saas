@@ -10,7 +10,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
+import { Check, ArrowRight, Zap, Sparkles, Tag, X } from 'lucide-react'
 import { CATEGORY_BADGE, PRODUCT_BADGE_COLORS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
@@ -75,14 +75,18 @@ export default function PricingClient({ products, affiliateRef }: Props) {
   const [utmData, setUtmData] = useState<UtmData | null>(null)
   // 상품별 구매 수량 (기본 1 — 같은 상품 N개 결제, 장바구니 아님)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  // LS 할인코드 — 모든 카드의 체크아웃 URL에 checkout[discount_code]로 전달 (검증·계산은 LS)
+  const [discountCode, setDiscountCode] = useState('')
 
-  // 로그인 사용자 ID + UTM 데이터 조회
+  // 로그인 사용자 ID + UTM 데이터 조회 + 할인코드 URL 프리필(?discount=CODE)
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
     setUtmData(getUtmData())
+    const urlCode = new URLSearchParams(window.location.search).get('discount')
+    if (urlCode) setDiscountCode(urlCode.trim().slice(0, 64))
   }, [])
 
   // 카테고리 필터링
@@ -159,6 +163,34 @@ export default function PricingClient({ products, affiliateRef }: Props) {
               </button>
             </div>
           )}
+
+          {/* 할인코드 입력 — 모든 카드의 체크아웃 URL에 checkout[discount_code]로 전달 */}
+          <div className="mt-6">
+            <div className="inline-flex items-center gap-2 border border-[#1E293B] bg-[#111A2E] rounded-full px-4 py-2">
+              <Tag size={13} className="text-[#38BDF8] shrink-0" />
+              <input
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value)}
+                placeholder="할인코드 (선택)"
+                className="bg-transparent text-sm text-white placeholder-[#475569] focus:outline-none w-36"
+              />
+              {discountCode && (
+                <button
+                  type="button"
+                  onClick={() => setDiscountCode('')}
+                  aria-label="할인코드 지우기"
+                  className="text-[#475569] hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            {discountCode.trim() && (
+              <p className="text-xs text-[#38BDF8] mt-2">
+                결제 화면에서 자동 입력됩니다 (할인 금액·유효성은 결제 화면에서 확인)
+              </p>
+            )}
+          </div>
         </div>
 
         {/* 카테고리 탭 */}
@@ -198,7 +230,7 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                 ? product.annualCheckoutUrl
                 : product.monthlyCheckoutUrl
               const quantity = quantities[product.id] ?? 1
-              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef }, quantity)
+              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef }, quantity, discountCode)
 
               // 제품별 할인율
               const productSavePct = product.hasAnnualPlan && product.monthlyPrice > 0
