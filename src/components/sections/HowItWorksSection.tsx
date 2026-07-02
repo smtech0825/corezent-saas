@@ -44,7 +44,7 @@ export default function HowItWorksSection({ steps }: Props) {
             {items.map((step, idx) => (
               <tr key={step.id}>
                 <td className="border border-ink px-3 py-3 text-center font-mono font-semibold text-ink">{idx + 1}</td>
-                <td className="border border-ink px-4 py-3 font-serif font-bold text-ink">{step.title}</td>
+                <td className="border border-ink px-4 py-3 font-serif font-bold text-ink whitespace-nowrap">{step.title}</td>
                 <td className="border border-ink px-4 py-3 text-ink-soft break-keep">{step.description}</td>
               </tr>
             ))}
