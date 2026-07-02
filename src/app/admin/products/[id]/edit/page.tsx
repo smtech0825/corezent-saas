@@ -20,11 +20,14 @@ export default async function EditProductPage({
   const { id } = await params
   const client = createAdminClient()
 
-  const { data: product } = await client
-    .from('products')
-    .select('id, name, slug, tagline, description, category, category_group, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs')
-    .eq('id', id)
-    .single()
+  // 옵션 진열 컬럼(039)은 우선 조회 → 미적용 시 폴백(옵션 필드 없이 편집 페이지 정상 동작)
+  const OPT_SEL = 'id, name, slug, tagline, description, category, category_group, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+  const BASE_SEL = 'id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+
+  const optRes = await client.from('products').select(OPT_SEL).eq('id', id).single()
+  const { data: product } = optRes.error
+    ? await client.from('products').select(BASE_SEL).eq('id', id).single()
+    : optRes
 
   if (!product) notFound()
 
@@ -81,11 +84,12 @@ export default async function EditProductPage({
     description: product.description ?? '',
     category: product.category ?? 'desktop',
     category_group: (product.category_group as string) ?? '',
-    option_group: (product.option_group as string) ?? '',
-    option_axis1_name: (product.option_axis1_name as string) ?? '',
-    option_axis1_label: (product.option_axis1_label as string) ?? '',
-    option_axis2_name: (product.option_axis2_name as string) ?? '',
-    option_axis2_label: (product.option_axis2_label as string) ?? '',
+    // 폴백(039 미적용) 시 컬럼이 없으므로 옵셔널로 안전 접근
+    option_group: ((product as { option_group?: string | null }).option_group) ?? '',
+    option_axis1_name: ((product as { option_axis1_name?: string | null }).option_axis1_name) ?? '',
+    option_axis1_label: ((product as { option_axis1_label?: string | null }).option_axis1_label) ?? '',
+    option_axis2_name: ((product as { option_axis2_name?: string | null }).option_axis2_name) ?? '',
+    option_axis2_label: ((product as { option_axis2_label?: string | null }).option_axis2_label) ?? '',
     badge_text: (product.badge_text as string) ?? '',
     badge_color: ((product.badge_color as string) ?? 'blue') as 'blue' | 'green' | 'yellow',
     logo_url: product.logo_url ?? '',
