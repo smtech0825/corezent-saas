@@ -8,9 +8,10 @@
  *        - 비로그인: Log in / Get started
  *        - 로그인 시: 아바타 드롭다운 (My Page, Settings, Log out)
  *        - 모바일 햄버거 메뉴
+ *        - 모든 이동은 a 태그 대신 button + router.push 사용
+ *          (브라우저 좌측 하단 URL 미리보기 표시 방지)
  */
 
-import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Zap, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
@@ -125,6 +126,16 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  /**
+   * @함수명: go
+   * @설명: 내비게이션 이동 — a 태그 대신 사용해 브라우저 상태바 URL 미리보기를 숨깁니다.
+   * @매개변수: href - 이동할 경로, external - 외부 링크 여부(새 탭)
+   */
+  function go(href: string, external?: boolean) {
+    if (external) window.open(href, '_blank', 'noopener,noreferrer')
+    else router.push(href)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     setUser(null)
@@ -148,12 +159,13 @@ export default function Navbar() {
             <span className="hidden sm:inline">{banner.text}</span>
             <span className="sm:hidden">{banner.text_mobile}</span>
             {banner.link_text && banner.link_url && (
-              <Link
-                href={banner.link_url}
-                className="underline underline-offset-2 hover:text-white transition-colors whitespace-nowrap"
+              <button
+                type="button"
+                onClick={() => go(banner.link_url)}
+                className="underline underline-offset-2 hover:text-white transition-colors whitespace-nowrap cursor-pointer"
               >
                 {banner.link_text}
-              </Link>
+              </button>
             )}
           </span>
         </div>
@@ -164,39 +176,29 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* 로고 */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-bold text-xl text-white tracking-tight shrink-0"
+          <button
+            type="button"
+            onClick={() => go('/')}
+            className="flex items-center gap-2 font-bold text-xl text-white tracking-tight shrink-0 cursor-pointer"
           >
             <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">
               C
             </span>
             CoreZent
-          </Link>
+          </button>
 
           {/* 데스크톱 메뉴 */}
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) =>
-              link.external ? (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
-                >
-                  {link.label}
-                </Link>
-              )
-            )}
+            {navLinks.map((link) => (
+              <button
+                key={link.label}
+                type="button"
+                onClick={() => go(link.href, link.external)}
+                className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+              >
+                {link.label}
+              </button>
+            ))}
           </div>
 
           {/* 우측 영역 */}
@@ -232,22 +234,22 @@ export default function Navbar() {
                     <div className="px-4 py-3 border-b border-[#1E293B]">
                       <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
                     </div>
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setUserOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
+                    <button
+                      type="button"
+                      onClick={() => { setUserOpen(false); go('/dashboard') }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors cursor-pointer"
                     >
                       <LayoutDashboard size={14} />
                       대시보드
-                    </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      onClick={() => setUserOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors"
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setUserOpen(false); go('/dashboard/settings') }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors cursor-pointer"
                     >
                       <User size={14} />
                       설정
-                    </Link>
+                    </button>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors border-t border-[#1E293B]"
@@ -261,18 +263,20 @@ export default function Navbar() {
             ) : (
               /* 비로그인 상태 */
               <>
-                <Link
-                  href="/auth/login"
-                  className="hidden lg:block text-sm text-[#94A3B8] hover:text-white transition-colors px-2"
+                <button
+                  type="button"
+                  onClick={() => go('/auth/login')}
+                  className="hidden lg:block text-sm text-[#94A3B8] hover:text-white transition-colors px-2 cursor-pointer"
                 >
                   로그인
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="hidden lg:inline-flex items-center gap-1.5 bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#0ea5e9] transition-colors"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go('/auth/register')}
+                  className="hidden lg:inline-flex items-center gap-1.5 bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#0ea5e9] transition-colors cursor-pointer"
                 >
                   시작하기
-                </Link>
+                </button>
               </>
             )}
 
@@ -291,40 +295,27 @@ export default function Navbar() {
         {/* 모바일 메뉴 */}
         {mobileOpen && (
           <div className="lg:hidden border-t border-[#1E293B] bg-[#0B1120] px-6 py-4 flex flex-col gap-4">
-            {navLinks.map((link) =>
-              link.external ? (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setMobileOpen(false)}
-                  className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              )
-            )}
+            {navLinks.map((link) => (
+              <button
+                key={link.label}
+                type="button"
+                onClick={() => { setMobileOpen(false); go(link.href, link.external) }}
+                className="text-left text-sm text-[#94A3B8] hover:text-white transition-colors cursor-pointer"
+              >
+                {link.label}
+              </button>
+            ))}
             <div className="pt-2 flex flex-col gap-2 border-t border-[#1E293B]">
               {user ? (
                 <>
                   <p className="text-xs text-[#475569] px-1">{user.email}</p>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="text-sm text-[#94A3B8] hover:text-white"
+                  <button
+                    type="button"
+                    onClick={() => { setMobileOpen(false); go('/dashboard') }}
+                    className="text-left text-sm text-[#94A3B8] hover:text-white cursor-pointer"
                   >
                     대시보드
-                  </Link>
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="text-left text-sm text-red-400 hover:text-red-300"
@@ -334,18 +325,20 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/auth/login"
-                    className="text-sm text-[#94A3B8] hover:text-white"
+                  <button
+                    type="button"
+                    onClick={() => { setMobileOpen(false); go('/auth/login') }}
+                    className="text-left text-sm text-[#94A3B8] hover:text-white cursor-pointer"
                   >
                     로그인
-                  </Link>
-                  <Link
-                    href="/auth/register"
-                    className="inline-flex justify-center bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg"
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMobileOpen(false); go('/auth/register') }}
+                    className="inline-flex justify-center bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer"
                   >
                     시작하기
-                  </Link>
+                  </button>
                 </>
               )}
 
