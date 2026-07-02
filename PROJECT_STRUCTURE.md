@@ -1,6 +1,6 @@
 # CoreZent SaaS — 프로젝트 구조 & 데이터 흐름
 
-> 마지막 업데이트: 2026-04-29
+> 마지막 업데이트: 2026-07-02
 > 이 문서는 작업 완료 시마다 함께 업데이트됩니다. 변경 시 해당 섹션만 수정하세요.
 
 CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이트**입니다. 자체 개발한 데스크톱/웹 앱(GeniePost 등)을 최종 사용자에게 직접 판매합니다 — B2B SaaS 도구가 아닙니다. 결제는 **Lemon Squeezy**, 데이터는 **Supabase**, 라이선스는 **제품별로 분리**(GeniePost=Google Sheets, GenieStock·GenieWork=각각 별도 Supabase 프로젝트)되어 본체 DB와 동기화됩니다.
@@ -38,9 +38,9 @@ CoreZent_SaaS/
 │
 ├── src/
 │   ├── app/                   # Next.js App Router
-│   │   ├── page.tsx           # 랜딩 (Hero/Product/Pricing/HowItWorks/Features/Testimonials/FAQ/CTA)
-│   │   ├── layout.tsx         # 루트 레이아웃 + Vercel Analytics + SpeedInsights
-│   │   ├── globals.css        # 전역 스타일 + @theme
+│   │   ├── page.tsx           # 랜딩 (Hero/Product/Pricing/HowItWorks/Features/Testimonials/FAQ/CTA) — theme-paper 적용
+│   │   ├── layout.tsx         # 루트 레이아웃 + Noto_Serif_KR(--font-serif-kr) + Vercel Analytics + SpeedInsights
+│   │   ├── globals.css        # 전역 스타일 + @theme (다크 토큰 유지) + 페이퍼 테마 토큰(paper/ink/rule/seal/pen) + fade-up/stamp 애니메이션
 │   │   │
 │   │   ├── auth/              # Supabase Auth 화면
 │   │   │   ├── login/         # 이메일+OAuth 로그인
@@ -106,8 +106,17 @@ CoreZent_SaaS/
 │   │   └── legal/             # 이용약관·개인정보·쿠키 정책
 │   │
 │   ├── components/
+│   │   ├── ui/                 # ⭐ 공통 UI 프리미티브 (페이퍼 테마 표준) — GenieWork 재브랜딩 신규
+│   │   │   ├── Button.tsx      # variant: primary/outline/ghost/danger, size: sm/md/lg, href 있으면 Link로 렌더
+│   │   │   ├── Container.tsx   # width: text(max-w-3xl)/content(max-w-5xl)/wide(max-w-7xl) — 사이트 max-width 3종 통일
+│   │   │   ├── Section.tsx     # Section + SectionHeader + FieldLabel export (공문서식 네모 칸 라벨)
+│   │   │   ├── Card.tsx        # variant: solid/dashed(점선 — 출시예정 등)
+│   │   │   ├── Input.tsx       # Input + Textarea + Field export (라벨+에러 래퍼)
+│   │   │   └── Badge.tsx       # variant: pen/seal/ink/shade
 │   │   ├── sections/          # 랜딩 섹션 (DB 데이터 렌더)
 │   │   │   ├── HeroSection.tsx
+│   │   │   ├── HeroDraftDemo.tsx      # ⭐신규 히어로 하단 초안 타이핑 데모 ('use client', prefers-reduced-motion 대응)
+│   │   │   ├── StampSeal.tsx          # ⭐신규 직인(印) 스탬프 애니메이션 ('use client', IntersectionObserver 트리거)
 │   │   │   ├── ProductSection.tsx     # Our Products 그리드
 │   │   │   ├── PricingSection.tsx     # 가격 카드 (월/연 토글)
 │   │   │   ├── HowItWorksSection.tsx
@@ -116,8 +125,8 @@ CoreZent_SaaS/
 │   │   │   ├── FAQSection.tsx
 │   │   │   ├── CTASection.tsx
 │   │   │   └── MetricsSection.tsx
-│   │   ├── common/            # CountrySelect, Toast, Pagination
-│   │   ├── Navbar.tsx, Footer.tsx
+│   │   ├── common/            # CountrySelect(다크·페이퍼 이중 테마, `.theme-paper` 조상 셀렉터로 override), Toast, Pagination
+│   │   ├── Navbar.tsx, Footer.tsx     # Navbar: fixed→sticky 전환, 페이퍼 테마 적용
 │   │   ├── DynamicIcon.tsx    # lucide/tabler/radix 동적 import + 캐시
 │   │   ├── Analytics.tsx      # GA/GTM 등 외부 스크립트 로더
 │   │   └── CookieConsentBanner.tsx
@@ -132,7 +141,7 @@ CoreZent_SaaS/
 │   │   ├── email.ts           # nodemailer + HTML 템플릿
 │   │   ├── cookies.ts         # UTM 데이터 read/write
 │   │   ├── countries.ts       # 국가 목록
-│   │   └── products.ts        # 카테고리·뱃지 색상 상수
+│   │   └── products.ts        # 카테고리·뱃지 색상 상수 (다크용 + ⭐PRODUCT_BADGE_COLORS_PAPER/CATEGORY_BADGE_PAPER 페이퍼 전용 추가)
 │   │
 │   ├── instrumentation-client.ts  # Vercel BotID 초기화
 │   └── middleware.ts          # 세션 갱신 + 보호 라우트
@@ -167,6 +176,10 @@ CoreZent_SaaS/
 | Below-fold 섹션 lazy 로드 | `next/dynamic` 사용 — Hero만 정적 import, 나머지는 청크 분리 (1.35MB → 299KB) |
 | Pricing 섹션 (다중 상품) | [src/components/sections/PricingSection.tsx](src/components/sections/PricingSection.tsx) — 1/2/3+ 그리드 자동 전환 |
 | Product 섹션 | [src/components/sections/ProductSection.tsx](src/components/sections/ProductSection.tsx) — Coming Soon 플레이스홀더 자동 채움 |
+| **공통 UI 프리미티브** ⭐신규 | [src/components/ui/](src/components/ui/) — `Button`(variant/size/href)·`Container`(width 3종)·`Section`+`SectionHeader`+`FieldLabel`·`Card`(solid/dashed)·`Input`+`Textarea`+`Field`·`Badge`(4 variant). 랜딩뿐 아니라 pricing·product·changelog·activate·contact·faq·about·legal·auth 등 전체 퍼블릭 페이지가 공용 |
+| 히어로 보조 컴포넌트 ⭐신규 | [HeroDraftDemo.tsx](src/components/sections/HeroDraftDemo.tsx) — 초안 자동 타이핑 데모 · [StampSeal.tsx](src/components/sections/StampSeal.tsx) — 직인 스탬프 애니메이션(IntersectionObserver) |
+
+> **테마 이원화 (GenieWork 재브랜딩)**: 퍼블릭 페이지(`/`·`/pricing`·`/product`·`/changelog`·`/activate`·`/contact`·`/faq`·`/about`·`/legal`·`/auth/*`)는 각 페이지 루트에 `theme-paper bg-paper text-ink` 클래스를 적용한 **페이퍼(라이트, 공문서) 테마**. `/dashboard`·`/admin`은 기존 **다크 테마**를 그대로 유지(변경 없음). `globals.css`에 두 테마 토큰이 공존(`--color-bg` 등 다크 + `--color-paper`/`--color-ink`/`--color-rule`/`--color-seal`/`--color-pen` 등 페이퍼), `@theme inline`으로 `layout.tsx`의 `Noto_Serif_KR`(`--font-serif-kr`)을 `font-serif` 유틸리티에 연결. 다크·페이퍼 양쪽에서 쓰이는 `CountrySelect`는 `.theme-paper` 조상 셀렉터로 색상만 override. `Navbar`는 `fixed`→`sticky`로 전환.
 
 ### 2.3 관리자 (Admin Console)
 
@@ -538,6 +551,15 @@ npm run lint   # ESLint
 | LS 웹훅 멱등성 | 같은 이벤트 재전송 가능 | `lemon_squeezy_order_id` UNIQUE로 중복 INSERT 방지 |
 | Rate Limit (Contact) | in-memory Map → 다중 인스턴스에서 정확하지 않음 | Vercel은 단일 region serverless라 큰 문제 없음 |
 | BotID 토큰 | 클라이언트만 발급 가능 (네이티브 앱 X) | 앱 호출 라우트(`/api/license/*`)는 BotID 미적용 |
+| 디자인 시스템 이원화 (GenieWork 재브랜딩) | 퍼블릭(페이퍼: `--color-paper`/`--color-ink` 등)과 `dashboard`·`admin`(다크: `--color-bg`/`--color-surface` 등)이 서로 다른 토큰·컴포넌트를 사용 | 새 컴포넌트 작성 시 대상 영역(퍼블릭 vs 대시보드/관리자) 확인 후 `src/components/ui/`(페이퍼 전용) 또는 기존 다크 스타일 중 맞는 쪽 사용. `CountrySelect`처럼 양쪽에서 쓰이는 컴포넌트는 `.theme-paper` 조상 셀렉터로 분기 |
+
+---
+
+## 9. 변경 이력
+
+| 날짜 | 작업 | 변경 규모 |
+|---|---|---|
+| 2026-07-02 | 퍼블릭 페이지 GenieWork 재브랜딩(페이퍼 테마) — 공통 UI 프리미티브(`ui/`) 6종, 히어로 보조 컴포넌트 2종 신규, `globals.css` 페이퍼 토큰·애니메이션 추가, `layout.tsx` Noto Serif KR 도입, 퍼블릭 전 페이지 `theme-paper` 적용(dashboard·admin은 다크 유지), `products.ts` 페이퍼 뱃지 상수, `CountrySelect` 이중 테마 지원, Navbar fixed→sticky | 신규 8 · 수정 다수(프레젠테이션 레이어, 로직/DB/API 변경 없음) |
 
 ---
 
