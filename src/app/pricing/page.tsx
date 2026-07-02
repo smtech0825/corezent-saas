@@ -22,18 +22,27 @@ export default async function PricingPage() {
   const client = createAdminClient()
 
   // 제품·가격·추천인 코드 병렬 조회 (추천인은 httpOnly cz_ref를 서버에서 해석)
-  const [{ data: dbProducts }, { data: dbPrices }, affiliateRef] = await Promise.all([
-    client
-      .from('products')
-      .select('id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index')
-      .eq('is_active', true)
-      .order('order_index'),
+  // 옵션 진열 컬럼(039)은 우선 조회 → 미적용 시 폴백(옵션 없이 기존 단독 카드로 정상 동작)
+  const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label'
+  const BASE_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index'
+  const productsQuery = client
+    .from('products')
+    .select(OPT_COLS)
+    .eq('is_active', true)
+    .order('order_index')
+
+  const [productsRes, { data: dbPrices }, affiliateRef] = await Promise.all([
+    productsQuery,
     client
       .from('product_prices')
       .select('product_id, type, interval, price, checkout_url')
       .eq('is_active', true),
     resolveCheckoutAffiliateRef(),
   ])
+
+  const dbProducts = productsRes.error
+    ? (await client.from('products').select(BASE_COLS).eq('is_active', true).order('order_index')).data
+    : productsRes.data
 
   // 가격을 product_id별로 그룹화
   const priceMap = new Map<string, Array<{
@@ -65,6 +74,12 @@ export default async function PricingPage() {
     // 연간 결제 시 월 환산 가격
     const annualMonthlyPrice = annual ? annualPrice / 12 : monthlyPrice
 
+    // 옵션 카드용 대표 단가/URL — 이 조합 상품의 실제 결제 금액(월간→연간→일회 우선)
+    const rep = monthly ?? annual ?? oneTime ?? null
+    const unitPrice = rep?.price ?? 0
+    const unitCheckoutUrl = rep?.checkout_url ?? '#'
+    const priceSuffix = monthly ? '/월' : annual ? '/년' : ''
+
     return {
       id:                   p.id as string,
       slug:                 (p.slug as string) ?? '',
@@ -81,6 +96,15 @@ export default async function PricingPage() {
       annualCheckoutUrl:    annual?.checkout_url ?? '#',
       hasAnnualPlan:        !!annual,
       isOneTime:            !monthly && !annual && !!oneTime,
+      // 옵션 진열(039) — 폴백 조회 시 컬럼이 없으므로 옵셔널 안전 접근
+      optionGroup:          ((p as { option_group?: string | null }).option_group) ?? null,
+      axis1Name:            ((p as { option_axis1_name?: string | null }).option_axis1_name) ?? null,
+      axis1Label:           ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? null,
+      axis2Name:            ((p as { option_axis2_name?: string | null }).option_axis2_name) ?? null,
+      axis2Label:           ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? null,
+      unitPrice,
+      unitCheckoutUrl,
+      priceSuffix,
     }
   })
 
