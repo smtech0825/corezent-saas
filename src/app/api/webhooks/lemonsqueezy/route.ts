@@ -82,6 +82,40 @@ function tierFromGenieWork(slug: string | null | undefined): SupaTier | null {
 }
 
 /**
+ * @함수명: normalizeTier
+ * @설명: product_prices.license_tier(옵션 행 tier) 값을 유효한 SupaTier로 정규화한다.
+ *        v2 표준 옵션 구조에서 tier의 1순위 출처. 유효하지 않으면 null을 반환해
+ *        호출측이 기존 slug 파싱으로 fallback하게 한다(기존 상품 회귀 방지).
+ * @매개변수: value - product_prices.license_tier 값(임의 입력)
+ * @반환값: 유효 tier('1pc'|'3pc'|'5pc'|'10pc'|'lite'|'pro'|'max') 또는 null
+ */
+function normalizeTier(value: unknown): SupaTier | null {
+  const s = String(value ?? '').toLowerCase().trim()
+  const valid: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
+  return valid.includes(s) ? (s as SupaTier) : null
+}
+
+/**
+ * @함수명: fetchLicenseTier
+ * @설명: 옵션 행(product_prices)의 license_tier를 best-effort로 읽는다.
+ *        040 마이그레이션 미적용(컬럼 부재) 시 조회가 에러나면 null을 반환해
+ *        웹훅이 기존 slug 파싱 tier로 안전하게 fallback하도록 한다(결제 흐름 불변).
+ * @매개변수: productPriceId - 옵션 가격 행 id (없으면 null)
+ * @반환값: license_tier 문자열 또는 null
+ */
+async function fetchLicenseTier(productPriceId: string | null | undefined): Promise<string | null> {
+  if (!productPriceId) return null
+  const admin = createAdminClient()
+  const res = await admin
+    .from('product_prices')
+    .select('license_tier')
+    .eq('id', productPriceId)
+    .maybeSingle()
+  if (res.error) return null   // 컬럼 미존재(040 미적용) 등 → slug fallback
+  return (res.data?.license_tier as string) ?? null
+}
+
+/**
  * @함수명: normalizeQuantity
  * @설명: LS 웹훅의 수량 필드를 정규화합니다 — 누락·비수치·1 미만은 1로,
  *        외부 입력이므로 상한(100)으로 방어합니다. (UI는 10까지만 허용)
@@ -299,8 +333,9 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 주문 생성 완료: ${order.id}`)
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
-    // 수량 N 주문 → 라이선스 N개 발급
-    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity)
+    // 수량 N 주문 → 라이선스 N개 발급. tier는 옵션 행 license_tier 우선(best-effort)
+    const licenseTier = await fetchLicenseTier(productPriceId)
+    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity, licenseTier)
   }
 
   // 추천 커미션 적립 (일회성·구독 초기 공통의 "첫 결제"). 갱신은 subscription_payment_success.
@@ -473,8 +508,9 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
   if (productPrice?.product_id && orderId) {
-    // 구독 수량(좌석) N → 라이선스 N개 발급
-    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId, quantity)
+    // 구독 수량(좌석) N → 라이선스 N개 발급. tier는 옵션 행 license_tier 우선(best-effort)
+    const licenseTier = await fetchLicenseTier(productPrice.id)
+    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId, quantity, licenseTier)
   }
 }
 
@@ -800,6 +836,7 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
  *        Pro 제품: LS에서 자동 발급한 라이선스 키를 API로 조회하여 사용
  *        Sheets G열에 Pro면 TRUE 기록.
  * @매개변수: quantity - 구매 수량 (기본 1, normalizeQuantity로 정규화된 값)
+ * @매개변수: licenseTier - v2 옵션 행의 license_tier(우선). 비면 slug 파싱 tier로 fallback.
  */
 async function createLicense(
   userId: string,
@@ -809,6 +846,7 @@ async function createLicense(
   userName: string,
   lsOrderId?: string,
   quantity: number = 1,
+  licenseTier?: string | null,
 ) {
   const admin = createAdminClient()
 
@@ -840,11 +878,13 @@ async function createLicense(
   // CoreZent 내부 licenses 테이블에는 동일하게 INSERT (대시보드용).
   const supaSlug = isSupabaseProduct(productSlug)
   if (supaSlug) {
-    const tier = supaSlug === 'geniework'
-      ? tierFromGenieWork(productSlug)
-      : tierFromProductName(productSlug)
+    // tier 결정: v2 옵션 행 license_tier 우선, 없으면 기존 slug 파싱 fallback(회귀 방지)
+    const tier = normalizeTier(licenseTier)
+      ?? (supaSlug === 'geniework'
+        ? tierFromGenieWork(productSlug)
+        : tierFromProductName(productSlug))
     if (!tier) {
-      console.error(`[LS Webhook] ${supaSlug} tier 추출 실패 — 라이선스 미생성 (order_id=${lsOrderId ?? 'N/A'}, slug="${productSlug}")`)
+      console.error(`[LS Webhook] ${supaSlug} tier 추출 실패 — 라이선스 미생성 (order_id=${lsOrderId ?? 'N/A'}, slug="${productSlug}", license_tier="${licenseTier ?? ''}")`)
       return
     }
 
