@@ -101,6 +101,21 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       setError('버전과 릴리스 날짜는 필수입니다.')
       return
     }
+    // 다운로드 URL http/https 형식 검증 (서버와 동일 규칙 — 즉시 피드백)
+    const badUrls = Object.entries(form.download_urls)
+      .filter(([, v]) => v.trim())
+      .filter(([, v]) => {
+        try {
+          const u = new URL(v.trim())
+          return u.protocol !== 'http:' && u.protocol !== 'https:'
+        } catch {
+          return true
+        }
+      })
+    if (badUrls.length > 0) {
+      setError(`다운로드 URL 형식이 올바르지 않습니다 (http/https 필요): ${badUrls.map(([k]) => PLATFORMS.find((p) => p.key === k)?.label ?? k).join(', ')}`)
+      return
+    }
     setSaving(true)
     setError(null)
     const result = await upsertChangelog(productId, form, editingId ?? undefined)

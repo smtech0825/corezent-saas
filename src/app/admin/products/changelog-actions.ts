@@ -23,6 +23,21 @@ export interface ChangelogFormData {
   content: ChangelogContent
 }
 
+/**
+ * @함수명: isValidHttpUrl
+ * @설명: 다운로드 URL이 http/https 형식인지 검증합니다. (외부 접근성까지는 확인하지 않음)
+ * @매개변수: value - 검증할 URL 문자열
+ * @반환값: http/https URL이면 true
+ */
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value.trim())
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 /** Changelog 추가 또는 수정 */
 export async function upsertChangelog(
   productId: string,
@@ -31,13 +46,20 @@ export async function upsertChangelog(
 ): Promise<{ error?: string; id?: string }> {
   const client = createAdminClient()
 
+  // 다운로드 URL: 빈 값 제거 + http/https 형식 검증 (서버가 최종 방어선)
+  const cleanedUrls = Object.entries(data.download_urls).filter(([, v]) => v.trim())
+  const invalid = cleanedUrls.filter(([, v]) => !isValidHttpUrl(v))
+  if (invalid.length > 0) {
+    return { error: `다운로드 URL 형식이 올바르지 않습니다 (http/https 필요): ${invalid.map(([k]) => k).join(', ')}` }
+  }
+
   const payload = {
     product_id: productId,
     version: data.version.trim(),
     release_date: data.release_date,
     is_latest: data.is_latest,
     download_urls: Object.fromEntries(
-      Object.entries(data.download_urls).filter(([, v]) => v.trim())
+      cleanedUrls.map(([k, v]) => [k, v.trim()])
     ),
     content: {
       new_features:     data.content.new_features.filter(Boolean),
