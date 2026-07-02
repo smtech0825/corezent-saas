@@ -52,26 +52,25 @@ export interface PricingProduct {
   annualCheckoutUrl: string
   hasAnnualPlan: boolean
   isOneTime: boolean
-  // 옵션 진열(039) — optionGroup이 있으면 같은 값끼리 카드 1개로 묶여 드롭다운 선택기가 된다
-  optionGroup: string | null
+  // v2 옵션 — 축 제목(products) + 옵션 행(product_prices). optionRows 2+면 드롭다운 카드.
   axis1Name: string | null
-  axis1Label: string | null
   axis2Name: string | null
+  optionRows: OptionRow[]
+}
+
+// 옵션 행 하나(= product_prices 한 행) — 라벨·가격·checkout·주기 접미
+export interface OptionRow {
+  axis1Label: string | null
   axis2Label: string | null
-  unitPrice: number          // 이 조합의 결제 단가
-  unitCheckoutUrl: string    // 이 조합의 checkout_url
-  priceSuffix: string        // '/월' | '/년' | '' (일회성)
+  price: number
+  checkoutUrl: string
+  suffix: string   // '/월' | '/년' | '' (일회성)
 }
 
 interface Props {
   products: PricingProduct[]
   affiliateRef: string
 }
-
-// 카드 렌더 단위 — 옵션 묶음(group) 또는 단독 상품(single)
-type RenderUnit =
-  | { type: 'group'; key: string; items: PricingProduct[] }
-  | { type: 'single'; key: string; product: PricingProduct }
 
 // 카테고리 필터 레이블
 const FILTER_LABELS: Record<string, string> = {
@@ -118,27 +117,6 @@ export default function PricingClient({ products, affiliateRef }: Props) {
     const cats = new Set(products.map((p) => p.category))
     return ['all', ...cats]
   }, [products])
-
-  // 렌더 유닛: option_group이 같은 상품들은 카드 1개(group)로 묶고, 나머지는 개별(single).
-  // 첫 등장 위치에 그룹 카드를 두어 등록 순서(order_index)를 유지한다.
-  const renderUnits = useMemo<RenderUnit[]>(() => {
-    const units: RenderUnit[] = []
-    const groupIdx = new Map<string, number>()
-    for (const p of filtered) {
-      if (p.optionGroup) {
-        const gi = groupIdx.get(p.optionGroup)
-        if (gi === undefined) {
-          groupIdx.set(p.optionGroup, units.length)
-          units.push({ type: 'group', key: p.optionGroup, items: [p] })
-        } else {
-          (units[gi] as { items: PricingProduct[] }).items.push(p)
-        }
-      } else {
-        units.push({ type: 'single', key: p.id, product: p })
-      }
-    }
-    return units
-  }, [filtered])
 
   const hasMultipleCategories = categories.length > 2 // 'all' + 1개 이상
 
@@ -253,31 +231,30 @@ export default function PricingClient({ products, affiliateRef }: Props) {
           <p className="text-center text-ink-soft py-20">이 카테고리에 제품이 없습니다.</p>
         ) : (
           <div className={`grid gap-6 mb-20 ${
-            renderUnits.length === 1
+            filtered.length === 1
               ? 'grid-cols-1 max-w-md mx-auto'
-              : renderUnits.length === 2
+              : filtered.length === 2
               ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto'
               : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           }`}>
-            {renderUnits.map((unit) => {
-              // 옵션 묶음 카드 — 축 드롭다운 + 수량 + 조합별 가격/checkout
-              if (unit.type === 'group') {
+            {filtered.map((product) => {
+              // 옵션 행이 2개 이상이면 옵션 카드 — 축 드롭다운 + 수량 + 조합별 가격/checkout
+              if (product.optionRows.length >= 2) {
                 return (
                   <OptionProductCard
-                    key={unit.key}
-                    products={unit.items}
+                    key={product.id}
+                    product={product}
                     userId={userId}
                     affiliateRef={affiliateRef}
                     utmData={utmData}
                     discountCode={discountCode}
-                    onCheckout={(prod, q) => {
-                      track('initiate_checkout', { product: prod.name, quantity: q })
-                      window.fbq?.('track', 'InitiateCheckout', { content_name: prod.name })
+                    onCheckout={(q) => {
+                      track('initiate_checkout', { product: product.name, quantity: q })
+                      window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
                     }}
                   />
                 )
               }
-              const product = unit.product
               const isAnnualView = annual && product.hasAnnualPlan
               const displayPrice = isAnnualView ? product.annualMonthlyPrice : product.monthlyPrice
               const baseCheckoutUrl = isAnnualView

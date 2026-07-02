@@ -22,8 +22,8 @@ export default async function PricingPage() {
   const client = createAdminClient()
 
   // 제품·가격·추천인 코드 병렬 조회 (추천인은 httpOnly cz_ref를 서버에서 해석)
-  // 옵션 진열 컬럼(039)은 우선 조회 → 미적용 시 폴백(옵션 없이 기존 단독 카드로 정상 동작)
-  const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label'
+  // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 없이 기존 단독 카드로 정상 동작)
+  const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_axis1_name, option_axis2_name'
   const BASE_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index'
   const productsQuery = client
     .from('products')
@@ -31,11 +31,11 @@ export default async function PricingPage() {
     .eq('is_active', true)
     .order('order_index')
 
-  const [productsRes, { data: dbPrices }, affiliateRef] = await Promise.all([
+  const [productsRes, pricesRes, affiliateRef] = await Promise.all([
     productsQuery,
     client
       .from('product_prices')
-      .select('product_id, type, interval, price, checkout_url')
+      .select('product_id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, license_tier')
       .eq('is_active', true),
     resolveCheckoutAffiliateRef(),
   ])
@@ -43,10 +43,15 @@ export default async function PricingPage() {
   const dbProducts = productsRes.error
     ? (await client.from('products').select(BASE_COLS).eq('is_active', true).order('order_index')).data
     : productsRes.data
+  // 옵션 컬럼(040) best-effort — 미적용 시 옵션 없이 폴백
+  const dbPrices = pricesRes.error
+    ? (await client.from('product_prices').select('product_id, type, interval, price, checkout_url').eq('is_active', true)).data
+    : pricesRes.data
 
-  // 가격을 product_id별로 그룹화
+  // 가격을 product_id별로 그룹화 (옵션 라벨 포함)
   const priceMap = new Map<string, Array<{
     type: string; interval: string | null; price: number; checkout_url: string | null
+    axis1Label: string | null; axis2Label: string | null
   }>>()
 
   for (const p of (dbPrices ?? []) as Array<Record<string, unknown>>) {
@@ -57,6 +62,8 @@ export default async function PricingPage() {
       interval: (p.interval as string) ?? null,
       price: p.price as number,
       checkout_url: (p.checkout_url as string) ?? null,
+      axis1Label: ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? null,
+      axis2Label: ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? null,
     })
   }
 
@@ -74,11 +81,17 @@ export default async function PricingPage() {
     // 연간 결제 시 월 환산 가격
     const annualMonthlyPrice = annual ? annualPrice / 12 : monthlyPrice
 
-    // 옵션 카드용 대표 단가/URL — 이 조합 상품의 실제 결제 금액(월간→연간→일회 우선)
-    const rep = monthly ?? annual ?? oneTime ?? null
-    const unitPrice = rep?.price ?? 0
-    const unitCheckoutUrl = rep?.checkout_url ?? '#'
-    const priceSuffix = monthly ? '/월' : annual ? '/년' : ''
+    // v2 옵션 행 — 옵션 라벨이 있는 price 행들을 카드 드롭다운용 OptionRow로.
+    // 라벨 없는 상품(옵션 미사용)은 optionRows가 비어 기존 단독 카드로 렌더된다.
+    const optionRows = prices
+      .filter((pr) => pr.axis1Label || pr.axis2Label)
+      .map((pr) => ({
+        axis1Label: pr.axis1Label,
+        axis2Label: pr.axis2Label,
+        price:      pr.price,
+        checkoutUrl: pr.checkout_url ?? '#',
+        suffix:     pr.type === 'one_time' ? '' : pr.interval === 'annual' ? '/년' : '/월',
+      }))
 
     return {
       id:                   p.id as string,
@@ -96,15 +109,10 @@ export default async function PricingPage() {
       annualCheckoutUrl:    annual?.checkout_url ?? '#',
       hasAnnualPlan:        !!annual,
       isOneTime:            !monthly && !annual && !!oneTime,
-      // 옵션 진열(039) — 폴백 조회 시 컬럼이 없으므로 옵셔널 안전 접근
-      optionGroup:          ((p as { option_group?: string | null }).option_group) ?? null,
+      // v2 옵션 — 축 제목(products) + 옵션 행(product_prices). 폴백 시 안전 접근.
       axis1Name:            ((p as { option_axis1_name?: string | null }).option_axis1_name) ?? null,
-      axis1Label:           ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? null,
       axis2Name:            ((p as { option_axis2_name?: string | null }).option_axis2_name) ?? null,
-      axis2Label:           ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? null,
-      unitPrice,
-      unitCheckoutUrl,
-      priceSuffix,
+      optionRows,
     }
   })
 
