@@ -18,6 +18,10 @@ export interface PriceEntry {
   price: string
   lemon_squeezy_variant_id: string
   checkout_url: string
+  // v2 옵션 행 — 각 행이 하나의 옵션 조합(라벨·라이선스 tier)
+  option_axis1_label: string   // 축1 값 (예: 월간)
+  option_axis2_label: string   // 축2 값 (예: 3PC용 · 축 1개면 비움)
+  license_tier: string         // 라이선스 tier (1pc/3pc/5pc/10pc/lite/pro/max · 비면 slug fallback)
 }
 
 export interface ProductFeatureEntry {
@@ -39,13 +43,9 @@ export interface ProductFormData {
   description: string
   category: string
   category_group: string
-  // 옵션 진열(표시 계층) — 같은 option_group끼리 공개 카드 1개로 묶여 옵션 드롭다운이 된다.
-  // 전부 자유 텍스트, 미사용 시 비워두면 단독 카드로 동작(결제·slug·라이선스 무관).
-  option_group: string
+  // 옵션 축 제목 (v2 — 공개 카드 드롭다운 제목). 옵션 값·가격·tier는 prices 각 행에 있다.
   option_axis1_name: string
-  option_axis1_label: string
   option_axis2_name: string
-  option_axis2_label: string
   badge_text: string
   badge_color: 'blue' | 'green' | 'yellow'
   logo_url: string
@@ -68,7 +68,7 @@ interface Props {
   submitLabel: string
 }
 
-const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '' })
+const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '', option_axis1_label: '', option_axis2_label: '', license_tier: '' })
 
 /** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
 function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
@@ -182,11 +182,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       description: '',
       category: 'desktop',
       category_group: '',
-      option_group: '',
       option_axis1_name: '',
-      option_axis1_label: '',
       option_axis2_name: '',
-      option_axis2_label: '',
       badge_text: '',
       badge_color: 'blue',
       logo_url: '',
@@ -372,27 +369,15 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           />
         </Field>
 
-        {/* ── 옵션 진열(표시 계층) ─────────────────────────────────────────
-            같은 "묶음 키"를 가진 상품들이 공개 카드 1개로 묶여 옵션 드롭다운이 된다.
-            결제·slug·라이선스와 무관한 순수 표시용 — 미사용 시 전부 비워두면 단독 카드. */}
+        {/* ── 옵션 축 제목 (v2) — 공개 카드 드롭다운 제목. 옵션 값은 아래 "옵션·가격" 표에서 행별로. ── */}
         <div className="border border-[#1E293B] rounded-xl p-4 space-y-4 bg-[#0B1120]/40">
           <div className="flex items-center gap-2">
             <LayoutGrid size={14} className="text-[#38BDF8]" />
-            <span className="text-sm font-semibold text-white">옵션 진열 (선택)</span>
-            <span className="text-xs text-[#94A3B8]">같은 묶음 키끼리 한 카드로 묶여 옵션 선택 UI가 됩니다</span>
+            <span className="text-sm font-semibold text-white">옵션 설정 (선택)</span>
+            <span className="text-xs text-[#94A3B8]">아래 &quot;옵션·가격&quot; 표의 각 행이 하나의 옵션이 됩니다</span>
           </div>
-
-          <Field label="묶음 키">
-            <input
-              value={form.option_group}
-              onChange={(e) => set('option_group', e.target.value)}
-              placeholder="예: geniework (같은 카드로 묶을 상품들에 동일 값 · 비우면 단독 카드)"
-              className={inputCls}
-            />
-          </Field>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="축1 제목">
+            <Field label="옵션 축1 제목">
               <input
                 value={form.option_axis1_name}
                 onChange={(e) => set('option_axis1_name', e.target.value)}
@@ -400,27 +385,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 className={inputCls}
               />
             </Field>
-            <Field label="이 상품의 축1 값">
-              <input
-                value={form.option_axis1_label}
-                onChange={(e) => set('option_axis1_label', e.target.value)}
-                placeholder="예: 월간"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="축2 제목 (선택)">
+            <Field label="옵션 축2 제목 (선택)">
               <input
                 value={form.option_axis2_name}
                 onChange={(e) => set('option_axis2_name', e.target.value)}
                 placeholder="예: PC 수 (축이 1개면 비움)"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="이 상품의 축2 값 (선택)">
-              <input
-                value={form.option_axis2_label}
-                onChange={(e) => set('option_axis2_label', e.target.value)}
-                placeholder="예: 3PC용"
                 className={inputCls}
               />
             </Field>
@@ -852,27 +821,50 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         ))}
       </section>
 
-      {/* 가격 플랜 */}
+      {/* 옵션 · 가격 — 각 행이 하나의 옵션 조합(라벨·가격·Variant·Checkout·tier) */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">가격 플랜</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-white">옵션 · 가격</h2>
+            <p className="text-xs text-[#94A3B8] mt-0.5">각 행 = 옵션 하나. 옵션이 없으면 행 1개만 두면 됩니다.</p>
+          </div>
           <button
             type="button"
             onClick={addPrice}
             className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 hover:border-amber-400/40 px-3 py-1.5 rounded-lg transition-colors"
           >
-            <Plus size={13} /> 플랜 추가
+            <Plus size={13} /> 옵션 추가
           </button>
         </div>
 
         {form.prices.length === 0 && (
-          <p className="text-xs text-[#94A3B8] py-4 text-center">아직 추가된 가격 플랜이 없습니다.</p>
+          <p className="text-xs text-[#94A3B8] py-4 text-center">아직 추가된 옵션이 없습니다.</p>
         )}
 
         {form.prices.map((price, idx) => (
-          <div key={idx} className="flex items-end gap-3 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
+          <div key={idx} className="flex items-start gap-3 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
             <div className="flex-1 space-y-3">
-              <div className="grid grid-cols-3 gap-3">
+              {/* 옵션 라벨 (축1/축2 값) */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={`옵션값 ${form.option_axis1_name || '축1'}`}>
+                  <input
+                    value={price.option_axis1_label}
+                    onChange={(e) => updatePrice(idx, 'option_axis1_label', e.target.value)}
+                    placeholder="예: 월간"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label={`옵션값 ${form.option_axis2_name || '축2'} (선택)`}>
+                  <input
+                    value={price.option_axis2_label}
+                    onChange={(e) => updatePrice(idx, 'option_axis2_label', e.target.value)}
+                    placeholder="예: 3PC용"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="유형">
                   <select
                     value={price.type}
@@ -908,6 +900,15 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                     className={inputCls}
                   />
                 </Field>
+
+                <Field label="라이선스 tier">
+                  <input
+                    value={price.license_tier}
+                    onChange={(e) => updatePrice(idx, 'license_tier', e.target.value)}
+                    placeholder="예: 3pc"
+                    className={inputCls + ' font-mono text-xs'}
+                  />
+                </Field>
               </div>
 
               <Field label="Lemon Squeezy Variant ID (웹훅 매칭용)">
@@ -932,7 +933,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <button
               type="button"
               onClick={() => removePrice(idx)}
-              className="mb-0.5 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+              className="mt-6 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
             >
               <Trash2 size={15} />
             </button>

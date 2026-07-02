@@ -15,52 +15,58 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
   'use server'
   const client = createAdminClient()
 
+  // 옵션 축 제목(040 컬럼)은 값이 있을 때만 포함 — 미적용·미사용 시 저장이 깨지지 않게
+  const productInsert: Record<string, unknown> = {
+    name: data.name,
+    slug: data.slug,
+    tagline: data.tagline || null,
+    description: data.description || null,
+    category: data.category,
+    category_group: data.category_group || null,
+    badge_text: data.badge_text || null,
+    badge_color: data.badge_color,
+    logo_url: data.logo_url || null,
+    manual_url: data.manual_url || null,
+    is_active: data.is_active,
+    tags: data.tags.filter(Boolean),
+    pricing_features: data.pricing_features.filter(Boolean),
+    product_features: data.product_features.filter((f) => f.title),
+    hero_image_url: data.hero_image_url || null,
+    screenshots: data.screenshots.filter(Boolean),
+    system_requirements: data.system_requirements || null,
+    version_info_url: data.version_info_url || null,
+    faqs: data.faqs.filter((f) => f.question.trim() || f.answer.trim()),
+  }
+  if (data.option_axis1_name) productInsert.option_axis1_name = data.option_axis1_name
+  if (data.option_axis2_name) productInsert.option_axis2_name = data.option_axis2_name
+
   const { data: product, error } = await client
     .from('products')
-    .insert({
-      name: data.name,
-      slug: data.slug,
-      tagline: data.tagline || null,
-      description: data.description || null,
-      category: data.category,
-      category_group: data.category_group || null,
-      option_group: data.option_group || null,
-      option_axis1_name: data.option_axis1_name || null,
-      option_axis1_label: data.option_axis1_label || null,
-      option_axis2_name: data.option_axis2_name || null,
-      option_axis2_label: data.option_axis2_label || null,
-      badge_text: data.badge_text || null,
-      badge_color: data.badge_color,
-      logo_url: data.logo_url || null,
-      manual_url: data.manual_url || null,
-      is_active: data.is_active,
-      tags: data.tags.filter(Boolean),
-      pricing_features: data.pricing_features.filter(Boolean),
-      product_features: data.product_features.filter((f) => f.title),
-      hero_image_url: data.hero_image_url || null,
-      screenshots: data.screenshots.filter(Boolean),
-      system_requirements: data.system_requirements || null,
-      version_info_url: data.version_info_url || null,
-      faqs: data.faqs.filter((f) => f.question.trim() || f.answer.trim()),
-    })
+    .insert(productInsert)
     .select('id')
     .single()
 
   if (error) return { error: error.message }
 
-  // 가격 플랜 삽입
+  // 옵션·가격 행 삽입 — 옵션 라벨/tier는 값이 있을 때만 포함(040 미적용 시 미사용 행은 정상)
   if (data.prices.length > 0) {
     const priceRows = data.prices
       .filter((p) => p.price !== '')
-      .map((p) => ({
-        product_id: product.id,
-        type: p.type,
-        interval: p.type === 'subscription' ? p.interval || null : null,
-        price: parseFloat(p.price),
-        lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
-        checkout_url: p.checkout_url || null,
-        is_active: true,
-      }))
+      .map((p) => {
+        const row: Record<string, unknown> = {
+          product_id: product.id,
+          type: p.type,
+          interval: p.type === 'subscription' ? p.interval || null : null,
+          price: parseFloat(p.price),
+          lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
+          checkout_url: p.checkout_url || null,
+          is_active: true,
+        }
+        if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
+        if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
+        if (p.license_tier) row.license_tier = p.license_tier
+        return row
+      })
 
     if (priceRows.length > 0) {
       const { error: priceError } = await client.from('product_prices').insert(priceRows)

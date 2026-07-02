@@ -20,8 +20,8 @@ export default async function EditProductPage({
   const { id } = await params
   const client = createAdminClient()
 
-  // 옵션 진열 컬럼(039)은 우선 조회 → 미적용 시 폴백(옵션 필드 없이 편집 페이지 정상 동작)
-  const OPT_SEL = 'id, name, slug, tagline, description, category, category_group, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+  // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 필드 없이 편집 페이지 정상 동작)
+  const OPT_SEL = 'id, name, slug, tagline, description, category, category_group, option_axis1_name, option_axis2_name, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
   const BASE_SEL = 'id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
 
   const optRes = await client.from('products').select(OPT_SEL).eq('id', id).single()
@@ -31,13 +31,18 @@ export default async function EditProductPage({
 
   if (!product) notFound()
 
-  // is_active=true 인 가격만 조회 후 type+interval 기준 중복 제거
-  const { data: rawPrices } = await client
+  // is_active=true 인 가격(옵션 행) 조회. 옵션 컬럼(040)은 best-effort — 미적용 시 폴백.
+  const PRICE_OPT = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url, option_axis1_label, option_axis2_label, license_tier'
+  const PRICE_BASE = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url'
+  const rawPricesRes = await client
     .from('product_prices')
-    .select('id, type, interval, price, lemon_squeezy_variant_id, checkout_url')
+    .select(PRICE_OPT)
     .eq('product_id', id)
     .eq('is_active', true)
     .order('id', { ascending: true })
+  const rawPrices = rawPricesRes.error
+    ? (await client.from('product_prices').select(PRICE_BASE).eq('product_id', id).eq('is_active', true).order('id', { ascending: true })).data
+    : rawPricesRes.data
 
   // 기존 changelog 목록 조회
   const { data: rawChangelogs } = await client
@@ -60,22 +65,18 @@ export default async function EditProductPage({
     },
   }))
 
-  const seen = new Set<string>()
-  const prices: PriceEntry[] = (rawPrices ?? [])
-    .filter((p) => {
-      const key = `${p.type}-${p.interval ?? ''}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .map((p) => ({
-      id: p.id as string,
-      type: p.type as 'subscription' | 'one_time',
-      interval: (p.interval ?? '') as 'monthly' | 'annual' | '',
-      price: String(p.price),
-      lemon_squeezy_variant_id: (p.lemon_squeezy_variant_id as string) ?? '',
-      checkout_url: (p.checkout_url as string) ?? '',
-    }))
+  // v2: 옵션 행은 같은 (type, interval)에 tier별로 여러 개 존재 가능 → dedup 하지 않고 전부 표시.
+  const prices: PriceEntry[] = (rawPrices ?? []).map((p) => ({
+    id: p.id as string,
+    type: p.type as 'subscription' | 'one_time',
+    interval: (p.interval ?? '') as 'monthly' | 'annual' | '',
+    price: String(p.price),
+    lemon_squeezy_variant_id: (p.lemon_squeezy_variant_id as string) ?? '',
+    checkout_url: (p.checkout_url as string) ?? '',
+    option_axis1_label: ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? '',
+    option_axis2_label: ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? '',
+    license_tier: ((p as { license_tier?: string | null }).license_tier) ?? '',
+  }))
 
   const initialData: ProductFormData = {
     name: product.name ?? '',
@@ -84,12 +85,9 @@ export default async function EditProductPage({
     description: product.description ?? '',
     category: product.category ?? 'desktop',
     category_group: (product.category_group as string) ?? '',
-    // 폴백(039 미적용) 시 컬럼이 없으므로 옵셔널로 안전 접근
-    option_group: ((product as { option_group?: string | null }).option_group) ?? '',
+    // 폴백(040 미적용) 시 컬럼이 없으므로 옵셔널로 안전 접근
     option_axis1_name: ((product as { option_axis1_name?: string | null }).option_axis1_name) ?? '',
-    option_axis1_label: ((product as { option_axis1_label?: string | null }).option_axis1_label) ?? '',
     option_axis2_name: ((product as { option_axis2_name?: string | null }).option_axis2_name) ?? '',
-    option_axis2_label: ((product as { option_axis2_label?: string | null }).option_axis2_label) ?? '',
     badge_text: (product.badge_text as string) ?? '',
     badge_color: ((product.badge_color as string) ?? 'blue') as 'blue' | 'green' | 'yellow',
     logo_url: product.logo_url ?? '',
@@ -110,36 +108,32 @@ export default async function EditProductPage({
     'use server'
     const c = createAdminClient()
 
-    // 상품 기본 정보 업데이트
-    const { error } = await c
-      .from('products')
-      .update({
-        name: data.name,
-        slug: data.slug,
-        tagline: data.tagline || null,
-        description: data.description || null,
-        category: data.category,
-        category_group: data.category_group || null,
-        option_group: data.option_group || null,
-        option_axis1_name: data.option_axis1_name || null,
-        option_axis1_label: data.option_axis1_label || null,
-        option_axis2_name: data.option_axis2_name || null,
-        option_axis2_label: data.option_axis2_label || null,
-        badge_text: data.badge_text || null,
-        badge_color: data.badge_color,
-        logo_url: data.logo_url || null,
-        manual_url: data.manual_url || null,
-        is_active: data.is_active,
-        tags: data.tags.filter(Boolean),
-        pricing_features: data.pricing_features.filter(Boolean),
-        product_features: data.product_features.filter((f) => f.title),
-        hero_image_url: data.hero_image_url || null,
-        screenshots: data.screenshots.filter(Boolean),
-        system_requirements: data.system_requirements || null,
-        version_info_url: data.version_info_url || null,
-        faqs: data.faqs.filter((f) => f.question.trim() || f.answer.trim()),
-      })
-      .eq('id', id)
+    // 상품 기본 정보 업데이트 — 옵션 축 제목(040 컬럼)은 값 있을 때만 포함(미적용·미사용 호환)
+    const productUpdate: Record<string, unknown> = {
+      name: data.name,
+      slug: data.slug,
+      tagline: data.tagline || null,
+      description: data.description || null,
+      category: data.category,
+      category_group: data.category_group || null,
+      badge_text: data.badge_text || null,
+      badge_color: data.badge_color,
+      logo_url: data.logo_url || null,
+      manual_url: data.manual_url || null,
+      is_active: data.is_active,
+      tags: data.tags.filter(Boolean),
+      pricing_features: data.pricing_features.filter(Boolean),
+      product_features: data.product_features.filter((f) => f.title),
+      hero_image_url: data.hero_image_url || null,
+      screenshots: data.screenshots.filter(Boolean),
+      system_requirements: data.system_requirements || null,
+      version_info_url: data.version_info_url || null,
+      faqs: data.faqs.filter((f) => f.question.trim() || f.answer.trim()),
+    }
+    if (data.option_axis1_name) productUpdate.option_axis1_name = data.option_axis1_name
+    if (data.option_axis2_name) productUpdate.option_axis2_name = data.option_axis2_name
+
+    const { error } = await c.from('products').update(productUpdate).eq('id', id)
 
     if (error) return { error: error.message }
 
@@ -163,18 +157,24 @@ export default async function EditProductPage({
       if (deactivateError) return { error: deactivateError.message }
     }
 
-    // 기존 가격 업데이트 (ID 있는 항목) — 에러·0행 매칭을 사용자에게 표면화 (돈 경로: 조용히 삼키지 않음)
+    // 기존 옵션·가격 업데이트 (ID 있는 항목) — 에러·0행 매칭을 표면화 (돈 경로: 조용히 삼키지 않음)
+    // 옵션 라벨/tier(040 컬럼)는 값 있을 때만 포함 — 미적용·미사용 행은 정상 저장.
     for (const price of data.prices.filter((p) => p.id && p.price !== '')) {
+      const priceUpdate: Record<string, unknown> = {
+        type: price.type,
+        interval: price.type === 'subscription' ? price.interval || null : null,
+        price: parseFloat(price.price),
+        lemon_squeezy_variant_id: price.lemon_squeezy_variant_id || null,
+        checkout_url: price.checkout_url || null,
+        is_active: true,
+      }
+      if (price.option_axis1_label) priceUpdate.option_axis1_label = price.option_axis1_label
+      if (price.option_axis2_label) priceUpdate.option_axis2_label = price.option_axis2_label
+      if (price.license_tier) priceUpdate.license_tier = price.license_tier
+
       const { data: updated, error: updateError } = await c
         .from('product_prices')
-        .update({
-          type: price.type,
-          interval: price.type === 'subscription' ? price.interval || null : null,
-          price: parseFloat(price.price),
-          lemon_squeezy_variant_id: price.lemon_squeezy_variant_id || null,
-          checkout_url: price.checkout_url || null,
-          is_active: true,
-        })
+        .update(priceUpdate)
         .eq('id', price.id!)
         .select('id')
       if (updateError) return { error: updateError.message }
@@ -183,19 +183,25 @@ export default async function EditProductPage({
       }
     }
 
-    // 신규 가격 삽입 (ID 없는 항목)
+    // 신규 옵션·가격 삽입 (ID 없는 항목)
     const newPrices = data.prices.filter((p) => !p.id && p.price !== '')
     if (newPrices.length > 0) {
       const { error: insertError } = await c.from('product_prices').insert(
-        newPrices.map((p) => ({
-          product_id: id,
-          type: p.type,
-          interval: p.type === 'subscription' ? p.interval || null : null,
-          price: parseFloat(p.price),
-          lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
-          checkout_url: p.checkout_url || null,
-          is_active: true,
-        }))
+        newPrices.map((p) => {
+          const row: Record<string, unknown> = {
+            product_id: id,
+            type: p.type,
+            interval: p.type === 'subscription' ? p.interval || null : null,
+            price: parseFloat(p.price),
+            lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
+            checkout_url: p.checkout_url || null,
+            is_active: true,
+          }
+          if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
+          if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
+          if (p.license_tier) row.license_tier = p.license_tier
+          return row
+        })
       )
       if (insertError) return { error: insertError.message }
     }
