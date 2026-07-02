@@ -62,11 +62,25 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await admin
     .from('orders')
-    .select('id, user_id, product_price_id, bundle_id, lemon_squeezy_order_id, status, amount, currency, created_at, quantity, discount_amount')
+    .select('id, user_id, product_price_id, bundle_id, lemon_squeezy_order_id, status, amount, currency, created_at')
     .eq('id', id)
     .single()
 
   if (!order) notFound()
+
+  // 수량·할인(038 마이그레이션 컬럼)은 별도 best-effort 조회 — 웹훅과 동일한 내성.
+  // 마이그레이션 미적용이어도 상세 페이지 자체는 뜨고, 수량은 "—"·할인 행은 숨김 처리된다.
+  let orderQuantity: number | null = null
+  let discountAmount = 0
+  const { data: extraCols } = await admin
+    .from('orders')
+    .select('quantity, discount_amount')
+    .eq('id', id)
+    .maybeSingle()
+  if (extraCols) {
+    orderQuantity = (extraCols.quantity as number) ?? null
+    discountAmount = Number(extraCols.discount_amount ?? 0)
+  }
 
   // 연관 데이터 병렬 조회
   const [profileRes, authRes, priceRes, licRes, subRes] = await Promise.all([
@@ -121,11 +135,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {productName}
           {product?.slug && <span className="text-[#475569] ml-2 font-mono text-xs">{product.slug}</span>}
         </Row>
-        <Row label="수량">{(order.quantity as number) ?? 1}</Row>
+        <Row label="수량">{orderQuantity ?? '—'}</Row>
         <Row label="금액">{formatKRW(order.amount as number)}</Row>
-        {Number(order.discount_amount ?? 0) > 0 && (
+        {discountAmount > 0 && (
           <Row label="할인">
-            <span className="text-emerald-400">-{formatKRW(order.discount_amount as number)}</span>
+            <span className="text-emerald-400">-{formatKRW(discountAmount)}</span>
             <span className="text-[#475569] ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
           </Row>
         )}
