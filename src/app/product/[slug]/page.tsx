@@ -16,7 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
-import { CATEGORY_BADGE, CATEGORY_LABELS } from '@/lib/products'
+import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 
 export const dynamic = 'force-dynamic'
@@ -103,42 +103,42 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#0B1120]">
-        <section className="relative pt-32 pb-24 px-6">
+      <main className="theme-paper min-h-screen bg-paper text-ink">
+        <section className="relative pt-10 sm:pt-14 pb-24 px-4 sm:px-6">
           <div className="relative z-10 max-w-5xl mx-auto">
             {/* 뒤로 */}
-            <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-[#475569] hover:text-[#94A3B8] transition-colors mb-8">
+            <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors mb-8">
               <ArrowLeft size={14} /> 제품 목록
             </Link>
 
             {/* 헤더 */}
             <div className="flex items-start gap-5 mb-8">
               {logoUrl && (
-                <div className="relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-[#1E293B] bg-[#111A2E]">
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-rule bg-paper-raised">
                   <Image src={logoUrl} alt={`${name} logo`} fill className="object-contain p-2" />
                 </div>
               )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h1 className="text-3xl font-bold text-white">{name}</h1>
+                  <h1 className="text-3xl font-serif font-black text-ink">{name}</h1>
                   {category && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
                       {CATEGORY_LABELS[category] ?? category}
                     </span>
                   )}
                   {categoryGroup && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-[#1E293B] text-[#94A3B8] border-[#1E293B]">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-paper-shade text-ink-soft border-rule">
                       {categoryGroup}
                     </span>
                   )}
                 </div>
-                {tagline && <p className="text-[#38BDF8] text-base font-medium">{tagline}</p>}
+                {tagline && <p className="text-pen text-base font-medium">{tagline}</p>}
               </div>
             </div>
 
             {/* 대표 이미지 */}
             {heroImage && (
-              <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-[#1E293B] bg-[#111A2E] mb-10">
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised mb-10">
                 <Image src={heroImage} alt={`${name} 대표 이미지`} fill className="object-cover" />
               </div>
             )}
@@ -147,9 +147,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="flex flex-wrap items-center gap-4 mb-10">
               {priceValue != null && (
                 <div>
-                  <span className="text-3xl font-bold text-white">{formatPrice(priceValue)}</span>
-                  {monthly && <span className="text-sm text-[#94A3B8] font-normal">/월</span>}
-                  <span className="text-xs text-[#475569] ml-2">
+                  <span className="text-3xl font-bold text-ink">{formatPrice(priceValue)}</span>
+                  {monthly && <span className="text-sm text-ink-soft font-normal">/월</span>}
+                  <span className="text-xs text-ink-faint ml-2">
                     VAT 포함{annual != null ? ` · 또는 ${formatPrice(annual.price)}/년` : ''}
                   </span>
                 </div>
@@ -157,12 +157,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               {isActive ? (
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold px-6 py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 bg-pen text-white font-semibold px-6 py-3 rounded-md text-sm hover:bg-pen-dark transition-colors"
                 >
                   구매하기 →
                 </Link>
               ) : (
-                <span className="inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium px-6 py-3 rounded-xl text-sm">
+                <span className="inline-flex items-center justify-center gap-2 border border-dashed border-rule text-ink-faint font-medium px-6 py-3 rounded-md text-sm">
                   출시 예정
                 </span>
               )}
@@ -172,7 +172,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-10">
                 {tags.map((tag) => (
-                  <span key={tag} className="text-xs text-[#94A3B8] border border-[#1E293B] rounded-full px-3 py-1">{tag}</span>
+                  <span key={tag} className="text-xs text-ink-soft border border-rule rounded-full px-3 py-1">{tag}</span>
                 ))}
               </div>
             )}
@@ -180,18 +180,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* 상세 설명 */}
             {description && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-3">소개</h2>
-                <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">{description}</p>
+                <h2 className="text-lg font-serif font-black text-ink mb-3">소개</h2>
+                <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{description}</p>
               </div>
             )}
 
             {/* 스크린샷 갤러리 */}
             {screenshots.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-4">스크린샷</h2>
+                <h2 className="text-lg font-serif font-black text-ink mb-4">스크린샷</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {screenshots.map((src, i) => (
-                    <div key={i} className="relative aspect-video rounded-xl overflow-hidden border border-[#1E293B] bg-[#111A2E]">
+                    <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised">
                       <Image src={src} alt={`${name} 스크린샷 ${i + 1}`} fill className="object-cover" />
                     </div>
                   ))}
@@ -202,21 +202,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* 주요 기능 */}
             {productFeatures.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-4">주요 기능</h2>
+                <h2 className="text-lg font-serif font-black text-ink mb-4">주요 기능</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {productFeatures.map((feat, i) => (
-                    <div key={i} className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-5 flex flex-col items-center text-center space-y-3">
-                      <div className="flex items-center justify-center w-[72px] h-[72px] rounded-xl bg-[#0B1120] border border-[#1E293B]">
+                    <div key={i} className="border border-rule bg-paper-raised rounded-lg p-5 flex flex-col items-center text-center space-y-3">
+                      <div className="flex items-center justify-center w-[72px] h-[72px] rounded-lg bg-paper-shade border border-rule">
                         {feat.image_url ? (
                           <div className="relative w-12 h-12"><Image src={feat.image_url} alt={feat.title} fill className="object-contain" /></div>
                         ) : feat.icon ? (
-                          <DynamicIcon name={feat.icon} size={30} className="text-[#38BDF8]" />
+                          <DynamicIcon name={feat.icon} size={30} className="text-pen" />
                         ) : (
-                          <Sparkles size={30} className="text-[#38BDF8]" />
+                          <Sparkles size={30} className="text-pen" />
                         )}
                       </div>
-                      <h3 className="text-sm font-semibold text-white">{feat.title}</h3>
-                      {feat.description && <p className="text-xs text-[#94A3B8] leading-relaxed whitespace-pre-line">{feat.description}</p>}
+                      <h3 className="text-sm font-semibold text-ink">{feat.title}</h3>
+                      {feat.description && <p className="text-xs text-ink-soft leading-relaxed whitespace-pre-line">{feat.description}</p>}
                     </div>
                   ))}
                 </div>
@@ -226,32 +226,32 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* 요금제 비교 */}
             {plans.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-4">요금제</h2>
+                <h2 className="text-lg font-serif font-black text-ink mb-4">요금제</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-[#1E293B] rounded-xl overflow-hidden">
+                  <table className="w-full text-sm border border-rule rounded-lg overflow-hidden">
                     <thead>
-                      <tr className="border-b border-[#1E293B] bg-[#0B1120]">
-                        <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">항목</th>
+                      <tr className="border-b border-rule bg-paper-shade">
+                        <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">항목</th>
                         {plans.map((p) => (
-                          <th key={p.label} className="text-center px-4 py-3 text-xs text-white font-semibold">{p.label}</th>
+                          <th key={p.label} className="text-center px-4 py-3 text-xs text-ink font-semibold">{p.label}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b border-[#1E293B]/60">
-                        <td className="px-4 py-3 text-[#94A3B8]">가격</td>
+                      <tr className="border-b border-rule/60">
+                        <td className="px-4 py-3 text-ink-soft">가격</td>
                         {plans.map((p) => (
-                          <td key={p.label} className="text-center px-4 py-3 text-white font-semibold tabular-nums">
-                            {formatPrice(p.price)}<span className="text-xs text-[#475569] font-normal">{p.suffix}</span>
+                          <td key={p.label} className="text-center px-4 py-3 text-ink font-semibold tabular-nums">
+                            {formatPrice(p.price)}<span className="text-xs text-ink-faint font-normal">{p.suffix}</span>
                           </td>
                         ))}
                       </tr>
                       {pricingFeatures.map((feat) => (
-                        <tr key={feat} className="border-b border-[#1E293B]/60 last:border-0">
-                          <td className="px-4 py-3 text-[#94A3B8]">{feat}</td>
+                        <tr key={feat} className="border-b border-rule/60 last:border-0">
+                          <td className="px-4 py-3 text-ink-soft">{feat}</td>
                           {plans.map((p) => (
                             <td key={p.label} className="text-center px-4 py-3">
-                              <Check size={15} className="text-emerald-400 inline" />
+                              <Check size={15} className="text-emerald-600 inline" />
                             </td>
                           ))}
                         </tr>
@@ -260,7 +260,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </table>
                 </div>
                 {pricingFeatures.length > 0 && plans.length > 1 && (
-                  <p className="text-xs text-[#475569] mt-2">모든 요금제에 동일 기능이 포함됩니다. 결제 주기만 다릅니다.</p>
+                  <p className="text-xs text-ink-faint mt-2">모든 요금제에 동일 기능이 포함됩니다. 결제 주기만 다릅니다.</p>
                 )}
               </div>
             )}
@@ -268,9 +268,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* 시스템 요구사항 */}
             {systemRequirements && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-3">시스템 요구사항</h2>
-                <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-5">
-                  <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">{systemRequirements}</p>
+                <h2 className="text-lg font-serif font-black text-ink mb-3">시스템 요구사항</h2>
+                <div className="border border-rule bg-paper-raised rounded-lg p-5">
+                  <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{systemRequirements}</p>
                 </div>
               </div>
             )}
@@ -278,12 +278,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* FAQ */}
             {faqs.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-lg font-bold text-white mb-4">자주 묻는 질문</h2>
+                <h2 className="text-lg font-serif font-black text-ink mb-4">자주 묻는 질문</h2>
                 <div className="space-y-3">
                   {faqs.map((faq, i) => (
-                    <div key={i} className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-5">
-                      <p className="text-white font-medium mb-2">{faq.question}</p>
-                      {faq.answer && <p className="text-[#94A3B8] text-sm leading-relaxed whitespace-pre-line">{faq.answer}</p>}
+                    <div key={i} className="border border-rule bg-paper-raised rounded-lg p-5">
+                      <p className="text-ink font-medium mb-2">{faq.question}</p>
+                      {faq.answer && <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{faq.answer}</p>}
                     </div>
                   ))}
                 </div>
@@ -293,7 +293,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {/* 버전정보 링크 */}
             {versionInfoUrl && (
               <div className="mb-4">
-                <Link href={versionInfoUrl} className="inline-flex items-center gap-1.5 text-sm text-[#38BDF8] hover:underline">
+                <Link href={versionInfoUrl} className="inline-flex items-center gap-1.5 text-sm text-pen hover:text-pen-dark hover:underline">
                   <Check size={14} /> 버전 정보 및 업데이트 내역
                 </Link>
               </div>

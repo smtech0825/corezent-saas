@@ -33,39 +33,39 @@ export default async function AboutPage() {
   const blocks = (blocksRes.data ?? []).map((b) => ({ ...b, images: (b.images ?? []) as string[] }))
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col">
+    <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
       <Navbar />
 
-      <main className="flex-1 pt-28">
+      <main className="flex-1 pt-10 sm:pt-14">
         {/* ─── Hero ─── */}
-        <section className="relative px-6 pb-20">
+        <section className="relative px-4 sm:px-6 pb-20">
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56,189,248,0.06) 0%, transparent 70%)' }}
+            style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(29,63,176,0.05) 0%, transparent 70%)' }}
           />
           <div className="relative z-10 max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">{title}</h1>
+            <h1 className="text-4xl sm:text-5xl font-serif font-black text-ink mb-6">{title}</h1>
             {description && (
-              <div className="text-[#94A3B8] text-lg leading-relaxed whitespace-pre-line">{description}</div>
+              <div className="text-ink-soft text-lg leading-relaxed whitespace-pre-line">{description}</div>
             )}
           </div>
         </section>
 
         {/* ─── Stats Cards ─── */}
         {stats.length > 0 && (
-          <section className="px-6 pb-20">
+          <section className="px-4 sm:px-6 pb-20">
             <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {stats.map((s) => (
                 <div
                   key={s.id}
-                  className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 flex items-center gap-4 hover:border-[#38BDF8]/20 transition-colors"
+                  className="border border-rule bg-paper-raised rounded-lg p-6 flex items-center gap-4 hover:border-pen/30 transition-colors shadow-[0_1px_2px_rgba(35,39,46,0.05)]"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center shrink-0">
-                    <DynamicIcon name={s.icon || 'Users'} size={22} className="text-[#38BDF8]" />
+                  <div className="w-12 h-12 rounded-md bg-pen/10 border border-pen/20 flex items-center justify-center shrink-0">
+                    <DynamicIcon name={s.icon || 'Users'} size={22} className="text-pen" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{s.value}</p>
-                    <p className="text-sm text-[#94A3B8]">{s.label}</p>
+                    <p className="text-2xl font-bold text-ink">{s.value}</p>
+                    <p className="text-sm text-ink-soft">{s.label}</p>
                   </div>
                 </div>
               ))}
@@ -75,15 +75,15 @@ export default async function AboutPage() {
 
         {/* ─── Content Blocks (텍스트 + 이미지 슬라이더) ─── */}
         {blocks.map((block, idx) => (
-          <section key={block.id} className="px-6 pb-20">
+          <section key={block.id} className="px-4 sm:px-6 pb-20">
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
               {/* 텍스트 — 홀수 블록은 오른쪽 배치 */}
               <div className={idx % 2 === 1 ? 'lg:order-2' : ''}>
                 {block.title && (
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{block.title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-serif font-black text-ink mb-4">{block.title}</h2>
                 )}
                 {block.description && (
-                  <div className="text-[#94A3B8] text-sm sm:text-base leading-relaxed whitespace-pre-line">{block.description}</div>
+                  <div className="text-ink-soft text-sm sm:text-base leading-relaxed whitespace-pre-line">{block.description}</div>
                 )}
               </div>
 
@@ -100,7 +100,7 @@ export default async function AboutPage() {
         {/* 콘텐츠가 아직 없을 때 안내 */}
         {stats.length === 0 && blocks.length === 0 && !description && (
           <div className="flex items-center justify-center py-20">
-            <p className="text-[#475569] text-sm">회사소개 페이지 콘텐츠를 준비 중입니다.</p>
+            <p className="text-ink-faint text-sm">회사소개 페이지 콘텐츠를 준비 중입니다.</p>
           </div>
         )}
       </main>

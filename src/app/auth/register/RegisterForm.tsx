@@ -101,24 +101,24 @@ export default function RegisterForm() {
   // 인증 메일 발송 완료 화면
   if (done) {
     return (
-      <div className="min-h-screen bg-[#0B1120] flex">
+      <div className="theme-paper min-h-screen bg-paper text-ink flex">
         <div className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="w-full max-w-sm text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={32} className="text-emerald-400" />
+            <div className="w-16 h-16 rounded-full bg-pen/5 border border-pen/20 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={32} className="text-pen" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-3">이메일을 확인해 주세요</h1>
-            <p className="text-[#94A3B8] text-sm leading-relaxed mb-6">
-              <span className="text-white font-medium">{email}</span>{' '}
+            <h1 className="text-2xl font-serif font-black text-ink mb-3">이메일을 확인해 주세요</h1>
+            <p className="text-ink-soft text-sm leading-relaxed mb-6">
+              <span className="text-ink font-medium">{email}</span>{' '}
               주소로 인증 링크를 보냈습니다.<br />
               이메일의 링크를 클릭하여 계정을 인증해 주세요.
             </p>
-            <p className="text-xs text-[#475569]">
+            <p className="text-xs text-ink-faint">
               이메일이 보이지 않으면 스팸함을 확인해 주세요.
             </p>
             <Link
               href="/auth/login"
-              className="mt-8 inline-block text-sm text-[#38BDF8] hover:underline"
+              className="mt-8 inline-block text-sm text-pen hover:underline"
             >
               ← 로그인으로 돌아가기
             </Link>
@@ -130,22 +130,22 @@ export default function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex">
+    <div className="theme-paper min-h-screen bg-paper text-ink flex">
       {/* 왼쪽: 폼 영역 */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           {/* 모바일 로고 */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white">
-              <span className="w-8 h-8 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] font-black">C</span>
+            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-ink">
+              <span className="w-7 h-7 rounded border-[1.5px] border-seal flex items-center justify-center text-seal font-black -rotate-3">C</span>
               CoreZent
             </Link>
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-1">계정 만들기</h1>
-          <p className="text-[#94A3B8] text-sm mb-8">
+          <h1 className="text-2xl font-serif font-black text-ink mb-1">계정 만들기</h1>
+          <p className="text-ink-soft text-sm mb-8">
             이미 계정이 있으신가요?{' '}
-            <Link href="/auth/login" className="text-[#38BDF8] hover:underline">
+            <Link href="/auth/login" className="text-pen hover:underline">
               로그인
             </Link>
           </p>
@@ -168,40 +168,40 @@ export default function RegisterForm() {
 
           {/* 구분선 */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#1E293B]" />
-            <span className="text-xs text-[#475569]">또는 이메일로 계속하기</span>
-            <div className="flex-1 h-px bg-[#1E293B]" />
+            <div className="flex-1 h-px bg-rule" />
+            <span className="text-xs text-ink-faint">또는 이메일로 계속하기</span>
+            <div className="flex-1 h-px bg-rule" />
           </div>
 
           {/* 이메일 폼 */}
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">이름</label>
+              <label className="block text-sm text-ink-soft mb-1.5">이름</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="이름을 입력하세요"
                 required
-                className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">이메일</label>
+              <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">
-                국가 <span className="text-red-400">*</span>
+              <label className="block text-sm text-ink-soft mb-1.5">
+                국가 <span className="text-seal">*</span>
               </label>
               <CountrySelect
                 value={country}
@@ -212,7 +212,7 @@ export default function RegisterForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">비밀번호</label>
+              <label className="block text-sm text-ink-soft mb-1.5">비밀번호</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -221,12 +221,12 @@ export default function RegisterForm() {
                   placeholder="8자 이상 입력하세요"
                   required
                   minLength={8}
-                  className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                  className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#94A3B8] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft transition-colors focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -239,10 +239,10 @@ export default function RegisterForm() {
                       key={i}
                       className={`h-1 flex-1 rounded-full transition-colors ${
                         password.length >= i * 4
-                          ? i === 1 ? 'bg-red-400'
-                          : i === 2 ? 'bg-amber-400'
-                          : 'bg-emerald-400'
-                          : 'bg-[#1E293B]'
+                          ? i === 1 ? 'bg-seal'
+                          : i === 2 ? 'bg-amber-500'
+                          : 'bg-emerald-600'
+                          : 'bg-rule'
                       }`}
                     />
                   ))}
@@ -251,18 +251,18 @@ export default function RegisterForm() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">
+              <p className="text-sm text-seal bg-seal/5 border border-seal/30 rounded-md px-4 py-2.5">
                 {error}
               </p>
             )}
 
-            <p className="text-xs text-[#475569] leading-relaxed">
+            <p className="text-xs text-ink-faint leading-relaxed">
               계정을 만들면{' '}
               <a
                 href="/legal/terms"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#94A3B8] hover:text-white underline"
+                className="text-ink-soft hover:text-ink underline"
               >
                 이용약관
               </a>
@@ -271,7 +271,7 @@ export default function RegisterForm() {
                 href="/legal/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#94A3B8] hover:text-white underline"
+                className="text-ink-soft hover:text-ink underline"
               >
                 개인정보처리방침
               </a>
@@ -281,7 +281,7 @@ export default function RegisterForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-pen text-white font-semibold py-3 rounded-md text-sm hover:bg-pen-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
               {loading ? '계정을 만드는 중...' : '계정 만들기'}

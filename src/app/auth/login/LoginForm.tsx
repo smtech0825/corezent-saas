@@ -67,22 +67,22 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex">
+    <div className="theme-paper min-h-screen bg-paper text-ink flex">
       {/* 왼쪽: 폼 영역 */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           {/* 모바일 로고 */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white">
-              <span className="w-8 h-8 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] font-black">C</span>
+            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-ink">
+              <span className="w-7 h-7 rounded border-[1.5px] border-seal flex items-center justify-center text-seal font-black -rotate-3">C</span>
               CoreZent
             </Link>
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-1">다시 오신 것을 환영합니다</h1>
-          <p className="text-[#94A3B8] text-sm mb-8">
+          <h1 className="text-2xl font-serif font-black text-ink mb-1">다시 오신 것을 환영합니다</h1>
+          <p className="text-ink-soft text-sm mb-8">
             계정이 없으신가요?{' '}
-            <Link href="/auth/register" className="text-[#38BDF8] hover:underline">
+            <Link href="/auth/register" className="text-pen hover:underline">
               회원가입
             </Link>
           </p>
@@ -105,29 +105,29 @@ export default function LoginForm() {
 
           {/* 구분선 */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#1E293B]" />
-            <span className="text-xs text-[#475569]">또는 이메일로 계속하기</span>
-            <div className="flex-1 h-px bg-[#1E293B]" />
+            <div className="flex-1 h-px bg-rule" />
+            <span className="text-xs text-ink-faint">또는 이메일로 계속하기</span>
+            <div className="flex-1 h-px bg-rule" />
           </div>
 
           {/* 이메일 폼 */}
           <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-[#94A3B8] mb-1.5">이메일</label>
+              <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm text-[#94A3B8]">비밀번호</label>
-                <Link href="/auth/reset-password" className="text-xs text-[#38BDF8] hover:underline">
+                <label className="block text-sm text-ink-soft">비밀번호</label>
+                <Link href="/auth/reset-password" className="text-xs text-pen hover:underline">
                   비밀번호를 잊으셨나요?
                 </Link>
               </div>
@@ -138,12 +138,12 @@ export default function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-3 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                  className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#94A3B8] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft transition-colors focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -151,7 +151,7 @@ export default function LoginForm() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">
+              <p className="text-sm text-seal bg-seal/5 border border-seal/30 rounded-md px-4 py-2.5">
                 {error}
               </p>
             )}
@@ -159,7 +159,7 @@ export default function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-pen text-white font-semibold py-3 rounded-md text-sm hover:bg-pen-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={15} className="animate-spin" />}
               {loading ? '로그인 중...' : '로그인'}

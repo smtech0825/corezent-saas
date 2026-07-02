@@ -6,12 +6,21 @@
 
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { Noto_Serif_KR } from 'next/font/google'
 import './globals.css'
 import Analytics from '@/components/Analytics'
 import CookieConsentBanner from '@/components/CookieConsentBanner'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+
+// 퍼블릭(페이퍼 테마) 디스플레이 서체 — 공문서 명조 계열
+const serifKr = Noto_Serif_KR({
+  weight: ['400', '600', '900'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-serif-kr',
+})
 
 // ─── 동적 메타데이터 (DB SEO 설정 반영) ─────────────────────────────────────
 
@@ -68,7 +77,7 @@ export default async function RootLayout({
   const isValidGaId = /^(G-|UA-)[A-Z0-9-]+$/i.test(gaId)
 
   return (
-    <html lang="ko">
+    <html lang="ko" className={serifKr.variable}>
       <body>
         {children}
         {/* 분석 스크립트 (쿠키 동의 시에만 로드) */}

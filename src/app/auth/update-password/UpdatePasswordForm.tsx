@@ -67,21 +67,21 @@ export default function UpdatePasswordForm() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
-        <Loader2 size={24} className="text-[#38BDF8] animate-spin" />
+      <div className="theme-paper min-h-screen bg-paper text-ink flex items-center justify-center">
+        <Loader2 size={24} className="text-pen animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex">
+    <div className="theme-paper min-h-screen bg-paper text-ink flex">
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
 
           {/* 모바일 로고 */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white">
-              <span className="w-8 h-8 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] font-black">C</span>
+            <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-ink">
+              <span className="w-7 h-7 rounded border-[1.5px] border-seal flex items-center justify-center text-seal font-black -rotate-3">C</span>
               CoreZent
             </Link>
           </div>
@@ -89,26 +89,26 @@ export default function UpdatePasswordForm() {
           {done ? (
             /* 변경 완료 */
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle size={32} className="text-emerald-400" />
+              <div className="w-16 h-16 rounded-full bg-pen/5 border border-pen/20 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle size={32} className="text-pen" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-3">비밀번호가 변경되었습니다!</h1>
-              <p className="text-[#94A3B8] text-sm">
+              <h1 className="text-2xl font-serif font-black text-ink mb-3">비밀번호가 변경되었습니다!</h1>
+              <p className="text-ink-soft text-sm">
                 로그인 페이지로 이동 중...
               </p>
             </div>
           ) : (
             /* 새 비밀번호 입력 */
             <>
-              <h1 className="text-2xl font-bold text-white mb-1">새 비밀번호 설정</h1>
-              <p className="text-[#94A3B8] text-sm mb-8">
+              <h1 className="text-2xl font-serif font-black text-ink mb-1">새 비밀번호 설정</h1>
+              <p className="text-ink-soft text-sm mb-8">
                 계정에 사용할 새 비밀번호를 입력해 주세요.
               </p>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
                 {/* 새 비밀번호 */}
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1.5">새 비밀번호</label>
+                  <label className="block text-sm text-ink-soft mb-1.5">새 비밀번호</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -117,12 +117,12 @@ export default function UpdatePasswordForm() {
                       placeholder="8자 이상 입력하세요"
                       required
                       minLength={8}
-                      className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-2.5 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                      className="w-full bg-paper-raised border border-rule rounded-md px-4 py-2.5 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#94A3B8]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -131,7 +131,7 @@ export default function UpdatePasswordForm() {
 
                 {/* 비밀번호 확인 */}
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1.5">비밀번호 확인</label>
+                  <label className="block text-sm text-ink-soft mb-1.5">비밀번호 확인</label>
                   <div className="relative">
                     <input
                       type={showConfirm ? 'text' : 'password'}
@@ -139,12 +139,12 @@ export default function UpdatePasswordForm() {
                       onChange={(e) => setConfirm(e.target.value)}
                       placeholder="새 비밀번호를 다시 입력하세요"
                       required
-                      className="w-full bg-[#111A2E] border border-[#1E293B] rounded-lg px-4 py-2.5 pr-10 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                      className="w-full bg-paper-raised border border-rule rounded-md px-4 py-2.5 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#94A3B8]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                     >
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -152,7 +152,7 @@ export default function UpdatePasswordForm() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">
+                  <p className="text-sm text-seal bg-seal/5 border border-seal/30 rounded-md px-4 py-2.5">
                     {error}
                   </p>
                 )}
@@ -160,7 +160,7 @@ export default function UpdatePasswordForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-pen text-white font-semibold py-2.5 rounded-md text-sm hover:bg-pen-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={15} className="animate-spin" />}
                   비밀번호 변경

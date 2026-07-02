@@ -2,11 +2,13 @@
 
 /**
  * @컴포넌트: FAQSection
- * @설명: FAQ 아코디언 섹션 — DB front_faqs 데이터 렌더링
+ * @설명: FAQ 아코디언 (페이퍼 테마) — DB front_faqs 데이터 렌더링.
  */
 
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import Container from '@/components/ui/Container'
+import { SectionHeader } from '@/components/ui/Section'
 
 export interface DbFaq {
   id: string
@@ -24,49 +26,31 @@ export default function FAQSection({ faqs }: Props) {
   if (!faqs || faqs.length === 0) return null
 
   return (
-    <section id="faq" className="relative py-32 px-6">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            FAQ
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            자주 묻는 질문
-          </h2>
-          <p className="text-[#94A3B8] text-lg">
-            CoreZent 소프트웨어와 구매에 대해 알아야 할 모든 것.
-          </p>
-        </div>
+    <section id="faq" className="py-16 sm:py-24 bg-paper-shade/60 border-y border-rule">
+      <Container width="text">
+        <SectionHeader label="FAQ" title="자주 묻는 질문" align="center" />
 
-        {/* Accordion */}
-        <div className="space-y-2">
+        <div className="border-t border-rule">
           {faqs.map((faq) => {
             const isOpen = openId === faq.id
             return (
-              <div
-                key={faq.id}
-                className={`border rounded-2xl overflow-hidden transition-colors duration-200 ${
-                  isOpen
-                    ? 'border-[#38BDF8]/20 bg-[#111A2E]'
-                    : 'border-[#1E293B] bg-[#111A2E] hover:border-[#1E293B]/80'
-                }`}
-              >
+              <div key={faq.id} className="border-b border-rule">
                 <button
                   onClick={() => setOpenId(isOpen ? null : faq.id)}
-                  className="w-full flex items-center justify-between px-6 py-5 text-left"
+                  className="w-full flex items-center justify-between py-5 text-left gap-4"
+                  aria-expanded={isOpen}
                 >
-                  <span className="text-sm font-semibold text-white pr-4">{faq.question}</span>
+                  <span className="font-serif text-base font-bold text-ink break-keep">{faq.question}</span>
                   <ChevronDown
-                    size={16}
-                    className={`text-[#475569] shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 text-[#38BDF8]' : ''
+                    size={18}
+                    className={`text-ink-faint shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-pen' : ''
                     }`}
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-5">
-                    <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-wrap">
+                  <div className="pb-5 pr-8">
+                    <p className="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap break-keep">
                       {faq.answer}
                     </p>
                   </div>
@@ -75,7 +59,7 @@ export default function FAQSection({ faqs }: Props) {
             )
           })}
         </div>
-      </div>
+      </Container>
     </section>
   )
 }

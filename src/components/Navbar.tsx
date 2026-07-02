@@ -19,16 +19,16 @@ import { createClient } from '@/lib/supabase/client'
 
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-// ── 컬러 해싱 — 유저 이름 기반 다크 파스텔 배경 ──────────────────
+// ── 컬러 해싱 — 유저 이름 기반 라이트 파스텔 배경 (페이퍼 테마) ──────────────
 const AVATAR_PALETTES = [
-  { bg: 'bg-indigo-900/60',  border: 'border-indigo-700/40'  },
-  { bg: 'bg-emerald-900/60', border: 'border-emerald-700/40' },
-  { bg: 'bg-amber-900/60',   border: 'border-amber-700/40'   },
-  { bg: 'bg-rose-900/60',    border: 'border-rose-700/40'    },
-  { bg: 'bg-violet-900/60',  border: 'border-violet-700/40'  },
-  { bg: 'bg-cyan-900/60',    border: 'border-cyan-700/40'    },
-  { bg: 'bg-teal-900/60',    border: 'border-teal-700/40'    },
-  { bg: 'bg-sky-900/60',     border: 'border-sky-700/40'     },
+  { bg: 'bg-indigo-100',  border: 'border-indigo-300'  },
+  { bg: 'bg-emerald-100', border: 'border-emerald-300' },
+  { bg: 'bg-amber-100',   border: 'border-amber-300'   },
+  { bg: 'bg-rose-100',    border: 'border-rose-300'    },
+  { bg: 'bg-violet-100',  border: 'border-violet-300'  },
+  { bg: 'bg-cyan-100',    border: 'border-cyan-300'    },
+  { bg: 'bg-teal-100',    border: 'border-teal-300'    },
+  { bg: 'bg-sky-100',     border: 'border-sky-300'     },
 ]
 
 function hashColor(str: string) {
@@ -50,8 +50,8 @@ export default function Navbar() {
 
   // 공지 배너 데이터 (DB에서 로드)
   const [banner, setBanner] = useState({
-    text: 'GeniePost 출시 — AI 기반 WordPress 자동 포스팅, 월 구독으로 시작하세요.',
-    text_mobile: 'GeniePost 출시 — AI WordPress 자동 포스팅 월 구독',
+    text: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱, 지금 만나보세요.',
+    text_mobile: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱',
     link_text: '자세히 보기 →',
     link_url: '#product',
     visible: 'true',
@@ -150,19 +150,19 @@ export default function Navbar() {
   const avatarColor = hashColor(displayName || user?.email || 'user')
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 flex flex-col">
+    <header className="sticky top-0 inset-x-0 z-50 flex flex-col">
       {/* 공지 배너 — Admin에서 관리 */}
       {banner.visible === 'true' && (
-        <div className="w-full bg-[#0B1120] border-b border-[#1E293B] py-2 text-center text-xs text-[#38BDF8] px-4">
+        <div className="w-full bg-paper-shade border-b border-rule py-2 text-center text-xs text-ink-soft px-4">
           <span className="inline-flex items-center justify-center gap-2 flex-wrap">
-            <Zap size={12} className="fill-[#38BDF8] shrink-0" />
+            <Zap size={12} className="fill-pen text-pen shrink-0" />
             <span className="hidden sm:inline">{banner.text}</span>
             <span className="sm:hidden">{banner.text_mobile}</span>
             {banner.link_text && banner.link_url && (
               <button
                 type="button"
                 onClick={() => go(banner.link_url)}
-                className="underline underline-offset-2 hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="text-pen underline underline-offset-2 hover:text-pen-dark transition-colors whitespace-nowrap cursor-pointer"
               >
                 {banner.link_text}
               </button>
@@ -171,17 +171,17 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* 네비게이션 바 */}
-      <nav className="backdrop-blur-md bg-[#0B1120]/80 border-b border-[#1E293B]">
+      {/* 네비게이션 바 — 공문 두문의 굵은 밑줄 */}
+      <nav className="backdrop-blur-md bg-paper/90 border-b-2 border-ink">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* 로고 */}
           <button
             type="button"
             onClick={() => go('/')}
-            className="flex items-center gap-2 font-bold text-xl text-white tracking-tight shrink-0 cursor-pointer"
+            className="flex items-center gap-2 font-bold text-xl text-ink tracking-tight shrink-0 cursor-pointer"
           >
-            <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">
+            <span className="w-7 h-7 rounded border-[1.5px] border-seal flex items-center justify-center text-seal text-sm font-black -rotate-3">
               C
             </span>
             CoreZent
@@ -194,7 +194,7 @@ export default function Navbar() {
                 key={link.label}
                 type="button"
                 onClick={() => go(link.href, link.external)}
-                className="text-sm text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="text-sm text-ink-soft hover:text-ink transition-colors whitespace-nowrap cursor-pointer"
               >
                 {link.label}
               </button>
@@ -208,7 +208,7 @@ export default function Navbar() {
               <div ref={userRef} className="relative hidden lg:block">
                 <button
                   onClick={() => setUserOpen(!userOpen)}
-                  className="flex items-center gap-2.5 border border-[#1E293B] hover:border-[#38BDF8]/40 rounded-xl px-4 py-2 transition-colors min-w-[88px] justify-center"
+                  className="flex items-center gap-2.5 border border-rule hover:border-pen/50 rounded-md px-4 py-2 transition-colors min-w-[88px] justify-center"
                 >
                   {avatarUrl ? (
                     <img
@@ -217,27 +217,27 @@ export default function Navbar() {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <span className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-semibold text-slate-200 ${avatarColor.bg} ${avatarColor.border}`}>
+                    <span className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-semibold text-ink ${avatarColor.bg} ${avatarColor.border}`}>
                       {initials}
                     </span>
                   )}
                   <ChevronDown
                     size={13}
-                    className={`text-[#94A3B8] transition-transform duration-200 ${
+                    className={`text-ink-faint transition-transform duration-200 ${
                       userOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 {userOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-[#1E293B] bg-[#111A2E] shadow-xl overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-[#1E293B]">
-                      <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
+                  <div className="absolute right-0 top-full mt-2 w-44 rounded-md border border-rule bg-paper-raised shadow-lg overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-rule">
+                      <p className="text-xs text-ink-faint truncate">{user.email}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => { setUserOpen(false); go('/dashboard') }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-soft hover:text-ink hover:bg-paper-shade transition-colors cursor-pointer"
                     >
                       <LayoutDashboard size={14} />
                       대시보드
@@ -245,14 +245,14 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => { setUserOpen(false); go('/dashboard/settings') }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-soft hover:text-ink hover:bg-paper-shade transition-colors cursor-pointer"
                     >
                       <User size={14} />
                       설정
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors border-t border-[#1E293B]"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-seal hover:bg-seal/5 transition-colors border-t border-rule"
                     >
                       <LogOut size={14} />
                       로그아웃
@@ -266,14 +266,14 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => go('/auth/login')}
-                  className="hidden lg:block text-sm text-[#94A3B8] hover:text-white transition-colors px-2 cursor-pointer"
+                  className="hidden lg:block text-sm text-ink-soft hover:text-ink transition-colors px-2 cursor-pointer"
                 >
                   로그인
                 </button>
                 <button
                   type="button"
                   onClick={() => go('/auth/register')}
-                  className="hidden lg:inline-flex items-center gap-1.5 bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#0ea5e9] transition-colors cursor-pointer"
+                  className="hidden lg:inline-flex items-center gap-1.5 bg-pen text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-pen-dark transition-colors cursor-pointer"
                 >
                   시작하기
                 </button>
@@ -285,7 +285,7 @@ export default function Navbar() {
             {/* 모바일 햄버거 */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden text-[#94A3B8] hover:text-white p-1"
+              className="lg:hidden text-ink-soft hover:text-ink p-1"
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -294,31 +294,31 @@ export default function Navbar() {
 
         {/* 모바일 메뉴 */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-[#1E293B] bg-[#0B1120] px-6 py-4 flex flex-col gap-4">
+          <div className="lg:hidden border-t border-rule bg-paper px-6 py-4 flex flex-col gap-4">
             {navLinks.map((link) => (
               <button
                 key={link.label}
                 type="button"
                 onClick={() => { setMobileOpen(false); go(link.href, link.external) }}
-                className="text-left text-sm text-[#94A3B8] hover:text-white transition-colors cursor-pointer"
+                className="text-left text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
               >
                 {link.label}
               </button>
             ))}
-            <div className="pt-2 flex flex-col gap-2 border-t border-[#1E293B]">
+            <div className="pt-2 flex flex-col gap-2 border-t border-rule">
               {user ? (
                 <>
-                  <p className="text-xs text-[#475569] px-1">{user.email}</p>
+                  <p className="text-xs text-ink-faint px-1">{user.email}</p>
                   <button
                     type="button"
                     onClick={() => { setMobileOpen(false); go('/dashboard') }}
-                    className="text-left text-sm text-[#94A3B8] hover:text-white cursor-pointer"
+                    className="text-left text-sm text-ink-soft hover:text-ink cursor-pointer"
                   >
                     대시보드
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="text-left text-sm text-red-400 hover:text-red-300"
+                    className="text-left text-sm text-seal"
                   >
                     로그아웃
                   </button>
@@ -328,14 +328,14 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() => { setMobileOpen(false); go('/auth/login') }}
-                    className="text-left text-sm text-[#94A3B8] hover:text-white cursor-pointer"
+                    className="text-left text-sm text-ink-soft hover:text-ink cursor-pointer"
                   >
                     로그인
                   </button>
                   <button
                     type="button"
                     onClick={() => { setMobileOpen(false); go('/auth/register') }}
-                    className="inline-flex justify-center bg-[#38BDF8] text-[#0B1120] text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer"
+                    className="inline-flex justify-center bg-pen text-white text-sm font-semibold px-4 py-2 rounded-md cursor-pointer"
                   >
                     시작하기
                   </button>

@@ -1,14 +1,16 @@
 /**
  * @컴포넌트: ProductSection
- * @설명: 랜딩 페이지 제품 목록 섹션 — DB에서 상품 정보를 가져와 카드 그리드로 표시
- *        Admin에서 등록한 상품이 자동으로 반영됨
+ * @설명: 랜딩 제품 목록 섹션 (페이퍼 테마) — DB 상품을 흰 종이 카드 그리드로 표시.
+ *        Admin에서 등록한 상품이 자동으로 반영됨. 데이터 로직은 기존과 동일.
  */
 
 import Link from 'next/link'
-import { ArrowRight, Sparkles, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import Section, { SectionHeader } from '@/components/ui/Section'
+import Button from '@/components/ui/Button'
 
 interface ProductCard {
   name: string
@@ -106,153 +108,117 @@ export default async function ProductSection() {
   const products = [...dbCards, ...COMING_SOON.slice(0, neededPlaceholders)]
 
   return (
-    <section id="product" className="relative py-32 px-6">
-      {/* Glow */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 50%, rgba(56,189,248,0.04) 0%, transparent 70%)',
-        }}
+    <Section id="product" width="wide">
+      <SectionHeader
+        label="제품 소개"
+        title="나를 위해 일하는 소프트웨어"
+        sub="우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고, 실질적인 결과를 전하도록 설계되었습니다."
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            제품 소개
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            나를 위해 일하는 소프트웨어
-          </h2>
-          <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고,
-            실질적인 결과를 전하도록 설계되었습니다.
-          </p>
-        </div>
-
-        {/* Product grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {products.map((product, idx) => (
-            <div
-              key={idx}
-              className={`relative flex flex-col border rounded-2xl p-7 transition-all duration-300 group ${
-                product.available
-                  ? 'border-[#38BDF8]/20 bg-[#111A2E] hover:border-[#38BDF8]/40'
-                  : 'border-[#1E293B] bg-[#0E1525] opacity-60'
-              }`}
-            >
-              {/* Corner glow */}
-              {product.available && (
-                <div
-                  className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.1]"
-                  style={{ background: 'radial-gradient(circle, #38BDF8, transparent)' }}
-                />
-              )}
-
-              <div className="relative z-10 flex flex-col flex-1">
-                {/* Badge — DB badge_text 우선, 없으면 기본값 */}
-                {(() => {
-                  const text = product.badgeText ?? (product.available ? null : '출시 예정')
-                  if (!text && product.available) return null
-                  if (!text) return null
-                  const colorCls = product.available
-                    ? (PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue)
-                    : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
-                  return (
-                    <div className={`inline-flex items-center gap-1.5 self-start border rounded-lg px-2.5 py-1 text-xs font-semibold mb-5 ${colorCls}`}>
-                      {product.available ? <Sparkles size={11} /> : <Clock size={11} />}
-                      {text}
-                    </div>
-                  )
-                })()}
-
-                {/* Name + 카테고리 배지 */}
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className="text-xl font-bold text-white">{product.name}</h3>
-                  {product.category && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
-                      {CATEGORY_LABELS[product.category] ?? product.category}
-                    </span>
-                  )}
-                  {product.categoryGroup && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-[#1E293B] text-[#94A3B8] border-[#1E293B]">
-                      {product.categoryGroup}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
-
-                {/* Description — 3줄 클램프 + more → /product 이동 */}
-                {product.description && (
-                  <div className="relative mb-4">
-                    <p className="text-[#94A3B8] text-sm leading-relaxed line-clamp-3">
-                      {product.description}
-                    </p>
-                    {product.available && product.description.length > 120 && (
-                      <Link
-                        href={product.slug ? `/product/${product.slug}` : '/product'}
-                        className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
-                        style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
-                      >
-                        더보기
-                      </Link>
-                    )}
+      {/* 제품 카드 그리드 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {products.map((product, idx) => (
+          <div
+            key={idx}
+            className={`flex flex-col rounded-lg p-7 transition-all duration-200 ${
+              product.available
+                ? 'border border-rule bg-paper-raised shadow-[0_1px_2px_rgba(35,39,46,0.05)] hover:border-ink-faint hover:shadow-[0_6px_20px_rgba(35,39,46,0.08)]'
+                : 'border-[1.5px] border-dashed border-rule bg-transparent'
+            }`}
+          >
+            <div className="flex flex-col flex-1">
+              {/* 뱃지 — DB badge_text 우선 */}
+              {(() => {
+                const text = product.badgeText ?? (product.available ? null : '출시 예정')
+                if (!text) return null
+                const colorCls = product.available
+                  ? (PRODUCT_BADGE_COLORS_PAPER[product.badgeColor] ?? PRODUCT_BADGE_COLORS_PAPER.blue)
+                  : 'text-ink-faint bg-paper-shade border-rule'
+                return (
+                  <div className={`inline-flex items-center gap-1.5 self-start border rounded px-2.5 py-1 text-xs font-semibold mb-5 ${colorCls}`}>
+                    {!product.available && <Clock size={11} />}
+                    {text}
                   </div>
+                )
+              })()}
+
+              {/* 이름 + 카테고리 뱃지 */}
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="font-serif text-xl font-black text-ink">{product.name}</h3>
+                {product.category && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${CATEGORY_BADGE_PAPER[product.category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
+                    {CATEGORY_LABELS[product.category] ?? product.category}
+                  </span>
                 )}
-
-                {/* Tags */}
-                {product.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {product.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs border border-[#1E293B] text-[#475569] rounded-full px-2.5 py-0.5"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Pricing + CTA */}
-                {product.available ? (
-                  <div className="mt-auto">
-                    {product.monthlyPrice && (
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl font-bold text-white">
-                          {product.monthlyPrice}
-                          <span className="text-sm text-[#94A3B8] font-normal">/월</span>
-                        </span>
-                        <span className="text-xs text-[#475569]">
-                          VAT 포함{product.annualPrice ? ` · 또는 ${product.annualPrice}/년` : ''}
-                        </span>
-                      </div>
-                    )}
-                    <Link
-                      href={product.href}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
-                    >
-                      시작하기
-                      <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="mt-auto">
-                    <Link
-                      href={product.href}
-                      className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-2.5 rounded-xl text-sm cursor-not-allowed"
-                      tabIndex={-1}
-                    >
-                      출시 알림 받기
-                    </Link>
-                  </div>
+                {product.categoryGroup && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded border bg-paper-shade text-ink-soft border-rule">
+                    {product.categoryGroup}
+                  </span>
                 )}
               </div>
+              <p className="text-pen text-sm font-medium mb-4">{product.tagline}</p>
+
+              {/* 설명 — 3줄 클램프 + 더보기 → /product 이동 */}
+              {product.description && (
+                <div className="relative mb-4">
+                  <p className="text-ink-soft text-sm leading-relaxed line-clamp-3 break-keep">
+                    {product.description}
+                  </p>
+                  {product.available && product.description.length > 120 && (
+                    <Link
+                      href={product.slug ? `/product/${product.slug}` : '/product'}
+                      className="absolute bottom-0 right-0 text-pen hover:text-pen-dark transition-colors font-medium text-sm"
+                      style={{ background: 'linear-gradient(to right, transparent, #FFFFFF 30%)', paddingLeft: '1.5rem' }}
+                    >
+                      더보기
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* 태그 */}
+              {product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {product.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs border border-rule text-ink-faint rounded px-2.5 py-0.5"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* 가격 + CTA */}
+              {product.available ? (
+                <div className="mt-auto">
+                  {product.monthlyPrice && (
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl font-bold text-ink font-serif">
+                        {product.monthlyPrice}
+                        <span className="text-sm text-ink-soft font-sans font-normal">/월</span>
+                      </span>
+                      <span className="text-xs text-ink-faint">
+                        VAT 포함{product.annualPrice ? ` · 또는 ${product.annualPrice}/년` : ''}
+                      </span>
+                    </div>
+                  )}
+                  <Button href={product.href} size="md" className="w-full">
+                    시작하기
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-auto">
+                  <span className="w-full inline-flex items-center justify-center gap-2 border border-rule text-ink-faint font-medium py-2.5 rounded-md text-sm cursor-not-allowed">
+                    출시 알림 받기
+                  </span>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-    </section>
+    </Section>
   )
 }

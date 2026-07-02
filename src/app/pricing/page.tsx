@@ -109,7 +109,7 @@ export default async function PricingPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans">
+    <div className="theme-paper min-h-screen bg-paper font-sans text-ink">
       <Navbar />
 
       <main>

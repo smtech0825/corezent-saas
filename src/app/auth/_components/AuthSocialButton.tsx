@@ -35,10 +35,10 @@ export default function AuthSocialButton({ provider, label, loading, onClick }: 
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-3 bg-[#111A2E] border border-[#1E293B] hover:border-[#38BDF8]/40 hover:bg-[#1E293B]/50 text-[#F1F5F9] text-sm font-medium py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full flex items-center justify-center gap-3 bg-paper-raised border border-rule hover:border-pen/40 hover:bg-paper-shade text-ink text-sm font-medium py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {loading
-        ? <Loader2 size={16} className="animate-spin text-[#38BDF8]" />
+        ? <Loader2 size={16} className="animate-spin text-pen" />
         : provider === 'google' ? <GoogleIcon /> : <GitHubIcon />
       }
       {label}

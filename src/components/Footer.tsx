@@ -1,6 +1,8 @@
 /**
  * @컴포넌트: Footer
- * @설명: 사이트 하단 푸터 — DB의 footer_info를 fetch해 whitespace-pre-wrap으로 출력
+ * @설명: 사이트 하단 푸터 — 공문서 결문(結文) 스타일.
+ *        DB의 footer_info를 fetch해 whitespace-pre-wrap으로 출력하고,
+ *        문서가 끝나는 자리에 "끝." 표기를 남긴다.
  */
 
 import Link from 'next/link'
@@ -36,25 +38,25 @@ export default async function Footer() {
   const copyright   = map.get('footer_copyright') ?? `© ${new Date().getFullYear()} CoreZent Inc. All rights reserved.`
 
   return (
-    <footer className="border-t border-[#1E293B] bg-[#0B1120]">
-      <div className="max-w-7xl mx-auto px-6 py-16">
+    <footer className="border-t-2 border-ink bg-paper-shade/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 sm:gap-10">
 
           {/* 브랜드 */}
           <div className="col-span-2 sm:col-span-3 md:col-span-1">
-            <div className="flex items-center gap-2 font-bold text-lg text-white mb-4">
-              <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">C</span>
+            <div className="flex items-center gap-2 font-bold text-lg text-ink mb-4">
+              <span className="w-7 h-7 rounded border-[1.5px] border-seal flex items-center justify-center text-seal text-sm font-black -rotate-3">C</span>
               CoreZent
             </div>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              여러분의 시간을 아끼고 디지털 워크플로우를 확장하는 차세대 AI 자동화 도구.
+            <p className="text-sm text-ink-soft leading-relaxed break-keep">
+              공공기관과 실무자를 위한 업무 자동화 소프트웨어를 직접 만들고 공급합니다.
             </p>
           </div>
 
           {/* 링크 컬럼 */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="text-sm font-semibold text-white mb-4">{category}</h4>
+              <h4 className="text-sm font-bold text-ink mb-4">{category}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
@@ -63,14 +65,14 @@ export default async function Footer() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                        className="text-sm text-ink-soft hover:text-ink transition-colors"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+                        className="text-sm text-ink-soft hover:text-ink transition-colors"
                       >
                         {link.label}
                       </Link>
@@ -82,18 +84,23 @@ export default async function Footer() {
           ))}
         </div>
 
-        {/* 하단 바 */}
-        <div className="mt-12 pt-8 border-t border-[#1E293B] flex flex-col sm:flex-row justify-between items-start gap-4">
-          <p className="text-xs text-[#94A3B8] shrink-0">{copyright}</p>
+        {/* 하단 바 — 사업자 정보 */}
+        <div className="mt-12 pt-8 border-t border-rule flex flex-col sm:flex-row justify-between items-start gap-4">
+          <p className="text-xs text-ink-faint shrink-0">{copyright}</p>
           {footerInfo && (
             <p
-              className="text-xs text-[#94A3B8] sm:text-right"
+              className="text-xs text-ink-faint sm:text-right"
               style={{ whiteSpace: 'pre-wrap' }}
             >
               {footerInfo}
             </p>
           )}
         </div>
+
+        {/* 문서의 끝 */}
+        <p className="mt-10 text-center font-serif text-sm font-black text-ink" aria-hidden="true">
+          끝.
+        </p>
       </div>
     </footer>
   )

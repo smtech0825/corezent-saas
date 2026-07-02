@@ -26,15 +26,15 @@ export default async function FaqPage() {
     .order('order_index')
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col">
+    <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
       <Navbar />
 
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-10 sm:pt-14">
         {faqs && faqs.length > 0 ? (
           <FAQSection faqs={faqs} />
         ) : (
           <div className="flex items-center justify-center py-40">
-            <p className="text-[#475569] text-sm">아직 등록된 FAQ가 없습니다.</p>
+            <p className="text-ink-faint text-sm">아직 등록된 FAQ가 없습니다.</p>
           </div>
         )}
       </main>

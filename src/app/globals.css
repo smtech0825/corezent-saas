@@ -58,6 +58,51 @@
 }
 
 /* ----------------------------------------------------------
+ * 페이퍼(공문서) 테마 토큰 — 퍼블릭 페이지 전용 (GenieWork 재브랜딩)
+ * 재료: 종이 / 먹 / 인주(도장 빨강) / 볼펜(파랑)
+ * 다크 토큰(--color-bg 등)은 dashboard·admin에서 계속 사용
+ * ---------------------------------------------------------- */
+@theme {
+  /* 종이 */
+  --color-paper:        #FBFAF6;
+  --color-paper-raised: #FFFFFF;
+  --color-paper-shade:  #F1EFE7;
+
+  /* 먹(텍스트) */
+  --color-ink:          #23272E;
+  --color-ink-soft:     #565C66;
+  --color-ink-faint:    #8B8F98;
+
+  /* 괘선 */
+  --color-rule:         #D8D4C8;
+
+  /* 인주(도장)·볼펜 */
+  --color-seal:         #C93A2C;
+  --color-pen:          #1D3FB0;
+  --color-pen-dark:     #16339A;
+
+  /* 모션 — 페이지 로드 리빌·직인 스탬프 */
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-stamp:   stamp 0.55s cubic-bezier(0.2, 0.85, 0.35, 1.25) both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes stamp {
+    0%   { opacity: 0; transform: rotate(-6deg) scale(1.9); }
+    55%  { opacity: 1; transform: rotate(-6deg) scale(0.94); }
+    78%  { transform: rotate(-6deg) scale(1.04); }
+    100% { opacity: 1; transform: rotate(-6deg) scale(1); }
+  }
+}
+
+/* next/font(Noto Serif KR) 변수를 Tailwind font-serif 유틸리티로 연결 */
+@theme inline {
+  --font-serif: var(--font-serif-kr), 'Noto Serif KR', 'Batang', serif;
+}
+
+/* ----------------------------------------------------------
  * 기본 스타일
  * ---------------------------------------------------------- */
 @layer base {
@@ -67,6 +112,28 @@
     color: #F1F5F9;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 키보드 포커스 전역 가시화 — 다크 영역은 하늘색, 페이퍼 영역은 볼펜 파랑 */
+  :focus-visible {
+    outline: 2px solid #38BDF8;
+    outline-offset: 2px;
+  }
+  .theme-paper :focus-visible { outline-color: #1D3FB0; }
+  .theme-paper ::selection    { background: rgba(29, 63, 176, 0.14); }
+
+  /* 볼펜 서명(결재란)·타이핑 커서 키프레임 */
+  @keyframes draw-stroke { to { stroke-dashoffset: 0; } }
+  @keyframes caret-blink { 50% { opacity: 0; } }
+
+  /* 모션 최소화 설정 존중 — 모든 애니메이션을 최종 상태로 즉시 완료 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   body {

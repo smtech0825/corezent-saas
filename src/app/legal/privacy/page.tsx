@@ -49,7 +49,7 @@ export default async function PrivacyPage() {
         </LabelBox>
         <LabelBox label="필수 항목 — 결제 시">
           <P>결제 이력, 청구지 정보, 영수증 발행 정보</P>
-          <p className="text-xs text-[#475569] italic leading-relaxed">
+          <p className="text-xs text-ink-faint italic leading-relaxed">
             결제 카드 번호 등 민감한 결제 정보는 회사가 직접 수집·보관하지 않으며, 결제대행사(Lemon Squeezy)가 처리합니다.
           </p>
         </LabelBox>
@@ -134,7 +134,7 @@ export default async function PrivacyPage() {
       <LegalSection badge="8" title="쿠키의 운영 및 거부 방법">
         <P>
           회사는 회원의 서비스 이용 편의성을 위해 쿠키를 사용합니다. 쿠키의 종류와 거부 방법은{' '}
-          <Link href="/legal/cookies" className="text-[#38BDF8] hover:underline">쿠키 정책</Link>을 참고해 주세요.
+          <Link href="/legal/cookies" className="text-pen hover:underline">쿠키 정책</Link>을 참고해 주세요.
         </P>
       </LegalSection>
 

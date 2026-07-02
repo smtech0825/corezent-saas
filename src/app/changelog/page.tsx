@@ -41,10 +41,10 @@ interface Product {
 }
 
 const CONTENT_SECTIONS = [
-  { key: 'new_features'     as const, label: '새로운 기능',   badge: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
-  { key: 'improvements'     as const, label: '개선 사항',     badge: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
-  { key: 'bug_fixes'        as const, label: '버그 수정',     badge: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-  { key: 'breaking_changes' as const, label: '주요 변경',     badge: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  { key: 'new_features'     as const, label: '새로운 기능',   badge: 'text-pen bg-pen/5 border-pen/40' },
+  { key: 'improvements'     as const, label: '개선 사항',     badge: 'text-violet-700 bg-violet-50 border-violet-300' },
+  { key: 'bug_fixes'        as const, label: '버그 수정',     badge: 'text-emerald-700 bg-emerald-50 border-emerald-300' },
+  { key: 'breaking_changes' as const, label: '주요 변경',     badge: 'text-seal bg-seal/5 border-seal/40' },
 ]
 
 export default async function ChangelogPage({
@@ -96,10 +96,10 @@ export default async function ChangelogPage({
 
   if (products.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0B1120] font-sans">
+      <div className="theme-paper min-h-screen bg-paper font-sans text-ink">
         <Navbar />
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-[#475569] text-sm">아직 업데이트 내역이 없습니다.</p>
+          <p className="text-ink-faint text-sm">아직 업데이트 내역이 없습니다.</p>
         </div>
         <Footer />
       </div>
@@ -107,13 +107,13 @@ export default async function ChangelogPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans">
+    <div className="theme-paper min-h-screen bg-paper font-sans text-ink">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-10 flex gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-10 flex gap-8">
 
         {/* 사이드바 — 상품 목록 */}
         <aside className="w-56 shrink-0 hidden md:block">
-          <p className="text-xs font-semibold text-[#475569] uppercase tracking-wider mb-4 px-2">제품</p>
+          <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-4 px-2">제품</p>
           <nav className="space-y-1">
             {products.map((p) => {
               const isActive = p.id === selectedProduct?.id
@@ -121,18 +121,18 @@ export default async function ChangelogPage({
                 <Link
                   key={p.id}
                   href={`/changelog?product=${p.slug}`}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
                     isActive
-                      ? 'bg-[#38BDF8]/10 text-white border border-[#38BDF8]/20'
-                      : 'text-[#475569] hover:text-[#94A3B8] hover:bg-[#111A2E]'
+                      ? 'bg-pen/5 text-ink border border-pen/40'
+                      : 'text-ink-soft hover:text-ink hover:bg-paper-shade'
                   }`}
                 >
                   {p.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.logo_url} alt="" className="w-6 h-6 rounded-md object-contain shrink-0" />
                   ) : (
-                    <div className="w-6 h-6 rounded-md bg-[#1E293B] flex items-center justify-center shrink-0">
-                      <Tag size={11} className="text-[#475569]" />
+                    <div className="w-6 h-6 rounded-md bg-paper-shade flex items-center justify-center shrink-0">
+                      <Tag size={11} className="text-ink-faint" />
                     </div>
                   )}
                   <span className="truncate font-medium">{p.name}</span>
@@ -148,7 +148,7 @@ export default async function ChangelogPage({
           <div className="mb-6">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-[#475569] hover:text-[#94A3B8] transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors"
             >
               <ArrowLeft size={14} />
               홈으로 돌아가기
@@ -166,8 +166,8 @@ export default async function ChangelogPage({
                     href={`/changelog?product=${p.slug}`}
                     className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                       isActive
-                        ? 'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20'
-                        : 'text-[#475569] border-[#1E293B] hover:text-[#94A3B8]'
+                        ? 'bg-pen/5 text-pen border-pen/40'
+                        : 'text-ink-soft border-rule hover:text-ink'
                     }`}
                   >
                     {p.name}
@@ -180,14 +180,14 @@ export default async function ChangelogPage({
           {selectedProduct && (
             <>
               <div className="mb-8">
-                <h1 className="text-2xl font-bold text-white">{selectedProduct.name}</h1>
-                <p className="text-sm text-[#475569] mt-1">릴리스 노트 및 버전 기록</p>
+                <h1 className="text-2xl font-serif font-black text-ink">{selectedProduct.name}</h1>
+                <p className="text-sm text-ink-faint mt-1">릴리스 노트 및 버전 기록</p>
               </div>
 
               {/* 타임라인 */}
               <div className="relative">
                 {/* 세로 줄 */}
-                <div className="absolute left-[7px] top-2 bottom-0 w-px bg-[#1E293B]" />
+                <div className="absolute left-[7px] top-2 bottom-0 w-px bg-rule" />
 
                 <div className="space-y-10">
                   {selectedProduct.changelogs.map((cl) => {
@@ -204,21 +204,21 @@ export default async function ChangelogPage({
                         {/* 점 */}
                         <div className={`mt-1 w-3.5 h-3.5 rounded-full border-2 shrink-0 z-10 ${
                           cl.is_latest
-                            ? 'bg-[#38BDF8] border-[#38BDF8]'
-                            : 'bg-[#0B1120] border-[#1E293B]'
+                            ? 'bg-pen border-pen'
+                            : 'bg-paper border-rule'
                         }`} />
 
                         {/* 카드 */}
                         <div className="flex-1 min-w-0 pb-2">
                           {/* 버전 헤더 */}
                           <div className="flex items-center gap-3 flex-wrap mb-4">
-                            <span className="text-lg font-bold text-white font-mono">{cl.version}</span>
+                            <span className="text-lg font-bold text-ink font-mono">{cl.version}</span>
                             {cl.is_latest && (
-                              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
+                              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-pen/5 text-pen border border-pen/40">
                                 최신
                               </span>
                             )}
-                            <span className="text-sm text-[#475569]">
+                            <span className="text-sm text-ink-faint">
                               {new Date(cl.release_date).toLocaleDateString('ko-KR', {
                                 year: 'numeric', month: 'long', day: 'numeric',
                               })}
@@ -234,7 +234,7 @@ export default async function ChangelogPage({
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 hover:border-emerald-400/60 px-3 py-2.5 rounded-lg transition-colors min-h-[44px]"
+                                  className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 border border-emerald-300 hover:border-emerald-500 px-3 py-2.5 rounded-md transition-colors min-h-[44px]"
                                 >
                                   ↓ {PLATFORM_LABEL[platform] ?? platform}
                                 </a>
@@ -244,7 +244,7 @@ export default async function ChangelogPage({
 
                           {/* 변경 내용 */}
                           {hasAnyContent && (
-                            <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden divide-y divide-[#1E293B]/60">
+                            <div className="bg-paper-raised border border-rule rounded-lg overflow-hidden divide-y divide-rule/60">
                               {CONTENT_SECTIONS.map(({ key, label, badge }) => {
                                 const items = cl.content[key]
                                 if (items.length === 0) return null
@@ -255,8 +255,8 @@ export default async function ChangelogPage({
                                     </span>
                                     <ul className="space-y-1.5">
                                       {items.map((item, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-[#94A3B8]">
-                                          <span className="mt-1.5 w-1 h-1 rounded-full bg-[#475569] shrink-0" />
+                                        <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
+                                          <span className="mt-1.5 w-1 h-1 rounded-full bg-ink-faint shrink-0" />
                                           {item}
                                         </li>
                                       ))}
@@ -268,7 +268,7 @@ export default async function ChangelogPage({
                           )}
 
                           {!hasAnyContent && (
-                            <p className="text-sm text-[#475569] italic">이 버전의 릴리스 노트가 없습니다.</p>
+                            <p className="text-sm text-ink-faint italic">이 버전의 릴리스 노트가 없습니다.</p>
                           )}
                         </div>
                       </div>

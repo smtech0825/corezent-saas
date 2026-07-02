@@ -3,6 +3,8 @@
 /**
  * @컴포넌트: CountrySelect
  * @설명: 국가 코드 + 국기 이모지 포함 검색 가능 드롭다운 (공통 컴포넌트)
+ *        다크(대시보드)·페이퍼(퍼블릭) 두 테마 모두 지원 —
+ *        기본은 다크, 조상에 `.theme-paper`가 있으면 페이퍼 톤으로 override.
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -60,7 +62,9 @@ export default function CountrySelect({ value, onChange, required, placeholder =
     return () => document.removeEventListener('mousedown', onOutside)
   }, [open])
 
-  const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#38BDF8] transition-colors'
+  const inputCls =
+    'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#38BDF8] transition-colors ' +
+    '[.theme-paper_&]:bg-paper-raised [.theme-paper_&]:border-rule [.theme-paper_&]:rounded-md [.theme-paper_&]:text-ink [.theme-paper_&]:focus:border-pen'
 
   return (
     <div ref={containerRef} className="relative">
@@ -73,19 +77,19 @@ export default function CountrySelect({ value, onChange, required, placeholder =
         {selected ? (
           <span className="flex items-center gap-2.5">
             <span className="text-base leading-none">{getFlag(selected.code)}</span>
-            <span className="text-white">{selected.name}</span>
-            <span className="text-xs text-[#475569] font-mono">{selected.code}</span>
+            <span className="text-white [.theme-paper_&]:text-ink">{selected.name}</span>
+            <span className="text-xs text-[#475569] font-mono [.theme-paper_&]:text-ink-faint">{selected.code}</span>
           </span>
         ) : (
-          <span className="text-[#475569]">{placeholder}</span>
+          <span className="text-[#475569] [.theme-paper_&]:text-ink-faint">{placeholder}</span>
         )}
         <span className="flex items-center gap-1 shrink-0">
           {selected && (
-            <span onClick={handleClear} className="text-[#475569] hover:text-[#94A3B8] p-0.5 rounded">
+            <span onClick={handleClear} className="text-[#475569] hover:text-[#94A3B8] p-0.5 rounded [.theme-paper_&]:text-ink-faint [.theme-paper_&]:hover:text-ink-soft">
               <X size={12} />
             </span>
           )}
-          <ChevronDown size={14} className={`text-[#475569] transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={14} className={`text-[#475569] transition-transform [.theme-paper_&]:text-ink-faint ${open ? 'rotate-180' : ''}`} />
         </span>
       </button>
 
@@ -106,20 +110,20 @@ export default function CountrySelect({ value, onChange, required, placeholder =
 
       {/* 드롭다운 */}
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-[#111A2E] border border-[#1E293B] rounded-xl shadow-xl overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-[#111A2E] border border-[#1E293B] rounded-xl shadow-xl overflow-hidden [.theme-paper_&]:bg-paper-raised [.theme-paper_&]:border-rule [.theme-paper_&]:rounded-md [.theme-paper_&]:shadow-lg">
           {/* 검색 입력 */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#1E293B]">
-            <Search size={13} className="text-[#475569] shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#1E293B] [.theme-paper_&]:border-rule">
+            <Search size={13} className="text-[#475569] shrink-0 [.theme-paper_&]:text-ink-faint" />
             <input
               ref={searchRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="국가 검색..."
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-[#475569] focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-white placeholder:text-[#475569] focus:outline-none [.theme-paper_&]:text-ink [.theme-paper_&]:placeholder:text-ink-faint"
             />
             {query && (
-              <button type="button" onClick={() => setQuery('')} className="text-[#475569] hover:text-[#94A3B8]">
+              <button type="button" onClick={() => setQuery('')} className="text-[#475569] hover:text-[#94A3B8] [.theme-paper_&]:text-ink-faint [.theme-paper_&]:hover:text-ink-soft">
                 <X size={12} />
               </button>
             )}
@@ -128,20 +132,20 @@ export default function CountrySelect({ value, onChange, required, placeholder =
           {/* 국가 목록 */}
           <ul className="max-h-52 overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-[#475569] text-center">검색 결과 없음</li>
+              <li className="px-4 py-3 text-sm text-[#475569] text-center [.theme-paper_&]:text-ink-faint">검색 결과 없음</li>
             ) : (
               filtered.map((c) => (
                 <li key={c.code}>
                   <button
                     type="button"
                     onClick={() => handleSelect(c.code)}
-                    className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-[#1E293B] transition-colors ${
-                      c.code === value ? 'text-[#38BDF8]' : 'text-[#94A3B8] hover:text-white'
+                    className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-[#1E293B] transition-colors [.theme-paper_&]:hover:bg-paper-shade ${
+                      c.code === value ? 'text-[#38BDF8] [.theme-paper_&]:text-pen' : 'text-[#94A3B8] hover:text-white [.theme-paper_&]:text-ink-soft [.theme-paper_&]:hover:text-ink'
                     }`}
                   >
                     <span className="text-base leading-none w-6 shrink-0">{getFlag(c.code)}</span>
                     <span className="flex-1 text-left">{c.name}</span>
-                    <span className="text-xs text-[#475569] font-mono">{c.code}</span>
+                    <span className="text-xs text-[#475569] font-mono [.theme-paper_&]:text-ink-faint">{c.code}</span>
                   </button>
                 </li>
               ))

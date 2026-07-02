@@ -26,18 +26,18 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
 
   return (
     <div className="flex items-center justify-between gap-3 mb-3">
-      <span className="text-xs text-[#94A3B8]">수량</span>
-      <div className="inline-flex items-center border border-[#1E293B] rounded-lg overflow-hidden">
+      <span className="text-xs text-ink-soft">수량</span>
+      <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper-raised">
         <button
           type="button"
           aria-label="수량 줄이기"
           disabled={value <= 1}
           onClick={() => onChange(clamp(value - 1))}
-          className="px-2.5 py-1.5 text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <Minus size={12} />
         </button>
-        <span className="min-w-[2rem] text-center text-sm font-semibold text-white tabular-nums select-none">
+        <span className="min-w-[2rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
           {value}
         </span>
         <button
@@ -45,7 +45,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
           aria-label="수량 늘리기"
           disabled={value >= max}
           onClick={() => onChange(clamp(value + 1))}
-          className="px-2.5 py-1.5 text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <Plus size={12} />
         </button>

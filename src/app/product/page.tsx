@@ -65,27 +65,27 @@ export default async function ProductPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#0B1120]">
-        <section className="relative pt-36 pb-32 px-6">
+      <main className="theme-paper min-h-screen bg-paper text-ink">
+        <section className="relative pt-10 sm:pt-14 pb-24 px-4 sm:px-6">
           {/* Glow */}
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(56,189,248,0.05) 0%, transparent 70%)',
+                'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(29,63,176,0.04) 0%, transparent 70%)',
             }}
           />
 
           <div className="relative z-10 max-w-7xl mx-auto">
             {/* 헤더 */}
             <div className="text-center mb-16">
-              <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
+              <p className="text-pen text-sm font-semibold tracking-widest uppercase mb-4">
                 제품 소개
               </p>
-              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+              <h1 className="text-4xl sm:text-5xl font-serif font-black text-ink mb-4">
                 나를 위해 일하는 소프트웨어
               </h1>
-              <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
+              <p className="text-ink-soft text-lg max-w-xl mx-auto">
                 우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고,
                 실질적인 결과를 전하도록 설계되었습니다.
               </p>

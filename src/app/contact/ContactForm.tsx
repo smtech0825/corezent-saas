@@ -111,8 +111,8 @@ export default function ContactForm() {
 
       {/* 제목 */}
       <div>
-        <label htmlFor="contact-subject" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          제목 <span className="text-red-400">*</span>
+        <label htmlFor="contact-subject" className="block text-sm font-medium text-ink mb-1.5">
+          제목 <span className="text-seal">*</span>
         </label>
         <input
           id="contact-subject"
@@ -122,14 +122,14 @@ export default function ContactForm() {
           maxLength={200}
           required
           placeholder="어떤 내용인가요?"
-          className="w-full px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B] text-white text-sm placeholder-[#475569] focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/30 transition-colors"
+          className="w-full px-4 py-3 rounded-md bg-paper-raised border border-rule text-ink text-sm placeholder-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
         />
       </div>
 
       {/* 이메일 */}
       <div>
-        <label htmlFor="contact-email" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          이메일 <span className="text-red-400">*</span>
+        <label htmlFor="contact-email" className="block text-sm font-medium text-ink mb-1.5">
+          이메일 <span className="text-seal">*</span>
         </label>
         <input
           id="contact-email"
@@ -138,14 +138,14 @@ export default function ContactForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
           placeholder="you@example.com"
-          className="w-full px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B] text-white text-sm placeholder-[#475569] focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/30 transition-colors"
+          className="w-full px-4 py-3 rounded-md bg-paper-raised border border-rule text-ink text-sm placeholder-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
         />
       </div>
 
       {/* 내용 */}
       <div>
-        <label htmlFor="contact-message" className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          내용 <span className="text-red-400">*</span>
+        <label htmlFor="contact-message" className="block text-sm font-medium text-ink mb-1.5">
+          내용 <span className="text-seal">*</span>
         </label>
         <textarea
           id="contact-message"
@@ -155,15 +155,15 @@ export default function ContactForm() {
           required
           rows={6}
           placeholder="어떤 도움이 필요하신지 알려주세요..."
-          className="w-full px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B] text-white text-sm placeholder-[#475569] focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/30 transition-colors resize-y min-h-[120px]"
+          className="w-full px-4 py-3 rounded-md bg-paper-raised border border-rule text-ink text-sm placeholder-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors resize-y min-h-[120px]"
         />
-        <p className="text-right text-xs text-[#475569] mt-1">{message.length}/5,000</p>
+        <p className="text-right text-xs text-ink-faint mt-1">{message.length}/5,000</p>
       </div>
 
       {/* 첨부파일 — 드래그 & 드롭 */}
       <div>
-        <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
-          첨부파일 <span className="text-[#475569] font-normal">(선택, 최대 5MB)</span>
+        <label className="block text-sm font-medium text-ink mb-1.5">
+          첨부파일 <span className="text-ink-faint font-normal">(선택, 최대 5MB)</span>
         </label>
 
         {!file ? (
@@ -172,17 +172,17 @@ export default function ContactForm() {
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`relative cursor-pointer rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
+            className={`relative cursor-pointer rounded-md border-2 border-dashed px-6 py-8 text-center transition-colors ${
               dragging
-                ? 'border-[#38BDF8] bg-[#38BDF8]/5'
-                : 'border-[#1E293B] hover:border-[#38BDF8]/40 bg-[#0B1120]'
+                ? 'border-pen bg-pen/5'
+                : 'border-rule hover:border-pen/40 bg-paper-shade/50'
             }`}
           >
-            <Upload size={24} className="mx-auto text-[#475569] mb-2" />
-            <p className="text-sm text-[#94A3B8]">
-              파일을 여기에 끌어다 놓거나 <span className="text-[#38BDF8] underline underline-offset-2">찾아보기</span>
+            <Upload size={24} className="mx-auto text-ink-faint mb-2" />
+            <p className="text-sm text-ink-soft">
+              파일을 여기에 끌어다 놓거나 <span className="text-pen underline underline-offset-2">찾아보기</span>
             </p>
-            <p className="text-xs text-[#475569] mt-1">최대 5MB</p>
+            <p className="text-xs text-ink-faint mt-1">최대 5MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -191,18 +191,18 @@ export default function ContactForm() {
             />
           </div>
         ) : (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0B1120] border border-[#1E293B]">
-            <div className="w-9 h-9 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center shrink-0">
-              <FileText size={16} className="text-[#38BDF8]" />
+          <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-paper border border-rule">
+            <div className="w-9 h-9 rounded-md bg-pen/10 border border-pen/20 flex items-center justify-center shrink-0">
+              <FileText size={16} className="text-pen" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{file.name}</p>
-              <p className="text-xs text-[#475569]">{formatFileSize(file.size)}</p>
+              <p className="text-sm text-ink truncate">{file.name}</p>
+              <p className="text-xs text-ink-faint">{formatFileSize(file.size)}</p>
             </div>
             <button
               type="button"
               onClick={() => setFile(null)}
-              className="text-[#475569] hover:text-red-400 transition-colors p-1"
+              className="text-ink-faint hover:text-seal transition-colors p-1"
             >
               <X size={16} />
             </button>
@@ -214,7 +214,7 @@ export default function ContactForm() {
       <button
         type="submit"
         disabled={sending}
-        className="w-full flex items-center justify-center gap-2 bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] text-sm font-semibold px-6 py-3.5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 bg-pen hover:bg-pen-dark text-white text-sm font-semibold px-6 py-3.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-pen/40"
       >
         {sending ? (
           <>

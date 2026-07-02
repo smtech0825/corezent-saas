@@ -12,7 +12,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
-import { CATEGORY_BADGE, CATEGORY_LABELS, PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 
 const DESC_CHAR_LIMIT = 150
@@ -62,7 +62,7 @@ export default function ProductList({ products }: Props) {
 
   if (products.length === 0) {
     return (
-      <p className="text-center text-[#94A3B8] py-20">
+      <p className="text-center text-ink-soft py-20">
         아직 등록된 제품이 없습니다. 곧 다시 확인해 주세요!
       </p>
     )
@@ -82,8 +82,8 @@ export default function ProductList({ products }: Props) {
                 onClick={() => setActiveCategory(cat)}
                 className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
                   active
-                    ? 'bg-[#38BDF8] text-[#0B1120] border-[#38BDF8]'
-                    : 'text-[#94A3B8] border-[#1E293B] hover:text-white hover:border-[#38BDF8]/40'
+                    ? 'bg-pen text-white border-pen'
+                    : 'text-ink-soft border-rule hover:text-ink hover:border-pen/40'
                 }`}
               >
                 {cat === 'all' ? '전체' : cat}
@@ -102,17 +102,17 @@ export default function ProductList({ products }: Props) {
           return (
             <div
               key={product.id}
-              className={`relative flex flex-col border rounded-2xl transition-all duration-300 group ${
+              className={`relative flex flex-col border rounded-lg transition-all duration-300 group ${
                 product.is_active
-                  ? 'border-[#38BDF8]/20 bg-[#111A2E] hover:border-[#38BDF8]/40'
-                  : 'border-[#1E293B] bg-[#0E1525] opacity-60'
+                  ? 'border-rule bg-paper-raised shadow-[0_1px_2px_rgba(35,39,46,0.05)] hover:border-ink-faint hover:shadow-[0_6px_20px_rgba(35,39,46,0.08)]'
+                  : 'border-dashed border-rule bg-paper-shade/50 opacity-70'
               }`}
             >
               {/* 코너 글로우 */}
               {product.is_active && (
                 <div
-                  className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.08]"
-                  style={{ background: 'radial-gradient(circle, #38BDF8, transparent)' }}
+                  className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.05]"
+                  style={{ background: 'radial-gradient(circle, #1D3FB0, transparent)' }}
                 />
               )}
 
@@ -123,10 +123,10 @@ export default function ProductList({ products }: Props) {
                     const text = product.badgeText ?? (product.is_active ? null : '출시 예정')
                     if (!text) return <div />
                     const colorCls = product.is_active
-                      ? (PRODUCT_BADGE_COLORS[product.badgeColor] ?? PRODUCT_BADGE_COLORS.blue)
-                      : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                      ? (PRODUCT_BADGE_COLORS_PAPER[product.badgeColor] ?? PRODUCT_BADGE_COLORS_PAPER.blue)
+                      : 'text-ink-soft bg-paper-shade border-rule'
                     return (
-                      <div className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold ${colorCls}`}>
+                      <div className={`inline-flex items-center gap-1.5 border rounded-md px-2.5 py-1 text-xs font-semibold ${colorCls}`}>
                         {product.is_active ? <Sparkles size={11} /> : <Clock size={11} />}
                         {text}
                       </div>
@@ -134,7 +134,7 @@ export default function ProductList({ products }: Props) {
                   })()}
 
                   {product.logo_url && (
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0">
                       <Image
                         src={product.logo_url}
                         alt={`${product.name} logo`}
@@ -147,33 +147,33 @@ export default function ProductList({ products }: Props) {
 
                 {/* 이름 + 카테고리 배지 & 태그라인 */}
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className="text-xl font-bold text-white">{product.name}</h3>
+                  <h3 className="text-xl font-bold text-ink">{product.name}</h3>
                   {product.category && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[product.category] ?? 'bg-[#1E293B] text-[#94A3B8] border-[#1E293B]'}`}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[product.category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
                       {CATEGORY_LABELS[product.category] ?? product.category}
                     </span>
                   )}
                   {product.category_group && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-[#1E293B] text-[#94A3B8] border-[#1E293B]">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-paper-shade text-ink-soft border-rule">
                       {product.category_group}
                     </span>
                   )}
                 </div>
                 {product.tagline && (
-                  <p className="text-[#38BDF8] text-sm font-medium mb-4">{product.tagline}</p>
+                  <p className="text-pen text-sm font-medium mb-4">{product.tagline}</p>
                 )}
 
                 {/* 설명 — 항상 3줄 클램프, "more" 클릭 시 하단 패널 열기 */}
                 {desc && (
                   <div className="relative mb-4">
-                    <p className="text-[#94A3B8] text-sm leading-relaxed line-clamp-3">
+                    <p className="text-ink-soft text-sm leading-relaxed line-clamp-3">
                       {desc}
                     </p>
                     {isLongDesc && (
                       <Link
                         href={`/product/${product.slug}`}
-                        className="absolute bottom-0 right-0 text-[#38BDF8] hover:text-white transition-colors font-medium text-sm"
-                        style={{ background: 'linear-gradient(to right, transparent, #111A2E 30%)', paddingLeft: '1.5rem' }}
+                        className="absolute bottom-0 right-0 text-pen hover:text-pen-dark transition-colors font-medium text-sm"
+                        style={{ background: 'linear-gradient(to right, transparent, #FFFFFF 30%)', paddingLeft: '1.5rem' }}
                       >
                         더보기
                       </Link>
@@ -187,7 +187,7 @@ export default function ProductList({ products }: Props) {
                     {product.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="text-xs text-[#94A3B8] border border-[#1E293B] rounded-full px-3 py-1"
+                        className="text-xs text-ink-soft border border-rule rounded-full px-3 py-1"
                       >
                         {tag}
                       </span>
@@ -200,18 +200,18 @@ export default function ProductList({ products }: Props) {
                   <div className="mt-auto mb-4">
                     {product.monthlyPrice != null && (
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl font-bold text-white">
+                        <span className="text-2xl font-bold text-ink">
                           {formatPrice(product.monthlyPrice)}
-                          <span className="text-sm text-[#94A3B8] font-normal">/월</span>
+                          <span className="text-sm text-ink-soft font-normal">/월</span>
                         </span>
-                        <span className="text-xs text-[#475569]">
+                        <span className="text-xs text-ink-faint">
                           VAT 포함{product.annualPrice != null ? ` · 또는 ${formatPrice(product.annualPrice)}/년` : ''}
                         </span>
                       </div>
                     )}
                     <Link
                       href={`/product/${product.slug}`}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-all duration-200"
+                      className="w-full inline-flex items-center justify-center gap-2 bg-pen text-white font-semibold py-3 rounded-md text-sm hover:bg-pen-dark transition-all duration-200"
                     >
                       <Eye size={14} />
                       자세히 보기
@@ -219,7 +219,7 @@ export default function ProductList({ products }: Props) {
                   </div>
                 ) : (
                   <div className="mt-auto mb-4">
-                    <span className="w-full inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#475569] font-medium py-3 rounded-xl text-sm cursor-not-allowed">
+                    <span className="w-full inline-flex items-center justify-center gap-2 border border-dashed border-rule text-ink-faint font-medium py-3 rounded-md text-sm cursor-not-allowed">
                       출시 알림 받기
                     </span>
                   </div>

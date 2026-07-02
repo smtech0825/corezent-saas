@@ -1,9 +1,10 @@
 /**
  * @컴포넌트: HowItWorksSection
- * @설명: 구매 및 사용 흐름 단계 설명 섹션 — DB 데이터 우선, 없으면 기본값 사용
+ * @설명: 도입 절차 — 공문 표(表) 스타일. 순서·단계·내용 3열.
+ *        DB(front_steps) 데이터 우선, 없으면 GenieWork 기본값.
  */
 
-import DynamicIcon from '@/components/DynamicIcon'
+import Section, { SectionHeader } from '@/components/ui/Section'
 
 export interface DbStep {
   id: string
@@ -16,98 +17,40 @@ interface Props {
   steps?: DbStep[]
 }
 
-const defaultSteps: (DbStep & { number: string })[] = [
-  {
-    id: 'default-1',
-    number: '01',
-    icon: 'ShoppingCart',
-    title: '소프트웨어를 선택하세요',
-    description:
-      '제품 라인업을 둘러보고 필요에 맞는 도구를 고르세요. 월간·연간 중 선택할 수 있는 간단하고 투명한 요금제입니다.',
-  },
-  {
-    id: 'default-2',
-    number: '02',
-    icon: 'Zap',
-    title: '즉시 접근 & 활성화',
-    description:
-      '결제를 완료하면 바로 사용할 수 있습니다. 라이선스가 즉시 활성화되어 기다림도, 번거로움도 없습니다.',
-  },
-  {
-    id: 'default-3',
-    number: '03',
-    icon: 'Headphones',
-    title: '완벽한 지원과 함께 사용하세요',
-    description:
-      '상세한 매뉴얼과 전담 지원으로 시작하세요. 모든 제품을 최대한 활용하실 수 있도록 도와드립니다.',
-  },
+const defaultSteps: DbStep[] = [
+  { id: 'default-1', icon: null, title: '다운로드', description: 'corezent.com에서 설치 파일을 내려받습니다.' },
+  { id: 'default-2', icon: null, title: '설치', description: '담당자 PC에 설치합니다.' },
+  { id: 'default-3', icon: null, title: '라이선스 인증', description: '구매 후 발급된 키를 입력하면 해당 PC가 자동 등록됩니다.' },
+  { id: 'default-4', icon: null, title: '사용 시작', description: '문서 작성·검색을 바로 사용합니다. PC 교체 시 대시보드에서 재인증합니다.' },
 ]
 
 export default function HowItWorksSection({ steps }: Props) {
-  const items =
-    steps && steps.length > 0
-      ? steps.map((s, i) => ({
-          ...s,
-          number: String(i + 1).padStart(2, '0'),
-        }))
-      : defaultSteps
+  const items = steps && steps.length > 0 ? steps : defaultSteps
 
   return (
-    <section id="how-it-works" className="relative py-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-20">
-          <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            이용 방법
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            처음부터 끝까지 간단하게
-          </h2>
-          <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            복잡한 설정도, 숨겨진 절차도 없습니다. 고르고, 결제하고, 바로
-            소프트웨어를 사용하세요.
-          </p>
-        </div>
+    <Section id="how-it-works">
+      <SectionHeader label="도입 절차" title="다운로드에서 사용까지, 네 단계" />
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map((step, idx) => (
-            <div
-              key={step.id}
-              className="relative flex flex-col items-center text-center p-8 border border-[#1E293B] bg-[#111A2E] rounded-2xl hover:border-[#38BDF8]/20 transition-all duration-300 group"
-            >
-              {/* Connector arrow (desktop only) */}
-              {idx < items.length - 1 && (
-                <div className="hidden md:flex absolute top-14 -right-4 z-10 w-8 h-8 items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M4 10h12M11 5l5 5-5 5"
-                      stroke="#1E293B"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              )}
-
-              {/* Step number */}
-              <span className="text-xs font-mono text-[#38BDF8]/40 mb-4 font-bold tracking-widest">
-                {step.number}
-              </span>
-
-              {/* Icon */}
-              <div className="w-14 h-14 rounded-2xl bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center mb-6 group-hover:bg-[#38BDF8]/15 transition-colors">
-                <DynamicIcon name={step.icon ?? 'Zap'} size={24} className="text-[#38BDF8]" />
-              </div>
-
-              {/* Content */}
-              <h3 className="text-lg font-semibold text-white mb-3">{step.title}</h3>
-              <p className="text-[#94A3B8] text-sm leading-relaxed">{step.description}</p>
-            </div>
-          ))}
-        </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm sm:text-base">
+          <thead>
+            <tr>
+              <th className="border border-ink bg-paper-shade px-3 py-2.5 text-center font-sans font-bold text-[13px] tracking-wider w-14">순서</th>
+              <th className="border border-ink bg-paper-shade px-4 py-2.5 text-left font-sans font-bold text-[13px] tracking-wider w-36">단계</th>
+              <th className="border border-ink bg-paper-shade px-4 py-2.5 text-left font-sans font-bold text-[13px] tracking-wider">내용</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((step, idx) => (
+              <tr key={step.id}>
+                <td className="border border-ink px-3 py-3 text-center font-mono font-semibold text-ink">{idx + 1}</td>
+                <td className="border border-ink px-4 py-3 font-serif font-bold text-ink">{step.title}</td>
+                <td className="border border-ink px-4 py-3 text-ink-soft break-keep">{step.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </section>
+    </Section>
   )
 }

@@ -103,7 +103,7 @@ export default async function CookiesPage() {
             href="https://tools.google.com/dlpage/gaoptout"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#38BDF8] hover:underline"
+            className="text-pen hover:underline"
           >
             Google Analytics 옵트아웃 페이지
           </a>

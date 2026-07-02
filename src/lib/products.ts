@@ -56,6 +56,22 @@ export const BADGE_STYLES: Record<string, string> = {
   'Best Value': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
 }
 
+/** 페이퍼(공문서) 테마 상품 뱃지 색상 — 퍼블릭 라이트 페이지 전용 */
+export const PRODUCT_BADGE_COLORS_PAPER: Record<string, string> = {
+  blue:   'text-pen bg-pen/5 border-pen/40',
+  green:  'text-emerald-700 bg-emerald-50 border-emerald-300',
+  yellow: 'text-amber-700 bg-amber-50 border-amber-300',
+}
+
+/** 페이퍼 테마 카테고리 뱃지 — 퍼블릭 라이트 페이지 전용 */
+export const CATEGORY_BADGE_PAPER: Record<string, string> = {
+  desktop:            'bg-violet-50 text-violet-700 border-violet-300',
+  'web-tool':         'bg-pen/5 text-pen border-pen/40',
+  web:                'bg-pen/5 text-pen border-pen/40',
+  'chrome-extension': 'bg-amber-50 text-amber-700 border-amber-300',
+  mobile:             'bg-emerald-50 text-emerald-700 border-emerald-300',
+}
+
 /** 카테고리 배지 색상 — admin/products와 동일한 팔레트 */
 export const CATEGORY_BADGE: Record<string, string> = {
   desktop:            'bg-violet-400/10 text-violet-400 border-violet-400/20',

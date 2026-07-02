@@ -17,18 +17,18 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans">
+    <div className="theme-paper min-h-screen bg-paper text-ink font-sans">
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-28 pb-4 px-4 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#38BDF8]/10 border border-[#38BDF8]/20 mb-6">
-          <Mail size={26} className="text-[#38BDF8]" />
+      <section className="pt-10 sm:pt-14 pb-4 px-4 sm:px-6 text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">
+          <Mail size={26} className="text-pen" />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+        <h1 className="text-3xl sm:text-4xl font-serif font-black text-ink mb-3">
           문의하기
         </h1>
-        <p className="text-[#94A3B8] text-sm sm:text-base max-w-md mx-auto">
+        <p className="text-ink-soft text-sm sm:text-base max-w-md mx-auto">
           질문, 피드백, 제휴 문의 무엇이든 환영합니다.<br />
           아래 양식을 작성해 주시면 빠르게 답변드리겠습니다.
         </p>
@@ -36,7 +36,7 @@ export default function ContactPage() {
 
       {/* 폼 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
-        <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl p-6 sm:p-8">
+        <div className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 shadow-[0_1px_2px_rgba(35,39,46,0.05)]">
           <ContactFormWrapper />
         </div>
       </section>

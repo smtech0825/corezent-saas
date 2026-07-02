@@ -1,9 +1,11 @@
 /**
  * @컴포넌트: FeaturesSection
- * @설명: CoreZent 플랫폼 핵심 특징 벤토 그리드 섹션 — DB 데이터 우선, 없으면 기본값 사용
+ * @설명: 핵심 특징 — 공문 "주요 기능" 항(項) 스타일. 가·나·다 표기 목록.
+ *        DB(front_features) 데이터 우선, 없으면 GenieWork 기본값.
  */
 
 import DynamicIcon from '@/components/DynamicIcon'
+import Section, { SectionHeader } from '@/components/ui/Section'
 
 export interface DbFeature {
   id: string
@@ -17,112 +19,84 @@ interface Props {
   features?: DbFeature[]
 }
 
-const defaultFeatures = [
+const defaultFeatures: DbFeature[] = [
   {
     id: 'default-1',
-    icon: 'Code2',
-    tag: '자체 개발',
-    title: '개발자가 사용자를 위해 직접 제작',
+    icon: 'FileText',
+    tag: '작성',
+    title: '초안 자동 작성',
     description:
-      '모든 제품은 외주가 아닌 자체 팀이 직접 만들고 관리합니다. 우리가 파는 것을 우리가 직접 쓰기 때문에 품질이 언제나 최우선입니다.',
+      '제목과 개요만 입력하면 본문 생성 엔진이 형식을 갖춘 계획서·보고서·공문 초안을 작성합니다. 담당자는 검토와 수정에 집중하면 됩니다.',
   },
   {
     id: 'default-2',
-    icon: 'Zap',
-    tag: '즉시',
-    title: '몇 초 만에 라이선스 활성화',
+    icon: 'Search',
+    tag: '검색',
+    title: '빠른 자료 검색',
     description:
-      '결제하면 즉시 사용할 수 있습니다. 라이선스가 곧바로 발급·활성화되어 대기 시간이 없습니다.',
+      '홈 화면 검색으로 문서 작성에 필요한 근거와 표현을 바로 찾습니다. 경량 엔진이라 응답이 빠릅니다.',
   },
   {
     id: 'default-3',
-    icon: 'BookOpen',
-    tag: '문서',
-    title: '상세한 매뉴얼 & 가이드',
+    icon: 'ShieldCheck',
+    tag: '보안',
+    title: '설치형 보안',
     description:
-      '모든 제품에는 빠르게 시작할 수 있도록 포괄적인 문서, 튜토리얼, 단계별 가이드가 함께 제공됩니다.',
+      '문서 파일을 외부 서버에 올리지 않는 PC 설치형입니다. 감사와 개인정보 부담을 덜 수 있습니다.',
   },
   {
     id: 'default-4',
-    icon: 'CreditCard',
-    tag: '요금제',
-    title: '유연한 플랜, 예상치 못한 비용 없음',
+    icon: 'MonitorCheck',
+    tag: '라이선스',
+    title: 'PC 단위 라이선스',
     description:
-      '월간 또는 연간 결제를 선택하세요. 명확한 요금, 숨겨진 비용 없음, 언제든 간편하게 해지할 수 있습니다.',
-  },
-  {
-    id: 'default-5',
-    icon: 'Shield',
-    tag: '보안',
-    title: '안전한 결제 & 데이터 보호',
-    description:
-      '안전한 결제, 암호화된 라이선스 키, 그리고 여러분의 데이터는 절대 제3자와 공유하거나 판매하지 않습니다.',
-  },
-  {
-    id: 'default-6',
-    icon: 'Headphones',
-    tag: '지원',
-    title: '사람이 직접 응대하는 지원',
-    description:
-      '제품을 만든 개발자에게 직접 도움을 받으세요. 빠르고, 정확하며, 정말로 도움이 됩니다.',
+      '라이선스 키 1개로 지정된 PC 수만큼 인증하며, PC 교체 시 재인증(reset)을 지원합니다.',
   },
 ]
 
+/** 가나다라 항 표기 */
+const HANGUL_ORDER = ['가', '나', '다', '라', '마', '바', '사', '아']
+
 export default function FeaturesSection({ features }: Props) {
-  const items =
-    features && features.length > 0
-      ? features.map((f) => ({ id: f.id, icon: f.icon, tag: f.tag ?? '', title: f.title, description: f.description }))
-      : defaultFeatures
+  const items = features && features.length > 0 ? features : defaultFeatures
 
   return (
-    <section id="features" className="relative py-32 px-6">
-      {/* Bottom glow */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(56,189,248,0.05) 0%, transparent 70%)',
-        }}
-      />
+    <Section id="features" tone="shade">
+      <SectionHeader label="주요 기능" title="문서 업무를 이렇게 줄입니다" />
 
-      <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <p className="text-[#38BDF8] text-sm font-semibold tracking-widest uppercase mb-4">
-            CoreZent를 선택하는 이유
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            믿을 수 있는 소프트웨어
-          </h2>
-          <p className="text-[#94A3B8] text-lg max-w-xl mx-auto">
-            우리는 출시하는 모든 제품에 자부심을 갖습니다 — 정성껏 만들고,
-            책임감 있게 지원합니다.
-          </p>
-        </div>
+      <ol className="border-t border-rule">
+        {items.map((feature, idx) => (
+          <li
+            key={feature.id}
+            className="flex gap-4 sm:gap-6 border-b border-rule py-6 sm:py-7 items-start"
+          >
+            {/* 항 표기 */}
+            <span className="font-serif font-black text-lg text-ink shrink-0 w-6 pt-1.5">
+              {HANGUL_ORDER[idx] ? `${HANGUL_ORDER[idx]}.` : `${idx + 1}.`}
+            </span>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((feature) => (
-            <div
-              key={feature.id}
-              className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 hover:border-[#38BDF8]/20 hover:bg-[#0F1929] transition-all duration-300 group"
-            >
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#0B1120] border border-[#1E293B] flex items-center justify-center group-hover:border-[#38BDF8]/25 transition-colors">
-                  <DynamicIcon name={feature.icon ?? 'Zap'} size={18} className="text-[#38BDF8]" />
-                </div>
+            {/* 아이콘 */}
+            <span className="w-11 h-11 rounded-md bg-paper-raised border border-rule flex items-center justify-center shrink-0">
+              <DynamicIcon name={feature.icon ?? 'FileText'} size={20} className="text-pen" />
+            </span>
+
+            {/* 내용 */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                <h3 className="font-serif font-bold text-lg text-ink">{feature.title}</h3>
                 {feature.tag && (
-                  <span className="text-xs text-[#475569] font-mono uppercase tracking-wider">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-ink-faint">
                     {feature.tag}
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
-              <p className="text-sm text-[#94A3B8] leading-relaxed">{feature.description}</p>
+              <p className="text-sm sm:text-base text-ink-soft leading-relaxed break-keep">
+                {feature.description}
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
+          </li>
+        ))}
+      </ol>
+    </Section>
   )
 }

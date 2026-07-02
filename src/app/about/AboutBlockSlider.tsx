@@ -19,7 +19,7 @@ export default function AboutBlockSlider({ images }: Props) {
   return (
     <div className="relative">
       {/* 이미지 */}
-      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-[#1E293B]">
+      <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-rule">
         <img
           src={images[current]}
           alt={`Slide ${current + 1}`}
@@ -36,8 +36,8 @@ export default function AboutBlockSlider({ images }: Props) {
               onClick={() => setCurrent(idx)}
               className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
                 idx === current
-                  ? 'bg-[#38BDF8] scale-110'
-                  : 'bg-[#1E293B] hover:bg-[#475569]'
+                  ? 'bg-pen scale-110'
+                  : 'bg-rule hover:bg-ink-faint'
               }`}
             />
           ))}

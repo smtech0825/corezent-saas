@@ -11,7 +11,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Sparkles } from 'lucide-react'
-import { PRODUCT_BADGE_COLORS } from '@/lib/products'
+import { PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import QuantityStepper from '@/components/common/QuantityStepper'
@@ -91,18 +91,18 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
   )
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-[#1E293B] bg-[#111A2E] p-8 hover:border-[#38BDF8]/30 transition-all duration-300">
+    <div className="group relative flex flex-col rounded-lg border border-rule bg-paper-raised p-8 shadow-[0_1px_2px_rgba(35,39,46,0.05)] hover:border-ink-faint hover:shadow-[0_6px_20px_rgba(35,39,46,0.08)] transition-all duration-300">
       {/* 호버 글로우 */}
       <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(56,189,248,0.06), transparent)' }}
+        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(29,63,176,0.04), transparent)' }}
       />
 
       <div className="relative z-10 flex flex-col flex-1">
         {/* 뱃지 (선택 조합 기준) */}
         {selected.badgeText && (
           <div className="mb-4">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border ${PRODUCT_BADGE_COLORS[selected.badgeColor] ?? PRODUCT_BADGE_COLORS.blue}`}>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${PRODUCT_BADGE_COLORS_PAPER[selected.badgeColor] ?? PRODUCT_BADGE_COLORS_PAPER.blue}`}>
               <Sparkles size={11} />
               {selected.badgeText}
             </span>
@@ -110,17 +110,17 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
         )}
 
         {/* 제품명 (선택 조합) */}
-        <h3 className="text-2xl font-bold text-white mb-2">{selected.name}</h3>
-        <p className="text-sm text-[#94A3B8] leading-relaxed mb-6">{selected.tagline}</p>
+        <h3 className="text-2xl font-bold text-ink mb-2">{selected.name}</h3>
+        <p className="text-sm text-ink-soft leading-relaxed mb-6">{selected.tagline}</p>
 
         {/* 옵션 드롭다운 */}
         <div className="space-y-3 mb-6">
           <div>
-            <label className="block text-xs text-[#94A3B8] mb-1.5">{selected.axis1Name ?? '옵션'}</label>
+            <label className="block text-xs text-ink-soft mb-1.5">{selected.axis1Name ?? '옵션'}</label>
             <select
               value={a1}
               onChange={(e) => changeA1(e.target.value)}
-              className="w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#38BDF8]/50 cursor-pointer"
+              className="w-full bg-paper-raised border border-rule text-ink text-sm rounded-md px-3 py-2.5 focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 cursor-pointer"
             >
               {axis1Options.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
@@ -130,11 +130,11 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
 
           {hasAxis2 && (
             <div>
-              <label className="block text-xs text-[#94A3B8] mb-1.5">{selected.axis2Name ?? '옵션'}</label>
+              <label className="block text-xs text-ink-soft mb-1.5">{selected.axis2Name ?? '옵션'}</label>
               <select
                 value={a2}
                 onChange={(e) => setA2(e.target.value)}
-                className="w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#38BDF8]/50 cursor-pointer"
+                className="w-full bg-paper-raised border border-rule text-ink text-sm rounded-md px-3 py-2.5 focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 cursor-pointer"
               >
                 {axis2Options.map((opt) => (
                   <option key={opt} value={opt} disabled={!validA2.has(opt)}>
@@ -152,10 +152,10 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
         {/* 가격 — 조합 단가 × 수량 즉시 갱신 */}
         <div className="mb-6">
           <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-bold text-white">{formatPrice(displayPrice)}</span>
-            {selected.priceSuffix && <span className="text-[#94A3B8] text-base">{selected.priceSuffix}</span>}
+            <span className="text-4xl font-bold text-ink">{formatPrice(displayPrice)}</span>
+            {selected.priceSuffix && <span className="text-ink-soft text-base">{selected.priceSuffix}</span>}
           </div>
-          <p className="text-xs text-[#475569] mt-1.5">
+          <p className="text-xs text-ink-faint mt-1.5">
             {qty > 1 ? `${formatPrice(selected.unitPrice)}${selected.priceSuffix} × ${qty} · ` : ''}VAT 포함
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
         <Link
           href={userId ? checkoutUrl : '/auth/register'}
           onClick={() => onCheckout?.(selected, qty)}
-          className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold mb-8 bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200"
+          className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold mb-8 bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
         >
           시작하기
           <ArrowRight size={14} />
@@ -180,9 +180,9 @@ export default function OptionProductCard({ products, userId, affiliateRef, utmD
                 : [feature, null]
               return (
                 <li key={feature} className="flex items-start gap-3">
-                  <Check size={15} className="text-[#38BDF8] mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-[#94A3B8] leading-relaxed">
-                    {desc ? (<><strong className="text-[#F1F5F9]">{title}:</strong> {desc}</>) : title}
+                  <Check size={15} className="text-pen mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-ink-soft leading-relaxed">
+                    {desc ? (<><strong className="text-ink">{title}:</strong> {desc}</>) : title}
                   </span>
                 </li>
               )

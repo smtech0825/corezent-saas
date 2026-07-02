@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function ActivatePage() {
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col">
+    <div className="theme-paper min-h-screen bg-paper font-sans text-ink flex flex-col">
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 py-24">
         <ActivateClient />
