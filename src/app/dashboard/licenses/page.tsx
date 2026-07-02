@@ -137,18 +137,21 @@ export default async function LicensesPage({
                     <LicenseCopyButton serialKey={lic.serial_key} />
                   </div>
 
-                  {/* 제품명 */}
-                  <div>
+                  {/* 제품명 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}
+                  <div className="flex justify-between md:block">
+                    <span className="text-xs text-[#475569] md:hidden">제품</span>
                     <span className="text-sm text-[#94A3B8]">{lic.products?.name ?? '—'}</span>
                   </div>
 
                   {/* 상태 */}
-                  <div>
+                  <div className="flex justify-between items-center md:block">
+                    <span className="text-xs text-[#475569] md:hidden">상태</span>
                     <LicenseStatusBadge status={lic.status} />
                   </div>
 
                   {/* Period */}
-                  <div>
+                  <div className="flex justify-between items-center md:block">
+                    <span className="text-xs text-[#475569] md:hidden">주기</span>
                     {period ? (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                         period === 'annual'
@@ -163,7 +166,8 @@ export default async function LicensesPage({
                   </div>
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
-                  <div>
+                  <div className="flex justify-between items-center md:block">
+                    <span className="text-xs text-[#475569] md:hidden">만료일</span>
                     {lic.status === 'expired' ? (
                       <span className="text-sm text-[#94A3B8]">만료</span>
                     ) : lic.status === 'revoked' || lic.status === 'cancelled' ? (
