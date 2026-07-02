@@ -13,6 +13,7 @@ import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { PRODUCT_BADGE_COLORS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import QuantityStepper from '@/components/common/QuantityStepper'
 
 export interface PricingSectionProduct {
   name: string
@@ -44,6 +45,9 @@ interface CardProps {
 
 /** 개별 상품 카드 */
 function PricingCard({ product, annual, userId, affiliateRef, highlighted }: CardProps) {
+  // 구매 수량 (기본 1 — 같은 상품 N개 결제, 장바구니 아님)
+  const [qty, setQty] = useState(1)
+
   const MONTHLY        = product.monthlyPrice
   const ANNUAL         = product.annualPrice
   const ANNUAL_MONTHLY = product.annualMonthlyPrice
@@ -57,7 +61,7 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
       ? product.annualCheckoutUrl
       : product.monthlyCheckoutUrl
 
-  const checkoutUrl = buildCheckoutUrl(rawUrl, userId, { affiliate_ref: affiliateRef })
+  const checkoutUrl = buildCheckoutUrl(rawUrl, userId, { affiliate_ref: affiliateRef }, qty)
 
   return (
     <div className={`relative border rounded-2xl p-8 overflow-hidden ${
@@ -110,6 +114,9 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
                 : '월간 결제'}
           {' · VAT 포함'}
         </p>
+
+        {/* 수량 선택 — 같은 상품 N개 결제 (LS quantity 파라미터로 전달) */}
+        <QuantityStepper value={qty} onChange={setQty} />
 
         {/* CTA */}
         <Link

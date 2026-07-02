@@ -16,6 +16,7 @@ import { formatPrice } from '@/lib/price'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
+import QuantityStepper from '@/components/common/QuantityStepper'
 
 // 전역 분석 도구 타입 선언
 declare global {
@@ -72,6 +73,8 @@ export default function PricingClient({ products, affiliateRef }: Props) {
   const [activeCategory, setActiveCategory] = useState('all')
   const [userId, setUserId] = useState<string | null>(null)
   const [utmData, setUtmData] = useState<UtmData | null>(null)
+  // 상품별 구매 수량 (기본 1 — 같은 상품 N개 결제, 장바구니 아님)
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
 
   // 로그인 사용자 ID + UTM 데이터 조회
   useEffect(() => {
@@ -194,7 +197,8 @@ export default function PricingClient({ products, affiliateRef }: Props) {
               const baseCheckoutUrl = isAnnualView
                 ? product.annualCheckoutUrl
                 : product.monthlyCheckoutUrl
-              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef })
+              const quantity = quantities[product.id] ?? 1
+              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef }, quantity)
 
               // 제품별 할인율
               const productSavePct = product.hasAnnualPlan && product.monthlyPrice > 0
@@ -276,11 +280,17 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                       )}
                     </div>
 
+                    {/* 수량 선택 — 같은 상품 N개 결제 (LS quantity 파라미터로 전달) */}
+                    <QuantityStepper
+                      value={quantity}
+                      onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
+                    />
+
                     {/* 구매 버튼 */}
                     <Link
                       href={userId ? checkoutUrl : '/auth/register'}
                       onClick={() => {
-                        track('initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly' })
+                        track('initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
                         window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
                       }}
                       className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold mb-8 bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] hover:shadow-[0_8px_24px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 transition-all duration-200"

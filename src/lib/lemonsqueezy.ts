@@ -32,7 +32,8 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
  * @설명: Lemon Squeezy 체크아웃 URL에 user_id·UTM·추천인(affiliate_ref)을 custom_data로 주입합니다.
  *        웹훅에서 주문을 올바른 사용자·마케팅 채널·추천인에 연결하기 위해 사용합니다.
  *        affiliate_ref는 서버에서 해석(httpOnly cz_ref·referred_by)된 값을 받아 주입 시점에 sanitize합니다.
- * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터
+ *        quantity(같은 상품 N개)는 LS 공식 `quantity` URL 파라미터로 전달 — 2 이상일 때만 부착.
+ * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터, quantity - 구매 수량(기본 1)
  * @반환값: custom_data가 포함된 체크아웃 URL
  */
 export function buildCheckoutUrl(
@@ -47,12 +48,18 @@ export function buildCheckoutUrl(
     ref?: string
     affiliate_ref?: string
   } | null,
+  quantity?: number,
 ): string {
   if (!baseUrl || baseUrl === '#') return baseUrl || '#'
   try {
     // URLSearchParams는 [] → %5B%5D 로 인코딩해 LS가 인식 못함
     // 브래킷을 그대로 유지하기 위해 문자열 직접 조합
     const url = new URL(baseUrl)
+    // 수량: 정수 2 이상일 때만 부착(1이면 기존 URL과 동일 — 회귀 없음)
+    if (quantity && Number.isFinite(quantity)) {
+      const q = Math.floor(quantity)
+      if (q >= 2) url.searchParams.set('quantity', String(q))
+    }
     if (userId)              url.searchParams.set('checkout[custom][user_id]',     userId)
     if (utm?.utm_source)     url.searchParams.set('checkout[custom][utm_source]',   utm.utm_source)
     if (utm?.utm_medium)     url.searchParams.set('checkout[custom][utm_medium]',   utm.utm_medium)
