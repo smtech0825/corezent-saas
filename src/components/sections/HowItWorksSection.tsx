@@ -31,7 +31,7 @@ export default function HowItWorksSection({ steps }: Props) {
     <Section id="how-it-works">
       <SectionHeader label="도입 절차" title="다운로드에서 사용까지, 네 단계" />
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-w-3xl mx-auto">
         <table className="w-full border-collapse text-sm sm:text-base">
           <thead>
             <tr>

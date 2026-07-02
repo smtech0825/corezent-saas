@@ -64,7 +64,7 @@ export default function FeaturesSection({ features }: Props) {
     <Section id="features" tone="shade">
       <SectionHeader label="주요 기능" title="문서 업무를 이렇게 줄입니다" />
 
-      <ol className="border-t border-rule">
+      <ol className="border-t border-rule max-w-3xl mx-auto">
         {items.map((feature, idx) => (
           <li
             key={feature.id}

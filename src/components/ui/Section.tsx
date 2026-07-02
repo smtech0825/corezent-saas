@@ -38,7 +38,7 @@ interface SectionHeaderProps {
   align?: 'left' | 'center'
 }
 
-export function SectionHeader({ label, title, sub, align = 'left' }: SectionHeaderProps) {
+export function SectionHeader({ label, title, sub, align = 'center' }: SectionHeaderProps) {
   const alignCls = align === 'center' ? 'text-center items-center' : 'text-left items-start'
   return (
     <div className={`flex flex-col ${alignCls} mb-12 sm:mb-16`}>

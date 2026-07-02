@@ -60,15 +60,19 @@ export default function HeroSection({ content }: Props) {
 
   return (
     <section id="hero" className="border-b border-rule">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 flex flex-col items-center text-center">
 
-        {/* 문서 정보 + 결재란 */}
-        <div className="flex flex-wrap items-start justify-between gap-6 mb-12 sm:mb-16 animate-fade-up">
-          <dl className="grid grid-cols-[72px_1fr] gap-y-1 text-sm">
-            <dt className="font-sans font-bold tracking-[0.2em] text-ink">문서번호</dt>
-            <dd className="font-mono text-[13px] text-ink-soft">코어젠트-{yyyy}-제{mmdd}호</dd>
-            <dt className="font-sans font-bold tracking-[0.2em] text-ink">시행일자</dt>
-            <dd className="font-mono text-[13px] text-ink-soft">{docDate}</dd>
+        {/* 문서 정보 + 결재란 — 중앙 배치 */}
+        <div className="flex flex-col items-center gap-6 mb-12 sm:mb-14 animate-fade-up">
+          <dl className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm">
+            <div className="flex items-center gap-2">
+              <dt className="font-sans font-bold tracking-[0.2em] text-ink">문서번호</dt>
+              <dd className="font-mono text-[13px] text-ink-soft">코어젠트-{yyyy}-제{mmdd}호</dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <dt className="font-sans font-bold tracking-[0.2em] text-ink">시행일자</dt>
+              <dd className="font-mono text-[13px] text-ink-soft">{docDate}</dd>
+            </div>
           </dl>
 
           {/* 결재란 — 로드 후 순서대로 서명됨 */}
@@ -99,8 +103,8 @@ export default function HeroSection({ content }: Props) {
           </div>
         </div>
 
-        {/* 제목 서식 — 양식은 공문 그대로, 크기만 파격 */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+        {/* 제목 서식 — 중앙 정렬 */}
+        <div className="flex flex-col items-center animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <p className="mb-4 font-sans text-sm font-medium text-pen">{c.badge}</p>
           <FieldLabel>제목</FieldLabel>
           <h1 className="font-serif font-black text-4xl sm:text-6xl lg:text-7xl leading-[1.18] tracking-tight text-ink break-keep">
@@ -116,13 +120,13 @@ export default function HeroSection({ content }: Props) {
         </div>
 
         {/* CTA */}
-        <div className="mt-9 flex flex-col sm:flex-row gap-3 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        <div className="mt-9 flex flex-col sm:flex-row justify-center gap-3 animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <Button href={c.cta1_href ?? '#'} size="lg">{c.cta1_text}</Button>
           <Button href={c.cta2_href ?? '#'} variant="outline" size="lg">{c.cta2_text}</Button>
         </div>
 
         {/* 신뢰 요소 */}
-        <div className="mt-8 flex flex-wrap gap-2.5 animate-fade-up" style={{ animationDelay: '0.28s' }}>
+        <div className="mt-8 flex flex-wrap justify-center gap-2.5 animate-fade-up" style={{ animationDelay: '0.28s' }}>
           {['개발자가 직접 제작', '라이선스 즉시 활성화', '간편한 요금제', '전담 고객 지원'].map((item) => (
             <span
               key={item}
@@ -134,8 +138,8 @@ export default function HeroSection({ content }: Props) {
           ))}
         </div>
 
-        {/* 초안 자동 작성 데모 */}
-        <div className="mt-14 animate-fade-up" style={{ animationDelay: '0.36s' }}>
+        {/* 초안 자동 작성 데모 — 문서는 좌측 정렬 유지(가독성), 블록만 중앙 */}
+        <div className="mt-14 w-full flex justify-center animate-fade-up" style={{ animationDelay: '0.36s' }}>
           <HeroDraftDemo />
         </div>
       </div>
