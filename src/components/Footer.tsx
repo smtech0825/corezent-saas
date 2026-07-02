@@ -49,7 +49,7 @@ export default async function Footer() {
               CoreZent
             </div>
             <p className="text-sm text-ink-soft leading-relaxed break-keep">
-              공공기관과 실무자를 위한 업무 자동화 소프트웨어를 직접 만들고 공급합니다.
+              업무를 더 쉽게 만드는 소프트웨어를 직접 만들고 판매합니다.
             </p>
           </div>
 
@@ -96,11 +96,6 @@ export default async function Footer() {
             </p>
           )}
         </div>
-
-        {/* 문서의 끝 */}
-        <p className="mt-10 text-center font-serif text-sm font-black text-ink" aria-hidden="true">
-          끝.
-        </p>
       </div>
     </footer>
   )
