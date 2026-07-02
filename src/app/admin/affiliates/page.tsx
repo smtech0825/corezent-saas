@@ -84,7 +84,7 @@ export default async function AdminAffiliatesPage() {
     <div className="p-6 space-y-8 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold text-white">제휴 관리</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
+        <p className="text-sm text-[#E2E8F0] mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
       </div>
 
       {/* 설정 편집기 */}
@@ -112,8 +112,8 @@ export default async function AdminAffiliatesPage() {
 
       {/* 검토 필요 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-3">
-          검토 필요{flagged.length > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({flagged.length}건)</span>}
+        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-3">
+          검토 필요{flagged.length > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">({flagged.length}건)</span>}
         </h2>
         {flagged.length > 0 ? (
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl divide-y divide-[#1E293B]/60">
@@ -121,21 +121,21 @@ export default async function AdminAffiliatesPage() {
               <div key={f.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div className="min-w-0">
                   <p className="text-sm text-white">{f.referrerName} · <span className="font-mono text-red-400">{usd(f.amountCents)}</span></p>
-                  <p className="text-xs text-[#475569] truncate">{f.reason}</p>
+                  <p className="text-xs text-[#94A3B8] truncate">{f.reason}</p>
                 </div>
                 <ResolveButton commissionId={f.id} />
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#475569] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">검토할 항목이 없습니다.</p>
+          <p className="text-sm text-[#94A3B8] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">검토할 항목이 없습니다.</p>
         )}
       </section>
 
       {/* 제휴자 목록 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-3">
-          제휴자{affiliates.length > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">({affiliates.length}명)</span>}
+        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-3">
+          제휴자{affiliates.length > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">({affiliates.length}명)</span>}
         </h2>
         {affiliates.length > 0 ? (
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl overflow-hidden divide-y divide-[#1E293B]/60">
@@ -143,11 +143,11 @@ export default async function AdminAffiliatesPage() {
               <div key={a.referrerId} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
                 <div className="min-w-0 lg:w-48">
                   <p className="text-sm text-white truncate">{a.name}</p>
-                  <p className="text-xs font-mono text-[#475569]">{a.code}</p>
+                  <p className="text-xs font-mono text-[#94A3B8]">{a.code}</p>
                 </div>
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <Stat label="전환가능" value={usd(a.pendingEligible)} tone="text-amber-400" />
-                  <Stat label="보류" value={usd(a.pendingHeld)} tone="text-[#94A3B8]" />
+                  <Stat label="보류" value={usd(a.pendingHeld)} tone="text-[#E2E8F0]" />
                   <Stat label="지급완료" value={usd(a.paid)} tone="text-emerald-400" />
                   <Stat label="크레딧 잔액" value={usd(a.balanceCents)} tone="text-[#38BDF8]" />
                 </div>
@@ -159,7 +159,7 @@ export default async function AdminAffiliatesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#475569] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
+          <p className="text-sm text-[#94A3B8] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
         )}
       </section>
     </div>
@@ -170,7 +170,7 @@ export default async function AdminAffiliatesPage() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div>
-      <p className="text-[#475569]">{label}</p>
+      <p className="text-[#94A3B8]">{label}</p>
       <p className={`font-mono font-semibold ${tone}`}>{value}</p>
     </div>
   )

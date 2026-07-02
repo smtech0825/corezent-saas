@@ -63,7 +63,7 @@ export default function WithdrawSection() {
   return (
     <section className="bg-[#111A2E] border border-red-500/20 rounded-xl p-6 mt-6">
       <h2 className="text-base font-semibold text-red-400 mb-1.5">회원 탈퇴</h2>
-      <p className="text-sm text-[#94A3B8] mb-5">
+      <p className="text-sm text-[#E2E8F0] mb-5">
         탈퇴하면 계정에 다시 로그인할 수 없습니다. 주문·라이선스 이력은 보관 목적상 보존되며,
         같은 이메일로의 재가입은 제한됩니다.
       </p>
@@ -85,7 +85,7 @@ export default function WithdrawSection() {
             </div>
 
             {blocked ? (
-              <div className="text-sm text-[#94A3B8] space-y-3">
+              <div className="text-sm text-[#E2E8F0] space-y-3">
                 <p className="text-amber-400 font-medium">활성 구독이 있어 지금은 탈퇴할 수 없습니다.</p>
                 <p>
                   먼저 구독을 취소한 뒤 다시 시도해 주세요. 취소해도 결제 기간이 끝날 때까지는
@@ -97,7 +97,7 @@ export default function WithdrawSection() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-[#94A3B8] mb-4">
+                <p className="text-sm text-[#E2E8F0] mb-4">
                   이 작업은 되돌릴 수 없습니다. 계속하려면 아래에{' '}
                   <span className="font-semibold text-white">&lsquo;{CONFIRM_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
@@ -105,7 +105,7 @@ export default function WithdrawSection() {
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={CONFIRM_WORD}
-                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
+                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
                 />
                 {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
               </>

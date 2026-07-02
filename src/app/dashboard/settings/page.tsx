@@ -148,7 +148,7 @@ export default function SettingsPage() {
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">설정</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
+        <p className="text-[#E2E8F0] text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
       </div>
 
       {/* 프로필 섹션 */}
@@ -172,7 +172,7 @@ export default function SettingsPage() {
               disabled
               className={`${inputCls} opacity-50 cursor-not-allowed`}
             />
-            <p className="text-xs text-[#475569] mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
+            <p className="text-xs text-[#94A3B8] mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
           </FormField>
 
           <FormField label="국가">
@@ -231,10 +231,10 @@ export default function SettingsPage() {
       {/* 알림/마케팅 수신 동의 섹션 */}
       <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6 mt-6">
         <h2 className="text-base font-semibold text-white mb-1.5">알림 수신 설정</h2>
-        <p className="text-sm text-[#94A3B8] mb-5">
+        <p className="text-sm text-[#E2E8F0] mb-5">
           제품 업데이트·혜택 등 알림/마케팅 이메일 수신 여부를 선택하세요.
           <br className="hidden sm:block" />
-          <span className="text-xs text-[#475569]">주문·결제·보안 등 필수 안내 메일은 이 설정과 무관하게 발송됩니다.</span>
+          <span className="text-xs text-[#94A3B8]">주문·결제·보안 등 필수 안내 메일은 이 설정과 무관하게 발송됩니다.</span>
         </p>
         <div className="flex items-center justify-between gap-4">
           <label htmlFor="marketing-opt-in" className="text-sm text-white cursor-pointer">
@@ -268,12 +268,12 @@ export default function SettingsPage() {
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
 
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors'
+const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8] transition-colors'
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#94A3B8] mb-1.5">{label}</label>
+      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
       {children}
     </div>
   )

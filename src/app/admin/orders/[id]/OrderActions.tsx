@@ -66,7 +66,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
   return (
     <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
       <h2 className="text-sm font-semibold text-white mb-1.5">주문 처리</h2>
-      <p className="text-xs text-[#475569] mb-4">환불·구독 취소는 실제 결제/구독에 반영됩니다. 신중히 진행하세요.</p>
+      <p className="text-xs text-[#94A3B8] mb-4">환불·구독 취소는 실제 결제/구독에 반영됩니다. 신중히 진행하세요.</p>
 
       <div className="flex flex-wrap gap-3">
         <button
@@ -92,7 +92,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
       </div>
 
       {!hasLsOrderId && !alreadyRefunded && (
-        <p className="text-xs text-[#475569] mt-3">이 주문은 Lemon Squeezy order_id가 없어 API 환불이 불가합니다.</p>
+        <p className="text-xs text-[#94A3B8] mt-3">이 주문은 Lemon Squeezy order_id가 없어 API 환불이 불가합니다.</p>
       )}
 
       {/* 확인 모달 */}
@@ -109,22 +109,22 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
 
             {modal === 'refund' ? (
               <>
-                <p className="text-sm text-[#94A3B8] mb-2">
+                <p className="text-sm text-[#E2E8F0] mb-2">
                   주문 <span className="font-mono text-xs text-white">#{orderId.slice(0, 8).toUpperCase()}</span> 을(를){' '}
                   <span className="text-white font-semibold">{amountLabel}</span> 전액 환불합니다. 되돌릴 수 없습니다.
                 </p>
-                <p className="text-sm text-[#94A3B8] mb-4">
+                <p className="text-sm text-[#E2E8F0] mb-4">
                   계속하려면 <span className="font-semibold text-white">&lsquo;{REFUND_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
                 <input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={REFUND_WORD}
-                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
+                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
                 />
               </>
             ) : (
-              <p className="text-sm text-[#94A3B8] mb-4">
+              <p className="text-sm text-[#E2E8F0] mb-4">
                 이 주문의 구독을 취소합니다. 결제 기간이 끝날 때까지는 이용 가능하며, 이후 갱신되지 않습니다.
               </p>
             )}

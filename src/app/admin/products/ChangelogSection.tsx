@@ -176,7 +176,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       <div className="px-6 py-4 border-b border-[#1E293B] flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-white">변경 이력</h2>
-          <p className="text-xs text-[#475569] mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>
+          <p className="text-xs text-[#94A3B8] mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>
         </div>
         {mode === 'list' && (
           <button
@@ -194,7 +194,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       {mode === 'list' && (
         <div>
           {changelogs.length === 0 ? (
-            <div className="py-10 text-center text-sm text-[#475569]">
+            <div className="py-10 text-center text-sm text-[#94A3B8]">
               아직 변경 이력이 없습니다. 첫 버전을 추가하세요.
             </div>
           ) : (
@@ -208,9 +208,9 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                         최신
                       </span>
                     )}
-                    <span className="text-xs text-[#475569]">{entry.release_date}</span>
+                    <span className="text-xs text-[#94A3B8]">{entry.release_date}</span>
                     {Object.keys(entry.download_urls).length > 0 && (
-                      <span className="text-xs text-[#475569]">
+                      <span className="text-xs text-[#94A3B8]">
                         · {Object.keys(entry.download_urls).join(', ')}
                       </span>
                     )}
@@ -219,7 +219,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     <button
                       type="button"
                       onClick={() => openEdit(entry)}
-                      className="p-1.5 text-[#475569] hover:text-white hover:bg-[#1E293B] rounded-lg transition-colors"
+                      className="p-1.5 text-[#94A3B8] hover:text-white hover:bg-[#1E293B] rounded-lg transition-colors"
                     >
                       <Pencil size={13} />
                     </button>
@@ -227,7 +227,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                       type="button"
                       onClick={() => handleDelete(entry.id)}
                       disabled={deletingId === entry.id}
-                      className="p-1.5 text-[#475569] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-40"
+                      className="p-1.5 text-[#94A3B8] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-40"
                     >
                       {deletingId === entry.id
                         ? <Loader2 size={13} className="animate-spin" />
@@ -252,7 +252,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
           {/* 기본 정보 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#94A3B8]">
+              <label className="text-xs font-medium text-[#E2E8F0]">
                 버전 <span className="text-red-400">*</span>
               </label>
               <input
@@ -264,7 +264,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#94A3B8]">
+              <label className="text-xs font-medium text-[#E2E8F0]">
                 릴리스 날짜 <span className="text-red-400">*</span>
               </label>
               <input
@@ -288,18 +288,18 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     form.is_latest ? 'translate-x-4 bg-[#38BDF8]' : 'translate-x-0 bg-[#475569]'
                   }`} />
                 </div>
-                <span className="text-xs font-medium text-[#94A3B8]">최신으로 표시</span>
+                <span className="text-xs font-medium text-[#E2E8F0]">최신으로 표시</span>
               </label>
             </div>
           </div>
 
           {/* Download URLs */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">다운로드 URL</h3>
+            <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">다운로드 URL</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PLATFORMS.map(({ key, label }) => (
                 <div key={key} className="space-y-1">
-                  <label className="text-xs text-[#475569]">{label}</label>
+                  <label className="text-xs text-[#94A3B8]">{label}</label>
                   <input
                     type="url"
                     value={form.download_urls[key] ?? ''}
@@ -319,7 +319,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
           {/* Content — 4 categories */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">변경 이력 내용</h3>
+            <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">변경 이력 내용</h3>
             {CONTENT_KEYS.map(({ key, label, color }) => (
               <ContentListEditor
                 key={key}
@@ -336,7 +336,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
             <button
               type="button"
               onClick={cancel}
-              className="text-sm text-[#475569] hover:text-white px-4 py-2 rounded-xl border border-[#1E293B] hover:border-[#475569] transition-colors"
+              className="text-sm text-[#94A3B8] hover:text-white px-4 py-2 rounded-xl border border-[#1E293B] hover:border-[#475569] transition-colors"
             >
               취소
             </button>
@@ -382,9 +382,9 @@ function ContentListEditor({
           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${colorClass}`}>
             {label}
           </span>
-          <span className="text-xs text-[#475569]">{items.length}개 항목</span>
+          <span className="text-xs text-[#94A3B8]">{items.length}개 항목</span>
         </div>
-        {open ? <ChevronUp size={14} className="text-[#475569]" /> : <ChevronDown size={14} className="text-[#475569]" />}
+        {open ? <ChevronUp size={14} className="text-[#94A3B8]" /> : <ChevronDown size={14} className="text-[#94A3B8]" />}
       </button>
 
       {open && (
@@ -405,7 +405,7 @@ function ContentListEditor({
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, j) => j !== i))}
-                className="p-1.5 text-[#475569] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                className="p-1.5 text-[#94A3B8] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
               >
                 <X size={13} />
               </button>
@@ -414,7 +414,7 @@ function ContentListEditor({
           <button
             type="button"
             onClick={() => onChange([...items, ''])}
-            className="mt-2 text-xs text-[#475569] hover:text-[#94A3B8] flex items-center gap-1.5 transition-colors"
+            className="mt-2 text-xs text-[#94A3B8] hover:text-[#E2E8F0] flex items-center gap-1.5 transition-colors"
           >
             <Plus size={11} />
             항목 추가

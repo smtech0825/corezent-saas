@@ -36,14 +36,14 @@ function InputField({ label, value, onChange, placeholder, multiline = false }: 
 }) {
   return (
     <div>
-      <label className="block text-xs text-[#475569] mb-1">{label}</label>
+      <label className="block text-xs text-[#94A3B8] mb-1">{label}</label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={2}
           placeholder={placeholder}
-          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#94A3B8] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+          className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#E2E8F0] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
         />
       ) : (
         <input
@@ -122,7 +122,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                 <button onClick={() => handleUpdate(feature.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
                   <Check size={12} /> 저장
                 </button>
-                <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
+                <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
                   <X size={12} /> 취소
                 </button>
               </div>
@@ -137,20 +137,20 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                 )}
                 <div className="min-w-0">
                   {feature.tag && (
-                    <p className="text-[10px] text-[#475569] font-mono uppercase tracking-wider mb-0.5">{feature.tag}</p>
+                    <p className="text-[10px] text-[#94A3B8] font-mono uppercase tracking-wider mb-0.5">{feature.tag}</p>
                   )}
-                  <p className={`text-sm font-medium ${feature.is_published ? 'text-white' : 'text-[#475569]'}`}>{feature.title}</p>
-                  <p className="text-xs text-[#475569] mt-1 line-clamp-2">{feature.description}</p>
+                  <p className={`text-sm font-medium ${feature.is_published ? 'text-white' : 'text-[#94A3B8]'}`}>{feature.title}</p>
+                  <p className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{feature.description}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => handleToggle(feature.id, feature.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${feature.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#475569] bg-[#1E293B] border-[#1E293B]'}`}>
+                <button onClick={() => handleToggle(feature.id, feature.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${feature.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'}`}>
                   {feature.is_published ? '게시됨' : '초안'}
                 </button>
-                <button onClick={() => startEdit(feature)} className="p-1.5 text-[#475569] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors">
+                <button onClick={() => startEdit(feature)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors">
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => handleDelete(feature.id)} className="p-1.5 text-[#475569] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors">
+                <button onClick={() => handleDelete(feature.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors">
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -171,13 +171,13 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
             <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
               <Check size={12} /> 특징 추가
             </button>
-            <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
+            <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
               <X size={12} /> 취소
             </button>
           </div>
         </div>
       ) : (
-        <button onClick={() => { setShowNew(true); setEditingId(null) }} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
+        <button onClick={() => { setShowNew(true); setEditingId(null) }} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
           <Plus size={15} /> 새 특징 추가
         </button>
       )}

@@ -85,7 +85,7 @@ export default function OnboardingChecklist({
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h2 className="text-base font-semibold text-white">시작하기</h2>
-          <p className="text-xs text-[#94A3B8] mt-0.5">
+          <p className="text-xs text-[#E2E8F0] mt-0.5">
             {allDone
               ? '모든 단계를 마쳤어요! 닫아도 됩니다.'
               : `설치부터 첫 사용까지 ${doneCount}/${items.length} 단계 완료`}
@@ -93,7 +93,7 @@ export default function OnboardingChecklist({
         </div>
         <button
           onClick={dismiss}
-          className="text-[#475569] hover:text-white transition-colors shrink-0"
+          className="text-[#94A3B8] hover:text-white transition-colors shrink-0"
           aria-label="체크리스트 닫기"
         >
           <X size={16} />
@@ -120,11 +120,11 @@ export default function OnboardingChecklist({
                 <Check size={13} />
               </button>
 
-              <Icon size={15} className="text-[#94A3B8] shrink-0" />
+              <Icon size={15} className="text-[#E2E8F0] shrink-0" />
 
               <div className="min-w-0 flex-1">
-                <p className={`text-sm ${it.done ? 'text-[#475569] line-through' : 'text-white'}`}>{it.label}</p>
-                <p className="text-xs text-[#475569]">{it.desc}</p>
+                <p className={`text-sm ${it.done ? 'text-[#94A3B8] line-through' : 'text-white'}`}>{it.label}</p>
+                <p className="text-xs text-[#94A3B8]">{it.desc}</p>
               </div>
 
               {it.href && (

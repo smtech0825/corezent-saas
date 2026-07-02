@@ -149,7 +149,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#475569] mt-0.5">
+                  <p className="text-xs text-[#94A3B8] mt-0.5">
                     {row.billingInterval === 'annual' ? '연간' : '월간'} 플랜
                     {row.currentPeriodEnd &&
                       ` · 갱신일 ${new Date(row.currentPeriodEnd).toLocaleDateString('ko-KR', {
@@ -258,7 +258,7 @@ function CancellationModal({
         {/* 닫기 버튼 */}
         <button
           onClick={onKeep}
-          className="absolute top-4 right-4 text-[#475569] hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-[#94A3B8] hover:text-white transition-colors"
           disabled={cancelling}
         >
           <X size={16} />
@@ -267,11 +267,11 @@ function CancellationModal({
         {/* 헤더 */}
         <div className="mb-5">
           <h2 className="text-lg font-bold text-white">떠나신다니 아쉽습니다.</h2>
-          <p className="text-sm text-[#94A3B8] mt-1.5">
+          <p className="text-sm text-[#E2E8F0] mt-1.5">
             취소하시는 이유를 알려주시겠어요?
           </p>
           {fmtDate && (
-            <p className="text-xs text-[#475569] mt-2 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2">
+            <p className="text-xs text-[#94A3B8] mt-2 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2">
               구독은{' '}
               <span className="text-amber-400 font-medium">{fmtDate}</span>
               까지 유지됩니다.
@@ -298,7 +298,7 @@ function CancellationModal({
                 onChange={() => onSelectReason(reason)}
                 className="mt-0.5 accent-[#38BDF8] shrink-0"
               />
-              <span className="text-sm text-[#94A3B8] leading-snug">{reason}</span>
+              <span className="text-sm text-[#E2E8F0] leading-snug">{reason}</span>
             </label>
           ))}
 
@@ -309,7 +309,7 @@ function CancellationModal({
               onChange={(e) => onOtherText(e.target.value)}
               placeholder="(선택) 자세한 내용을 알려주세요"
               rows={3}
-              className="w-full mt-1 bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors resize-none"
+              className="w-full mt-1 bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8] transition-colors resize-none"
             />
           )}
         </div>
@@ -346,8 +346,8 @@ function SubStatusBadge({ status }: { status: string }) {
   const map: Record<string, { style: string; label: string }> = {
     active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: '활성' },
     paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: '일시정지' },
-    cancelled: { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: '취소됨' },
-    expired:   { style: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',            label: '만료됨' },
+    cancelled: { style: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',            label: '취소됨' },
+    expired:   { style: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',            label: '만료됨' },
   }
   const { style, label } = map[status] ?? map.cancelled
   return (

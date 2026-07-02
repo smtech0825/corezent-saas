@@ -56,7 +56,7 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
             <div className="flex items-center gap-3 lg:hidden">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="text-[#94A3B8] hover:text-white p-1"
+                className="text-[#E2E8F0] hover:text-white p-1"
               >
                 <Menu size={20} />
               </button>

@@ -44,7 +44,7 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
     <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-[#1E293B]">
         <h2 className="text-sm font-semibold text-white">프로그램 설정</h2>
-        <p className="text-xs text-[#475569] mt-0.5">모든 적립 규칙의 단일 출처입니다. 변경은 이후 결제부터 적용됩니다.</p>
+        <p className="text-xs text-[#94A3B8] mt-0.5">모든 적립 규칙의 단일 출처입니다. 변경은 이후 결제부터 적용됩니다.</p>
       </div>
 
       <div className="p-6 space-y-4">
@@ -105,7 +105,7 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#94A3B8] mb-1.5">{label}</label>
+      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -118,7 +118,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       type="button"
       onClick={() => onChange(!checked)}
       className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors ${
-        checked ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-[#0B1120] border-[#1E293B] text-[#94A3B8]'
+        checked ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-[#0B1120] border-[#1E293B] text-[#E2E8F0]'
       }`}
     >
       <span>{label}</span>

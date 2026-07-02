@@ -126,15 +126,15 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
             dragging === idx ? 'opacity-40' : 'opacity-100',
           ].join(' ')}
         >
-          <GripVertical size={16} className="text-[#475569] hover:text-[#94A3B8] shrink-0" />
+          <GripVertical size={16} className="text-[#94A3B8] hover:text-[#E2E8F0] shrink-0" />
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white">{section.label}</p>
-            <p className="text-xs text-[#475569] font-mono">{section.name}</p>
+            <p className="text-xs text-[#94A3B8] font-mono">{section.name}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium ${section.is_visible ? 'text-emerald-400' : 'text-[#475569]'}`}>
+            <span className={`text-xs font-medium ${section.is_visible ? 'text-emerald-400' : 'text-[#94A3B8]'}`}>
               {section.is_visible ? '표시' : '숨김'}
             </span>
             <button
@@ -153,7 +153,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
             {section.is_visible ? (
               <Eye size={14} className="text-emerald-400" />
             ) : (
-              <EyeOff size={14} className="text-[#475569]" />
+              <EyeOff size={14} className="text-[#94A3B8]" />
             )}
           </div>
         </div>

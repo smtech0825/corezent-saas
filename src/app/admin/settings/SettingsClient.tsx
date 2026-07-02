@@ -57,7 +57,7 @@ function SaveButton({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#94A3B8] mb-1.5">{label}</label>
+      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -80,7 +80,7 @@ function SectionCard({
     <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-[#1E293B]">
         <h2 className="text-sm font-semibold text-white">{title}</h2>
-        <p className="text-xs text-[#475569] mt-0.5">{description}</p>
+        <p className="text-xs text-[#94A3B8] mt-0.5">{description}</p>
       </div>
       <div className="p-6 space-y-4">{children}</div>
       <div className="px-6 pb-5">{footer}</div>
@@ -131,7 +131,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
     <div className="p-6 space-y-8 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold text-white">설정</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">사이트 전반 설정을 구성합니다.</p>
+        <p className="text-sm text-[#E2E8F0] mt-1">사이트 전반 설정을 구성합니다.</p>
       </div>
 
       {error && (
@@ -174,7 +174,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             placeholder={'사업자등록번호: 000-00-00000\n대표: 홍길동\n통신판매업신고: 2024-서울강남-00000\n이메일: support@corezent.com'}
             className={TEXTAREA_CLS}
           />
-          <p className="text-xs text-[#475569] mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
+          <p className="text-xs text-[#94A3B8] mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
         </div>
       </SectionCard>
 
@@ -249,15 +249,15 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[#1E293B]">
           <h2 className="text-sm font-semibold text-white">할인코드 (Lemon Squeezy)</h2>
-          <p className="text-xs text-[#475569] mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>
+          <p className="text-xs text-[#94A3B8] mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>
         </div>
-        <div className="p-6 space-y-3 text-sm text-[#94A3B8] leading-relaxed">
+        <div className="p-6 space-y-3 text-sm text-[#E2E8F0] leading-relaxed">
           <p>
             LS 대시보드 → <strong className="text-[#F1F5F9]">Store → Discounts</strong>에서 코드를 만들면
             (정률/정액, 적용 상품, 사용 횟수·기간 제한 설정 가능) 구매자가 요금제 페이지의
             할인코드 입력칸 또는 결제 화면에서 바로 사용할 수 있습니다.
           </p>
-          <p className="text-xs text-[#475569]">
+          <p className="text-xs text-[#94A3B8]">
             마케팅 링크로 자동 적용하려면: <code className="font-mono text-[#38BDF8]">corezent.com/pricing?discount=코드</code>
           </p>
           <a

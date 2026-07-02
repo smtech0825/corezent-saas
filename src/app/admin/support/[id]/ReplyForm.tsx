@@ -42,7 +42,7 @@ export default function ReplyForm({ onSubmit }: Props) {
         required
       />
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer select-none">
+        <label className="flex items-center gap-2 text-sm text-[#E2E8F0] cursor-pointer select-none">
           <input
             type="checkbox"
             checked={closing}

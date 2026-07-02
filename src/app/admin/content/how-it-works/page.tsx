@@ -62,7 +62,7 @@ export default async function HowItWorksAdminPage() {
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-white">이용 방법</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">
+        <p className="text-sm text-[#E2E8F0] mt-1">
           &ldquo;이용 방법&rdquo; 섹션에 표시되는 단계를 관리합니다. 아이콘: Lucide (Zap), Tabler (tb:Cpu), Radix (ri:Star), 또는 원본 &lt;svg&gt;.
         </p>
       </div>

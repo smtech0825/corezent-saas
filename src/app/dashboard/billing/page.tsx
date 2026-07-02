@@ -117,14 +117,14 @@ export default async function BillingPage({
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">결제</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
+        <p className="text-[#E2E8F0] text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
       </div>
 
       {/* 구독 섹션 */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-4">
           구독
-          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">(총 {subTotal}개)</span>}
+          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">(총 {subTotal}개)</span>}
         </h2>
         {subscriptions && subscriptions.length > 0 ? (
           <>
@@ -154,7 +154,7 @@ export default async function BillingPage({
           </>
         ) : (
           <EmptyCard
-            icon={<Package size={20} className="text-[#475569]" />}
+            icon={<Package size={20} className="text-[#94A3B8]" />}
             message="아직 구독이 없습니다."
             action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:underline">요금제 둘러보기 →</Link>}
           />
@@ -163,14 +163,14 @@ export default async function BillingPage({
 
       {/* 결제 내역 섹션 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-4">
           결제 내역
-          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#475569] font-normal">(총 {ordTotal}개)</span>}
+          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">(총 {ordTotal}개)</span>}
         </h2>
         {orders && orders.length > 0 ? (
           <>
             <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
-              <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+              <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#94A3B8] font-medium">
                 <span>제품</span>
                 <span>날짜</span>
                 <span>금액</span>
@@ -182,10 +182,10 @@ export default async function BillingPage({
                   className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px_100px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard size={14} className="text-[#475569] shrink-0 hidden md:block" />
+                    <CreditCard size={14} className="text-[#94A3B8] shrink-0 hidden md:block" />
                     <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? '주문'}</span>
                   </div>
-                  <span className="text-sm text-[#94A3B8]">
+                  <span className="text-sm text-[#E2E8F0]">
                     {new Date(order.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-sm text-white font-medium">
@@ -198,7 +198,7 @@ export default async function BillingPage({
             <Pagination page={ordPage} total={ordTotal ?? 0} pageSize={ORD_PAGE_SIZE} buildHref={ordHref} />
           </>
         ) : (
-          <EmptyCard icon={<CreditCard size={20} className="text-[#475569]" />} message="아직 결제 내역이 없습니다." />
+          <EmptyCard icon={<CreditCard size={20} className="text-[#94A3B8]" />} message="아직 결제 내역이 없습니다." />
         )}
       </section>
     </div>
@@ -213,7 +213,7 @@ function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: 
       <div className="w-10 h-10 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-3">
         {icon}
       </div>
-      <p className="text-sm text-[#475569]">{message}</p>
+      <p className="text-sm text-[#94A3B8]">{message}</p>
       {action}
     </div>
   )
@@ -225,7 +225,7 @@ function OrderStatusBadge({ status }: { status: string }) {
     pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
     failed:    'text-red-400 bg-red-500/10 border-red-500/20',
     refunded:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    cancelled: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    cancelled: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',
   }
   const labelMap: Record<string, string> = {
     paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨', cancelled: '취소됨',

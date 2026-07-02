@@ -26,7 +26,7 @@ export default function DashboardError({
           <AlertTriangle size={24} className="text-amber-400" />
         </div>
         <h2 className="text-xl font-bold text-white mb-2">문제가 발생했습니다</h2>
-        <p className="text-sm text-[#94A3B8] mb-4 leading-relaxed">
+        <p className="text-sm text-[#E2E8F0] mb-4 leading-relaxed">
           이 페이지를 불러오는 중 예상치 못한 오류가 발생했습니다.
         </p>
         <pre className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">

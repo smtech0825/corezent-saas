@@ -80,13 +80,13 @@ export default function ProductList({ products: initial, onDelete }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1E293B]">
-                <th className="text-left px-3 py-3 text-xs text-[#475569] font-medium w-16">순서</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">제품</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">카테고리</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">월간</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">연간</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
-                <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">작업</th>
+                <th className="text-left px-3 py-3 text-xs text-[#94A3B8] font-medium w-16">순서</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">제품</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">카테고리</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">월간</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">연간</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
+                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">작업</th>
               </tr>
             </thead>
             <tbody>
@@ -98,16 +98,16 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <button
                         onClick={() => swap(idx, idx - 1)}
                         disabled={idx === 0 || isPending}
-                        className="p-0.5 text-[#475569] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-0.5 text-[#94A3B8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="위로 이동"
                       >
                         <ChevronUp size={14} />
                       </button>
-                      <span className="text-[10px] text-[#475569] tabular-nums font-mono">{idx + 1}</span>
+                      <span className="text-[10px] text-[#94A3B8] tabular-nums font-mono">{idx + 1}</span>
                       <button
                         onClick={() => swap(idx, idx + 1)}
                         disabled={idx === items.length - 1 || isPending}
-                        className="p-0.5 text-[#475569] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-0.5 text-[#94A3B8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="아래로 이동"
                       >
                         <ChevronDown size={14} />
@@ -117,18 +117,18 @@ export default function ProductList({ products: initial, onDelete }: Props) {
 
                   <td className="px-4 py-4">
                     <p className="font-semibold text-white">{p.name}</p>
-                    <p className="text-xs text-[#475569] mt-0.5">{p.tagline}</p>
+                    <p className="text-xs text-[#94A3B8] mt-0.5">{p.tagline}</p>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[p.category] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[p.category] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
                       {p.category}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-[#94A3B8]">{p.monthlyLabel}</td>
-                  <td className="px-4 py-4 text-[#94A3B8]">{p.annualLabel}</td>
+                  <td className="px-4 py-4 text-[#E2E8F0]">{p.monthlyLabel}</td>
+                  <td className="px-4 py-4 text-[#E2E8F0]">{p.annualLabel}</td>
                   <td className="px-4 py-4">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      p.is_active ? 'text-emerald-400 bg-emerald-400/10' : 'text-[#475569] bg-[#1E293B]'
+                      p.is_active ? 'text-emerald-400 bg-emerald-400/10' : 'text-[#94A3B8] bg-[#1E293B]'
                     }`}>
                       {p.is_active ? '활성' : '비활성'}
                     </span>
@@ -137,7 +137,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                     <div className="flex items-center gap-1">
                       <Link
                         href={`/admin/products/${p.id}/edit`}
-                        className="p-1.5 text-[#475569] hover:text-amber-400 transition-colors rounded"
+                        className="p-1.5 text-[#94A3B8] hover:text-amber-400 transition-colors rounded"
                         title="편집"
                       >
                         <Pencil size={14} />

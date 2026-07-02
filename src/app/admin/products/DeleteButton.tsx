@@ -28,7 +28,7 @@ export default function DeleteButton({ productId, productName, onDelete }: Props
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="p-1.5 text-[#475569] hover:text-red-400 transition-colors rounded disabled:opacity-50"
+      className="p-1.5 text-[#94A3B8] hover:text-red-400 transition-colors rounded disabled:opacity-50"
       title="삭제"
     >
       <Trash2 size={14} />

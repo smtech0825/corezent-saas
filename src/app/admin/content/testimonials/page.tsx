@@ -64,7 +64,7 @@ export default async function TestimonialsPage() {
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-white">고객 후기</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">
+        <p className="text-sm text-[#E2E8F0] mt-1">
           고객 후기 섹션에 표시되는 고객 후기를 관리합니다.
         </p>
       </div>

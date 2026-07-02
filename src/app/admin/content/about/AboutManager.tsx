@@ -50,7 +50,7 @@ interface Props {
 
 const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
 const btnPrimary = 'flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors'
-const btnCancel = 'flex items-center gap-1.5 text-xs text-[#94A3B8] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors'
+const btnCancel = 'flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors'
 
 // ─── 이미지 업로드 컴포넌트 ────────────────────────────────────
 
@@ -98,7 +98,7 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="w-24 h-24 rounded-lg border-2 border-dashed border-[#1E293B] flex flex-col items-center justify-center text-[#475569] hover:border-[#38BDF8]/30 hover:text-[#94A3B8] transition-colors disabled:opacity-50"
+            className="w-24 h-24 rounded-lg border-2 border-dashed border-[#1E293B] flex flex-col items-center justify-center text-[#94A3B8] hover:border-[#38BDF8]/30 hover:text-[#E2E8F0] transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <><Upload size={16} /><span className="text-[10px] mt-1">{images.length}/{max}</span></>}
           </button>
@@ -115,7 +115,7 @@ function SectionHeader({ title, open, onToggle }: { title: string; open: boolean
   return (
     <button onClick={onToggle} className="w-full flex items-center justify-between py-2 group">
       <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
-      {open ? <ChevronUp size={14} className="text-[#475569]" /> : <ChevronDown size={14} className="text-[#475569]" />}
+      {open ? <ChevronUp size={14} className="text-[#94A3B8]" /> : <ChevronDown size={14} className="text-[#94A3B8]" />}
     </button>
   )
 }
@@ -239,11 +239,11 @@ export default function AboutManager({
         {heroOpen && (
           <div className="space-y-3 mt-3">
             <div>
-              <label className="text-[10px] text-[#475569] mb-1 block">제목</label>
+              <label className="text-[10px] text-[#94A3B8] mb-1 block">제목</label>
               <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] text-[#475569] mb-1 block">설명 (줄바꿈 지원)</label>
+              <label className="text-[10px] text-[#94A3B8] mb-1 block">설명 (줄바꿈 지원)</label>
               <textarea value={heroDesc} onChange={(e) => setHeroDesc(e.target.value)} rows={5} placeholder="회사를 소개하세요..." className={`${inputCls} resize-none`} />
             </div>
             <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
@@ -279,11 +279,11 @@ export default function AboutManager({
                         <DynamicIcon name={s.icon || 'Users'} size={14} className="text-[#38BDF8]" />
                       </div>
                       <span className="text-white font-bold text-sm">{s.value}</span>
-                      <span className="text-[#475569] text-xs">{s.label}</span>
+                      <span className="text-[#94A3B8] text-xs">{s.label}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => startEditStat(s)} className="p-1.5 text-[#475569] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
-                      <button onClick={() => handleDeleteStat(s.id)} className="p-1.5 text-[#475569] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
+                      <button onClick={() => startEditStat(s)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
+                      <button onClick={() => handleDeleteStat(s.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 )}
@@ -303,7 +303,7 @@ export default function AboutManager({
                 </div>
               </div>
             ) : (
-              <button onClick={() => { setShowNewStat(true); setEditStatId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
+              <button onClick={() => { setShowNewStat(true); setEditStatId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
                 <Plus size={15} /> 통계 카드 추가
               </button>
             )}
@@ -323,7 +323,7 @@ export default function AboutManager({
                     <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                     <textarea value={blockForm.description} onChange={(e) => setBlockForm({ ...blockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                     <div>
-                      <label className="text-[10px] text-[#475569] mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
+                      <label className="text-[10px] text-[#94A3B8] mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
                       <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
                     </div>
                     <div className="flex gap-2">
@@ -339,17 +339,17 @@ export default function AboutManager({
                           <span className="text-[10px] font-mono text-[#38BDF8]/60 font-bold">{String(idx + 1).padStart(2, '0')}</span>
                           {b.title && <span className="text-xs text-white font-semibold">{b.title}</span>}
                         </div>
-                        <p className="text-xs text-[#475569] line-clamp-2">{b.description}</p>
+                        <p className="text-xs text-[#94A3B8] line-clamp-2">{b.description}</p>
                         {b.images.length > 0 && (
                           <div className="flex items-center gap-1 mt-1.5">
-                            <ImageIcon size={11} className="text-[#475569]" />
-                            <span className="text-[10px] text-[#475569]">이미지 {b.images.length}개</span>
+                            <ImageIcon size={11} className="text-[#94A3B8]" />
+                            <span className="text-[10px] text-[#94A3B8]">이미지 {b.images.length}개</span>
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => startEditBlock(b)} className="p-1.5 text-[#475569] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
-                        <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-[#475569] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
+                        <button onClick={() => startEditBlock(b)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
                       </div>
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export default function AboutManager({
                   <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                   <textarea value={newBlockForm.description} onChange={(e) => setNewBlockForm({ ...newBlockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                   <div>
-                    <label className="text-[10px] text-[#475569] mb-1.5 block">이미지 (최대 3개)</label>
+                    <label className="text-[10px] text-[#94A3B8] mb-1.5 block">이미지 (최대 3개)</label>
                     <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
                   </div>
                   <div className="flex gap-2">
@@ -372,7 +372,7 @@ export default function AboutManager({
                   </div>
                 </div>
               ) : (
-                <button onClick={() => { setShowNewBlock(true); setEditBlockId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] hover:border-[#38BDF8]/20 transition-colors">
+                <button onClick={() => { setShowNewBlock(true); setEditBlockId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
                   <Plus size={15} /> 콘텐츠 블록 추가 ({blocks.length}/3)
                 </button>
               )

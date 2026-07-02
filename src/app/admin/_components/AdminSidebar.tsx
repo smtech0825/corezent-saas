@@ -102,7 +102,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           </span>
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-[#94A3B8] hover:text-white p-1">
+          <button onClick={onClose} className="lg:hidden text-[#E2E8F0] hover:text-white p-1">
             <X size={18} />
           </button>
         )}
@@ -111,7 +111,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
         {/* 메인 */}
-        <p className="px-3 mb-1 text-[10px] font-semibold text-[#475569] uppercase tracking-widest">
+        <p className="px-3 mb-1 text-[10px] font-semibold text-[#94A3B8] uppercase tracking-widest">
           관리자
         </p>
         {mainNav.map((item) => {
@@ -126,7 +126,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? 'bg-amber-500/10 text-amber-400'
-                  : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+                  : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
               }`}
             >
               <Icon size={16} className={active ? 'text-amber-400' : ''} />
@@ -147,7 +147,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           <button
             onClick={() => setFrontendOpen((v) => !v)}
             className={`w-full flex items-center justify-between px-3 py-1 mb-1 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
-              isFrontendActive ? 'text-amber-400' : 'text-[#475569] hover:text-[#94A3B8]'
+              isFrontendActive ? 'text-amber-400' : 'text-[#94A3B8] hover:text-[#E2E8F0]'
             }`}
           >
             <span>프론트엔드</span>
@@ -170,7 +170,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       active
                         ? 'bg-amber-500/10 text-amber-400'
-                        : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+                        : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
                     }`}
                   >
                     <Icon size={15} className={active ? 'text-amber-400' : ''} />
@@ -184,7 +184,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
 
         {/* 설정 */}
         <div className="mt-4">
-          <p className="px-3 mb-1 text-[10px] font-semibold text-[#475569] uppercase tracking-widest">
+          <p className="px-3 mb-1 text-[10px] font-semibold text-[#94A3B8] uppercase tracking-widest">
             시스템
           </p>
           <Link
@@ -193,7 +193,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               isActive('/admin/settings')
                 ? 'bg-amber-500/10 text-amber-400'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+                : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
             }`}
           >
             <Settings size={16} className={isActive('/admin/settings') ? 'text-amber-400' : ''} />
@@ -205,7 +205,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               isActive('/admin/logs')
                 ? 'bg-amber-500/10 text-amber-400'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+                : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
             }`}
           >
             <Activity size={16} className={isActive('/admin/logs') ? 'text-amber-400' : ''} />
@@ -218,7 +218,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
       <div className="px-3 pt-2 border-t border-[#1E293B]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#94A3B8] hover:text-[#E2E8F0] transition-colors"
         >
           ← 사용자 대시보드
         </Link>
@@ -232,7 +232,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           </span>
           <div className="min-w-0">
             <p className="text-sm text-white font-medium truncate">{user.name}</p>
-            <p className="text-xs text-[#475569] truncate">{user.email}</p>
+            <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
           </div>
         </div>
         <button

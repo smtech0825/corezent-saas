@@ -40,7 +40,7 @@ const TICKET_STATUS: Record<string, string> = { open: '접수', answered: '답�
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[100px_1fr] gap-3 py-2.5 border-b border-[#1E293B]/60 last:border-0">
-      <span className="text-xs text-[#475569] pt-0.5">{label}</span>
+      <span className="text-xs text-[#94A3B8] pt-0.5">{label}</span>
       <span className="text-sm text-white break-all">{children}</span>
     </div>
   )
@@ -80,7 +80,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
       {/* 헤더 */}
       <div>
-        <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-[#475569] hover:text-white transition-colors">
+        <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors">
           <ArrowLeft size={14} /> 사용자 목록
         </Link>
         <h1 className="text-2xl font-bold text-white mt-3">{profile.name || email}</h1>
@@ -101,7 +101,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white mb-2">구매 이력 ({orders.length})</h2>
         {orders.length === 0 ? (
-          <p className="text-sm text-[#475569] py-2">구매 내역이 없습니다.</p>
+          <p className="text-sm text-[#94A3B8] py-2">구매 내역이 없습니다.</p>
         ) : (
           orders.map((o) => (
             <Link
@@ -109,9 +109,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
               href={`/admin/orders/${o.id}`}
               className="grid grid-cols-[1fr_auto_auto] gap-3 items-center py-2.5 border-b border-[#1E293B]/60 last:border-0 hover:bg-[#0B1120]/40 -mx-2 px-2 rounded transition-colors"
             >
-              <span className="text-xs font-mono text-[#94A3B8]">#{o.id.slice(0, 8).toUpperCase()}</span>
+              <span className="text-xs font-mono text-[#E2E8F0]">#{o.id.slice(0, 8).toUpperCase()}</span>
               <span className="text-sm text-white tabular-nums">{formatKRW(o.amount)}</span>
-              <span className="text-xs text-[#475569] whitespace-nowrap">{ORDER_STATUS[o.status] ?? o.status} · {fmtDate(o.created_at)}</span>
+              <span className="text-xs text-[#94A3B8] whitespace-nowrap">{ORDER_STATUS[o.status] ?? o.status} · {fmtDate(o.created_at)}</span>
             </Link>
           ))
         )}
@@ -121,15 +121,15 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white mb-2">보유 라이선스 ({licenses.length})</h2>
         {licenses.length === 0 ? (
-          <p className="text-sm text-[#475569] py-2">라이선스가 없습니다.</p>
+          <p className="text-sm text-[#94A3B8] py-2">라이선스가 없습니다.</p>
         ) : (
           licenses.map((lic) => (
             <div key={lic.id} className="grid grid-cols-[130px_1fr] gap-3 py-2.5 border-b border-[#1E293B]/60 last:border-0">
-              <span className="text-xs text-[#475569] font-mono pt-0.5">{maskKey(lic.serial_key)}</span>
+              <span className="text-xs text-[#94A3B8] font-mono pt-0.5">{maskKey(lic.serial_key)}</span>
               <span className="text-sm text-white">
                 {lic.products?.name ?? '—'}
-                <span className="text-[#475569] ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
-                {lic.expires_at && <span className="text-[#475569] ml-2 text-xs">· 만료 {fmtDate(lic.expires_at)}</span>}
+                <span className="text-[#94A3B8] ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
+                {lic.expires_at && <span className="text-[#94A3B8] ml-2 text-xs">· 만료 {fmtDate(lic.expires_at)}</span>}
               </span>
             </div>
           ))
@@ -143,7 +143,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           {subs.map((s) => (
             <Row key={s.id} label={SUB_STATUS[s.status] ?? s.status}>
               {s.billing_interval === 'annual' ? '연간' : s.billing_interval === 'monthly' ? '월간' : '—'}
-              {s.current_period_end && <span className="text-[#475569] ml-2 text-xs">· 갱신일 {fmtDate(s.current_period_end)}</span>}
+              {s.current_period_end && <span className="text-[#94A3B8] ml-2 text-xs">· 갱신일 {fmtDate(s.current_period_end)}</span>}
             </Row>
           ))}
         </section>
@@ -156,7 +156,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           {tickets.map((t) => (
             <div key={t.id} className="grid grid-cols-[1fr_auto] gap-3 items-center py-2.5 border-b border-[#1E293B]/60 last:border-0">
               <span className="text-sm text-white truncate">{t.subject}</span>
-              <span className="text-xs text-[#475569] whitespace-nowrap">{TICKET_STATUS[t.status] ?? t.status} · {fmtDate(t.created_at)}</span>
+              <span className="text-xs text-[#94A3B8] whitespace-nowrap">{TICKET_STATUS[t.status] ?? t.status} · {fmtDate(t.created_at)}</span>
             </div>
           ))}
         </section>

@@ -40,7 +40,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
   const inputCls =
     'w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors'
-  const labelCls = 'text-xs font-medium text-[#94A3B8]'
+  const labelCls = 'text-xs font-medium text-[#E2E8F0]'
 
   return (
     <div className="space-y-5">

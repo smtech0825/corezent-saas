@@ -23,7 +23,7 @@ function fmtDate(d: string) {
 const statusColors: Record<string, string> = {
   open: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
   answered: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  closed: 'text-[#475569] bg-[#1E293B] border-[#1E293B]',
+  closed: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
 }
 
 export default async function TicketDetailPage({
@@ -107,21 +107,21 @@ export default async function TicketDetailPage({
     <div className="p-6 space-y-6 max-w-4xl">
       {/* 뒤로 + 헤더 */}
       <div>
-        <Link href="/admin/support" className="text-sm text-[#475569] hover:text-[#94A3B8] transition-colors">
+        <Link href="/admin/support" className="text-sm text-[#94A3B8] hover:text-[#E2E8F0] transition-colors">
           ← 고객지원으로 돌아가기
         </Link>
         <div className="mt-3 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-white">{ticket.subject}</h1>
-            <p className="text-sm text-[#94A3B8] mt-1">
+            <p className="text-sm text-[#E2E8F0] mt-1">
               보낸 사람 <span className="text-white">{userEmail}</span> · {fmtDate(ticket.created_at)}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${statusColors[ticket.status] ?? 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'}`}>
+            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${statusColors[ticket.status] ?? 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]'}`}>
               {ticket.status}
             </span>
-            <span className="text-xs text-[#475569] capitalize">{ticket.priority} 우선순위</span>
+            <span className="text-xs text-[#94A3B8] capitalize">{ticket.priority} 우선순위</span>
           </div>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default async function TicketDetailPage({
       <div className="flex items-center gap-2">
         {ticket.status !== 'closed' ? (
           <form action={closeTicket}>
-            <button type="submit" className="text-xs text-[#94A3B8] hover:text-white border border-[#1E293B] hover:border-[#38BDF8]/30 px-3 py-2 rounded-lg transition-colors">
+            <button type="submit" className="text-xs text-[#E2E8F0] hover:text-white border border-[#1E293B] hover:border-[#38BDF8]/30 px-3 py-2 rounded-lg transition-colors">
               티켓 닫기
             </button>
           </form>
@@ -146,7 +146,7 @@ export default async function TicketDetailPage({
       {/* 메시지 스레드 */}
       <div className="space-y-3">
         {(!replies || replies.length === 0) ? (
-          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-12 text-center text-sm text-[#475569]">
+          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-12 text-center text-sm text-[#94A3B8]">
             아직 메시지가 없습니다.
           </div>
         ) : (
@@ -163,9 +163,9 @@ export default async function TicketDetailPage({
                 <span className={`text-xs font-semibold ${reply.is_admin ? 'text-amber-400' : 'text-[#38BDF8]'}`}>
                   {reply.is_admin ? '🛡 관리자' : userEmail}
                 </span>
-                <span className="text-xs text-[#475569]">{fmtDate(reply.created_at)}</span>
+                <span className="text-xs text-[#94A3B8]">{fmtDate(reply.created_at)}</span>
               </div>
-              <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+              <p className="text-sm text-[#E2E8F0] leading-relaxed whitespace-pre-wrap">{reply.message}</p>
             </div>
           ))
         )}

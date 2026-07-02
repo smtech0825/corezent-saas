@@ -36,7 +36,7 @@ function getStatusBadge(status: string) {
     case 'active':  return { label: '활성',     cls: 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' }
     case 'revoked': return { label: '취소됨',   cls: 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/20' }
     case 'expired': return { label: '만료됨',   cls: 'text-red-400 bg-red-400/10 border border-red-400/20' }
-    default:        return { label: status,      cls: 'text-[#94A3B8] bg-[#1E293B] border border-[#1E293B]' }
+    default:        return { label: status,      cls: 'text-[#E2E8F0] bg-[#1E293B] border border-[#1E293B]' }
   }
 }
 
@@ -123,7 +123,7 @@ export default function LicenseTable({ licenses }: Props) {
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-white">라이선스</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">총 {licenses.length}개의 라이선스</p>
+        <p className="text-sm text-[#E2E8F0] mt-1">총 {licenses.length}개의 라이선스</p>
       </div>
 
       {/* 검색 + 필터 */}
@@ -132,7 +132,7 @@ export default function LicenseTable({ licenses }: Props) {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-          className="bg-[#111A2E] border border-[#1E293B] text-[#94A3B8] text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#38BDF8]/50 sm:w-40 shrink-0 cursor-pointer"
+          className="bg-[#111A2E] border border-[#1E293B] text-[#E2E8F0] text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#38BDF8]/50 sm:w-40 shrink-0 cursor-pointer"
         >
           <option value="all">전체 상태</option>
           <option value="active">활성</option>
@@ -142,13 +142,13 @@ export default function LicenseTable({ licenses }: Props) {
 
         {/* 이메일 검색바 */}
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이메일로 검색..."
-            className="w-full bg-[#111A2E] border border-[#1E293B] text-[#F1F5F9] text-sm rounded-xl pl-9 pr-4 py-2.5 placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8]/50"
+            className="w-full bg-[#111A2E] border border-[#1E293B] text-[#F1F5F9] text-sm rounded-xl pl-9 pr-4 py-2.5 placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8]/50"
           />
         </div>
       </div>
@@ -156,20 +156,20 @@ export default function LicenseTable({ licenses }: Props) {
       {/* 테이블 */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#475569]">라이선스가 없습니다.</div>
+          <div className="py-16 text-center text-sm text-[#94A3B8]">라이선스가 없습니다.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="border-b border-[#1E293B]">
-                  <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">시리얼 키</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">제품</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">사용자</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">상태</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">결제 주기</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">갱신일</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">만료일</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium whitespace-nowrap">작업</th>
+                  <th className="text-left px-6 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">시리얼 키</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">제품</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">상태</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">결제 주기</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">갱신일</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">만료일</th>
+                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium whitespace-nowrap">작업</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,10 +179,10 @@ export default function LicenseTable({ licenses }: Props) {
                   return (
                     <tr key={l.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
                       <td className="px-6 py-3">
-                        <span className="font-mono text-xs text-[#94A3B8] whitespace-nowrap">{l.serialKey}</span>
+                        <span className="font-mono text-xs text-[#E2E8F0] whitespace-nowrap">{l.serialKey}</span>
                       </td>
                       <td className="px-4 py-3 text-white text-sm truncate max-w-[140px]">{l.productName || '—'}</td>
-                      <td className="px-4 py-3 text-[#94A3B8] text-sm truncate max-w-[200px]">{l.email}</td>
+                      <td className="px-4 py-3 text-[#E2E8F0] text-sm truncate max-w-[200px]">{l.email}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>
                           {badge.label}
@@ -194,11 +194,11 @@ export default function LicenseTable({ licenses }: Props) {
                             {periodBadge.label}
                           </span>
                         ) : (
-                          <span className="text-xs text-[#475569]">—</span>
+                          <span className="text-xs text-[#94A3B8]">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-[#475569] whitespace-nowrap text-xs">{fmtDate(l.renewalDate)}</td>
-                      <td className="px-4 py-3 text-[#475569] whitespace-nowrap text-xs">{fmtDate(l.expiresAt)}</td>
+                      <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap text-xs">{fmtDate(l.renewalDate)}</td>
+                      <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap text-xs">{fmtDate(l.expiresAt)}</td>
                       <td className="px-4 py-3">
                         {l.status !== 'revoked' ? (
                           <button
@@ -209,7 +209,7 @@ export default function LicenseTable({ licenses }: Props) {
                             회수
                           </button>
                         ) : (
-                          <span className="text-xs text-[#475569]">—</span>
+                          <span className="text-xs text-[#94A3B8]">—</span>
                         )}
                       </td>
                     </tr>
@@ -223,21 +223,21 @@ export default function LicenseTable({ licenses }: Props) {
         {/* 페이지네이션 */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-[#1E293B]">
-            <span className="text-xs text-[#475569]">
+            <span className="text-xs text-[#94A3B8]">
               {filtered.length}개 결과 · {page} / {totalPages} 페이지
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-1.5 rounded-lg border border-[#1E293B] text-[#475569] hover:text-white hover:border-[#38BDF8]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft size={14} />
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-1.5 rounded-lg border border-[#1E293B] text-[#475569] hover:text-white hover:border-[#38BDF8]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight size={14} />
               </button>
@@ -263,18 +263,18 @@ export default function LicenseTable({ licenses }: Props) {
               </div>
               <button
                 onClick={closeModal}
-                className="text-[#475569] hover:text-white transition-colors"
+                className="text-[#94A3B8] hover:text-white transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* 경고 문구 */}
-            <p className="text-sm text-[#94A3B8] mb-3 leading-relaxed">
+            <p className="text-sm text-[#E2E8F0] mb-3 leading-relaxed">
               이 라이선스를 회수하시겠습니까?{' '}
               <span className="text-white font-medium">사용자는 즉시 접근 권한을 잃게 됩니다.</span>
             </p>
-            <p className="font-mono text-xs text-[#475569] bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 mb-5">
+            <p className="font-mono text-xs text-[#94A3B8] bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 mb-5">
               {revokeTarget.serialKey}
             </p>
 
@@ -290,7 +290,7 @@ export default function LicenseTable({ licenses }: Props) {
               <button
                 onClick={closeModal}
                 disabled={revoking}
-                className="flex-1 py-2.5 rounded-xl border border-[#1E293B] text-sm text-[#94A3B8] hover:text-white hover:border-[#38BDF8]/30 transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl border border-[#1E293B] text-sm text-[#E2E8F0] hover:text-white hover:border-[#38BDF8]/30 transition-colors disabled:opacity-50"
               >
                 취소
               </button>

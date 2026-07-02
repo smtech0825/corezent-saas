@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">{name}님, 다시 오신 것을 환영합니다 👋</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">계정 현황을 확인하세요.</p>
+        <p className="text-[#E2E8F0] text-sm mt-1">계정 현황을 확인하세요.</p>
       </div>
 
       {/* 온보딩 체크리스트 (구매 회원 · 닫기 전까지) */}
@@ -117,10 +117,10 @@ export default async function DashboardPage() {
                     <p className="text-sm text-white font-medium truncate">
                       {priceNameMap.get(sub.product_price_id) ?? '알 수 없음'}
                     </p>
-                    <p className="text-xs text-[#475569] mt-0.5">
+                    <p className="text-xs text-[#94A3B8] mt-0.5">
                       {sub.billing_interval === 'annual' ? '연간' : '월간'} 플랜
                     </p>
-                    <p className="text-xs text-[#475569] mt-0.5">
+                    <p className="text-xs text-[#94A3B8] mt-0.5">
                       시작일 {fmtDate(sub.current_period_start)}
                     </p>
                   </div>
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
                   <div>
                     <p className="text-sm text-white font-medium">{priceNameMap.get(order.product_price_id) ?? '주문'}</p>
-                    <p className="text-xs text-[#475569] mt-0.5">
+                    <p className="text-xs text-[#94A3B8] mt-0.5">
                       {fmtDate(order.created_at)}
                     </p>
                   </div>
@@ -177,10 +177,10 @@ function StatCard({ icon, label, value, href }: {
         <div className="w-9 h-9 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center">
           {icon}
         </div>
-        <ArrowRight size={14} className="text-[#475569] group-hover:text-[#38BDF8] transition-colors" />
+        <ArrowRight size={14} className="text-[#94A3B8] group-hover:text-[#38BDF8] transition-colors" />
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-[#94A3B8] mt-1">{label}</p>
+      <p className="text-xs text-[#E2E8F0] mt-1">{label}</p>
     </Link>
   )
 }
@@ -204,7 +204,7 @@ function Section({ title, href, children }: {
 function EmptyState({ message, cta, href }: { message: string; cta: string; href: string }) {
   return (
     <div className="py-8 text-center">
-      <p className="text-sm text-[#475569] mb-3">{message}</p>
+      <p className="text-sm text-[#94A3B8] mb-3">{message}</p>
       <Link href={href} className="text-xs text-[#38BDF8] hover:underline">{cta} →</Link>
     </div>
   )
@@ -215,7 +215,7 @@ function StatusBadge({ status }: { status: string }) {
     paid:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
     failed:    'text-red-400 bg-red-500/10 border-red-500/20',
-    refunded:  'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]',
+    refunded:  'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',
   }
   const labelMap: Record<string, string> = {
     paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨',

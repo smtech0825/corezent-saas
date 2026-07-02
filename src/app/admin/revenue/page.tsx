@@ -103,7 +103,7 @@ export default async function RevenuePage() {
     <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">매출 리포트</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
+        <p className="text-sm text-[#E2E8F0] mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
       </div>
 
       {/* KPI 카드 */}
@@ -131,7 +131,7 @@ export default async function RevenuePage() {
         </div>
         <div className="flex gap-1.5 mt-1.5">
           {months.map((m) => (
-            <span key={m.key} className="flex-1 text-center text-[9px] text-[#475569]">{m.label}</span>
+            <span key={m.key} className="flex-1 text-center text-[9px] text-[#94A3B8]">{m.label}</span>
           ))}
         </div>
       </section>
@@ -140,13 +140,13 @@ export default async function RevenuePage() {
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white mb-4">상품별 매출</h2>
         {products.length === 0 ? (
-          <p className="text-sm text-[#475569] py-2">매출 데이터가 없습니다.</p>
+          <p className="text-sm text-[#94A3B8] py-2">매출 데이터가 없습니다.</p>
         ) : (
           <div className="space-y-3">
             {products.map((p) => (
               <div key={p.name}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-[#94A3B8] truncate max-w-[60%]">{p.name}</span>
+                  <span className="text-xs text-[#E2E8F0] truncate max-w-[60%]">{p.name}</span>
                   <span className="text-xs font-semibold text-white tabular-nums">{formatKRW(p.cents)}</span>
                 </div>
                 <div className="h-2.5 bg-[#1E293B] rounded-full overflow-hidden">
@@ -169,7 +169,7 @@ function Kpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string
         {icon}
       </div>
       <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-      <p className="text-xs text-[#94A3B8] mt-1">{label}{sub && <span className="text-[#475569]"> · {sub}</span>}</p>
+      <p className="text-xs text-[#E2E8F0] mt-1">{label}{sub && <span className="text-[#94A3B8]"> · {sub}</span>}</p>
     </div>
   )
 }

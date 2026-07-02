@@ -31,7 +31,7 @@ interface Reply {
 const statusColors: Record<string, string> = {
   open:     'text-amber-400 bg-amber-400/10',
   answered: 'text-blue-400 bg-blue-400/10',
-  closed:   'text-[#475569] bg-[#1E293B]',
+  closed:   'text-[#94A3B8] bg-[#1E293B]',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -171,22 +171,22 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                     <span className="shrink-0 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-sm font-medium truncate ${unread ? 'text-white' : 'text-[#94A3B8]'}`}>
+                    <p className={`text-sm font-medium truncate ${unread ? 'text-white' : 'text-[#E2E8F0]'}`}>
                       {ticket.subject}
                     </p>
-                    <p className="text-xs text-[#475569] mt-0.5">
+                    <p className="text-xs text-[#94A3B8] mt-0.5">
                       {fmtDate(ticket.created_at)} · 업데이트 {fmtDate(ticket.updated_at)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[ticket.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[ticket.status] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
                     {STATUS_LABELS[ticket.status] ?? ticket.status}
                   </span>
                   <ChevronDown
                     size={15}
-                    className={`text-[#475569] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`text-[#94A3B8] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                   />
                 </div>
               </button>
@@ -196,14 +196,14 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                 <div className="px-6 pb-6 border-t border-[#1E293B]/50">
                   {loadingId === ticket.id ? (
                     <div className="py-8 flex justify-center">
-                      <Loader2 size={18} className="animate-spin text-[#475569]" />
+                      <Loader2 size={18} className="animate-spin text-[#94A3B8]" />
                     </div>
                   ) : (
                     <>
                       {/* 메시지 스레드 */}
                       <div className="space-y-3 pt-4 mb-4">
                         {replies.length === 0 ? (
-                          <p className="text-sm text-[#475569] text-center py-4">아직 메시지가 없습니다.</p>
+                          <p className="text-sm text-[#94A3B8] text-center py-4">아직 메시지가 없습니다.</p>
                         ) : (
                           replies.map((reply) => (
                             <div
@@ -218,9 +218,9 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                                 <span className={`text-xs font-semibold ${reply.is_admin ? 'text-amber-400' : 'text-[#38BDF8]'}`}>
                                   {reply.is_admin ? '🛡 고객지원팀' : '나'}
                                 </span>
-                                <span className="text-xs text-[#475569]">{fmtDateTime(reply.created_at)}</span>
+                                <span className="text-xs text-[#94A3B8]">{fmtDateTime(reply.created_at)}</span>
                               </div>
-                              <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+                              <p className="text-sm text-[#E2E8F0] leading-relaxed whitespace-pre-wrap">{reply.message}</p>
                             </div>
                           ))
                         )}
@@ -254,7 +254,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                               type="button"
                               onClick={() => closeTicket(ticket.id)}
                               disabled={closing === ticket.id}
-                              className="flex items-center gap-1.5 text-xs text-[#475569] hover:text-red-400 border border-[#1E293B] hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                              className="flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-red-400 border border-[#1E293B] hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
                             >
                               {closing === ticket.id
                                 ? <Loader2 size={11} className="animate-spin" />
@@ -267,7 +267,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                       )}
 
                       {ticket.status === 'closed' && (
-                        <p className="text-xs text-[#475569] text-center py-2">
+                        <p className="text-xs text-[#94A3B8] text-center py-2">
                           종료된 문의입니다. 다시 열려면 고객센터에 문의해 주세요.
                         </p>
                       )}

@@ -47,9 +47,9 @@ const statusColors: Record<string, string> = {
   active:    'text-emerald-400 bg-emerald-400/10',
   open:      'text-amber-400 bg-amber-400/10',
   answered:  'text-blue-400 bg-blue-400/10',
-  closed:    'text-[#475569] bg-[#1E293B]',
+  closed:    'text-[#94A3B8] bg-[#1E293B]',
   admin:     'text-amber-400 bg-amber-400/10',
-  user:      'text-[#94A3B8] bg-[#1E293B]',
+  user:      'text-[#E2E8F0] bg-[#1E293B]',
 }
 
 /** 주문 상태 표시 라벨 — UserTable.tsx의 한글 라벨과 통일 (paid=결제됨/pending=대기 중/refunded=환불됨/cancelled=취소됨) */
@@ -173,7 +173,7 @@ export default async function AdminPage() {
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-white">개요</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
+        <p className="text-sm text-[#E2E8F0] mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
       </div>
 
       {/* 통계 카드 4개 */}
@@ -182,7 +182,7 @@ export default async function AdminPage() {
         {/* ① Total Users — 월간/연간 신규 서브 지표 */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">총 사용자</p>
+            <p className="text-sm text-[#E2E8F0]">총 사용자</p>
             <span className="w-9 h-9 rounded-xl bg-[#38BDF8]/10 flex items-center justify-center">
               <Users size={17} className="text-[#38BDF8]" />
             </span>
@@ -205,7 +205,7 @@ export default async function AdminPage() {
         {/* ② Total Revenue — 월간/연간 매출 서브 지표 */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">총 매출</p>
+            <p className="text-sm text-[#E2E8F0]">총 매출</p>
             <span className="w-9 h-9 rounded-xl bg-emerald-400/10 flex items-center justify-center">
               <DollarSign size={17} className="text-emerald-400" />
             </span>
@@ -228,7 +228,7 @@ export default async function AdminPage() {
         {/* ③ Active Licenses */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">활성 라이선스</p>
+            <p className="text-sm text-[#E2E8F0]">활성 라이선스</p>
             <span className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center">
               <Key size={17} className="text-violet-400" />
             </span>
@@ -239,7 +239,7 @@ export default async function AdminPage() {
         {/* ④ Open Tickets — 아이콘 클릭 → /admin/support */}
         <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#94A3B8]">열린 티켓</p>
+            <p className="text-sm text-[#E2E8F0]">열린 티켓</p>
             <Link
               href="/admin/support"
               title="고객지원 티켓 보기"
@@ -259,39 +259,39 @@ export default async function AdminPage() {
         <div className="xl:col-span-3 border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-[#94A3B8]" />
+              <TrendingUp size={16} className="text-[#E2E8F0]" />
               <h2 className="text-sm font-semibold text-white">최근 주문</h2>
             </div>
             <a href="/admin/orders" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
           </div>
           {recentOrders.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#475569]">아직 주문이 없습니다.</div>
+            <div className="py-12 text-center text-sm text-[#94A3B8]">아직 주문이 없습니다.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1E293B]">
-                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">사용자</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">금액</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">날짜</th>
+                    <th className="text-left px-6 py-3 text-xs text-[#94A3B8] font-medium">사용자</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">금액</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">날짜</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentOrders.map((order) => (
                     <tr key={order.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
-                      <td className="px-6 py-3 text-[#94A3B8] truncate max-w-[160px]">
+                      <td className="px-6 py-3 text-[#E2E8F0] truncate max-w-[160px]">
                         {emailMap.get(order.user_id) || '—'}
                       </td>
                       <td className="px-4 py-3 text-white font-medium">
                         {fmtCurrency(order.amount ?? 0)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
                           {orderStatusLabel[order.status] ?? order.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#475569] whitespace-nowrap">
+                      <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">
                         {fmtDate(order.created_at)}
                       </td>
                     </tr>
@@ -306,13 +306,13 @@ export default async function AdminPage() {
         <div className="xl:col-span-2 border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
             <div className="flex items-center gap-2">
-              <UserPlus size={16} className="text-[#94A3B8]" />
+              <UserPlus size={16} className="text-[#E2E8F0]" />
               <h2 className="text-sm font-semibold text-white">최근 가입자</h2>
             </div>
             <a href="/admin/users" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
           </div>
           {(!recentUsers || recentUsers.length === 0) ? (
-            <div className="py-12 text-center text-sm text-[#475569]">아직 사용자가 없습니다.</div>
+            <div className="py-12 text-center text-sm text-[#94A3B8]">아직 사용자가 없습니다.</div>
           ) : (
             <div className="divide-y divide-[#1E293B]/50">
               {recentUsers.map((u) => (
@@ -322,9 +322,9 @@ export default async function AdminPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-white font-medium truncate">{u.name || '알 수 없음'}</p>
-                    <p className="text-xs text-[#475569]">{fmtDate(u.created_at)}</p>
+                    <p className="text-xs text-[#94A3B8]">{fmtDate(u.created_at)}</p>
                   </div>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColors[u.role] ?? 'text-[#94A3B8] bg-[#1E293B]'}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColors[u.role] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
                     {u.role}
                   </span>
                 </div>
@@ -354,9 +354,9 @@ function SubMetric({
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[11px] text-[#475569] shrink-0">{label}</span>
+      <span className="text-[11px] text-[#94A3B8] shrink-0">{label}</span>
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[11px] font-medium text-[#94A3B8] truncate">{value}</span>
+        <span className="text-[11px] font-medium text-[#E2E8F0] truncate">{value}</span>
         {growth !== null && (
           <span
             className={`flex items-center gap-0.5 text-[10px] font-semibold shrink-0 ${

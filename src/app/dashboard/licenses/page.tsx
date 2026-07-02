@@ -92,9 +92,9 @@ export default async function LicensesPage({
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">내 라이선스</h1>
-        <p className="text-[#94A3B8] text-sm mt-1">
+        <p className="text-[#E2E8F0] text-sm mt-1">
           제품 라이선스 키를 관리하세요.
-          {total > 0 && <span className="ml-2 text-[#475569]">(총 {total}개)</span>}
+          {total > 0 && <span className="ml-2 text-[#94A3B8]">(총 {total}개)</span>}
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default async function LicensesPage({
         <>
           <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#475569] font-medium">
+            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#94A3B8] font-medium">
               <span>라이선스 키</span>
               <span>제품</span>
               <span>상태</span>
@@ -139,19 +139,19 @@ export default async function LicensesPage({
 
                   {/* 제품명 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#475569] md:hidden">제품</span>
-                    <span className="text-sm text-[#94A3B8]">{lic.products?.name ?? '—'}</span>
+                    <span className="text-xs text-[#94A3B8] md:hidden">제품</span>
+                    <span className="text-sm text-[#E2E8F0]">{lic.products?.name ?? '—'}</span>
                   </div>
 
                   {/* 상태 */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#475569] md:hidden">상태</span>
+                    <span className="text-xs text-[#94A3B8] md:hidden">상태</span>
                     <LicenseStatusBadge status={lic.status} />
                   </div>
 
                   {/* Period */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#475569] md:hidden">주기</span>
+                    <span className="text-xs text-[#94A3B8] md:hidden">주기</span>
                     {period ? (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                         period === 'annual'
@@ -161,23 +161,23 @@ export default async function LicensesPage({
                         {period === 'annual' ? '연간' : '월간'}
                       </span>
                     ) : (
-                      <span className="text-xs text-[#475569]">—</span>
+                      <span className="text-xs text-[#94A3B8]">—</span>
                     )}
                   </div>
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#475569] md:hidden">만료일</span>
+                    <span className="text-xs text-[#94A3B8] md:hidden">만료일</span>
                     {lic.status === 'expired' ? (
-                      <span className="text-sm text-[#94A3B8]">만료</span>
+                      <span className="text-sm text-[#E2E8F0]">만료</span>
                     ) : lic.status === 'revoked' || lic.status === 'cancelled' ? (
-                      <span className="text-sm text-[#94A3B8]">해지</span>
+                      <span className="text-sm text-[#E2E8F0]">해지</span>
                     ) : effectiveExpiry ? (
-                      <span className="text-sm text-[#94A3B8]">
+                      <span className="text-sm text-[#E2E8F0]">
                         {new Date(effectiveExpiry).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     ) : (
-                      <span className="text-sm text-[#475569]">평생</span>
+                      <span className="text-sm text-[#94A3B8]">평생</span>
                     )}
                   </div>
 
@@ -196,14 +196,14 @@ export default async function LicensesPage({
                         {lic.products?.slug && (
                           <Link
                             href={`/changelog?product=${lic.products.slug}`}
-                            className="text-[11px] text-[#475569] hover:text-[#94A3B8] transition-colors"
+                            className="text-[11px] text-[#94A3B8] hover:text-[#E2E8F0] transition-colors"
                           >
                             v{changelog.version} · 릴리스 노트
                           </Link>
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-[#475569]">—</span>
+                      <span className="text-xs text-[#94A3B8]">—</span>
                     )}
                   </div>
                 </div>
@@ -221,10 +221,10 @@ export default async function LicensesPage({
       ) : (
         <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl py-16 text-center">
           <div className="w-12 h-12 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-4">
-            <Key size={22} className="text-[#475569]" />
+            <Key size={22} className="text-[#94A3B8]" />
           </div>
           <p className="text-white font-medium mb-1">아직 라이선스가 없습니다</p>
-          <p className="text-sm text-[#475569] mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
+          <p className="text-sm text-[#94A3B8] mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
           <a href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-[#38BDF8] hover:underline">
             제품 둘러보기 →
           </a>
@@ -237,7 +237,7 @@ export default async function LicensesPage({
 function LicenseStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     active:   { label: '활성',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-    inactive: { label: '비활성', cls: 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]' },
+    inactive: { label: '비활성', cls: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]' },
     expired:  { label: '만료',   cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
     revoked:  { label: '해지',   cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
   }

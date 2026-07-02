@@ -55,7 +55,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
           CoreZent
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-[#94A3B8] hover:text-white p-1">
+          <button onClick={onClose} className="lg:hidden text-[#E2E8F0] hover:text-white p-1">
             <X size={18} />
           </button>
         )}
@@ -74,7 +74,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? 'bg-[#38BDF8]/10 text-[#38BDF8]'
-                  : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60'
+                  : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
               }`}
             >
               <Icon size={16} className={active ? 'text-[#38BDF8]' : ''} />
@@ -99,7 +99,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
           </span>
           <div className="min-w-0">
             <p className="text-sm text-white font-medium truncate">{user.name}</p>
-            <p className="text-xs text-[#475569] truncate">{user.email}</p>
+            <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
           </div>
         </div>
 

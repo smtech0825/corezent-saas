@@ -54,7 +54,7 @@ function getStatusBadge(status: string, expiresAt: string | null): { label: stri
   const map: Record<string, { label: string; cls: string }> = {
     pending: { label: '대기 중', cls: 'text-amber-400 bg-amber-400/10' },
   }
-  return map[status] ?? { label: status, cls: 'text-[#94A3B8] bg-[#1E293B]' }
+  return map[status] ?? { label: status, cls: 'text-[#E2E8F0] bg-[#1E293B]' }
 }
 
 export default function OrderTable({ orders, totalRevenue }: Props) {
@@ -134,22 +134,22 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">주문</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">총 {orders.length}건의 주문</p>
+          <p className="text-sm text-[#E2E8F0] mt-1">총 {orders.length}건의 주문</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2 tabular-nums">
             {formatKRW(totalRevenue)}
           </p>
-          <p className="text-xs text-[#475569] mt-0.5">총 매출 (결제 완료)</p>
+          <p className="text-xs text-[#94A3B8] mt-0.5">총 매출 (결제 완료)</p>
         </div>
 
         {/* 검색 바 — 테이블 우측 상단 */}
         <div className="sm:self-end">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569] pointer-events-none" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
             <input
               value={rawSearch}
               onChange={(e) => setRawSearch(e.target.value)}
               placeholder="주문 ID 또는 이메일로 검색…"
-              className="w-64 bg-[#111A2E] border border-[#1E293B] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-[#475569] focus:outline-none focus:border-[#38BDF8] transition-colors"
+              className="w-64 bg-[#111A2E] border border-[#1E293B] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8] transition-colors"
             />
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
           aria-label="시작일"
           className="bg-[#111A2E] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#38BDF8]"
         />
-        <span className="text-[#475569] text-sm">~</span>
+        <span className="text-[#94A3B8] text-sm">~</span>
         <input
           type="date"
           value={dateTo}
@@ -191,13 +191,13 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
         >
           <Download size={14} /> CSV 내보내기
         </button>
-        <span className="text-xs text-[#475569] ml-auto">{filtered.length}건</span>
+        <span className="text-xs text-[#94A3B8] ml-auto">{filtered.length}건</span>
       </div>
 
       {/* 테이블 카드 */}
       <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#475569]">
+          <div className="py-16 text-center text-sm text-[#94A3B8]">
             {(search || statusFilter || dateFrom || dateTo) ? '조건에 맞는 주문이 없습니다.' : '주문이 없습니다.'}
           </div>
         ) : (
@@ -206,13 +206,13 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1E293B]">
-                    <th className="text-left px-6 py-3 text-xs text-[#475569] font-medium">주문 ID</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">고객</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">금액</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">상태</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">결제 주기</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">날짜</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#475569] font-medium">만료일</th>
+                    <th className="text-left px-6 py-3 text-xs text-[#94A3B8] font-medium">주문 ID</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">고객</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">금액</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">결제 주기</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">날짜</th>
+                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">만료일</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,9 +225,9 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                         className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-3">
-                          <span className="font-mono text-xs text-[#94A3B8]">#{o.shortId}</span>
+                          <span className="font-mono text-xs text-[#E2E8F0]">#{o.shortId}</span>
                         </td>
-                        <td className="px-4 py-3 text-[#94A3B8] truncate max-w-[200px]">{o.email}</td>
+                        <td className="px-4 py-3 text-[#E2E8F0] truncate max-w-[200px]">{o.email}</td>
                         <td className="px-4 py-3 text-white font-medium tabular-nums">
                           {formatKRW(o.amount)}
                         </td>
@@ -246,17 +246,17 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                               {o.period === 'annual' ? '연간' : '월간'}
                             </span>
                           ) : (
-                            <span className="text-[#475569]">—</span>
+                            <span className="text-[#94A3B8]">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-[#475569] whitespace-nowrap">{fmtDate(o.created_at)}</td>
+                        <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">{fmtDate(o.created_at)}</td>
                         <td className="px-4 py-3">
                           {o.expires_at ? (
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap text-amber-400 bg-amber-400/10 border border-amber-400/20">
                               {fmtDate(o.expires_at)}
                             </span>
                           ) : (
-                            <span className="text-[#475569]">—</span>
+                            <span className="text-[#94A3B8]">—</span>
                           )}
                         </td>
                       </tr>
@@ -269,14 +269,14 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
             {/* 페이지네이션 */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-3 border-t border-[#1E293B]">
-                <p className="text-xs text-[#475569]">
+                <p className="text-xs text-[#94A3B8]">
                   {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} / {filtered.length}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage === 1}
-                    className="p-1.5 rounded text-[#475569] hover:text-white disabled:opacity-30 transition-colors"
+                    className="p-1.5 rounded text-[#94A3B8] hover:text-white disabled:opacity-30 transition-colors"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -287,7 +287,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                       className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
                         n === safePage
                           ? 'bg-[#38BDF8] text-[#0B1120]'
-                          : 'text-[#475569] hover:text-white'
+                          : 'text-[#94A3B8] hover:text-white'
                       }`}
                     >
                       {n}
@@ -296,7 +296,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
-                    className="p-1.5 rounded text-[#475569] hover:text-white disabled:opacity-30 transition-colors"
+                    className="p-1.5 rounded text-[#94A3B8] hover:text-white disabled:opacity-30 transition-colors"
                   >
                     <ChevronRight size={16} />
                   </button>

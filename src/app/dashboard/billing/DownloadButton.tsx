@@ -108,14 +108,14 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
       {open && (
         <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#111A2E] border border-[#1E293B] rounded-xl shadow-lg z-20 overflow-hidden">
           <div className="px-3 py-2 border-b border-[#1E293B]">
-            <p className="text-[10px] text-[#475569] font-mono">{version}</p>
+            <p className="text-[10px] text-[#94A3B8] font-mono">{version}</p>
           </div>
           {platforms.map(([key, url]) => (
             <button
               key={key}
               type="button"
               onClick={() => handleDownload(url)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[#94A3B8] hover:text-white hover:bg-[#1E293B]/60 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60 transition-colors text-left"
             >
               <Download size={11} className="text-emerald-400 shrink-0" />
               {PLATFORM_LABELS[key] ?? key}

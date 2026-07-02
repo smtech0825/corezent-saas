@@ -64,7 +64,7 @@ export function IssueDiscountForm({ userId }: { userId: string }) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-[#475569]">$</span>
+        <span className="text-xs text-[#94A3B8]">$</span>
         <input
           type="number"
           step="0.01"
@@ -76,7 +76,7 @@ export function IssueDiscountForm({ userId }: { userId: string }) {
         <button
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#94A3B8] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#E2E8F0] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
         >
           {pending ? <Loader2 size={12} className="animate-spin" /> : <Ticket size={12} />}
           할인 발급
@@ -99,7 +99,7 @@ export function ResolveButton({ commissionId }: { commissionId: string }) {
         catch { /* 030 미적용/권한 오류 — 버튼 상태 유지 */ }
       })}
       disabled={pending || done}
-      className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#94A3B8] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+      className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#E2E8F0] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
     >
       {pending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
       {done ? '해제됨' : '검토 완료'}

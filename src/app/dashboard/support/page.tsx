@@ -98,7 +98,7 @@ export default async function SupportPage({
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-white">고객지원</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">
+        <p className="text-sm text-[#E2E8F0] mt-1">
           문의를 남겨주시면 최대한 빠르게 답변드리겠습니다.
         </p>
       </div>
@@ -111,7 +111,7 @@ export default async function SupportPage({
         <form action={submitTicket} className="px-6 py-6 space-y-4">
           {/* 제목 */}
           <div className="space-y-1.5">
-            <label htmlFor="subject" className="text-xs font-medium text-[#94A3B8]">
+            <label htmlFor="subject" className="text-xs font-medium text-[#E2E8F0]">
               제목 <span className="text-red-400">*</span>
             </label>
             <input
@@ -126,7 +126,7 @@ export default async function SupportPage({
 
           {/* 우선순위 */}
           <div className="space-y-1.5">
-            <label htmlFor="priority" className="text-xs font-medium text-[#94A3B8]">우선순위</label>
+            <label htmlFor="priority" className="text-xs font-medium text-[#E2E8F0]">우선순위</label>
             <select
               id="priority"
               name="priority"
@@ -141,7 +141,7 @@ export default async function SupportPage({
 
           {/* 메시지 */}
           <div className="space-y-1.5">
-            <label htmlFor="message" className="text-xs font-medium text-[#94A3B8]">
+            <label htmlFor="message" className="text-xs font-medium text-[#E2E8F0]">
               내용 <span className="text-red-400">*</span>
             </label>
             <textarea

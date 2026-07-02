@@ -47,7 +47,7 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
           <div className="flex items-center gap-3 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-[#94A3B8] hover:text-white p-1"
+              className="text-[#E2E8F0] hover:text-white p-1"
             >
               <Menu size={20} />
             </button>
@@ -58,8 +58,8 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
               관리자 패널
             </span>
           </div>
-          <div className="hidden sm:block text-xs text-[#475569] truncate max-w-[200px] lg:max-w-none">
-            로그인 계정 <span className="text-[#94A3B8]">{user.email}</span>
+          <div className="hidden sm:block text-xs text-[#94A3B8] truncate max-w-[200px] lg:max-w-none">
+            로그인 계정 <span className="text-[#E2E8F0]">{user.email}</span>
           </div>
         </div>
 

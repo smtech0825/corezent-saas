@@ -20,7 +20,7 @@ export default function RoleSelect({ userId, currentRole, onChange }: Props) {
     <select
       defaultValue={currentRole}
       onChange={handleChange}
-      className="bg-[#0B1120] border border-[#1E293B] text-[#94A3B8] text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-amber-500/50 cursor-pointer"
+      className="bg-[#0B1120] border border-[#1E293B] text-[#E2E8F0] text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-amber-500/50 cursor-pointer"
     >
       <option value="user">사용자</option>
       <option value="admin">관리자</option>
