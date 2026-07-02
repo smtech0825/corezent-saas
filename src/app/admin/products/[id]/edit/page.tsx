@@ -22,7 +22,7 @@ export default async function EditProductPage({
 
   const { data: product } = await client
     .from('products')
-    .select('id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs')
+    .select('id, name, slug, tagline, description, category, category_group, option_group, option_axis1_name, option_axis1_label, option_axis2_name, option_axis2_label, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs')
     .eq('id', id)
     .single()
 
@@ -81,6 +81,11 @@ export default async function EditProductPage({
     description: product.description ?? '',
     category: product.category ?? 'desktop',
     category_group: (product.category_group as string) ?? '',
+    option_group: (product.option_group as string) ?? '',
+    option_axis1_name: (product.option_axis1_name as string) ?? '',
+    option_axis1_label: (product.option_axis1_label as string) ?? '',
+    option_axis2_name: (product.option_axis2_name as string) ?? '',
+    option_axis2_label: (product.option_axis2_label as string) ?? '',
     badge_text: (product.badge_text as string) ?? '',
     badge_color: ((product.badge_color as string) ?? 'blue') as 'blue' | 'green' | 'yellow',
     logo_url: product.logo_url ?? '',
@@ -111,6 +116,11 @@ export default async function EditProductPage({
         description: data.description || null,
         category: data.category,
         category_group: data.category_group || null,
+        option_group: data.option_group || null,
+        option_axis1_name: data.option_axis1_name || null,
+        option_axis1_label: data.option_axis1_label || null,
+        option_axis2_name: data.option_axis2_name || null,
+        option_axis2_label: data.option_axis2_label || null,
         badge_text: data.badge_text || null,
         badge_color: data.badge_color,
         logo_url: data.logo_url || null,

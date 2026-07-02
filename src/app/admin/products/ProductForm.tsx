@@ -39,6 +39,13 @@ export interface ProductFormData {
   description: string
   category: string
   category_group: string
+  // 옵션 진열(표시 계층) — 같은 option_group끼리 공개 카드 1개로 묶여 옵션 드롭다운이 된다.
+  // 전부 자유 텍스트, 미사용 시 비워두면 단독 카드로 동작(결제·slug·라이선스 무관).
+  option_group: string
+  option_axis1_name: string
+  option_axis1_label: string
+  option_axis2_name: string
+  option_axis2_label: string
   badge_text: string
   badge_color: 'blue' | 'green' | 'yellow'
   logo_url: string
@@ -175,6 +182,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       description: '',
       category: 'desktop',
       category_group: '',
+      option_group: '',
+      option_axis1_name: '',
+      option_axis1_label: '',
+      option_axis2_name: '',
+      option_axis2_label: '',
       badge_text: '',
       badge_color: 'blue',
       logo_url: '',
@@ -359,6 +371,61 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             className={inputCls}
           />
         </Field>
+
+        {/* ── 옵션 진열(표시 계층) ─────────────────────────────────────────
+            같은 "묶음 키"를 가진 상품들이 공개 카드 1개로 묶여 옵션 드롭다운이 된다.
+            결제·slug·라이선스와 무관한 순수 표시용 — 미사용 시 전부 비워두면 단독 카드. */}
+        <div className="border border-[#1E293B] rounded-xl p-4 space-y-4 bg-[#0B1120]/40">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={14} className="text-[#38BDF8]" />
+            <span className="text-sm font-semibold text-white">옵션 진열 (선택)</span>
+            <span className="text-xs text-[#94A3B8]">같은 묶음 키끼리 한 카드로 묶여 옵션 선택 UI가 됩니다</span>
+          </div>
+
+          <Field label="묶음 키">
+            <input
+              value={form.option_group}
+              onChange={(e) => set('option_group', e.target.value)}
+              placeholder="예: geniework (같은 카드로 묶을 상품들에 동일 값 · 비우면 단독 카드)"
+              className={inputCls}
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="축1 제목">
+              <input
+                value={form.option_axis1_name}
+                onChange={(e) => set('option_axis1_name', e.target.value)}
+                placeholder="예: 주기"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="이 상품의 축1 값">
+              <input
+                value={form.option_axis1_label}
+                onChange={(e) => set('option_axis1_label', e.target.value)}
+                placeholder="예: 월간"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="축2 제목 (선택)">
+              <input
+                value={form.option_axis2_name}
+                onChange={(e) => set('option_axis2_name', e.target.value)}
+                placeholder="예: PC 수 (축이 1개면 비움)"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="이 상품의 축2 값 (선택)">
+              <input
+                value={form.option_axis2_label}
+                onChange={(e) => set('option_axis2_label', e.target.value)}
+                placeholder="예: 3PC용"
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="플랫폼 유형 *">
