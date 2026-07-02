@@ -4,7 +4,7 @@
  *        주문/구독 이벤트를 수신하여 DB(orders, licenses, subscriptions)에 동기화합니다.
  *
  * 처리하는 이벤트:
- *   - order_created              → orders + licenses 생성
+ *   - order_created              → orders + licenses 생성 (수량 N 주문 → 라이선스 N개)
  *   - subscription_created       → subscriptions 생성
  *   - subscription_updated       → 구독 상태/만료일 업데이트 + license.expires_at 동기화
  *   - subscription_cancelled     → 취소 처리 + license expired
@@ -24,7 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
   verifyLSWebhook,
   generateSerialKey,
-  fetchLsLicenseKey,
+  fetchLsLicenseKeys,
   type LSWebhookPayload,
   type LSOrderAttributes,
   type LSSubscriptionAttributes,
@@ -79,6 +79,19 @@ function tierFromGenieWork(slug: string | null | undefined): SupaTier | null {
   if (s.includes('3pc'))  return '3pc'
   if (s.includes('1pc'))  return '1pc'
   return null
+}
+
+/**
+ * @함수명: normalizeQuantity
+ * @설명: LS 웹훅의 수량 필드를 정규화합니다 — 누락·비수치·1 미만은 1로,
+ *        외부 입력이므로 상한(100)으로 방어합니다. (UI는 10까지만 허용)
+ * @매개변수: raw - first_order_item.quantity / first_subscription_item.quantity
+ * @반환값: 1~100 정수
+ */
+function normalizeQuantity(raw: unknown): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return 1
+  return Math.max(1, Math.min(100, Math.floor(n)))
 }
 
 export async function POST(req: NextRequest) {
@@ -176,9 +189,12 @@ async function findUserId(
   return data ?? null
 }
 
-// ─── 구독 ID로 연결된 라이선스 시리얼 키 조회 (Sheets 업데이트용) ─────────────
+// ─── 구독 ID로 연결된 라이선스 목록 조회 (Sheets/라이선스 DB 동기화용) ─────────
+// 수량 N 주문은 한 주문에 라이선스가 N개 — 전부 반환한다 (created_at 순).
 
-async function findLicenseByLsSubId(lsSubId: string): Promise<{ serialKey: string; licenseId: string; orderId: string } | null> {
+async function findLicensesByLsSubId(
+  lsSubId: string,
+): Promise<{ orderId: string; licenses: { licenseId: string; serialKey: string }[] } | null> {
   const admin = createAdminClient()
   const { data: sub } = await admin
     .from('subscriptions')
@@ -187,14 +203,17 @@ async function findLicenseByLsSubId(lsSubId: string): Promise<{ serialKey: strin
     .single()
   if (!sub?.order_id) return null
 
-  const { data: lic } = await admin
+  const { data: lics } = await admin
     .from('licenses')
     .select('id, serial_key')
     .eq('order_id', sub.order_id)
-    .single()
-  if (!lic) return null
+    .order('created_at', { ascending: true })
+  if (!lics || lics.length === 0) return null
 
-  return { serialKey: lic.serial_key, licenseId: lic.id, orderId: sub.order_id }
+  return {
+    orderId: sub.order_id,
+    licenses: lics.map((l) => ({ licenseId: l.id as string, serialKey: l.serial_key as string })),
+  }
 }
 
 // ─── order_created 핸들러 ──────────────────────────────────────────────────
@@ -273,7 +292,9 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 주문 생성 완료: ${order.id}`)
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
-    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId)
+    // 수량 N 주문 → 라이선스 N개 발급
+    const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
+    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity)
   }
 
   // 추천 커미션 적립 (일회성·구독 초기 공통의 "첫 결제"). 갱신은 subscription_payment_success.
@@ -442,7 +463,9 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
   if (productPrice?.product_id && orderId) {
-    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId)
+    // 구독 수량(좌석) N → 라이선스 N개 발급
+    const quantity = normalizeQuantity(attrs.first_subscription_item?.quantity)
+    await createLicense(userId, orderId, productPrice.product_id, attrs.user_email, attrs.user_name, lsOrderId, quantity)
   }
 }
 
@@ -472,7 +495,7 @@ async function handleLicenseKeyCreated(payload: LSWebhookPayload) {
   }
 
   // GW DB에 LS 키 반영 (행 있으면 UPDATE, 없으면 stub INSERT)
-  const { action } = await supaApplyLsKeyForOrder({
+  const { action, replacedKey } = await supaApplyLsKeyForOrder({
     lsOrderId,
     lsKey,
     product: 'geniework',
@@ -481,7 +504,8 @@ async function handleLicenseKeyCreated(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] license_key_created: geniework GW DB ${action} (order_id=${lsOrderId})`)
 
   // 본체 licenses 행이 이미 있으면 serial_key·LS키 컬럼 동기화 (없으면 subscription_created가 finalKey로 생성)
-  await syncCoreLicenseKey(lsOrderId, lsKey)
+  // replacedKey가 있으면 GW DB에서 교체된 "그 행"과 같은 키의 본체 행만 동기화 (수량 N 정합)
+  await syncCoreLicenseKey(lsOrderId, lsKey, replacedKey ?? null)
 }
 
 // LS product_id(숫자 문자열)로 CoreZent 본체에서 제품 판별.
@@ -508,7 +532,10 @@ async function resolveSupabaseProductByLsProductId(
 }
 
 // 본체 licenses 행이 있으면 serial_key·lemon_squeezy_license_key를 LS 키로 동기화(대시보드 일관).
-async function syncCoreLicenseKey(lsOrderId: string, lsKey: string) {
+// 수량 N 주문은 행이 N개일 수 있음 — LS 키(주문당 1개)는 "GW DB에서 교체된 옛 키(replacedKey)와
+// 같은 키의 행"에 반영해 두 DB의 키 집합을 일치시킨다. replacedKey가 없으면 첫 행에 반영.
+// 어느 행이든 이미 LS 키를 가지고 있으면 noop (멱등).
+async function syncCoreLicenseKey(lsOrderId: string, lsKey: string, replacedKey?: string | null) {
   const admin = createAdminClient()
   const { data: order } = await admin
     .from('orders')
@@ -516,16 +543,18 @@ async function syncCoreLicenseKey(lsOrderId: string, lsKey: string) {
     .eq('lemon_squeezy_order_id', lsOrderId)
     .maybeSingle()
   if (!order?.id) return
-  const { data: lic } = await admin
+  const { data: lics } = await admin
     .from('licenses')
     .select('id, serial_key')
     .eq('order_id', order.id)
-    .maybeSingle()
-  if (!lic?.id || lic.serial_key === lsKey) return
+    .order('created_at', { ascending: true })
+  if (!lics || lics.length === 0) return
+  if (lics.some((l) => l.serial_key === lsKey)) return
+  const target = (replacedKey ? lics.find((l) => l.serial_key === replacedKey) : null) ?? lics[0]
   const { error } = await admin
     .from('licenses')
     .update({ serial_key: lsKey, lemon_squeezy_license_key: lsKey })
-    .eq('id', lic.id)
+    .eq('id', target.id)
   if (error) console.error('[LS Webhook] 본체 licenses 키 동기화 실패:', error.message)
 }
 
@@ -551,35 +580,37 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
   if (error) throw new Error(`구독 업데이트 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 업데이트 완료: ${lsSubId} → ${newStatus}`)
 
-  // 라이선스 조회 (Sheets 업데이트 + DB 동기화)
-  const licInfo = await findLicenseByLsSubId(lsSubId)
+  // 라이선스 조회 (Sheets 업데이트 + DB 동기화) — 수량 N 주문이면 N개 전부
+  const licInfo = await findLicensesByLsSubId(lsSubId)
 
   // 구독 갱신 시 → license.expires_at 동기화 + (GenieStock: Supabase / GeniePost: Sheets) 갱신
   if (attrs.renews_at && licInfo) {
     try {
-      // DB license.expires_at를 구독 갱신일과 동기화 (양쪽 공통)
+      // DB license.expires_at를 구독 갱신일과 동기화 (주문의 모든 라이선스 공통)
       await admin
         .from('licenses')
         .update({ expires_at: attrs.renews_at, status: 'active' })
-        .eq('id', licInfo.licenseId)
+        .eq('order_id', licInfo.orderId)
 
-      // 라우팅: 키가 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
-      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
-      if (found) {
-        // GenieStock/GenieWork 경로 — 찾은 DB(found.db)에 만료일/활성 동기화
-        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-        await supaUpdateLicenseExpiry(licInfo.serialKey, attrs.renews_at, p)
-        if (newStatus === 'active') {
-          await supaSetLicenseActive(licInfo.serialKey, true, p)
+      // 키별 라우팅: 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
+      for (const lic of licInfo.licenses) {
+        const found = await supaFindLicenseInAnyDb(lic.serialKey)
+        if (found) {
+          // GenieStock/GenieWork 경로 — 찾은 DB(found.db)에 만료일/활성 동기화
+          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+          await supaUpdateLicenseExpiry(lic.serialKey, attrs.renews_at, p)
+          if (newStatus === 'active') {
+            await supaSetLicenseActive(lic.serialKey, true, p)
+          }
+          console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
+        } else {
+          // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
+          await updateLicenseExpiry({ serialKey: lic.serialKey, expiresAt: attrs.renews_at })
+          if (newStatus === 'active') {
+            await updateLicenseStatus({ serialKey: lic.serialKey, status: '활성' })
+          }
+          console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
         }
-        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
-      } else {
-        // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
-        await updateLicenseExpiry({ serialKey: licInfo.serialKey, expiresAt: attrs.renews_at })
-        if (newStatus === 'active') {
-          await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '활성' })
-        }
-        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
       }
     } catch (syncErr) {
       console.error('[LS Webhook] Sheets/DB 동기화 실패:', syncErr)
@@ -609,24 +640,26 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
   if (error) throw new Error(`구독 취소 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 취소/만료 처리 완료: ${lsSubId}`)
 
-  // 연결된 라이선스 상태도 expired로 변경
-  const licInfo = await findLicenseByLsSubId(lsSubId)
+  // 연결된 라이선스 상태도 expired로 변경 (수량 N 주문이면 N개 전부)
+  const licInfo = await findLicensesByLsSubId(lsSubId)
   if (licInfo) {
     await admin
       .from('licenses')
       .update({ status: 'expired' })
-      .eq('id', licInfo.licenseId)
+      .eq('order_id', licInfo.orderId)
 
     try {
-      // 라우팅: 양쪽 DB(공유+GW)에서 키를 찾아 그 DB로 비활성화, 없으면 GeniePost(Sheets)
-      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
-      if (found) {
-        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-        await supaSetLicenseActive(licInfo.serialKey, false, p)
-        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${licInfo.serialKey.slice(0, 8)}...`)
-      } else {
-        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${licInfo.serialKey.slice(0, 8)}...`)
+      // 키별 라우팅: 양쪽 DB(공유+GW)에서 키를 찾아 그 DB로 비활성화, 없으면 GeniePost(Sheets)
+      for (const lic of licInfo.licenses) {
+        const found = await supaFindLicenseInAnyDb(lic.serialKey)
+        if (found) {
+          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+          await supaSetLicenseActive(lic.serialKey, false, p)
+          console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${lic.serialKey.slice(0, 8)}...`)
+        } else {
+          await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
+          console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serialKey.slice(0, 8)}...`)
+        }
       }
     } catch (syncErr) {
       console.error('[LS Webhook] 비활성화 동기화 실패:', syncErr)
@@ -654,22 +687,25 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
   console.log(`[LS Webhook] 결제 실패 처리 완료: ${lsSubId}`)
 
   // 연결된 라이선스 상태도 expired로 변경 + (GenieStock: Supabase / GeniePost: Sheets) 중지
-  const licInfo = await findLicenseByLsSubId(lsSubId)
+  // (수량 N 주문이면 N개 전부)
+  const licInfo = await findLicensesByLsSubId(lsSubId)
   if (licInfo) {
     await admin
       .from('licenses')
       .update({ status: 'expired' })
-      .eq('id', licInfo.licenseId)
+      .eq('order_id', licInfo.orderId)
 
     try {
-      const found = await supaFindLicenseInAnyDb(licInfo.serialKey)
-      if (found) {
-        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-        await supaSetLicenseActive(licInfo.serialKey, false, p)
-        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${licInfo.serialKey.slice(0, 8)}...`)
-      } else {
-        await updateLicenseStatus({ serialKey: licInfo.serialKey, status: '중지' })
-        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${licInfo.serialKey.slice(0, 8)}...`)
+      for (const lic of licInfo.licenses) {
+        const found = await supaFindLicenseInAnyDb(lic.serialKey)
+        if (found) {
+          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+          await supaSetLicenseActive(lic.serialKey, false, p)
+          console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${lic.serialKey.slice(0, 8)}...`)
+        } else {
+          await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
+          console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${lic.serialKey.slice(0, 8)}...`)
+        }
       }
     } catch (syncErr) {
       console.error('[LS Webhook] 결제 실패 동기화 실패:', syncErr)
@@ -709,12 +745,12 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
   if (error) throw new Error(`환불 처리 실패: ${error.message}`)
   if (!order) return
 
-  const { data: lic } = await admin
+  // 수량 N 주문이면 라이선스 N개 전부 revoke
+  const { data: lics } = await admin
     .from('licenses')
     .update({ status: 'revoked' })
     .eq('order_id', order.id)
     .select('serial_key')
-    .single()
 
   await admin
     .from('subscriptions')
@@ -723,7 +759,8 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
   console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
 
-  if (lic?.serial_key) {
+  for (const lic of lics ?? []) {
+    if (!lic?.serial_key) continue
     try {
       const found = await supaFindLicenseInAnyDb(lic.serial_key)
       if (found) {
@@ -749,9 +786,11 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 /**
  * @함수명: createLicense
  * @설명: 주문/구독 완료 후 라이선스를 생성하고 이메일로 발송합니다.
+ *        수량 N 주문이면 라이선스를 N개 발급합니다 (키 #1 = LS 발급 키 우선, 나머지 = 자체 생성).
  *        일반 제품: CoreZent에서 시리얼 키 자체 생성
  *        Pro 제품: LS에서 자동 발급한 라이선스 키를 API로 조회하여 사용
  *        Sheets G열에 Pro면 TRUE 기록.
+ * @매개변수: quantity - 구매 수량 (기본 1, normalizeQuantity로 정규화된 값)
  */
 async function createLicense(
   userId: string,
@@ -760,17 +799,20 @@ async function createLicense(
   userEmail: string,
   userName: string,
   lsOrderId?: string,
+  quantity: number = 1,
 ) {
   const admin = createAdminClient()
 
-  const { data: existing } = await admin
+  // 멱등성: 이 주문의 라이선스가 하나라도 있으면 전체 skip (웹훅 재전송 대비).
+  // (기존 .single()은 N행에서 에러 → existing=null로 중복 발급 위험이 있어 limit(1)로 교체)
+  const { data: existingRows } = await admin
     .from('licenses')
-    .select('id, serial_key')
+    .select('id')
     .eq('order_id', orderId)
-    .single()
+    .limit(1)
 
-  if (existing) {
-    console.log(`[LS Webhook] 라이선스 이미 존재: ${existing.id}`)
+  if (existingRows && existingRows.length > 0) {
+    console.log(`[LS Webhook] 라이선스 이미 존재: ${existingRows[0].id}`)
     return
   }
 
@@ -797,20 +839,18 @@ async function createLicense(
       return
     }
 
-    // 키 생성: LS 자동 발급 키 우선, 실패 시 자체 생성
-    let serialKey: string
-    let lsLicenseKey: string | null = null
+    // 키 목록 구성: LS 자동 발급 키 우선(LS는 수량 무관 주문당 1개가 기본), 부족분은 자체 생성
+    let lsKeys: string[] = []
     if (lsOrderId) {
-      const lsKey = await fetchLsLicenseKey(lsOrderId)
-      if (lsKey) {
-        serialKey = lsKey
-        lsLicenseKey = lsKey
-      } else {
+      lsKeys = await fetchLsLicenseKeys(lsOrderId)
+      if (lsKeys.length === 0) {
         console.warn(`[LS Webhook] ${supaSlug} LS 키 조회 실패 — 자체키 폴백(대시보드 자체키 표시 위험) (order_id=${lsOrderId})`)
-        serialKey = generateSerialKey()
       }
-    } else {
-      serialKey = generateSerialKey()
+    }
+    const keys: { key: string; fromLs: boolean }[] = []
+    for (let i = 0; i < quantity; i++) {
+      const lsKey = lsKeys[i]
+      keys.push(lsKey ? { key: lsKey, fromLs: true } : { key: generateSerialKey(), fromLs: false })
     }
 
     // 만료일: 구독 갱신일 우선, 없으면 license_duration_days
@@ -828,54 +868,60 @@ async function createLicense(
       gsExpiresAt = d.toISOString()
     }
 
-    // ─── 라이선스 키 저장 ───────────────────────────────────────────────────
-    // geniework: ls_order_id 기준 upsert (GW DB). license_key_created가 먼저 LS키 stub을
-    //   만들었으면 그 LS키가 보존되고(finalKey=LS키) 여기선 tier/expires/buyer만 채운다.
+    // ─── 라이선스 키 저장 (수량 N이면 키별 반복) ─────────────────────────────
+    // geniework: "첫 키만" ls_order_id 기준 upsert (GW DB). license_key_created가 먼저 LS키
+    //   stub을 만들었으면 그 LS키가 보존되고(finalKey=LS키) 여기선 tier/expires/buyer만 채운다.
+    //   추가 키(#2~N)는 ls_order_id 없는 일반 INSERT — upsert/applyLsKeyForOrder의
+    //   "ls_order_id당 1행(maybeSingle)" 가정이 그대로 유지된다.
     // geniestock: 기존 insert (공유 DB엔 ls_order_id 컬럼 없음 — ls_order_id 경로로 절대 안 보냄).
-    let finalKey = serialKey
-    let lemonKeyForCore: string | null = lsLicenseKey
-    try {
-      if (supaSlug === 'geniework' && lsOrderId) {
-        const r = await supaUpsertLicenseForOrder({
-          lsOrderId,
-          licenseKey: serialKey,
-          tier,
-          buyerEmail: userEmail,
-          expiresAt:  gsExpiresAt,
-          source:     'lemon_squeezy',
-          product:    'geniework',
-        })
-        finalKey = r.finalKey
-        if (r.wasExisting) lemonKeyForCore = finalKey  // stub의 LS키 보존됨
-        console.log(`[LS Webhook] geniework GW DB ${r.wasExisting ? '메타 갱신(LS키 보존)' : '신규 등록'} (order_id=${lsOrderId}, tier=${tier})`)
-      } else {
-        await supaInsertLicense({
-          licenseKey: serialKey,
-          tier,
-          buyerEmail: userEmail,
-          expiresAt:  gsExpiresAt,
-          source:     'lemon_squeezy',
-          product:    supaSlug,
-        })
-        console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료 (tier=${tier})`)
+    const coreRows: Record<string, unknown>[] = []
+    for (let i = 0; i < keys.length; i++) {
+      let finalKey = keys[i].key
+      let lemonKeyForCore: string | null = keys[i].fromLs ? keys[i].key : null
+      try {
+        if (supaSlug === 'geniework' && lsOrderId && i === 0) {
+          const r = await supaUpsertLicenseForOrder({
+            lsOrderId,
+            licenseKey: finalKey,
+            tier,
+            buyerEmail: userEmail,
+            expiresAt:  gsExpiresAt,
+            source:     'lemon_squeezy',
+            product:    'geniework',
+          })
+          finalKey = r.finalKey
+          if (r.wasExisting) lemonKeyForCore = finalKey  // stub의 LS키 보존됨
+          console.log(`[LS Webhook] geniework GW DB ${r.wasExisting ? '메타 갱신(LS키 보존)' : '신규 등록'} (order_id=${lsOrderId}, tier=${tier})`)
+        } else {
+          await supaInsertLicense({
+            licenseKey: finalKey,
+            tier,
+            buyerEmail: userEmail,
+            expiresAt:  gsExpiresAt,
+            source:     'lemon_squeezy',
+            product:    supaSlug,
+          })
+          console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료 (tier=${tier}, ${i + 1}/${keys.length})`)
+        }
+      } catch (supaErr) {
+        console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, supaErr)
       }
-    } catch (supaErr) {
-      console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, supaErr)
+
+      const row: Record<string, unknown> = {
+        user_id:    userId,
+        order_id:   orderId,
+        product_id: productId,
+        serial_key: finalKey,
+        status:     'active',
+        max_devices: product?.max_devices ?? null,
+        expires_at: gsExpiresAt,
+      }
+      if (lemonKeyForCore) row.lemon_squeezy_license_key = lemonKeyForCore
+      coreRows.push(row)
     }
 
-    // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용) — finalKey(LS키 우선) 사용
-    const gsLicenseInsert: Record<string, unknown> = {
-      user_id:    userId,
-      order_id:   orderId,
-      product_id: productId,
-      serial_key: finalKey,
-      status:     'active',
-      max_devices: product?.max_devices ?? null,
-      expires_at: gsExpiresAt,
-    }
-    if (lemonKeyForCore) gsLicenseInsert.lemon_squeezy_license_key = lemonKeyForCore
-
-    const { error: gsLicErr } = await admin.from('licenses').insert(gsLicenseInsert)
+    // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용) — N행 단일 문장(원자적)
+    const { error: gsLicErr } = await admin.from('licenses').insert(coreRows)
     if (gsLicErr) {
       console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패 — 대시보드 미표시 (order_id=${lsOrderId ?? 'N/A'}): ${gsLicErr.message}`)
     }
@@ -896,33 +942,37 @@ async function createLicense(
   // isPro === true: LS 라이선스 사용 (Pro 및 모든 신규 상품)
   // isPro === false: GeniePost 일반만 자체 생성
 
-  let serialKey: string
-  let lsLicenseKey: string | null = null
-
+  // 키 목록 구성: Pro/신규 상품은 LS 발급 키 우선(LS는 수량 무관 주문당 1개가 기본),
+  // 부족분·GeniePost 일반은 자체 시리얼 키 생성 (기존 행·같은 배치 내 충돌 시 재시도)
+  let lsKeys: string[] = []
   if (isPro && lsOrderId) {
-    // LS API로 자동 발급된 라이선스 키 조회
-    const lsKey = await fetchLsLicenseKey(lsOrderId)
-    if (lsKey) {
-      serialKey = lsKey
-      lsLicenseKey = lsKey
-      console.log(`[LS Webhook] LS 라이선스 키 조회 완료: ${lsKey.slice(0, 8)}...`)
+    lsKeys = await fetchLsLicenseKeys(lsOrderId)
+    if (lsKeys.length > 0) {
+      console.log(`[LS Webhook] LS 라이선스 키 조회 완료: ${lsKeys.length}개`)
     } else {
-      // LS 키 조회 실패 시 자체 생성으로 폴백
       console.warn(`[LS Webhook] LS 키 조회 실패 — 자체키 폴백(대시보드 자체키 표시 위험) (order_id=${lsOrderId})`)
-      serialKey = generateSerialKey()
     }
-  } else {
-    // GeniePost 일반: CoreZent 자체 시리얼 키 생성 (충돌 시 재시도)
-    serialKey = generateSerialKey()
-    for (let i = 0; i < 5; i++) {
+  }
+
+  const keys: { key: string; fromLs: boolean }[] = []
+  for (let i = 0; i < quantity; i++) {
+    const lsKey = isPro ? lsKeys[i] : undefined
+    if (lsKey) {
+      keys.push({ key: lsKey, fromLs: true })
+      continue
+    }
+    let sk = generateSerialKey()
+    for (let t = 0; t < 5; t++) {
+      const inBatch = keys.some((k) => k.key === sk)
       const { data: dup } = await admin
         .from('licenses')
         .select('id')
-        .eq('serial_key', serialKey)
-        .single()
-      if (!dup) break
-      serialKey = generateSerialKey()
+        .eq('serial_key', sk)
+        .maybeSingle()
+      if (!dup && !inBatch) break
+      sk = generateSerialKey()
     }
+    keys.push({ key: sk, fromLs: false })
   }
 
   // 만료일: 구독인 경우 subscription.current_period_end 사용, 아니면 license_duration_days
@@ -943,38 +993,43 @@ async function createLicense(
     expiresAt = d.toISOString()
   }
 
-  const licenseInsert: Record<string, unknown> = {
-    user_id: userId,
-    order_id: orderId,
-    product_id: productId,
-    serial_key: serialKey,
-    status: 'active',
-    max_devices: product?.max_devices ?? null,
-    expires_at: expiresAt,
-  }
-  if (lsLicenseKey) licenseInsert.lemon_squeezy_license_key = lsLicenseKey
+  // 라이선스 N행 단일 INSERT (원자적 — 부분 생성 상태가 남지 않음)
+  const licenseRows = keys.map(({ key, fromLs }) => {
+    const row: Record<string, unknown> = {
+      user_id: userId,
+      order_id: orderId,
+      product_id: productId,
+      serial_key: key,
+      status: 'active',
+      max_devices: product?.max_devices ?? null,
+      expires_at: expiresAt,
+    }
+    if (fromLs) row.lemon_squeezy_license_key = key
+    return row
+  })
 
-  const { data: license, error: licErr } = await admin
+  const { data: inserted, error: licErr } = await admin
     .from('licenses')
-    .insert(licenseInsert)
+    .insert(licenseRows)
     .select('id')
-    .single()
 
-  if (licErr || !license) {
+  if (licErr || !inserted || inserted.length === 0) {
     throw new Error(`라이선스 생성 실패: ${licErr?.message}`)
   }
 
-  console.log(`[LS Webhook] 라이선스 생성 완료: ${license.id} (${serialKey.slice(0, 8)}...)${isPro ? ' [Pro]' : ''}`)
+  console.log(`[LS Webhook] 라이선스 생성 완료: ${inserted.length}개 (${keys[0].key.slice(0, 8)}...)${isPro ? ' [Pro]' : ''}`)
 
-  // 주문 확인 이메일 발송
+  // 주문 확인 이메일 발송 (키 N개면 한 통에 모두 표시)
   try {
     await sendEmail({
       to: userEmail,
-      subject: `Your ${product?.name ?? 'CoreZent'} License Key`,
+      subject: keys.length > 1
+        ? `Your ${product?.name ?? 'CoreZent'} License Keys (${keys.length})`
+        : `Your ${product?.name ?? 'CoreZent'} License Key`,
       html: orderConfirmationEmailHtml({
         userName,
         productName: product?.name ?? 'CoreZent Product',
-        serialKey,
+        serialKeys: keys.map((k) => k.key),
       }),
     })
     console.log(`[LS Webhook] 주문 확인 이메일 발송: ${userEmail}`)
@@ -982,18 +1037,20 @@ async function createLicense(
     console.error('[LS Webhook] 이메일 발송 실패:', mailErr)
   }
 
-  // Google Sheets 라이선스 행 추가 (상태 '활성', Pro면 G열 TRUE)
-  try {
-    await appendLicenseRow({
-      email: userEmail,
-      serialKey,
-      expiresAt,
-      isPro,
-      status: '활성',
-    })
-    console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${serialKey.slice(0, 8)}... (isPro: ${isPro})`)
-  } catch (sheetsErr) {
-    console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
+  // Google Sheets 라이선스 행 추가 — 키별 1행 (상태 '활성', Pro면 G열 TRUE)
+  for (const { key } of keys) {
+    try {
+      await appendLicenseRow({
+        email: userEmail,
+        serialKey: key,
+        expiresAt,
+        isPro,
+        status: '활성',
+      })
+      console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${key.slice(0, 8)}... (isPro: ${isPro})`)
+    } catch (sheetsErr) {
+      console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
+    }
   }
 }
 

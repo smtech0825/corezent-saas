@@ -447,14 +447,15 @@ export async function upsertLicenseForOrder(input: {
  *        - 행 있음 → license_key를 LS키로 UPDATE(self-gen→LS 교체) + hwid_mapping 정합 방어.
  *        - 행 없음(선도착) → stub INSERT(tier 생략=NULL, license_key=LS키).
  *        ★GenieWork 전용(GW DB만 ls_order_id 컬럼). 멱등(이미 LS키면 noop).
- * @반환값: { action } 'updated' | 'inserted' | 'noop'
+ * @반환값: { action, replacedKey? } action='updated'면 replacedKey=교체된 옛 자체키
+ *          (수량 N 주문 시 본체 licenses에서 "정확히 그 행"만 동기화하기 위해 필요)
  */
 export async function applyLsKeyForOrder(input: {
   lsOrderId:  string
   lsKey:      string
   product:    SupabaseProduct
   buyerEmail: string | null
-}): Promise<{ action: 'updated' | 'inserted' | 'noop' }> {
+}): Promise<{ action: 'updated' | 'inserted' | 'noop'; replacedKey?: string }> {
   const admin = licenseClientFor(input.product)
 
   const { data: existing } = await admin
@@ -482,7 +483,7 @@ export async function applyLsKeyForOrder(input: {
       .eq('license_key', oldKey)
     if (hwidErr) console.error('[supabase-license] applyLsKeyForOrder hwid 갱신 경고:', hwidErr)
 
-    return { action: 'updated' }
+    return { action: 'updated', replacedKey: oldKey }
   }
 
   // 행 없음 → stub INSERT (tier 생략 = NULL; subscription_created가 나중에 채움)

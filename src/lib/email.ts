@@ -125,16 +125,23 @@ export function welcomeEmailHtml(siteName = 'CoreZent'): string {
 export function orderConfirmationEmailHtml({
   userName,
   productName,
-  serialKey,
+  serialKeys,
   siteName = 'CoreZent',
 }: {
   userName: string
   productName: string
-  serialKey: string
+  serialKeys: string[]   // 수량 N 주문이면 키 N개 — 한 통에 모두 표시
   siteName?: string
 }): string {
   const safeUser = userName.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const safeProduct = productName.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const keyLabel = serialKeys.length > 1 ? `라이선스 키 (${serialKeys.length}개)` : '라이선스 키'
+  const keyLines = serialKeys
+    .map(
+      (k) =>
+        `<p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#F59E0B;letter-spacing:0.12em;font-family:'Courier New',monospace;">${k}</p>`,
+    )
+    .join('\n                ')
 
   return `
 <!DOCTYPE html>
@@ -165,8 +172,8 @@ export function orderConfirmationEmailHtml({
               </p>
               <!-- 시리얼 키 박스 -->
               <div style="background:#0B1120;border:1px solid #1E293B;border-radius:10px;padding:20px 24px;margin-bottom:28px;text-align:center;">
-                <p style="margin:0 0 6px;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.08em;">라이선스 키</p>
-                <p style="margin:0;font-size:22px;font-weight:700;color:#F59E0B;letter-spacing:0.15em;font-family:'Courier New',monospace;">${serialKey}</p>
+                <p style="margin:0 0 6px;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.08em;">${keyLabel}</p>
+                ${keyLines}
               </div>
               <p style="margin:0 0 24px;font-size:13px;line-height:1.7;color:#475569;">
                 이 키를 안전하게 보관하세요. 대시보드의 <strong>라이선스</strong> 메뉴에서 언제든 확인하실 수 있습니다.

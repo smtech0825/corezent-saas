@@ -92,17 +92,18 @@ export function generateSerialKey(): string {
 }
 
 /**
- * @함수명: fetchLsLicenseKey
- * @설명: LS API를 호출하여 주문에 연결된 라이선스 키를 가져옵니다.
- *        Pro 제품처럼 LS가 자동 발급한 라이선스 키를 조회할 때 사용합니다.
+ * @함수명: fetchLsLicenseKeys
+ * @설명: LS API를 호출하여 주문에 연결된 라이선스 키 "전체 목록"을 가져옵니다.
+ *        LS는 수량과 무관하게 주문당 1개 키만 발급하는 것이 기본이지만,
+ *        복수 키가 존재하는 경우까지 모두 수거해 수량 N 발급에 활용합니다.
  * @매개변수: lsOrderId - Lemon Squeezy 주문 ID (숫자 문자열)
- * @반환값: 라이선스 키 문자열 또는 null (미발견/에러 시)
+ * @반환값: 라이선스 키 배열 (미발견/에러 시 빈 배열)
  */
-export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | null> {
+export async function fetchLsLicenseKeys(lsOrderId: string): Promise<string[]> {
   const apiKey = process.env.LEMONSQUEEZY_API_KEY
   if (!apiKey) {
     console.warn('[LS API] LEMONSQUEEZY_API_KEY 미설정 — 라이선스 키 조회 건너뜀')
-    return null
+    return []
   }
 
   try {
@@ -118,16 +119,27 @@ export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | nul
 
     if (!res.ok) {
       console.error(`[LS API] 라이선스 키 조회 실패: ${res.status}`)
-      return null
+      return []
     }
 
     const json = await res.json()
     const keys = json.data as Array<{ attributes: { key: string } }> | undefined
-    return keys?.[0]?.attributes?.key ?? null
+    return (keys ?? []).map((k) => k.attributes?.key).filter((k): k is string => Boolean(k))
   } catch (err) {
     console.error('[LS API] 라이선스 키 조회 오류:', err)
-    return null
+    return []
   }
+}
+
+/**
+ * @함수명: fetchLsLicenseKey
+ * @설명: 주문에 연결된 첫 번째 라이선스 키를 가져옵니다 (단일 키 호환용).
+ * @매개변수: lsOrderId - Lemon Squeezy 주문 ID (숫자 문자열)
+ * @반환값: 라이선스 키 문자열 또는 null (미발견/에러 시)
+ */
+export async function fetchLsLicenseKey(lsOrderId: string): Promise<string | null> {
+  const keys = await fetchLsLicenseKeys(lsOrderId)
+  return keys[0] ?? null
 }
 
 /**
@@ -208,6 +220,7 @@ export interface LSOrderAttributes {
     variant_id: number
     product_name: string
     variant_name: string
+    quantity?: number   // 구매 수량 (같은 상품 N개) — LS 주문 아이템 필드
   }
 }
 
@@ -227,6 +240,10 @@ export interface LSSubscriptionAttributes {
     update_payment_method: string
   }
   billing_anchor: number
+  // 구독 수량(좌석) — LS 구독 아이템 필드. 수량 N 구독이면 N.
+  first_subscription_item?: {
+    quantity?: number
+  } | null
 }
 
 export interface LSLicenseKeyAttributes {
