@@ -138,7 +138,7 @@ export default async function LicensesPage({
                   </div>
 
                   {/* 제품명 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}
-                  <div className="flex justify-between md:block">
+                  <div className="flex justify-between items-center md:block">
                     <span className="text-xs text-[#475569] md:hidden">제품</span>
                     <span className="text-sm text-[#94A3B8]">{lic.products?.name ?? '—'}</span>
                   </div>
