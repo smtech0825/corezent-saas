@@ -1,9 +1,10 @@
 /**
  * @파일: app/product/[slug]/page.tsx
  * @설명: 상품 독립 상세 페이지 — slug로 상품을 조회해 상세 콘텐츠를 렌더한다.
- *        대표 이미지·스크린샷 갤러리·상세설명·기능·시스템 요구사항·버전정보 + 가격/CTA.
+ *        대표 이미지·스크린샷 갤러리·상세설명·기능·시스템 요구사항·버전정보를 섹션별 보더 컨테이너로 묶고,
+ *        구매 컨트롤(옵션·수량·가격·구매)은 하단 고정 플로팅 바(ProductBuyBar)로 제공한다.
  *        SEO: generateMetadata로 페이지별 title/description/OG. 없는 콘텐츠는 우아하게 생략.
- *        ⚠️ 결제 slug 로직과 별개의 '표시용' slug 조회. 구매 CTA는 기존 /pricing 흐름으로 연결(결제 로직 미접촉).
+ *        ⚠️ 결제 slug 로직과 별개의 '표시용' slug 조회. 구매 링크는 buildCheckoutUrl(미접촉)로 생성.
  *        마이그레이션 035/036 미적용 시에도 500이 나지 않도록 상세 컬럼은 폴백 조회한다.
  */
 
@@ -18,22 +19,25 @@ import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
-import { getProductOptions } from '@/lib/product-options'
+import { getProductOptions, type OptionRow } from '@/lib/product-options'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
-import ProductOptionSelector from '@/components/ProductOptionSelector'
-import ProductBuyBox from './ProductBuyBox'
+import ProductBuyBar from './ProductBuyBar'
 import RichMarkdown from '@/components/common/RichMarkdown'
 
 export const dynamic = 'force-dynamic'
 
-// 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백)
+// 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백). checkout_url은 항상 존재하는 기본 컬럼.
 const FULL_COLS =
-  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(type, interval, price, is_active)'
+  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(type, interval, price, is_active, checkout_url)'
 const BASE_COLS =
-  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(type, interval, price, is_active)'
+  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(type, interval, price, is_active, checkout_url)'
 
 interface ProductFeature { icon: string; image_url: string; title: string; description: string }
-interface PriceRow { type: string; interval: string | null; price: number; is_active: boolean }
+interface PriceRow { type: string; interval: string | null; price: number; is_active: boolean; checkout_url: string | null }
+
+// 섹션 컨테이너 공통 스타일 — 각 섹션을 통일된 카드 박스로 묶는다.
+const SECTION_BOX = 'border border-rule rounded-lg bg-paper-raised p-6 sm:p-8'
+const SECTION_TITLE = 'text-lg font-serif font-black text-ink mb-4'
 
 /** slug로 상품 1건 조회 — 상세 컬럼 우선, 미적용 시 기본 컬럼 폴백 */
 async function getProduct(slug: string) {
@@ -76,7 +80,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const product = await getProduct(slug)
   if (!product) notFound()
 
-  // 옵션 있는 상품이면 상세페이지에서 바로 옵션 선택·구매 (공용 선택기)
+  // 옵션 있는 상품이면 하단 바에서 바로 옵션 선택·구매 (공용 조회기)
   const optClient = createAdminClient()
   const [{ optionRows, axis1Name, axis2Name }, affiliateRef] = await Promise.all([
     getProductOptions(optClient, product.id as string),
@@ -118,91 +122,113 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const showPlanCards = !hasOptions && plans.length > 0
   const showPricingSection = showPlanCards || pricingFeatures.length > 0
 
+  // 하단 구매 바에 넘길 옵션 행을 정규화한다.
+  //  · 옵션 상품: getProductOptions 결과 그대로(축1·축2)
+  //  · 비옵션 상품: 월/연/일회 가격을 '기간' 축의 옵션으로 합성 → 컨트롤은 2개 이상일 때만 노출
+  let buyRows: OptionRow[]
+  let barAxis1Name: string | null
+  let barAxis2Name: string | null
+  if (hasOptions) {
+    buyRows = optionRows
+    barAxis1Name = axis1Name
+    barAxis2Name = axis2Name
+  } else {
+    buyRows = []
+    if (monthly) buyRows.push({ axis1Label: '월간', axis2Label: null, price: monthly.price, checkoutUrl: monthly.checkout_url ?? '#', suffix: '/월' })
+    if (annual) buyRows.push({ axis1Label: '연간', axis2Label: null, price: annual.price, checkoutUrl: annual.checkout_url ?? '#', suffix: '/년' })
+    if (oneTime) buyRows.push({ axis1Label: '일회 구매', axis2Label: null, price: oneTime.price, checkoutUrl: oneTime.checkout_url ?? '#', suffix: '' })
+    barAxis1Name = buyRows.length > 1 ? '기간' : null
+    barAxis2Name = null
+  }
+  const hasBar = buyRows.length > 0
+
   return (
     <>
       <Navbar />
-      <main className="theme-paper min-h-screen bg-paper text-ink">
-        <section className="relative pt-10 sm:pt-14 pb-24 px-4 sm:px-6">
-          <div className="relative z-10 max-w-6xl mx-auto">
-            {/* 뒤로 */}
-            <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors mb-8">
-              <ArrowLeft size={14} /> 제품 목록
-            </Link>
+      {/* 하단 고정 바 높이만큼 여백 — 푸터·본문이 바에 가리지 않게(측정값 --buy-bar-h, 미측정 시 88px) */}
+      <div style={hasBar ? { paddingBottom: 'var(--buy-bar-h, 88px)' } : undefined}>
+        <main className="theme-paper min-h-screen bg-paper text-ink">
+          <section className="relative pt-10 sm:pt-14 pb-16 px-4 sm:px-6">
+            <div className="relative z-10 max-w-4xl mx-auto">
+              {/* 뒤로 */}
+              <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors mb-8">
+                <ArrowLeft size={14} /> 제품 목록
+              </Link>
 
-            {/* 헤더 (풀폭) */}
-            <div className="flex items-start gap-5 mb-8">
-              {logoUrl && (
-                <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-rule bg-paper-raised">
-                  <Image src={logoUrl} alt={`${name} logo`} fill className="object-contain p-2" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h1 className="text-3xl font-serif font-black text-ink">{name}</h1>
-                  {category && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
-                      {CATEGORY_LABELS[category] ?? category}
-                    </span>
-                  )}
-                  {categoryGroup && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-paper-shade text-ink-soft border-rule">
-                      {categoryGroup}
-                    </span>
-                  )}
-                </div>
-                {tagline && <p className="text-pen text-base font-medium">{tagline}</p>}
-              </div>
-            </div>
-
-            {/* 대표 이미지 (풀폭) */}
-            {heroImage && (
-              <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised mb-10">
-                <Image src={heroImage} alt={`${name} 대표 이미지`} fill className="object-cover" />
-              </div>
-            )}
-
-            {/* 2컬럼: 좌 본문 / 우 sticky 구매 박스. 모바일은 구매 박스가 본문 위로(order) */}
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-10 items-start">
-              {/* 좌: 본문 콘텐츠 */}
-              <div className="order-2 lg:order-1 min-w-0">
-                {/* 태그 */}
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-10">
-                    {tags.map((tag) => (
-                      <span key={tag} className="text-xs text-ink-soft border border-rule rounded-full px-3 py-1">{tag}</span>
-                    ))}
+              {/* 헤더 (박스 밖) — 로고·이름·태그라인·태그. 구매/가격은 하단 바가 대체 */}
+              <div className="flex items-start gap-5 mb-6">
+                {logoUrl && (
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-rule bg-paper-raised">
+                    <Image src={logoUrl} alt={`${name} logo`} fill className="object-contain p-2" />
                   </div>
                 )}
-
-                {/* 상세 설명 — 마크다운 렌더(헤딩·이미지·유튜브), 본문 가독 폭 68ch */}
-                {description && (
-                  <div className="mb-12 max-w-[68ch]">
-                    <h2 className="text-lg font-serif font-black text-ink mb-3">소개</h2>
-                    <RichMarkdown content={description} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h1 className="text-3xl font-serif font-black text-ink">{name}</h1>
+                    {category && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
+                        {CATEGORY_LABELS[category] ?? category}
+                      </span>
+                    )}
+                    {categoryGroup && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-paper-shade text-ink-soft border-rule">
+                        {categoryGroup}
+                      </span>
+                    )}
                   </div>
+                  {tagline && <p className="text-pen text-base font-medium">{tagline}</p>}
+                </div>
+              </div>
+
+              {/* 태그 (박스 밖) */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {tags.map((tag) => (
+                    <span key={tag} className="text-xs text-ink-soft border border-rule rounded-full px-3 py-1">{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* 대표 이미지 (박스 밖) */}
+              {heroImage && (
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised mb-8">
+                  <Image src={heroImage} alt={`${name} 대표 이미지`} fill className="object-cover" />
+                </div>
+              )}
+
+              {/* 섹션 컨테이너 스택 — 각 섹션을 보더 카드로 묶는다(빈 데이터는 박스째 미렌더) */}
+              <div className="space-y-6">
+                {/* 소개 — 마크다운, 본문 가독 폭 68ch */}
+                {description && (
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>소개</h2>
+                    <div className="max-w-[68ch]">
+                      <RichMarkdown content={description} />
+                    </div>
+                  </section>
                 )}
 
                 {/* 스크린샷 갤러리 */}
                 {screenshots.length > 0 && (
-                  <div className="mb-12">
-                    <h2 className="text-lg font-serif font-black text-ink mb-4">스크린샷</h2>
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>스크린샷</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {screenshots.map((src, i) => (
-                        <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised">
+                        <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-rule bg-paper">
                           <Image src={src} alt={`${name} 스크린샷 ${i + 1}`} fill className="object-cover" />
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </section>
                 )}
 
                 {/* 주요 기능 */}
                 {productFeatures.length > 0 && (
-                  <div className="mb-12">
-                    <h2 className="text-lg font-serif font-black text-ink mb-4">주요 기능</h2>
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>주요 기능</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       {productFeatures.map((feat, i) => (
-                        <div key={i} className="border border-rule bg-paper-raised rounded-lg p-5 flex flex-col items-center text-center space-y-3">
+                        <div key={i} className="border border-rule bg-paper rounded-lg p-5 flex flex-col items-center text-center space-y-3">
                           <div className="flex items-center justify-center w-[72px] h-[72px] rounded-lg bg-paper-shade border border-rule">
                             {feat.image_url ? (
                               <div className="relative w-12 h-12"><Image src={feat.image_url} alt={feat.title} fill className="object-contain" /></div>
@@ -217,19 +243,19 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </section>
                 )}
 
-                {/* 요금제 — 전 셀 ✓ 비교표 제거. 비-옵션은 월/연 2 카드, 포함 기능은 단일 리스트 */}
+                {/* 요금제 — 비-옵션은 월/연 2 카드, 포함 기능은 단일 리스트 */}
                 {showPricingSection && (
-                  <div className="mb-12">
-                    <h2 className="text-lg font-serif font-black text-ink mb-4">{showPlanCards ? '요금제' : '포함 기능'}</h2>
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>{showPlanCards ? '요금제' : '포함 기능'}</h2>
                     {showPlanCards && (
-                      <div className="grid gap-4 sm:grid-cols-2 mb-6 max-w-2xl">
+                      <div className="grid gap-4 sm:grid-cols-2 mb-6">
                         {plans.map((plan) => {
                           const isAnnual = plan.label === '연간'
                           return (
-                            <div key={plan.label} className="border border-rule bg-paper-raised rounded-lg p-5">
+                            <div key={plan.label} className="border border-rule bg-paper rounded-lg p-5">
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm font-semibold text-ink">{plan.label}</span>
                                 {isAnnual && annualSavePct > 0 && (
@@ -263,72 +289,59 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         })}
                       </ul>
                     )}
-                  </div>
+                  </section>
                 )}
 
-                {/* 시스템 요구사항 */}
+                {/* 시스템 요구사항 — 컨테이너가 곧 박스(중첩 박스 없음) */}
                 {systemRequirements && (
-                  <div className="mb-12">
-                    <h2 className="text-lg font-serif font-black text-ink mb-3">시스템 요구사항</h2>
-                    <div className="border border-rule bg-paper-raised rounded-lg p-5 max-w-[68ch]">
-                      <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{systemRequirements}</p>
-                    </div>
-                  </div>
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>시스템 요구사항</h2>
+                    <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line max-w-[68ch]">{systemRequirements}</p>
+                  </section>
                 )}
 
-                {/* FAQ */}
+                {/* 상품 FAQ */}
                 {faqs.length > 0 && (
-                  <div className="mb-12">
-                    <h2 className="text-lg font-serif font-black text-ink mb-4">자주 묻는 질문</h2>
-                    <div className="space-y-3 max-w-[68ch]">
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>자주 묻는 질문</h2>
+                    <div className="space-y-3">
                       {faqs.map((faq, i) => (
-                        <div key={i} className="border border-rule bg-paper-raised rounded-lg p-5">
+                        <div key={i} className="border border-rule bg-paper rounded-lg p-5">
                           <p className="text-ink font-medium mb-2">{faq.question}</p>
                           {faq.answer && <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{faq.answer}</p>}
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </section>
                 )}
 
-                {/* 버전정보 링크 */}
+                {/* 버전 정보 링크 */}
                 {versionInfoUrl && (
-                  <div className="mb-4">
+                  <section className={SECTION_BOX}>
+                    <h2 className={SECTION_TITLE}>버전 정보</h2>
                     <Link href={versionInfoUrl} className="inline-flex items-center gap-1.5 text-sm text-pen hover:text-pen-dark hover:underline">
                       <Check size={14} /> 버전 정보 및 업데이트 내역
                     </Link>
-                  </div>
+                  </section>
                 )}
               </div>
-
-              {/* 우: sticky 구매 박스 — 옵션 상품은 선택기, 아니면 가격+주기 토글+CTA */}
-              <aside className="order-1 lg:order-2 mb-10 lg:mb-0">
-                <div className="lg:sticky lg:top-24">
-                  {hasOptions && isActive ? (
-                    <ProductOptionSelector
-                      productName={name}
-                      axis1Name={axis1Name}
-                      axis2Name={axis2Name}
-                      optionRows={optionRows}
-                      affiliateRef={affiliateRef}
-                    />
-                  ) : (
-                    <ProductBuyBox
-                      productName={name}
-                      monthly={monthly?.price ?? null}
-                      annual={annual?.price ?? null}
-                      oneTime={oneTime?.price ?? null}
-                      isActive={isActive}
-                      ctaHref="/pricing"
-                    />
-                  )}
-                </div>
-              </aside>
             </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
+          </section>
+        </main>
+        <Footer />
+      </div>
+
+      {/* 하단 고정 구매 바 — 가격 정보가 하나라도 있을 때만 */}
+      {hasBar && (
+        <ProductBuyBar
+          productName={name}
+          isActive={isActive}
+          affiliateRef={affiliateRef}
+          axis1Name={barAxis1Name}
+          axis2Name={barAxis2Name}
+          optionRows={buyRows}
+        />
+      )}
     </>
   )
 }

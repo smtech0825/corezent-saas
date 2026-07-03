@@ -19,37 +19,55 @@ interface Props {
   onChange: (next: number) => void
   /** 최대 수량 (기본 MAX_CHECKOUT_QUANTITY) */
   max?: number
+  /** true면 라벨을 컨트롤 위에 배치하고 하단 여백을 제거(구매 바 등 가로 정렬용) */
+  inline?: boolean
 }
 
-export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QUANTITY }: Props) {
+export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QUANTITY, inline = false }: Props) {
   const clamp = (n: number) => Math.min(max, Math.max(1, Math.floor(n)))
 
+  // +/- 스테퍼 본체(두 레이아웃 공통)
+  const stepper = (
+    <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper-raised">
+      <button
+        type="button"
+        aria-label="수량 줄이기"
+        disabled={value <= 1}
+        onClick={() => onChange(clamp(value - 1))}
+        className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+      >
+        <Minus size={12} />
+      </button>
+      <span className="min-w-[2rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
+        {value}
+      </span>
+      <button
+        type="button"
+        aria-label="수량 늘리기"
+        disabled={value >= max}
+        onClick={() => onChange(clamp(value + 1))}
+        className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+      >
+        <Plus size={12} />
+      </button>
+    </div>
+  )
+
+  // inline: 라벨 상단 배치(세그먼트 컨트롤과 정렬) — 구매 바용
+  if (inline) {
+    return (
+      <div className="min-w-0">
+        <span className="block text-[11px] text-ink-faint mb-1 leading-none">수량</span>
+        {stepper}
+      </div>
+    )
+  }
+
+  // 기본: 라벨 좌측 + 하단 여백(카드형 구매 박스용)
   return (
     <div className="flex items-center justify-between gap-3 mb-3">
       <span className="text-xs text-ink-soft">수량</span>
-      <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper-raised">
-        <button
-          type="button"
-          aria-label="수량 줄이기"
-          disabled={value <= 1}
-          onClick={() => onChange(clamp(value - 1))}
-          className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-        >
-          <Minus size={12} />
-        </button>
-        <span className="min-w-[2rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
-          {value}
-        </span>
-        <button
-          type="button"
-          aria-label="수량 늘리기"
-          disabled={value >= max}
-          onClick={() => onChange(clamp(value + 1))}
-          className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-        >
-          <Plus size={12} />
-        </button>
-      </div>
+      {stepper}
     </div>
   )
 }
