@@ -17,7 +17,6 @@ import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
 import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
 import QuantityStepper from '@/components/common/QuantityStepper'
-import OptionProductCard from './OptionProductCard'
 
 // 전역 분석 도구 타입 선언
 declare global {
@@ -238,23 +237,9 @@ export default function PricingClient({ products, affiliateRef }: Props) {
               : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           }`}>
             {filtered.map((product) => {
-              // 옵션 행이 2개 이상이면 옵션 카드 — 축 드롭다운 + 수량 + 조합별 가격/checkout
-              if (product.optionRows.length >= 2) {
-                return (
-                  <OptionProductCard
-                    key={product.id}
-                    product={product}
-                    userId={userId}
-                    affiliateRef={affiliateRef}
-                    utmData={utmData}
-                    discountCode={discountCode}
-                    onCheckout={(q) => {
-                      track('initiate_checkout', { product: product.name, quantity: q })
-                      window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
-                    }}
-                  />
-                )
-              }
+              // 옵션 행이 2개 이상이면 = 옵션 상품 → 일반 카드로 "부터" 가격만 보여주고
+              // 실제 옵션(주기·PC수 등) 선택은 /buy/[slug] 페이지에서 한다.
+              const hasOptions = product.optionRows.length >= 2
               const isAnnualView = annual && product.hasAnnualPlan
               const displayPrice = isAnnualView ? product.annualMonthlyPrice : product.monthlyPrice
               const baseCheckoutUrl = isAnnualView
@@ -324,6 +309,7 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                           )}
                           <div className="flex items-baseline gap-1">
                             <span className="text-4xl font-bold text-ink">{formatPrice(displayPrice)}</span>
+                            {hasOptions && <span className="text-ink-soft text-sm">부터</span>}
                             <span className="text-ink-soft text-base">/월</span>
                           </div>
                           {product.hasAnnualPlan ? (
@@ -343,22 +329,24 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                       )}
                     </div>
 
-                    {/* 수량 선택 — 같은 상품 N개 결제 (LS quantity 파라미터로 전달) */}
-                    <QuantityStepper
-                      value={quantity}
-                      onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
-                    />
+                    {/* 수량 선택 — 옵션 없는 상품만(옵션 상품은 /buy에서 수량 선택) */}
+                    {!hasOptions && (
+                      <QuantityStepper
+                        value={quantity}
+                        onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
+                      />
+                    )}
 
-                    {/* 구매 버튼 */}
+                    {/* 구매/옵션선택 버튼 — 옵션 상품은 /buy/[slug]로 이동해 조합 선택 */}
                     <Link
-                      href={userId ? checkoutUrl : '/auth/register'}
+                      href={hasOptions ? `/buy/${product.slug}` : (userId ? checkoutUrl : '/auth/register')}
                       onClick={() => {
-                        track('initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
-                        window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
+                        track(hasOptions ? 'select_options' : 'initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
+                        if (!hasOptions) window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
                       }}
                       className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold mb-8 bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
                     >
-                      시작하기
+                      {hasOptions ? '옵션 선택하기' : '시작하기'}
                       <ArrowRight size={14} />
                     </Link>
 

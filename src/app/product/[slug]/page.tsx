@@ -18,6 +18,9 @@ import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import { getProductOptions } from '@/lib/product-options'
+import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
+import ProductOptionSelector from '@/components/ProductOptionSelector'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,6 +73,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const product = await getProduct(slug)
   if (!product) notFound()
+
+  // 옵션 있는 상품이면 상세페이지에서 바로 옵션 선택·구매 (공용 선택기)
+  const optClient = createAdminClient()
+  const [{ optionRows, axis1Name, axis2Name }, affiliateRef] = await Promise.all([
+    getProductOptions(optClient, product.id as string),
+    resolveCheckoutAffiliateRef(),
+  ])
 
   const name = product.name as string
   const tagline = product.tagline as string | null
@@ -143,30 +153,42 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
             )}
 
-            {/* 가격 + CTA */}
-            <div className="flex flex-wrap items-center gap-4 mb-10">
-              {priceValue != null && (
-                <div>
-                  <span className="text-3xl font-bold text-ink">{formatPrice(priceValue)}</span>
-                  {monthly && <span className="text-sm text-ink-soft font-normal">/월</span>}
-                  <span className="text-xs text-ink-faint ml-2">
-                    VAT 포함{annual != null ? ` · 또는 ${formatPrice(annual.price)}/년` : ''}
+            {/* 가격 + CTA — 옵션 있는 상품은 옵션 선택기, 아니면 단일 가격 + 요금제 링크 */}
+            {optionRows.length > 0 && isActive ? (
+              <div className="mb-10">
+                <ProductOptionSelector
+                  productName={name}
+                  axis1Name={axis1Name}
+                  axis2Name={axis2Name}
+                  optionRows={optionRows}
+                  affiliateRef={affiliateRef}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-4 mb-10">
+                {priceValue != null && (
+                  <div>
+                    <span className="text-3xl font-bold text-ink">{formatPrice(priceValue)}</span>
+                    {monthly && <span className="text-sm text-ink-soft font-normal">/월</span>}
+                    <span className="text-xs text-ink-faint ml-2">
+                      VAT 포함{annual != null ? ` · 또는 ${formatPrice(annual.price)}/년` : ''}
+                    </span>
+                  </div>
+                )}
+                {isActive ? (
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center justify-center gap-2 bg-pen text-white font-semibold px-6 py-3 rounded-md text-sm hover:bg-pen-dark transition-colors"
+                  >
+                    구매하기 →
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center justify-center gap-2 border border-dashed border-rule text-ink-faint font-medium px-6 py-3 rounded-md text-sm">
+                    출시 예정
                   </span>
-                </div>
-              )}
-              {isActive ? (
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center justify-center gap-2 bg-pen text-white font-semibold px-6 py-3 rounded-md text-sm hover:bg-pen-dark transition-colors"
-                >
-                  구매하기 →
-                </Link>
-              ) : (
-                <span className="inline-flex items-center justify-center gap-2 border border-dashed border-rule text-ink-faint font-medium px-6 py-3 rounded-md text-sm">
-                  출시 예정
-                </span>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* 태그 */}
             {tags.length > 0 && (
