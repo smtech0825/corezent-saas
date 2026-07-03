@@ -52,7 +52,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
   if (data.prices.length > 0) {
     const priceRows = data.prices
       .filter((p) => p.price !== '')
-      .map((p) => {
+      .map((p, i) => {
         const row: Record<string, unknown> = {
           product_id: product.id,
           type: p.type,
@@ -65,11 +65,19 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
         if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
         if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
         if (p.license_tier) row.license_tier = p.license_tier
+        // 표시 순서(041) — 비었으면 입력 순서로 폴백
+        const so = parseInt(p.sort_order, 10)
+        row.sort_order = Number.isFinite(so) ? so : i + 1
         return row
       })
 
     if (priceRows.length > 0) {
-      const { error: priceError } = await client.from('product_prices').insert(priceRows)
+      let { error: priceError } = await client.from('product_prices').insert(priceRows)
+      // sort_order 컬럼(041) 미적용이면 42703 → 컬럼 빼고 재시도(호환)
+      if (priceError && (priceError as { code?: string }).code === '42703') {
+        const stripped = priceRows.map((r) => { const c = { ...r }; delete c.sort_order; return c })
+        ;({ error: priceError } = await client.from('product_prices').insert(stripped))
+      }
       if (priceError) return { error: priceError.message }
     }
   }

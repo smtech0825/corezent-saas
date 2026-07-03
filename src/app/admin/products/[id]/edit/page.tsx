@@ -31,18 +31,26 @@ export default async function EditProductPage({
 
   if (!product) notFound()
 
-  // is_active=true 인 가격(옵션 행) 조회. 옵션 컬럼(040)은 best-effort — 미적용 시 폴백.
-  const PRICE_OPT = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url, option_axis1_label, option_axis2_label, license_tier'
+  // is_active=true 인 가격(옵션 행) 조회. 옵션 컬럼(040)·순서 컬럼(041)은 best-effort — 미적용 시 단계적 폴백.
+  const PRICE_SORT = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url, option_axis1_label, option_axis2_label, license_tier, sort_order'
+  const PRICE_OPT  = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url, option_axis1_label, option_axis2_label, license_tier'
   const PRICE_BASE = 'id, type, interval, price, lemon_squeezy_variant_id, checkout_url'
-  const rawPricesRes = await client
-    .from('product_prices')
-    .select(PRICE_OPT)
-    .eq('product_id', id)
-    .eq('is_active', true)
-    .order('id', { ascending: true })
-  const rawPrices = rawPricesRes.error
-    ? (await client.from('product_prices').select(PRICE_BASE).eq('product_id', id).eq('is_active', true).order('id', { ascending: true })).data
-    : rawPricesRes.data
+  const priceBy = (sel: string) => client.from('product_prices').select(sel).eq('product_id', id).eq('is_active', true)
+  let rawPrices: Array<Record<string, unknown>>
+  const rSort = await priceBy(PRICE_SORT)
+  if (!rSort.error) rawPrices = (rSort.data ?? []) as unknown as Array<Record<string, unknown>>
+  else {
+    const rOpt = await priceBy(PRICE_OPT)
+    rawPrices = ((rOpt.error
+      ? (await priceBy(PRICE_BASE)).data
+      : rOpt.data) ?? []) as unknown as Array<Record<string, unknown>>
+  }
+  // 표시 순서(sort_order) 오름차순 → 값 없으면 뒤로, 동률이면 id 안정 정렬
+  rawPrices = rawPrices.slice().sort((a, b) => {
+    const sa = (a.sort_order as number) ?? 999999
+    const sb = (b.sort_order as number) ?? 999999
+    return sa !== sb ? sa - sb : String(a.id).localeCompare(String(b.id))
+  })
 
   // 기존 changelog 목록 조회
   const { data: rawChangelogs } = await client
@@ -76,6 +84,10 @@ export default async function EditProductPage({
     option_axis1_label: ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? '',
     option_axis2_label: ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? '',
     license_tier: ((p as { license_tier?: string | null }).license_tier) ?? '',
+    sort_order: (() => {
+      const v = (p as { sort_order?: number | null }).sort_order
+      return v == null ? '' : String(v)
+    })(),
   }))
 
   const initialData: ProductFormData = {
@@ -171,12 +183,20 @@ export default async function EditProductPage({
       if (price.option_axis1_label) priceUpdate.option_axis1_label = price.option_axis1_label
       if (price.option_axis2_label) priceUpdate.option_axis2_label = price.option_axis2_label
       if (price.license_tier) priceUpdate.license_tier = price.license_tier
+      const so = parseInt(price.sort_order, 10)
+      if (Number.isFinite(so)) priceUpdate.sort_order = so
 
-      const { data: updated, error: updateError } = await c
+      let { data: updated, error: updateError } = await c
         .from('product_prices')
         .update(priceUpdate)
         .eq('id', price.id!)
         .select('id')
+      // sort_order 컬럼(041) 미적용이면 42703 → 컬럼 빼고 재시도(호환)
+      if (updateError && (updateError as { code?: string }).code === '42703') {
+        const stripped = { ...priceUpdate }; delete stripped.sort_order
+        ;({ data: updated, error: updateError } = await c
+          .from('product_prices').update(stripped).eq('id', price.id!).select('id'))
+      }
       if (updateError) return { error: updateError.message }
       if (!updated || updated.length === 0) {
         return { error: `가격 항목(id=${price.id})을 찾지 못해 저장에 실패했습니다.` }
@@ -186,23 +206,29 @@ export default async function EditProductPage({
     // 신규 옵션·가격 삽입 (ID 없는 항목)
     const newPrices = data.prices.filter((p) => !p.id && p.price !== '')
     if (newPrices.length > 0) {
-      const { error: insertError } = await c.from('product_prices').insert(
-        newPrices.map((p) => {
-          const row: Record<string, unknown> = {
-            product_id: id,
-            type: p.type,
-            interval: p.type === 'subscription' ? p.interval || null : null,
-            price: parseFloat(p.price),
-            lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
-            checkout_url: p.checkout_url || null,
-            is_active: true,
-          }
-          if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
-          if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
-          if (p.license_tier) row.license_tier = p.license_tier
-          return row
-        })
-      )
+      const rows = newPrices.map((p, i) => {
+        const row: Record<string, unknown> = {
+          product_id: id,
+          type: p.type,
+          interval: p.type === 'subscription' ? p.interval || null : null,
+          price: parseFloat(p.price),
+          lemon_squeezy_variant_id: p.lemon_squeezy_variant_id || null,
+          checkout_url: p.checkout_url || null,
+          is_active: true,
+        }
+        if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
+        if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
+        if (p.license_tier) row.license_tier = p.license_tier
+        const so = parseInt(p.sort_order, 10)
+        row.sort_order = Number.isFinite(so) ? so : i + 1
+        return row
+      })
+      let { error: insertError } = await c.from('product_prices').insert(rows)
+      // sort_order 컬럼(041) 미적용이면 42703 → 컬럼 빼고 재시도(호환)
+      if (insertError && (insertError as { code?: string }).code === '42703') {
+        const stripped = rows.map((r) => { const cc = { ...r }; delete cc.sort_order; return cc })
+        ;({ error: insertError } = await c.from('product_prices').insert(stripped))
+      }
       if (insertError) return { error: insertError.message }
     }
 

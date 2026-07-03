@@ -22,6 +22,7 @@ export interface PriceEntry {
   option_axis1_label: string   // 축1 값 (예: 월간)
   option_axis2_label: string   // 축2 값 (예: 3PC용 · 축 1개면 비움)
   license_tier: string         // 라이선스 tier (1pc/3pc/5pc/10pc/lite/pro/max · 비면 slug fallback)
+  sort_order: string           // 표시 순서 번호 (오름차순 · 041 컬럼). 작을수록 먼저
 }
 
 export interface ProductFeatureEntry {
@@ -68,7 +69,7 @@ interface Props {
   submitLabel: string
 }
 
-const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '', option_axis1_label: '', option_axis2_label: '', license_tier: '' })
+const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '', option_axis1_label: '', option_axis2_label: '', license_tier: '', sort_order: '' })
 
 /** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
 function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
@@ -260,7 +261,9 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   }
 
   function addPrice() {
-    set('prices', [...form.prices, emptyPrice()])
+    // 새 옵션엔 다음 순서 번호를 자동 부여(기존 최대 + 1) — 관리자는 번호만 바꿔 순서 조정
+    const nextOrder = form.prices.reduce((m, p) => Math.max(m, parseInt(p.sort_order || '0', 10) || 0), 0) + 1
+    set('prices', [...form.prices, { ...emptyPrice(), sort_order: String(nextOrder) }])
   }
 
   function removePrice(idx: number) {
@@ -834,7 +837,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-ink">② 옵션 목록</span>
-            <span className="text-xs text-ink-faint">각 행 = 선택지 하나 (가격·tier·결제링크). 옵션 없으면 행 1개.</span>
+            <span className="text-xs text-ink-faint">각 행 = 선택지 하나. &quot;순서&quot; 번호 오름차순으로 공개 화면에 표시됩니다.</span>
           </div>
           <button
             type="button"
@@ -852,8 +855,20 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         {form.prices.map((price, idx) => (
           <div key={idx} className="flex items-start gap-3 p-4 bg-paper rounded-xl border border-rule">
             <div className="flex-1 space-y-3">
-              {/* 옵션 라벨 (축1/축2 값) */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* 순서 번호 + 옵션 라벨 (축1/축2 값) — 순서 오름차순으로 공개 화면에 표시됨 */}
+              <div className="grid grid-cols-[80px_1fr_1fr] gap-3">
+                <Field label="순서">
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={price.sort_order}
+                    onChange={(e) => updatePrice(idx, 'sort_order', e.target.value)}
+                    placeholder="1"
+                    title="작을수록 먼저 표시됩니다 (오름차순)"
+                    className={inputCls}
+                  />
+                </Field>
                 <Field label={`옵션값 ${form.option_axis1_name || '축1'}`}>
                   <input
                     value={price.option_axis1_label}

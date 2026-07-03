@@ -35,7 +35,7 @@ export default async function PricingPage() {
     productsQuery,
     client
       .from('product_prices')
-      .select('product_id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, license_tier')
+      .select('product_id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, license_tier, sort_order')
       .eq('is_active', true),
     resolveCheckoutAffiliateRef(),
   ])
@@ -43,15 +43,23 @@ export default async function PricingPage() {
   const dbProducts = productsRes.error
     ? (await client.from('products').select(BASE_COLS).eq('is_active', true).order('order_index')).data
     : productsRes.data
-  // 옵션 컬럼(040) best-effort — 미적용 시 옵션 없이 폴백
+  // 옵션 컬럼(040)·순서 컬럼(041) best-effort — 미적용 시 단계적 폴백(옵션 유지 → 옵션 없이)
   const dbPrices = pricesRes.error
-    ? (await client.from('product_prices').select('product_id, type, interval, price, checkout_url').eq('is_active', true)).data
+    ? await (async () => {
+        const rOpt = await client
+          .from('product_prices')
+          .select('product_id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, license_tier')
+          .eq('is_active', true)
+        return rOpt.error
+          ? (await client.from('product_prices').select('product_id, type, interval, price, checkout_url').eq('is_active', true)).data
+          : rOpt.data
+      })()
     : pricesRes.data
 
   // 가격을 product_id별로 그룹화 (옵션 라벨 포함)
   const priceMap = new Map<string, Array<{
     type: string; interval: string | null; price: number; checkout_url: string | null
-    axis1Label: string | null; axis2Label: string | null
+    axis1Label: string | null; axis2Label: string | null; sortOrder: number | null
   }>>()
 
   for (const p of (dbPrices ?? []) as Array<Record<string, unknown>>) {
@@ -64,12 +72,17 @@ export default async function PricingPage() {
       checkout_url: (p.checkout_url as string) ?? null,
       axis1Label: ((p as { option_axis1_label?: string | null }).option_axis1_label) ?? null,
       axis2Label: ((p as { option_axis2_label?: string | null }).option_axis2_label) ?? null,
+      sortOrder: ((p as { sort_order?: number | null }).sort_order) ?? null,
     })
   }
 
   // PricingProduct 배열 조립
   const products: PricingProduct[] = ((dbProducts ?? []) as Array<Record<string, unknown>>).map((p) => {
-    const prices = priceMap.get(p.id as string) ?? []
+    // 옵션 표시 순서(sort_order) 오름차순 정렬 — 이후 optionRows·기본가격 탐색이 이 순서를 따른다
+    const prices = (priceMap.get(p.id as string) ?? []).slice().sort((a, b) => {
+      const sa = a.sortOrder ?? 999999, sb = b.sortOrder ?? 999999
+      return sa - sb
+    })
     const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
     const annual  = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
     const oneTime = prices.find((pr) => pr.type === 'one_time')
