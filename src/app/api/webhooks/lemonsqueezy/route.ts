@@ -263,13 +263,15 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   const admin = createAdminClient()
 
-  const { data: existing } = await admin
+  // 멱등/보강 판별: 이미 실금액(amount>0)이 채워진 주문이면 재전송 → 스킵.
+  // subscription_created가 만든 스텁 주문(amount=0)이면 아래에서 실금액·옵션으로 보강(UPDATE).
+  const { data: existingOrder } = await admin
     .from('orders')
-    .select('id')
+    .select('id, amount')
     .eq('lemon_squeezy_order_id', lsOrderId)
-    .single()
-  if (existing) {
-    console.log(`[LS Webhook] 이미 처리된 주문: ${lsOrderId}`)
+    .maybeSingle()
+  if (existingOrder && Number(existingOrder.amount) > 0) {
+    console.log(`[LS Webhook] 이미 처리된 주문(재전송): ${lsOrderId}`)
     return
   }
 
@@ -279,12 +281,20 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     return
   }
 
+  // variant_id로 옵션행 조회 — 같은 variant에 옵션행이 2개 이상이면(데이터 오류) .single()이
+  // 에러를 내 productPrice=null로 떨어졌다(→ 옵션연결·라이선스 누락). 다중행에도 깨지지 않게
+  // 활성·생성순 첫 행을 쓴다(옵션 라벨은 부정확할 수 있으나 결제/발급 흐름은 보존).
   const variantId = String(attrs.first_order_item?.variant_id)
-  const { data: productPrice } = await admin
+  const { data: ppRows } = await admin
     .from('product_prices')
     .select('id, product_id, type, interval')
     .eq('lemon_squeezy_variant_id', variantId)
-    .single()
+    .order('is_active', { ascending: false })
+    .order('created_at', { ascending: true })
+  if (ppRows && ppRows.length > 1) {
+    console.warn(`[LS Webhook] variant_id ${variantId}에 옵션행 ${ppRows.length}개 매칭 — 첫 행 사용(옵션 라벨 부정확 가능·데이터 정정 필요) (order_id=${lsOrderId})`)
+  }
+  const productPrice = ppRows?.[0] ?? null
 
   let bundleId: string | null = null
   let productPriceId: string | null = productPrice?.id ?? null
@@ -320,22 +330,43 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   if (quantity > 1) orderInsert.quantity = quantity
   if (Number.isFinite(discountCents) && discountCents > 0) orderInsert.discount_amount = discountCents
 
-  const { data: order, error: orderErr } = await admin
-    .from('orders')
-    .insert(orderInsert)
-    .select('id')
-    .single()
-
-  if (orderErr || !order) {
-    throw new Error(`주문 생성 실패: ${orderErr?.message}`)
+  // 스텁 주문이 있으면 실금액·옵션연결로 보강(UPDATE), 없으면 신규 INSERT.
+  // INSERT가 경쟁(subscription_created 선행)으로 중복키(23505)면 재조회 후 보강한다.
+  // (기존엔 여기서 그대로 throw → "duplicate key" 실패로 주문이 스텁·라이선스 미발급 상태로 방치됐다.)
+  let orderId: string
+  if (existingOrder) {
+    const { error: updErr } = await admin.from('orders').update(orderInsert).eq('id', existingOrder.id)
+    if (updErr) throw new Error(`스텁 주문 보강 실패: ${updErr.message}`)
+    orderId = existingOrder.id as string
+    console.log(`[LS Webhook] 스텁 주문 보강 완료: ${orderId}`)
+  } else {
+    const { data: order, error: orderErr } = await admin
+      .from('orders')
+      .insert(orderInsert)
+      .select('id')
+      .single()
+    if (order) {
+      orderId = order.id as string
+      console.log(`[LS Webhook] 주문 생성 완료: ${orderId}`)
+    } else if (orderErr?.code === '23505') {
+      const { data: raced } = await admin
+        .from('orders')
+        .select('id')
+        .eq('lemon_squeezy_order_id', lsOrderId)
+        .single()
+      if (!raced) throw new Error(`주문 생성 실패(경쟁 후 재조회 실패): ${orderErr.message}`)
+      await admin.from('orders').update(orderInsert).eq('id', raced.id)
+      orderId = raced.id as string
+      console.log(`[LS Webhook] 경쟁 감지 — 기존 주문 보강: ${orderId}`)
+    } else {
+      throw new Error(`주문 생성 실패: ${orderErr?.message}`)
+    }
   }
-
-  console.log(`[LS Webhook] 주문 생성 완료: ${order.id}`)
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
     // 수량 N 주문 → 라이선스 N개 발급. tier는 옵션 행 license_tier 우선(best-effort)
     const licenseTier = await fetchLicenseTier(productPriceId)
-    await createLicense(userId, order.id, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity, licenseTier)
+    await createLicense(userId, orderId, productId, attrs.user_email, attrs.user_name, lsOrderId, quantity, licenseTier)
   }
 
   // 추천 커미션 적립 (일회성·구독 초기 공통의 "첫 결제"). 갱신은 subscription_payment_success.
@@ -347,7 +378,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
     grossCents: attrs.total,
     currency: attrs.currency,
-    orderId: order.id, // 첫 order 적립 시 attribution.converted_at·order_id 기록용(내부 uuid)
+    orderId, // 첫 order 적립 시 attribution.converted_at·order_id 기록용(내부 uuid)
   })
 }
 
@@ -429,12 +460,19 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     return
   }
 
+  // variant_id로 옵션행 조회 — 다중행(데이터 오류)에도 깨지지 않게 활성·생성순 첫 행 사용.
+  // (여기서 null이면 sub·주문에 product_price_id가 안 붙어 결제화면이 "알 수 없음"으로 나온다.)
   const variantId = String(attrs.variant_id)
-  const { data: productPrice } = await admin
+  const { data: ppRows } = await admin
     .from('product_prices')
     .select('id, product_id, interval')
     .eq('lemon_squeezy_variant_id', variantId)
-    .single()
+    .order('is_active', { ascending: false })
+    .order('created_at', { ascending: true })
+  if (ppRows && ppRows.length > 1) {
+    console.warn(`[LS Webhook] (sub) variant_id ${variantId}에 옵션행 ${ppRows.length}개 매칭 — 첫 행 사용 (sub=${lsSubId})`)
+  }
+  const productPrice = ppRows?.[0] ?? null
 
   let bundleId: string | null = null
   if (!productPrice) {
@@ -460,7 +498,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   if (existingOrder) {
     orderId = existingOrder.id
   } else {
-    console.log(`[LS Webhook] 주문 미존재, subscription_created에서 생성: ${lsOrderId}`)
+    console.log(`[LS Webhook] 주문 미존재, subscription_created에서 스텁 생성: ${lsOrderId}`)
     const orderInsert: Record<string, unknown> = {
       user_id: userId,
       lemon_squeezy_order_id: lsOrderId,
@@ -471,12 +509,20 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     if (productPrice) orderInsert.product_price_id = productPrice.id
     if (bundleId) orderInsert.bundle_id = bundleId
     if (quantity > 1) orderInsert.quantity = quantity  // 038 마이그레이션 컬럼 — 기본값(1)이면 생략
-    const { data: newOrder } = await admin
+    const { data: newOrder, error: insErr } = await admin
       .from('orders')
       .insert(orderInsert)
       .select('id')
       .single()
-    orderId = newOrder?.id ?? null
+    if (insErr?.code === '23505') {
+      // 경쟁: order_created가 먼저 INSERT함 → 기존 주문 사용(실금액 보존, 스텁 재생성 안 함)
+      const { data: raced } = await admin
+        .from('orders').select('id').eq('lemon_squeezy_order_id', lsOrderId).single()
+      orderId = raced?.id ?? null
+      console.log(`[LS Webhook] (sub) 경쟁 감지 — 기존 주문 사용: ${orderId}`)
+    } else {
+      orderId = newOrder?.id ?? null
+    }
   }
 
   const billingInterval = productPrice?.interval === 'annual' ? 'annual' : 'monthly'
