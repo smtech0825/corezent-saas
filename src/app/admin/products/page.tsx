@@ -51,21 +51,21 @@ export default async function ProductsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">제품</h1>
-          <p className="text-sm text-[#E2E8F0] mt-1">{list.length}개 제품 · 화살표로 순서 변경</p>
+          <h1 className="text-2xl font-bold font-serif text-ink">제품</h1>
+          <p className="text-sm text-ink-soft mt-1">{list.length}개 제품 · 화살표로 순서 변경</p>
         </div>
         <Link
           href="/admin/products/new"
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-mark hover:brightness-95 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
         >
           <Plus size={15} /> 제품 추가
         </Link>
       </div>
 
       {list.length === 0 ? (
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-16 text-center space-y-3">
-          <p className="text-sm text-[#94A3B8]">아직 제품이 없습니다.</p>
-          <Link href="/admin/products/new" className="text-xs text-amber-400 hover:text-amber-300 transition-colors">
+        <div className="border border-rule bg-paper-raised rounded-2xl py-16 text-center space-y-3">
+          <p className="text-sm text-ink-faint">아직 제품이 없습니다.</p>
+          <Link href="/admin/products/new" className="text-xs text-mark hover:brightness-95 transition-colors">
             + 첫 제품 추가하기
           </Link>
         </div>

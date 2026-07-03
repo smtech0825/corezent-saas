@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAffiliateConfig } from '@/lib/affiliate'
+import { formatKRW } from '@/lib/money'
 import ConfigEditor from './ConfigEditor'
 import { ConvertButton, IssueDiscountForm, ResolveButton } from './AffiliateActions'
 
@@ -13,9 +14,9 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = { title: '제휴 관리' }
 
-/** 정수 cents → $ 표시 */
-function usd(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`
+/** 정수 cents(KRW 기준) → ₩ 표시 */
+function krw(cents: number): string {
+  return formatKRW(cents)
 }
 
 type Agg = { pendingEligible: number; pendingHeld: number; approved: number; paid: number; reversed: number }
@@ -78,19 +79,19 @@ export default async function AdminAffiliatesPage() {
       reason: c.review_reason ?? '',
     }))
 
-  const minDollars = cfg ? (cfg.min_payout_credit / 100).toFixed(2) : '50.00'
+  const minWon = cfg ? String(Math.round(cfg.min_payout_credit / 100)) : '5000'
 
   return (
     <div className="p-6 space-y-8 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">제휴 관리</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">제휴 관리</h1>
+        <p className="text-sm text-ink-soft mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
       </div>
 
       {/* 설정 편집기 */}
       {cfg ? (
         <ConfigEditor
-          minPayoutDollars={minDollars}
+          minPayoutWon={minWon}
           initial={{
             program_enabled:       cfg.program_enabled,
             commission_type:       cfg.commission_type,
@@ -105,51 +106,51 @@ export default async function AdminAffiliatesPage() {
           }}
         />
       ) : (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl">
+        <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl">
           affiliate_program_config를 불러오지 못했습니다(028 적용 여부 확인).
         </div>
       )}
 
       {/* 검토 필요 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-3">
-          검토 필요{flagged.length > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">({flagged.length}건)</span>}
+        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-3">
+          검토 필요{flagged.length > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">({flagged.length}건)</span>}
         </h2>
         {flagged.length > 0 ? (
-          <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl divide-y divide-[#1E293B]/60">
+          <div className="bg-paper-raised border border-rule rounded-2xl divide-y divide-rule">
             {flagged.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-white">{f.referrerName} · <span className="font-mono text-red-400">{usd(f.amountCents)}</span></p>
-                  <p className="text-xs text-[#94A3B8] truncate">{f.reason}</p>
+                  <p className="text-sm text-ink">{f.referrerName} · <span className="font-mono text-danger">{krw(f.amountCents)}</span></p>
+                  <p className="text-xs text-ink-faint truncate">{f.reason}</p>
                 </div>
                 <ResolveButton commissionId={f.id} />
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#94A3B8] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">검토할 항목이 없습니다.</p>
+          <p className="text-sm text-ink-faint bg-paper-raised border border-rule rounded-2xl px-5 py-6 text-center">검토할 항목이 없습니다.</p>
         )}
       </section>
 
       {/* 제휴자 목록 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-3">
-          제휴자{affiliates.length > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">({affiliates.length}명)</span>}
+        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-3">
+          제휴자{affiliates.length > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">({affiliates.length}명)</span>}
         </h2>
         {affiliates.length > 0 ? (
-          <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl overflow-hidden divide-y divide-[#1E293B]/60">
+          <div className="bg-paper-raised border border-rule rounded-2xl overflow-hidden divide-y divide-rule">
             {affiliates.map((a) => (
               <div key={a.referrerId} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
                 <div className="min-w-0 lg:w-48">
-                  <p className="text-sm text-white truncate">{a.name}</p>
-                  <p className="text-xs font-mono text-[#94A3B8]">{a.code}</p>
+                  <p className="text-sm text-ink truncate">{a.name}</p>
+                  <p className="text-xs font-mono text-ink-faint">{a.code}</p>
                 </div>
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <Stat label="전환가능" value={usd(a.pendingEligible)} tone="text-amber-400" />
-                  <Stat label="보류" value={usd(a.pendingHeld)} tone="text-[#E2E8F0]" />
-                  <Stat label="지급완료" value={usd(a.paid)} tone="text-emerald-400" />
-                  <Stat label="크레딧 잔액" value={usd(a.balanceCents)} tone="text-[#38BDF8]" />
+                  <Stat label="전환가능" value={krw(a.pendingEligible)} tone="text-caution" />
+                  <Stat label="보류" value={krw(a.pendingHeld)} tone="text-ink-soft" />
+                  <Stat label="지급완료" value={krw(a.paid)} tone="text-ok" />
+                  <Stat label="크레딧 잔액" value={krw(a.balanceCents)} tone="text-mark" />
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:gap-3">
                   <ConvertButton referrerId={a.referrerId} />
@@ -159,7 +160,7 @@ export default async function AdminAffiliatesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#94A3B8] bg-[#111A2E] border border-[#1E293B] rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
+          <p className="text-sm text-ink-faint bg-paper-raised border border-rule rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
         )}
       </section>
     </div>
@@ -170,7 +171,7 @@ export default async function AdminAffiliatesPage() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div>
-      <p className="text-[#94A3B8]">{label}</p>
+      <p className="text-ink-faint">{label}</p>
       <p className={`font-mono font-semibold ${tone}`}>{value}</p>
     </div>
   )

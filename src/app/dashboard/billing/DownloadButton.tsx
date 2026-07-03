@@ -67,7 +67,7 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
         type="button"
         onClick={() => handleDownload(url)}
         disabled={loading}
-        className="relative inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 hover:border-emerald-400/60 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+        className="relative inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
       >
         {loading
           ? <Loader2 size={11} className="animate-spin" />
@@ -75,7 +75,7 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
         }
         다운로드
         {!done && (
-          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-400 text-[#0B1120] text-[8px] font-bold flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-mark text-white text-[8px] font-bold flex items-center justify-center">
             N
           </span>
         )}
@@ -90,7 +90,7 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
         type="button"
         onClick={() => setOpen((p) => !p)}
         disabled={loading}
-        className="relative inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 hover:border-emerald-400/60 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+        className="relative inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
       >
         {loading
           ? <Loader2 size={11} className="animate-spin" />
@@ -99,25 +99,25 @@ export default function DownloadButton({ productId, version, downloadUrls, isNew
         다운로드
         <ChevronDown size={10} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         {!done && (
-          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-400 text-[#0B1120] text-[8px] font-bold flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-mark text-white text-[8px] font-bold flex items-center justify-center">
             N
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#111A2E] border border-[#1E293B] rounded-xl shadow-lg z-20 overflow-hidden">
-          <div className="px-3 py-2 border-b border-[#1E293B]">
-            <p className="text-[10px] text-[#94A3B8] font-mono">{version}</p>
+        <div className="absolute right-0 top-full mt-1.5 w-44 bg-paper-raised border border-rule rounded-xl shadow-lg z-20 overflow-hidden">
+          <div className="px-3 py-2 border-b border-rule">
+            <p className="text-[10px] text-ink-faint font-mono">{version}</p>
           </div>
           {platforms.map(([key, url]) => (
             <button
               key={key}
               type="button"
               onClick={() => handleDownload(url)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-ink-soft hover:text-ink hover:bg-paper-shade transition-colors text-left"
             >
-              <Download size={11} className="text-emerald-400 shrink-0" />
+              <Download size={11} className="text-mark shrink-0" />
               {PLATFORM_LABELS[key] ?? key}
             </button>
           ))}

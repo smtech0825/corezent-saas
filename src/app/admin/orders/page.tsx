@@ -12,10 +12,11 @@ export const dynamic = 'force-dynamic'
 export default async function OrdersPage() {
   const adminClient = createAdminClient()
 
-  // subscriptions JOIN — current_period_end(만료일) + billing_interval(Period) 함께 조회
+  // subscriptions JOIN — current_period_end(만료일) + billing_interval(Period),
+  // product_prices JOIN — 상품명 + 선택 옵션(축1/축2 라벨) 함께 조회
   const { data: orders } = await adminClient
     .from('orders')
-    .select('id, user_id, amount, currency, status, created_at, subscriptions(current_period_end, billing_interval)')
+    .select('id, user_id, amount, currency, status, created_at, subscriptions(current_period_end, billing_interval), product_prices(option_axis1_label, option_axis2_label, products(name))')
     .order('created_at', { ascending: false })
 
   let emailMap: Map<string, string> = new Map()
@@ -24,14 +25,32 @@ export default async function OrdersPage() {
     emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']))
   } catch { /* 무시 */ }
 
+  // 구매자 이름(profiles.name) — 이메일과 함께 표시(대체 아님)
+  const userIds = [...new Set((orders ?? []).map((o) => o.user_id as string).filter(Boolean))]
+  const nameMap = new Map<string, string>()
+  if (userIds.length > 0) {
+    const { data: profs } = await adminClient.from('profiles').select('id, name').in('id', userIds)
+    ;(profs ?? []).forEach((p) => nameMap.set(p.id as string, (p.name as string) ?? ''))
+  }
+
   type SubInfo = { current_period_end: string | null; billing_interval: string | null }
 
   const list: Order[] = (orders ?? []).map((o) => {
     const subs = ((o as Record<string, unknown>).subscriptions as SubInfo[] | null)
+    // product_prices(→products) 는 to-one 이지만 PostgREST가 객체/배열로 줄 수 있어 방어적으로 처리
+    const ppRaw = (o as Record<string, unknown>).product_prices
+    const pp = (Array.isArray(ppRaw) ? ppRaw[0] : ppRaw) as
+      { option_axis1_label?: string | null; option_axis2_label?: string | null; products?: unknown } | null
+    const prodRaw = pp?.products
+    const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
+    const optionParts = [pp?.option_axis1_label, pp?.option_axis2_label].filter(Boolean)
     return {
       id:         o.id as string,
       shortId:    (o.id as string).slice(0, 8).toUpperCase(),
       email:      emailMap.get(o.user_id as string) ?? '—',
+      name:       nameMap.get(o.user_id as string) ?? '',
+      productName: prod?.name ?? '',
+      option:     optionParts.join(' · '),
       amount:     (o.amount as number) ?? 0,
       currency:   (o.currency as string) ?? 'KRW',
       status:     o.status as string,

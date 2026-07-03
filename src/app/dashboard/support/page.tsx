@@ -97,22 +97,22 @@ export default async function SupportPage({
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">고객지원</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">
+        <h1 className="text-2xl font-bold text-ink font-serif">고객지원</h1>
+        <p className="text-sm text-ink-soft mt-1">
           문의를 남겨주시면 최대한 빠르게 답변드리겠습니다.
         </p>
       </div>
 
       {/* 티켓 제출 폼 */}
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1E293B]">
-          <h2 className="text-sm font-semibold text-white">새 문의 작성</h2>
+      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-rule">
+          <h2 className="text-sm font-semibold text-ink">새 문의 작성</h2>
         </div>
         <form action={submitTicket} className="px-6 py-6 space-y-4">
           {/* 제목 */}
           <div className="space-y-1.5">
-            <label htmlFor="subject" className="text-xs font-medium text-[#E2E8F0]">
-              제목 <span className="text-red-400">*</span>
+            <label htmlFor="subject" className="text-xs font-medium text-ink-soft">
+              제목 <span className="text-danger">*</span>
             </label>
             <input
               id="subject"
@@ -120,18 +120,18 @@ export default async function SupportPage({
               type="text"
               required
               placeholder="문의 내용을 간단히 적어주세요"
-              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
+              className="w-full bg-paper border border-rule rounded-xl px-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark/50 focus:ring-1 focus:ring-mark/20 transition-colors"
             />
           </div>
 
           {/* 우선순위 */}
           <div className="space-y-1.5">
-            <label htmlFor="priority" className="text-xs font-medium text-[#E2E8F0]">우선순위</label>
+            <label htmlFor="priority" className="text-xs font-medium text-ink-soft">우선순위</label>
             <select
               id="priority"
               name="priority"
               defaultValue="normal"
-              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
+              className="w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink focus:outline-none focus:border-mark/50 focus:ring-1 focus:ring-mark/20 transition-colors"
             >
               {priorityOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -141,8 +141,8 @@ export default async function SupportPage({
 
           {/* 메시지 */}
           <div className="space-y-1.5">
-            <label htmlFor="message" className="text-xs font-medium text-[#E2E8F0]">
-              내용 <span className="text-red-400">*</span>
+            <label htmlFor="message" className="text-xs font-medium text-ink-soft">
+              내용 <span className="text-danger">*</span>
             </label>
             <textarea
               id="message"
@@ -150,14 +150,14 @@ export default async function SupportPage({
               required
               rows={5}
               placeholder="문의 내용을 자세히 적어주세요..."
-              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors resize-none"
+              className="w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark/50 focus:ring-1 focus:ring-mark/20 transition-colors resize-none"
             />
           </div>
 
           <div className="flex justify-stretch sm:justify-end pt-1">
             <button
               type="submit"
-              className="w-full sm:w-auto bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
+              className="w-full sm:w-auto bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
             >
               문의 제출
             </button>

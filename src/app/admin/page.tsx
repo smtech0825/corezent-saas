@@ -40,16 +40,16 @@ function sumAmount(rows: { amount: number | null }[]): number {
 }
 
 const statusColors: Record<string, string> = {
-  paid:      'text-emerald-400 bg-emerald-400/10',
-  pending:   'text-amber-400 bg-amber-400/10',
-  refunded:  'text-blue-400 bg-blue-400/10',
-  cancelled: 'text-red-400 bg-red-400/10',
-  active:    'text-emerald-400 bg-emerald-400/10',
-  open:      'text-amber-400 bg-amber-400/10',
-  answered:  'text-blue-400 bg-blue-400/10',
-  closed:    'text-[#94A3B8] bg-[#1E293B]',
-  admin:     'text-amber-400 bg-amber-400/10',
-  user:      'text-[#E2E8F0] bg-[#1E293B]',
+  paid:      'text-ok bg-ok-soft',
+  pending:   'text-caution bg-caution-soft',
+  refunded:  'text-info bg-info-soft',
+  cancelled: 'text-danger bg-danger-soft',
+  active:    'text-ok bg-ok-soft',
+  open:      'text-caution bg-caution-soft',
+  answered:  'text-info bg-info-soft',
+  closed:    'text-ink-soft bg-paper-shade',
+  admin:     'text-mark bg-mark/10',
+  user:      'text-ink-soft bg-paper-shade',
 }
 
 /** 주문 상태 표시 라벨 — UserTable.tsx의 한글 라벨과 통일 (paid=결제됨/pending=대기 중/refunded=환불됨/cancelled=취소됨) */
@@ -172,23 +172,23 @@ export default async function AdminPage() {
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-white">개요</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">개요</h1>
+        <p className="text-sm text-ink-soft mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
       </div>
 
       {/* 통계 카드 4개 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 
         {/* ① Total Users — 월간/연간 신규 서브 지표 */}
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#E2E8F0]">총 사용자</p>
-            <span className="w-9 h-9 rounded-xl bg-[#38BDF8]/10 flex items-center justify-center">
-              <Users size={17} className="text-[#38BDF8]" />
+            <p className="text-sm text-ink-soft">총 사용자</p>
+            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
+              <Users size={17} className="text-mark" />
             </span>
           </div>
-          <p className="text-2xl font-bold text-white">{fmt(totalUsers)}</p>
-          <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
+          <p className="text-2xl font-bold text-ink">{fmt(totalUsers)}</p>
+          <div className="mt-3 pt-3 border-t border-rule space-y-1.5">
             <SubMetric
               label="신규 (월간)"
               value={fmt(newUsersMonth)}
@@ -203,15 +203,15 @@ export default async function AdminPage() {
         </div>
 
         {/* ② Total Revenue — 월간/연간 매출 서브 지표 */}
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#E2E8F0]">총 매출</p>
-            <span className="w-9 h-9 rounded-xl bg-emerald-400/10 flex items-center justify-center">
-              <DollarSign size={17} className="text-emerald-400" />
+            <p className="text-sm text-ink-soft">총 매출</p>
+            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
+              <DollarSign size={17} className="text-mark" />
             </span>
           </div>
-          <p className="text-2xl font-bold text-white">{fmtCurrency(totalRevenue)}</p>
-          <div className="mt-3 pt-3 border-t border-[#1E293B] space-y-1.5">
+          <p className="text-2xl font-bold text-ink">{fmtCurrency(totalRevenue)}</p>
+          <div className="mt-3 pt-3 border-t border-rule space-y-1.5">
             <SubMetric
               label="매출 (월간)"
               value={fmtCurrency(revMonth)}
@@ -226,29 +226,29 @@ export default async function AdminPage() {
         </div>
 
         {/* ③ Active Licenses */}
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#E2E8F0]">활성 라이선스</p>
-            <span className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center">
-              <Key size={17} className="text-violet-400" />
+            <p className="text-sm text-ink-soft">활성 라이선스</p>
+            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
+              <Key size={17} className="text-mark" />
             </span>
           </div>
-          <p className="text-2xl font-bold text-white">{fmt(activeLicenses)}</p>
+          <p className="text-2xl font-bold text-ink">{fmt(activeLicenses)}</p>
         </div>
 
         {/* ④ Open Tickets — 아이콘 클릭 → /admin/support */}
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-[#E2E8F0]">열린 티켓</p>
+            <p className="text-sm text-ink-soft">열린 티켓</p>
             <Link
               href="/admin/support"
               title="고객지원 티켓 보기"
-              className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center hover:bg-amber-400/25 hover:scale-105 transition-all cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center hover:bg-mark/25 hover:scale-105 transition-all cursor-pointer"
             >
-              <MessageSquare size={17} className="text-amber-400" />
+              <MessageSquare size={17} className="text-mark" />
             </Link>
           </div>
-          <p className="text-2xl font-bold text-white">{fmt(openTickets)}</p>
+          <p className="text-2xl font-bold text-ink">{fmt(openTickets)}</p>
         </div>
 
       </div>
@@ -256,42 +256,42 @@ export default async function AdminPage() {
       {/* 두 컬럼 테이블 */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         {/* 최근 주문 (3/5) */}
-        <div className="xl:col-span-3 border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
+        <div className="xl:col-span-3 border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-rule">
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-[#E2E8F0]" />
-              <h2 className="text-sm font-semibold text-white">최근 주문</h2>
+              <TrendingUp size={16} className="text-ink-soft" />
+              <h2 className="text-sm font-semibold text-ink">최근 주문</h2>
             </div>
-            <a href="/admin/orders" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
+            <a href="/admin/orders" className="text-xs text-mark hover:underline">전체 보기</a>
           </div>
           {recentOrders.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#94A3B8]">아직 주문이 없습니다.</div>
+            <div className="py-12 text-center text-sm text-ink-faint">아직 주문이 없습니다.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1E293B]">
-                    <th className="text-left px-6 py-3 text-xs text-[#94A3B8] font-medium">사용자</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">금액</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
-                    <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">날짜</th>
+                  <tr className="border-b border-rule">
+                    <th className="text-left px-6 py-3 text-xs text-ink-faint font-medium">사용자</th>
+                    <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">금액</th>
+                    <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">날짜</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentOrders.map((order) => (
-                    <tr key={order.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
-                      <td className="px-6 py-3 text-[#E2E8F0] truncate max-w-[160px]">
+                    <tr key={order.id} className="border-b border-rule/50 hover:bg-paper-shade transition-colors">
+                      <td className="px-6 py-3 text-ink-soft truncate max-w-[160px]">
                         {emailMap.get(order.user_id) || '—'}
                       </td>
-                      <td className="px-4 py-3 text-white font-medium">
+                      <td className="px-4 py-3 text-ink font-medium">
                         {fmtCurrency(order.amount ?? 0)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-ink-soft bg-paper-shade'}`}>
                           {orderStatusLabel[order.status] ?? order.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">
+                      <td className="px-4 py-3 text-ink-faint whitespace-nowrap">
                         {fmtDate(order.created_at)}
                       </td>
                     </tr>
@@ -303,28 +303,28 @@ export default async function AdminPage() {
         </div>
 
         {/* 최근 가입자 (2/5) */}
-        <div className="xl:col-span-2 border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]">
+        <div className="xl:col-span-2 border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-rule">
             <div className="flex items-center gap-2">
-              <UserPlus size={16} className="text-[#E2E8F0]" />
-              <h2 className="text-sm font-semibold text-white">최근 가입자</h2>
+              <UserPlus size={16} className="text-ink-soft" />
+              <h2 className="text-sm font-semibold text-ink">최근 가입자</h2>
             </div>
-            <a href="/admin/users" className="text-xs text-[#38BDF8] hover:underline">전체 보기</a>
+            <a href="/admin/users" className="text-xs text-mark hover:underline">전체 보기</a>
           </div>
           {(!recentUsers || recentUsers.length === 0) ? (
-            <div className="py-12 text-center text-sm text-[#94A3B8]">아직 사용자가 없습니다.</div>
+            <div className="py-12 text-center text-sm text-ink-faint">아직 사용자가 없습니다.</div>
           ) : (
-            <div className="divide-y divide-[#1E293B]/50">
+            <div className="divide-y divide-rule/50">
               {recentUsers.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 px-6 py-3 hover:bg-[#0B1120]/40 transition-colors">
-                  <span className="w-8 h-8 rounded-full bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center text-xs font-bold text-[#38BDF8] shrink-0">
+                <div key={u.id} className="flex items-center gap-3 px-6 py-3 hover:bg-paper-shade transition-colors">
+                  <span className="w-8 h-8 rounded-full bg-mark/10 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
                     {(u.name ?? '?')[0].toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white font-medium truncate">{u.name || '알 수 없음'}</p>
-                    <p className="text-xs text-[#94A3B8]">{fmtDate(u.created_at)}</p>
+                    <p className="text-sm text-ink font-medium truncate">{u.name || '알 수 없음'}</p>
+                    <p className="text-xs text-ink-faint">{fmtDate(u.created_at)}</p>
                   </div>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColors[u.role] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColors[u.role] ?? 'text-ink-soft bg-paper-shade'}`}>
                     {u.role}
                   </span>
                 </div>
@@ -354,13 +354,13 @@ function SubMetric({
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[11px] text-[#94A3B8] shrink-0">{label}</span>
+      <span className="text-[11px] text-ink-faint shrink-0">{label}</span>
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[11px] font-medium text-[#E2E8F0] truncate">{value}</span>
+        <span className="text-[11px] font-medium text-ink-soft truncate">{value}</span>
         {growth !== null && (
           <span
             className={`flex items-center gap-0.5 text-[10px] font-semibold shrink-0 ${
-              positive ? 'text-emerald-400' : 'text-red-400'
+              positive ? 'text-ok' : 'text-danger'
             }`}
           >
             {positive

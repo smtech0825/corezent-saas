@@ -32,10 +32,10 @@ function maskKey(key: string | null): string {
 }
 
 const ORDER_STATUS: Record<string, { label: string; cls: string }> = {
-  paid:      { label: '결제됨',   cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-  pending:   { label: '대기 중',  cls: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
-  refunded:  { label: '환불됨',   cls: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
-  cancelled: { label: '취소됨',   cls: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  paid:      { label: '결제됨',   cls: 'text-ok bg-ok-soft border-ok/20' },
+  pending:   { label: '대기 중',  cls: 'text-caution bg-caution-soft border-caution/20' },
+  refunded:  { label: '환불됨',   cls: 'text-info bg-info-soft border-info/20' },
+  cancelled: { label: '취소됨',   cls: 'text-danger bg-danger-soft border-danger/20' },
 }
 
 const SUB_STATUS: Record<string, string> = {
@@ -49,9 +49,9 @@ const LICENSE_STATUS: Record<string, string> = {
 /** 라벨:값 한 줄 */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-[#1E293B]/60 last:border-0">
-      <span className="text-xs text-[#94A3B8] pt-0.5">{label}</span>
-      <span className="text-sm text-white break-all">{children}</span>
+    <div className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-rule/60 last:border-0">
+      <span className="text-xs text-ink-faint pt-0.5">{label}</span>
+      <span className="text-sm text-ink break-all">{children}</span>
     </div>
   )
 }
@@ -106,41 +106,41 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     | undefined
 
   const shortId = (order.id as string).slice(0, 8).toUpperCase()
-  const badge = ORDER_STATUS[order.status as string] ?? { label: order.status as string, cls: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]' }
+  const badge = ORDER_STATUS[order.status as string] ?? { label: order.status as string, cls: 'text-ink-soft bg-paper-shade border-rule' }
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
       {/* 헤더 */}
       <div>
-        <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors">
+        <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors">
           <ArrowLeft size={14} /> 주문 목록
         </Link>
         <div className="flex items-center gap-3 mt-3">
-          <h1 className="text-2xl font-bold text-white">주문 #{shortId}</h1>
+          <h1 className="text-2xl font-bold text-ink font-serif">주문 #{shortId}</h1>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>{badge.label}</span>
         </div>
       </div>
 
       {/* 주문자 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-white mb-2">주문자</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-2">주문자</h2>
         <Row label="이름">{name}</Row>
         <Row label="이메일">{email}</Row>
       </section>
 
       {/* 주문 정보 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-white mb-2">주문 정보</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-2">주문 정보</h2>
         <Row label="상품">
           {productName}
-          {product?.slug && <span className="text-[#94A3B8] ml-2 font-mono text-xs">{product.slug}</span>}
+          {product?.slug && <span className="text-ink-faint ml-2 font-mono text-xs">{product.slug}</span>}
         </Row>
         <Row label="수량">{orderQuantity ?? '—'}</Row>
         <Row label="금액">{formatKRW(order.amount as number)}</Row>
         {discountAmount > 0 && (
           <Row label="할인">
-            <span className="text-emerald-400">-{formatKRW(discountAmount)}</span>
-            <span className="text-[#94A3B8] ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
+            <span className="text-ok">-{formatKRW(discountAmount)}</span>
+            <span className="text-ink-faint ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
           </Row>
         )}
         <Row label="통화">{(order.currency as string) ?? '—'}</Row>
@@ -160,19 +160,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       />
 
       {/* 발급 라이선스 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-white mb-2">발급 라이선스</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-2">발급 라이선스</h2>
         {licenses.length === 0 ? (
-          <p className="text-sm text-[#94A3B8] py-2">발급된 라이선스가 없습니다.</p>
+          <p className="text-sm text-ink-faint py-2">발급된 라이선스가 없습니다.</p>
         ) : (
           licenses.map((lic) => (
-            <div key={lic.id} className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-[#1E293B]/60 last:border-0">
-              <span className="text-xs text-[#94A3B8] pt-0.5 font-mono">{maskKey(lic.serial_key)}</span>
-              <span className="text-sm text-white">
+            <div key={lic.id} className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-rule/60 last:border-0">
+              <span className="text-xs text-ink-faint pt-0.5 font-mono">{maskKey(lic.serial_key)}</span>
+              <span className="text-sm text-ink">
                 {lic.products?.name ?? '—'}
-                <span className="text-[#94A3B8] ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
+                <span className="text-ink-faint ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
                 {lic.expires_at && (
-                  <span className="text-[#94A3B8] ml-2 text-xs">· 만료 {fmtDateTime(lic.expires_at)}</span>
+                  <span className="text-ink-faint ml-2 text-xs">· 만료 {fmtDateTime(lic.expires_at)}</span>
                 )}
               </span>
             </div>
@@ -182,11 +182,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       {/* 구독 (있을 때만) */}
       {subscription && (
-        <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-white mb-2">구독</h2>
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">구독</h2>
           <Row label="구독 상태">
             {SUB_STATUS[subscription.status] ?? subscription.status}
-            {subscription.cancel_at_period_end && <span className="text-amber-400 ml-2 text-xs">기간 말 취소 예약</span>}
+            {subscription.cancel_at_period_end && <span className="text-caution ml-2 text-xs">기간 말 취소 예약</span>}
           </Row>
           <Row label="주기">{subscription.billing_interval === 'annual' ? '연간' : subscription.billing_interval === 'monthly' ? '월간' : '—'}</Row>
           <Row label="시작일">{fmtDateTime(subscription.current_period_start)}</Row>

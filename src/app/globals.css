@@ -97,9 +97,35 @@
   }
 }
 
-/* next/font(Noto Serif KR) 변수를 Tailwind font-serif 유틸리티로 연결 */
+/* ----------------------------------------------------------
+ * 콘솔(admin·dashboard) 라이트 테마 토큰
+ * 페이퍼 토큰(paper/ink/rule/pen/seal)을 그대로 재사용하고,
+ * 라이트 배경용 상태색 + 영역별 강조색(mark)만 추가한다.
+ * mark = 현재 영역 강조색: 대시보드=볼펜 파랑 / 관리자=인주 빨강
+ * ---------------------------------------------------------- */
+@theme {
+  /* 라이트 배경용 상태색 — 의미: 성공/경고/정보/위험 (텍스트색 + soft 배경) */
+  --color-ok:           #1E7A46;
+  --color-ok-soft:      #E7F1EA;
+  --color-caution:      #8A5A00;
+  --color-caution-soft: #F6EDD9;
+  --color-info:         #2A6BB8;
+  --color-info-soft:    #E3EEF8;
+  --color-danger:       #B23124;
+  --color-danger-soft:  #F6E4E1;
+}
+
+/* next/font(Noto Serif KR) 변수 + 영역별 강조색(mark)을 Tailwind 유틸리티로 연결.
+ * mark는 런타임 var(--accent)를 참조 → 콘솔 루트의 accent-* 클래스가 실제 색을 결정 */
 @theme inline {
   --font-serif: var(--font-serif-kr), 'Noto Serif KR', 'Batang', serif;
+  --color-mark: var(--accent, #1D3FB0);
+}
+
+/* 영역별 강조색 스위치 — 콘솔 루트(Shell)에 부여 */
+@layer base {
+  .accent-pen  { --accent: #1D3FB0; } /* 대시보드 = 볼펜 파랑 */
+  .accent-seal { --accent: #C93A2C; } /* 관리자   = 인주 빨강 */
 }
 
 /* ----------------------------------------------------------

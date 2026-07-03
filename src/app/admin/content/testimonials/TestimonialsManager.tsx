@@ -99,22 +99,22 @@ function AvatarUpload({
             <img
               src={value}
               alt="아바타"
-              className="w-16 h-16 rounded-full object-cover border-2 border-[#1E293B]"
+              className="w-16 h-16 rounded-full object-cover border-2 border-rule"
             />
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-400 transition-colors"
+              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger flex items-center justify-center hover:brightness-95 transition-colors"
             >
               <X size={10} className="text-white" />
             </button>
           </>
         ) : (
-          <div className="w-16 h-16 rounded-full bg-[#0B1120] border-2 border-dashed border-[#1E293B] flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-paper border-2 border-dashed border-rule flex items-center justify-center">
             {uploading ? (
-              <Loader2 size={18} className="text-amber-400 animate-spin" />
+              <Loader2 size={18} className="text-mark animate-spin" />
             ) : (
-              <Upload size={16} className="text-[#94A3B8]" />
+              <Upload size={16} className="text-ink-faint" />
             )}
           </div>
         )}
@@ -126,7 +126,7 @@ function AvatarUpload({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 text-xs bg-[#1E293B] hover:bg-[#2D3F55] text-[#E2E8F0] hover:text-white font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 text-xs bg-paper-shade hover:brightness-95 text-ink-soft hover:text-ink font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
         >
           {uploading ? (
             <><Loader2 size={12} className="animate-spin" /> 업로드 중…</>
@@ -134,8 +134,8 @@ function AvatarUpload({
             <><Upload size={12} /> {value ? '사진 변경' : '사진 업로드'}</>
           )}
         </button>
-        <p className="text-[10px] text-[#94A3B8]">JPG, PNG, WebP · 최대 2MB</p>
-        {error && <p className="text-[10px] text-red-400">{error}</p>}
+        <p className="text-[10px] text-ink-faint">JPG, PNG, WebP · 최대 2MB</p>
+        {error && <p className="text-[10px] text-danger">{error}</p>}
       </div>
 
       <input
@@ -151,7 +151,7 @@ function AvatarUpload({
 
 // ─── 모듈 레벨 상수 — 리렌더링 시 포커스 손실 방지 ───────────────────────
 const inputCls =
-  'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
+  'w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark'
 
 // ─── FormFields — 컴포넌트 외부에 정의하여 unmount/remount 방지 ──────────
 function FormFields({
@@ -168,7 +168,7 @@ function FormFields({
         onChange={(e) => setF({ ...f, quote: e.target.value })}
         rows={3}
         placeholder="고객 후기 내용"
-        className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#E2E8F0] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+        className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark resize-none"
       />
       <div className="grid grid-cols-2 gap-3">
         <input
@@ -186,8 +186,8 @@ function FormFields({
       </div>
 
       {/* 아바타 파일 업로드 */}
-      <div className="bg-[#0B1120] border border-[#1E293B] rounded-lg p-3">
-        <p className="text-[10px] text-[#94A3B8] mb-2 uppercase tracking-wider font-semibold">
+      <div className="bg-paper border border-rule rounded-lg p-3">
+        <p className="text-[10px] text-ink-faint mb-2 uppercase tracking-wider font-semibold">
           프로필 사진
         </p>
         <AvatarUpload
@@ -197,7 +197,7 @@ function FormFields({
       </div>
 
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[#94A3B8]">평점</label>
+        <label className="text-xs text-ink-faint">평점</label>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -209,8 +209,8 @@ function FormFields({
                 size={16}
                 className={
                   n <= f.rating
-                    ? 'text-amber-400 fill-current'
-                    : 'text-[#1E293B]'
+                    ? 'text-mark fill-current'
+                    : 'text-rule'
                 }
               />
             </button>
@@ -284,12 +284,12 @@ export default function TestimonialsManager({
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((t) => (
         <div
           key={t.id}
-          className="border border-[#1E293B] bg-[#111A2E] rounded-xl overflow-hidden"
+          className="border border-rule bg-paper-raised rounded-xl overflow-hidden"
         >
           {editingId === t.id ? (
             <div className="p-4 space-y-3">
@@ -298,13 +298,13 @@ export default function TestimonialsManager({
                 <button
                   onClick={() => handleUpdate(t.id)}
                   disabled={isPending}
-                  className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
                 >
                   <Check size={12} /> 저장
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
-                  className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors"
                 >
                   <X size={12} /> 취소
                 </button>
@@ -317,11 +317,11 @@ export default function TestimonialsManager({
                   <img
                     src={t.author_avatar}
                     alt={t.author_name}
-                    className="w-9 h-9 rounded-full object-cover border border-[#1E293B] shrink-0 mt-0.5"
+                    className="w-9 h-9 rounded-full object-cover border border-rule shrink-0 mt-0.5"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-[#1E293B] flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-bold text-[#94A3B8]">
+                  <div className="w-9 h-9 rounded-full bg-paper-shade flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[10px] font-bold text-ink-faint">
                       {t.author_name
                         .split(' ')
                         .map((n) => n[0])
@@ -339,18 +339,18 @@ export default function TestimonialsManager({
                         size={11}
                         className={
                           n <= (t.rating ?? 5)
-                            ? 'text-amber-400 fill-current'
-                            : 'text-[#1E293B]'
+                            ? 'text-mark fill-current'
+                            : 'text-rule'
                         }
                       />
                     ))}
                   </div>
                   <p
-                    className={`text-sm italic line-clamp-2 ${t.is_published ? 'text-[#E2E8F0]' : 'text-[#94A3B8]'}`}
+                    className={`text-sm italic line-clamp-2 ${t.is_published ? 'text-ink-soft' : 'text-ink-faint'}`}
                   >
                     &ldquo;{t.quote}&rdquo;
                   </p>
-                  <p className="text-xs text-[#94A3B8] mt-1.5">
+                  <p className="text-xs text-ink-faint mt-1.5">
                     {t.author_name} · {t.author_title}
                   </p>
                 </div>
@@ -358,19 +358,19 @@ export default function TestimonialsManager({
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleToggle(t.id, t.is_published)}
-                  className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${t.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'}`}
+                  className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${t.is_published ? 'text-ok bg-ok-soft border-ok/20' : 'text-ink-soft bg-paper-shade border-rule'}`}
                 >
                   {t.is_published ? '게시됨' : '초안'}
                 </button>
                 <button
                   onClick={() => startEdit(t)}
-                  className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"
+                  className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"
                 >
                   <Pencil size={13} />
                 </button>
                 <button
                   onClick={() => handleDelete(t.id)}
-                  className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"
+                  className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -381,7 +381,7 @@ export default function TestimonialsManager({
       ))}
 
       {showNew ? (
-        <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-3">
+        <div className="border border-mark/30 bg-mark/5 rounded-xl p-4 space-y-3">
           <FormFields f={newForm} setF={setNewForm} />
           <div className="flex gap-2">
             <button
@@ -389,7 +389,7 @@ export default function TestimonialsManager({
               disabled={
                 isPending || !newForm.quote.trim() || !newForm.author_name.trim()
               }
-              className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
             >
               <Check size={12} /> 고객 후기 추가
             </button>
@@ -398,7 +398,7 @@ export default function TestimonialsManager({
                 setShowNew(false)
                 setNewForm(emptyForm)
               }}
-              className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors"
             >
               <X size={12} /> 취소
             </button>
@@ -410,7 +410,7 @@ export default function TestimonialsManager({
             setShowNew(true)
             setEditingId(null)
           }}
-          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-rule rounded-xl text-sm text-ink-faint hover:text-ink-soft hover:border-mark/30 transition-colors"
         >
           <Plus size={15} /> 새 고객 후기 추가
         </button>

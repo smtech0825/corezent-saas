@@ -56,13 +56,13 @@ export default async function AnnouncementAdminPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">공지 배너</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">
+        <h1 className="text-2xl font-bold text-ink font-serif">공지 배너</h1>
+        <p className="text-sm text-ink-soft mt-1">
           내비게이션 위에 표시되는 공지 바를 편집합니다.
         </p>
       </div>
 
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6">
+      <div className="border border-rule bg-paper-raised rounded-2xl p-6">
         <BannerEditor initial={initial} onSave={handleSave} />
       </div>
     </div>

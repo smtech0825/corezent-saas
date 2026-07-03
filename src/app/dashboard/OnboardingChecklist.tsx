@@ -81,11 +81,11 @@ export default function OnboardingChecklist({
   const allDone = doneCount === items.length
 
   return (
-    <div className="bg-[#111A2E] border border-[#38BDF8]/20 rounded-xl p-5 mb-8">
+    <div className="bg-paper-raised border border-mark/30 rounded-xl p-5 mb-8">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-base font-semibold text-white">시작하기</h2>
-          <p className="text-xs text-[#E2E8F0] mt-0.5">
+          <h2 className="text-base font-semibold text-ink">시작하기</h2>
+          <p className="text-xs text-ink-soft mt-0.5">
             {allDone
               ? '모든 단계를 마쳤어요! 닫아도 됩니다.'
               : `설치부터 첫 사용까지 ${doneCount}/${items.length} 단계 완료`}
@@ -93,7 +93,7 @@ export default function OnboardingChecklist({
         </div>
         <button
           onClick={dismiss}
-          className="text-[#94A3B8] hover:text-white transition-colors shrink-0"
+          className="text-ink-faint hover:text-ink transition-colors shrink-0"
           aria-label="체크리스트 닫기"
         >
           <X size={16} />
@@ -113,22 +113,22 @@ export default function OnboardingChecklist({
                 aria-pressed={it.done}
                 className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
                   it.done
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                    : 'border-[#1E293B] text-transparent'
-                } ${it.mkey ? 'cursor-pointer hover:border-[#38BDF8]/50' : 'cursor-default'}`}
+                    ? 'bg-ok-soft border-ok/40 text-ok'
+                    : 'border-rule text-transparent'
+                } ${it.mkey ? 'cursor-pointer hover:border-mark/50' : 'cursor-default'}`}
               >
                 <Check size={13} />
               </button>
 
-              <Icon size={15} className="text-[#E2E8F0] shrink-0" />
+              <Icon size={15} className="text-ink-soft shrink-0" />
 
               <div className="min-w-0 flex-1">
-                <p className={`text-sm ${it.done ? 'text-[#94A3B8] line-through' : 'text-white'}`}>{it.label}</p>
-                <p className="text-xs text-[#94A3B8]">{it.desc}</p>
+                <p className={`text-sm ${it.done ? 'text-ink-faint line-through' : 'text-ink'}`}>{it.label}</p>
+                <p className="text-xs text-ink-faint">{it.desc}</p>
               </div>
 
               {it.href && (
-                <Link href={it.href} className="text-xs text-[#38BDF8] hover:underline shrink-0 whitespace-nowrap">
+                <Link href={it.href} className="text-xs text-mark hover:underline shrink-0 whitespace-nowrap">
                   {it.hrefLabel} →
                 </Link>
               )}

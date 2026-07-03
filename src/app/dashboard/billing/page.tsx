@@ -59,16 +59,19 @@ export default async function BillingPage({
   const priceNameMap    = new Map<string, string>()
   const priceManualMap  = new Map<string, string | null>()
   const priceProductMap = new Map<string, string>()  // priceId → productId
+  const priceOptMap     = new Map<string, string>()  // priceId → "월간 · 1PC용"
 
   if (priceIds.length > 0) {
     const { data: prices } = await supabase
       .from('product_prices')
-      .select('id, products(id, name, manual_url)')
+      .select('id, option_axis1_label, option_axis2_label, products(id, name, manual_url)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
       priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent 제품')
       priceManualMap.set(pp.id, pp.products?.manual_url ?? null)
       if (pp.products?.id) priceProductMap.set(pp.id, pp.products.id)
+      const parts = [pp.option_axis1_label, pp.option_axis2_label].filter(Boolean)
+      if (parts.length) priceOptMap.set(pp.id, parts.join(' · '))
     })
   }
 
@@ -116,15 +119,15 @@ export default async function BillingPage({
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">결제</h1>
-        <p className="text-[#E2E8F0] text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">결제</h1>
+        <p className="text-ink-soft text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
       </div>
 
       {/* 구독 섹션 */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-4">
           구독
-          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">(총 {subTotal}개)</span>}
+          {(subTotal ?? 0) > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">(총 {subTotal}개)</span>}
         </h2>
         {subscriptions && subscriptions.length > 0 ? (
           <>
@@ -139,6 +142,7 @@ export default async function BillingPage({
                   id:                   sub.id,
                   productId,
                   productName:          priceNameMap.get(sub.product_price_id) ?? '알 수 없음',
+                  optionLabel:          priceOptMap.get(sub.product_price_id) ?? null,
                   billingInterval:      sub.billing_interval,
                   currentPeriodEnd:     sub.current_period_end ?? null,
                   status:               sub.status,
@@ -154,23 +158,23 @@ export default async function BillingPage({
           </>
         ) : (
           <EmptyCard
-            icon={<Package size={20} className="text-[#94A3B8]" />}
+            icon={<Package size={20} className="text-ink-faint" />}
             message="아직 구독이 없습니다."
-            action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:underline">요금제 둘러보기 →</Link>}
+            action={<Link href="/pricing" className="mt-3 inline-flex items-center gap-1.5 text-xs text-mark hover:underline">요금제 둘러보기 →</Link>}
           />
         )}
       </section>
 
       {/* 결제 내역 섹션 */}
       <section>
-        <h2 className="text-sm font-semibold text-[#E2E8F0] uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-semibold text-ink-soft uppercase tracking-wider mb-4">
           결제 내역
-          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-[#94A3B8] font-normal">(총 {ordTotal}개)</span>}
+          {(ordTotal ?? 0) > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">(총 {ordTotal}개)</span>}
         </h2>
         {orders && orders.length > 0 ? (
           <>
-            <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
-              <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#94A3B8] font-medium">
+            <div className="bg-paper-raised border border-rule rounded-xl overflow-hidden">
+              <div className="hidden md:grid grid-cols-[1fr_160px_120px_100px] gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium">
                 <span>제품</span>
                 <span>날짜</span>
                 <span>금액</span>
@@ -179,16 +183,21 @@ export default async function BillingPage({
               {orders.map((order: any) => (
                 <div
                   key={order.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px_100px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px_100px] gap-2 md:gap-4 items-center px-5 py-4 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard size={14} className="text-[#94A3B8] shrink-0 hidden md:block" />
-                    <span className="text-sm text-white">{priceNameMap.get(order.product_price_id) ?? '주문'}</span>
+                    <CreditCard size={14} className="text-ink-faint shrink-0 hidden md:block" />
+                    <div>
+                      <span className="text-sm text-ink">{priceNameMap.get(order.product_price_id) ?? '주문'}</span>
+                      {priceOptMap.get(order.product_price_id) && (
+                        <span className="block text-xs text-mark mt-0.5">{priceOptMap.get(order.product_price_id)}</span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm text-[#E2E8F0]">
+                  <span className="text-sm text-ink-soft">
                     {new Date(order.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
-                  <span className="text-sm text-white font-medium">
+                  <span className="text-sm text-ink font-medium">
                     {formatKRW(order.amount)}
                   </span>
                   <OrderStatusBadge status={order.status} />
@@ -198,7 +207,7 @@ export default async function BillingPage({
             <Pagination page={ordPage} total={ordTotal ?? 0} pageSize={ORD_PAGE_SIZE} buildHref={ordHref} />
           </>
         ) : (
-          <EmptyCard icon={<CreditCard size={20} className="text-[#94A3B8]" />} message="아직 결제 내역이 없습니다." />
+          <EmptyCard icon={<CreditCard size={20} className="text-ink-faint" />} message="아직 결제 내역이 없습니다." />
         )}
       </section>
     </div>
@@ -209,11 +218,11 @@ export default async function BillingPage({
 
 function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: string; action?: React.ReactNode }) {
   return (
-    <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl py-12 text-center">
-      <div className="w-10 h-10 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-3">
+    <div className="bg-paper-raised border border-rule rounded-xl py-12 text-center">
+      <div className="w-10 h-10 rounded-full bg-paper-shade flex items-center justify-center mx-auto mb-3">
         {icon}
       </div>
-      <p className="text-sm text-[#94A3B8]">{message}</p>
+      <p className="text-sm text-ink-faint">{message}</p>
       {action}
     </div>
   )
@@ -221,11 +230,11 @@ function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: 
 
 function OrderStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    paid:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    failed:    'text-red-400 bg-red-500/10 border-red-500/20',
-    refunded:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    cancelled: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',
+    paid:      'text-ok bg-ok-soft border-ok/20',
+    pending:   'text-caution bg-caution-soft border-caution/20',
+    failed:    'text-danger bg-danger-soft border-danger/20',
+    refunded:  'text-info bg-info-soft border-info/20',
+    cancelled: 'text-ink-soft bg-paper-shade border-rule',
   }
   const labelMap: Record<string, string> = {
     paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨', cancelled: '취소됨',

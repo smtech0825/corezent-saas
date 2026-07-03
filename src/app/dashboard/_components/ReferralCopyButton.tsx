@@ -27,7 +27,7 @@ export default function ReferralCopyButton({ value }: { value: string }) {
     <button
       onClick={handleCopy}
       title="추천 링크 복사"
-      className="shrink-0 inline-flex items-center gap-1.5 bg-accent text-bg font-semibold px-4 rounded-lg text-sm hover:bg-accent-dark transition-colors"
+      className="shrink-0 inline-flex items-center gap-1.5 bg-mark text-white font-semibold px-4 rounded-lg text-sm hover:brightness-95 transition-colors"
     >
       {copied ? <Check size={15} /> : <Copy size={15} />}
       {copied ? '복사됨' : '복사'}

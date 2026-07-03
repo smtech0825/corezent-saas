@@ -16,6 +16,7 @@ export interface SubRow {
   id: string
   productId: string | undefined
   productName: string
+  optionLabel: string | null
   billingInterval: string
   currentPeriodEnd: string | null
   status: string
@@ -134,22 +135,27 @@ export default function BillingSubscriptionSection({ rows }: Props) {
           return (
             <div
               key={row.id}
-              className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap"
+              className="bg-paper-raised border border-rule rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center shrink-0">
-                  <Package size={18} className="text-[#38BDF8]" />
+                <div className="w-10 h-10 rounded-lg bg-paper border border-rule flex items-center justify-center shrink-0">
+                  <Package size={18} className="text-mark" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-white font-medium">{row.productName}</p>
+                    <p className="text-ink font-medium">{row.productName}</p>
+                    {row.optionLabel && (
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
+                        {row.optionLabel}
+                      </span>
+                    )}
                     {badgeActive && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/30">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
                         NEW
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-0.5">
+                  <p className="text-xs text-ink-faint mt-0.5">
                     {row.billingInterval === 'annual' ? '연간' : '월간'} 플랜
                     {row.currentPeriodEnd &&
                       ` · 갱신일 ${new Date(row.currentPeriodEnd).toLocaleDateString('ko-KR', {
@@ -163,7 +169,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                 <SubStatusBadge status={effectiveStatus} />
                 <Link
                   href="/dashboard/licenses"
-                  className="inline-flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-white border border-[#38BDF8]/30 hover:border-[#38BDF8]/60 px-3 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <ExternalLink size={11} />
                   라이선스 확인
@@ -173,7 +179,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                     href={row.manualUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/30 hover:border-amber-400/60 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <BookOpen size={11} />
                     사용 설명서
@@ -192,7 +198,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                 {isActive && (
                   <button
                     onClick={() => openCancelModal(row)}
-                    className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-danger hover:text-danger border border-danger/20 hover:border-danger/40 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     구독 취소
                   </button>
@@ -249,16 +255,16 @@ function CancellationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* 오버레이 */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
         onClick={onKeep}
       />
 
       {/* 모달 카드 */}
-      <div className="relative z-10 w-full max-w-md bg-[#111A2E] border border-[#1E293B] rounded-2xl shadow-2xl p-6">
+      <div className="relative z-10 w-full max-w-md bg-paper-raised border border-rule rounded-2xl shadow-2xl p-6">
         {/* 닫기 버튼 */}
         <button
           onClick={onKeep}
-          className="absolute top-4 right-4 text-[#94A3B8] hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"
           disabled={cancelling}
         >
           <X size={16} />
@@ -266,14 +272,14 @@ function CancellationModal({
 
         {/* 헤더 */}
         <div className="mb-5">
-          <h2 className="text-lg font-bold text-white">떠나신다니 아쉽습니다.</h2>
-          <p className="text-sm text-[#E2E8F0] mt-1.5">
+          <h2 className="text-lg font-bold text-ink">떠나신다니 아쉽습니다.</h2>
+          <p className="text-sm text-ink-soft mt-1.5">
             취소하시는 이유를 알려주시겠어요?
           </p>
           {fmtDate && (
-            <p className="text-xs text-[#94A3B8] mt-2 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2">
+            <p className="text-xs text-ink-faint mt-2 bg-paper border border-rule rounded-lg px-3 py-2">
               구독은{' '}
-              <span className="text-amber-400 font-medium">{fmtDate}</span>
+              <span className="text-mark font-medium">{fmtDate}</span>
               까지 유지됩니다.
             </p>
           )}
@@ -286,8 +292,8 @@ function CancellationModal({
               key={reason}
               className={`flex items-start gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
                 selectedReason === reason
-                  ? 'border-[#38BDF8]/40 bg-[#38BDF8]/5'
-                  : 'border-[#1E293B] hover:border-[#334155]'
+                  ? 'border-mark/40 bg-mark/5'
+                  : 'border-rule hover:border-mark/40'
               }`}
             >
               <input
@@ -296,9 +302,9 @@ function CancellationModal({
                 value={reason}
                 checked={selectedReason === reason}
                 onChange={() => onSelectReason(reason)}
-                className="mt-0.5 accent-[#38BDF8] shrink-0"
+                className="mt-0.5 accent-mark shrink-0"
               />
-              <span className="text-sm text-[#E2E8F0] leading-snug">{reason}</span>
+              <span className="text-sm text-ink-soft leading-snug">{reason}</span>
             </label>
           ))}
 
@@ -309,7 +315,7 @@ function CancellationModal({
               onChange={(e) => onOtherText(e.target.value)}
               placeholder="(선택) 자세한 내용을 알려주세요"
               rows={3}
-              className="w-full mt-1 bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8] transition-colors resize-none"
+              className="w-full mt-1 bg-paper border border-rule rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors resize-none"
             />
           )}
         </div>
@@ -320,7 +326,7 @@ function CancellationModal({
           <button
             onClick={onKeep}
             disabled={cancelling}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] transition-colors disabled:opacity-50"
+            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-mark text-white hover:brightness-95 transition-colors disabled:opacity-50"
           >
             구독 유지하기
           </button>
@@ -329,7 +335,7 @@ function CancellationModal({
           <button
             onClick={onConfirm}
             disabled={!canSubmit}
-            className="w-full py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:border-red-500/60 hover:text-red-300 hover:bg-red-500/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl text-sm font-medium border border-danger/30 text-danger hover:border-danger/60 hover:text-danger hover:bg-danger-soft transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {cancelling && <Loader2 size={14} className="animate-spin" />}
             구독 취소하기
@@ -344,10 +350,10 @@ function CancellationModal({
 
 function SubStatusBadge({ status }: { status: string }) {
   const map: Record<string, { style: string; label: string }> = {
-    active:    { style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: '활성' },
-    paused:    { style: 'text-amber-400 bg-amber-500/10 border-amber-500/20',       label: '일시정지' },
-    cancelled: { style: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',            label: '취소됨' },
-    expired:   { style: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',            label: '만료됨' },
+    active:    { style: 'text-ok bg-ok-soft border-ok/20',           label: '활성' },
+    paused:    { style: 'text-caution bg-caution-soft border-caution/20', label: '일시정지' },
+    cancelled: { style: 'text-ink-soft bg-paper-shade border-rule',  label: '취소됨' },
+    expired:   { style: 'text-ink-soft bg-paper-shade border-rule',  label: '만료됨' },
   }
   const { style, label } = map[status] ?? map.cancelled
   return (

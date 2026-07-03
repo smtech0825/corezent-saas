@@ -57,13 +57,39 @@ export default async function LicensesPage() {
     emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']))
   } catch { /* 무시 */ }
 
+  // 구매자 이름 맵 (profiles.name — 이메일과 함께 표시, 대체 아님)
+  const userIds = [...new Set((licenses ?? []).map((l) => l.user_id as string).filter(Boolean))]
+  const nameMap = new Map<string, string>()
+  if (userIds.length > 0) {
+    const { data: profs } = await adminClient.from('profiles').select('id, name').in('id', userIds)
+    ;(profs ?? []).forEach((p) => nameMap.set(p.id as string, (p.name as string) ?? ''))
+  }
+
+  // 선택 옵션 맵 (order_id → orders.product_price_id → product_prices 옵션 라벨)
+  const optionMap = new Map<string, string>()
+  if (orderIds.length > 0) {
+    const { data: orderRows } = await adminClient
+      .from('orders')
+      .select('id, product_prices(option_axis1_label, option_axis2_label)')
+      .in('id', orderIds)
+    ;(orderRows ?? []).forEach((o) => {
+      const ppRaw = (o as Record<string, unknown>).product_prices
+      const pp = (Array.isArray(ppRaw) ? ppRaw[0] : ppRaw) as
+        { option_axis1_label?: string | null; option_axis2_label?: string | null } | null
+      const parts = [pp?.option_axis1_label, pp?.option_axis2_label].filter(Boolean)
+      if (parts.length) optionMap.set(o.id as string, parts.join(' · '))
+    })
+  }
+
   const list: License[] = (licenses ?? []).map((l) => {
     const sub = l.order_id ? subMap.get(l.order_id as string) : undefined
     return {
       id:          l.id as string,
       serialKey:   maskKey(l.serial_key as string),
       email:       emailMap.get(l.user_id as string) ?? '—',
+      name:        nameMap.get(l.user_id as string) ?? '',
       productName: ((l as Record<string, unknown>).products as { name: string } | null)?.name ?? '',
+      option:      l.order_id ? (optionMap.get(l.order_id as string) ?? '') : '',
       status:      l.status as string,
       period:      sub?.interval ?? null,
       renewalDate: sub?.renewalDate ?? null,

@@ -42,13 +42,13 @@ export default function HeroEditor({ initial, onSave }: Props) {
   }
 
   const inputCls =
-    'w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors'
-  const labelCls = 'text-xs font-medium text-[#E2E8F0]'
+    'w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark focus:ring-1 focus:ring-mark/20 transition-colors'
+  const labelCls = 'text-xs font-medium text-ink-soft'
 
   return (
     <div className="space-y-5">
-      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
-      {saved && !isPending && <p className="text-xs text-emerald-400">저장되었습니다.</p>}
+      {isPending && <p className="text-xs text-mark">저장 중…</p>}
+      {saved && !isPending && <p className="text-xs text-ok">저장되었습니다.</p>}
 
       <div className="space-y-1.5">
         <label className={labelCls}>뱃지 텍스트</label>
@@ -102,7 +102,7 @@ export default function HeroEditor({ initial, onSave }: Props) {
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           <Check size={14} />
           히어로 저장

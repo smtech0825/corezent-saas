@@ -64,16 +64,16 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
   const refundConfirmDisabled = loading || confirmText.trim() !== REFUND_WORD
 
   return (
-    <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-      <h2 className="text-sm font-semibold text-white mb-1.5">주문 처리</h2>
-      <p className="text-xs text-[#94A3B8] mb-4">환불·구독 취소는 실제 결제/구독에 반영됩니다. 신중히 진행하세요.</p>
+    <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+      <h2 className="text-sm font-semibold text-ink mb-1.5">주문 처리</h2>
+      <p className="text-xs text-ink-faint mb-4">환불·구독 취소는 실제 결제/구독에 반영됩니다. 신중히 진행하세요.</p>
 
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => open('refund')}
           disabled={alreadyRefunded || !hasLsOrderId}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-red-400 border border-red-500/30 hover:border-red-500/60 hover:bg-red-500/5 px-4 py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-danger border border-danger/30 hover:border-danger/60 hover:bg-danger-soft px-4 py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <RotateCcw size={14} />
           {alreadyRefunded ? '환불됨' : '전액 환불'}
@@ -83,7 +83,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
           <button
             type="button"
             onClick={() => open('cancel')}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-400 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/5 px-4 py-2 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-caution border border-caution/30 hover:border-caution/60 hover:bg-caution-soft px-4 py-2 rounded-lg transition-colors"
           >
             <XCircle size={14} />
             구독 취소
@@ -92,51 +92,51 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
       </div>
 
       {!hasLsOrderId && !alreadyRefunded && (
-        <p className="text-xs text-[#94A3B8] mt-3">이 주문은 Lemon Squeezy order_id가 없어 API 환불이 불가합니다.</p>
+        <p className="text-xs text-ink-faint mt-3">이 주문은 Lemon Squeezy order_id가 없어 API 환불이 불가합니다.</p>
       )}
 
       {/* 확인 모달 */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-          <div className="relative z-10 w-full max-w-md bg-[#111A2E] border border-[#1E293B] rounded-2xl shadow-2xl p-6">
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={close} />
+          <div className="relative z-10 w-full max-w-md bg-paper-raised border border-rule rounded-2xl shadow-2xl p-6">
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={18} className="text-red-400" />
-              <h3 className="text-lg font-bold text-white">
+              <AlertTriangle size={18} className="text-danger" />
+              <h3 className="text-lg font-bold text-ink">
                 {modal === 'refund' ? '전액 환불하시겠어요?' : '구독을 취소하시겠어요?'}
               </h3>
             </div>
 
             {modal === 'refund' ? (
               <>
-                <p className="text-sm text-[#E2E8F0] mb-2">
-                  주문 <span className="font-mono text-xs text-white">#{orderId.slice(0, 8).toUpperCase()}</span> 을(를){' '}
-                  <span className="text-white font-semibold">{amountLabel}</span> 전액 환불합니다. 되돌릴 수 없습니다.
+                <p className="text-sm text-ink-soft mb-2">
+                  주문 <span className="font-mono text-xs text-ink">#{orderId.slice(0, 8).toUpperCase()}</span> 을(를){' '}
+                  <span className="text-ink font-semibold">{amountLabel}</span> 전액 환불합니다. 되돌릴 수 없습니다.
                 </p>
-                <p className="text-sm text-[#E2E8F0] mb-4">
-                  계속하려면 <span className="font-semibold text-white">&lsquo;{REFUND_WORD}&rsquo;</span> 을(를) 입력하세요.
+                <p className="text-sm text-ink-soft mb-4">
+                  계속하려면 <span className="font-semibold text-ink">&lsquo;{REFUND_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
                 <input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={REFUND_WORD}
-                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
+                  className="w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-danger/60 transition-colors mb-3"
                 />
               </>
             ) : (
-              <p className="text-sm text-[#E2E8F0] mb-4">
+              <p className="text-sm text-ink-soft mb-4">
                 이 주문의 구독을 취소합니다. 결제 기간이 끝날 때까지는 이용 가능하며, 이후 갱신되지 않습니다.
               </p>
             )}
 
-            {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
+            {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
             <div className="flex flex-col gap-2 mt-2">
               <button
                 type="button"
                 onClick={close}
                 disabled={loading}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-mark text-white hover:brightness-95 transition-colors disabled:opacity-50"
               >
                 취소하지 않기
               </button>
@@ -144,7 +144,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
                 type="button"
                 onClick={run}
                 disabled={modal === 'refund' ? refundConfirmDisabled : loading}
-                className="w-full py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:border-red-500/60 hover:bg-red-500/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl text-sm font-medium border border-danger/30 text-danger hover:border-danger/60 hover:bg-danger-soft transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading && <Loader2 size={14} className="animate-spin" />}
                 {modal === 'refund' ? '전액 환불하기' : '구독 취소하기'}

@@ -33,10 +33,10 @@ const PLATFORMS = [
 ]
 
 const CONTENT_KEYS: { key: keyof ChangelogContent; label: string; color: string }[] = [
-  { key: 'new_features',     label: '새 기능',       color: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20' },
-  { key: 'improvements',     label: '개선 사항',     color: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
-  { key: 'bug_fixes',        label: '버그 수정',     color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-  { key: 'breaking_changes', label: '호환성 변경',   color: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  { key: 'new_features',     label: '새 기능',       color: 'text-mark bg-mark/10 border-mark/30' },
+  { key: 'improvements',     label: '개선 사항',     color: 'text-ink-soft bg-paper-shade border-rule' },
+  { key: 'bug_fixes',        label: '버그 수정',     color: 'text-ok bg-ok-soft border-ok/20' },
+  { key: 'breaking_changes', label: '호환성 변경',   color: 'text-danger bg-danger-soft border-danger/20' },
 ]
 
 function emptyForm(): ChangelogFormData {
@@ -171,18 +171,18 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
   // ─── 렌더 ─────────────────────────────────────────────────────
   return (
-    <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b border-[#1E293B] flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-white">변경 이력</h2>
-          <p className="text-xs text-[#94A3B8] mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>
+          <h2 className="text-sm font-semibold text-ink">변경 이력</h2>
+          <p className="text-xs text-ink-faint mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>
         </div>
         {mode === 'list' && (
           <button
             type="button"
             onClick={openAdd}
-            className="inline-flex items-center gap-1.5 text-xs font-medium bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 hover:bg-[#38BDF8]/20 px-3 py-1.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-mark/10 text-mark border border-mark/30 hover:bg-mark/20 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Plus size={12} />
             버전 추가
@@ -194,23 +194,23 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       {mode === 'list' && (
         <div>
           {changelogs.length === 0 ? (
-            <div className="py-10 text-center text-sm text-[#94A3B8]">
+            <div className="py-10 text-center text-sm text-ink-faint">
               아직 변경 이력이 없습니다. 첫 버전을 추가하세요.
             </div>
           ) : (
-            <div className="divide-y divide-[#1E293B]/60">
+            <div className="divide-y divide-rule">
               {changelogs.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-[#0B1120]/30 transition-colors">
+                <div key={entry.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-paper-shade transition-colors">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono font-semibold text-white">{entry.version}</span>
+                    <span className="text-sm font-mono font-semibold text-ink">{entry.version}</span>
                     {entry.is_latest && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
                         최신
                       </span>
                     )}
-                    <span className="text-xs text-[#94A3B8]">{entry.release_date}</span>
+                    <span className="text-xs text-ink-faint">{entry.release_date}</span>
                     {Object.keys(entry.download_urls).length > 0 && (
-                      <span className="text-xs text-[#94A3B8]">
+                      <span className="text-xs text-ink-faint">
                         · {Object.keys(entry.download_urls).join(', ')}
                       </span>
                     )}
@@ -219,7 +219,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     <button
                       type="button"
                       onClick={() => openEdit(entry)}
-                      className="p-1.5 text-[#94A3B8] hover:text-white hover:bg-[#1E293B] rounded-lg transition-colors"
+                      className="p-1.5 text-ink-faint hover:text-ink hover:bg-paper-shade rounded-lg transition-colors"
                     >
                       <Pencil size={13} />
                     </button>
@@ -227,7 +227,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                       type="button"
                       onClick={() => handleDelete(entry.id)}
                       disabled={deletingId === entry.id}
-                      className="p-1.5 text-[#94A3B8] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-40"
+                      className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors disabled:opacity-40"
                     >
                       {deletingId === entry.id
                         ? <Loader2 size={13} className="animate-spin" />
@@ -246,32 +246,32 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       {(mode === 'add' || mode === 'edit') && (
         <div className="px-6 py-6 space-y-6">
           {error && (
-            <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-2.5">{error}</p>
+            <p className="text-xs text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-2.5">{error}</p>
           )}
 
           {/* 기본 정보 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#E2E8F0]">
-                버전 <span className="text-red-400">*</span>
+              <label className="text-xs font-medium text-ink-soft">
+                버전 <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
                 value={form.version}
                 onChange={(e) => setForm((p) => ({ ...p, version: e.target.value }))}
                 placeholder="v1.0.0"
-                className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
+                className="w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink font-mono placeholder-ink-faint focus:outline-none focus:border-mark focus:ring-1 focus:ring-mark/20 transition-colors"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#E2E8F0]">
-                릴리스 날짜 <span className="text-red-400">*</span>
+              <label className="text-xs font-medium text-ink-soft">
+                릴리스 날짜 <span className="text-danger">*</span>
               </label>
               <input
                 type="date"
                 value={form.release_date}
                 onChange={(e) => setForm((p) => ({ ...p, release_date: e.target.value }))}
-                className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#38BDF8]/50 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors"
+                className="w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink focus:outline-none focus:border-mark focus:ring-1 focus:ring-mark/20 transition-colors"
               />
             </div>
             <div className="flex items-end pb-1">
@@ -280,26 +280,26 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                   onClick={() => setForm((p) => ({ ...p, is_latest: !p.is_latest }))}
                   className={`w-9 h-5 rounded-full border transition-colors flex items-center px-0.5 ${
                     form.is_latest
-                      ? 'bg-[#38BDF8]/20 border-[#38BDF8]/40'
-                      : 'bg-[#1E293B] border-[#1E293B]'
+                      ? 'bg-mark/20 border-mark/40'
+                      : 'bg-paper-shade border-rule'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full transition-transform ${
-                    form.is_latest ? 'translate-x-4 bg-[#38BDF8]' : 'translate-x-0 bg-[#475569]'
+                    form.is_latest ? 'translate-x-4 bg-mark' : 'translate-x-0 bg-ink-faint'
                   }`} />
                 </div>
-                <span className="text-xs font-medium text-[#E2E8F0]">최신으로 표시</span>
+                <span className="text-xs font-medium text-ink-soft">최신으로 표시</span>
               </label>
             </div>
           </div>
 
           {/* Download URLs */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">다운로드 URL</h3>
+            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">다운로드 URL</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PLATFORMS.map(({ key, label }) => (
                 <div key={key} className="space-y-1">
-                  <label className="text-xs text-[#94A3B8]">{label}</label>
+                  <label className="text-xs text-ink-faint">{label}</label>
                   <input
                     type="url"
                     value={form.download_urls[key] ?? ''}
@@ -310,7 +310,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                       }))
                     }
                     placeholder="https://..."
-                    className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 transition-colors"
+                    className="w-full bg-paper border border-rule rounded-xl px-4 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors"
                   />
                 </div>
               ))}
@@ -319,7 +319,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
           {/* Content — 4 categories */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">변경 이력 내용</h3>
+            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">변경 이력 내용</h3>
             {CONTENT_KEYS.map(({ key, label, color }) => (
               <ContentListEditor
                 key={key}
@@ -332,11 +332,11 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
           </div>
 
           {/* 버튼 */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#1E293B]">
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-rule">
             <button
               type="button"
               onClick={cancel}
-              className="text-sm text-[#94A3B8] hover:text-white px-4 py-2 rounded-xl border border-[#1E293B] hover:border-[#475569] transition-colors"
+              className="text-sm text-ink-faint hover:text-ink px-4 py-2 rounded-xl border border-rule hover:border-ink-faint transition-colors"
             >
               취소
             </button>
@@ -344,7 +344,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 text-sm font-semibold bg-[#38BDF8] hover:bg-[#0ea5e9] text-[#0B1120] px-5 py-2 rounded-xl transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 text-sm font-semibold bg-mark hover:brightness-95 text-white px-5 py-2 rounded-xl transition-colors disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               {mode === 'add' ? '버전 추가' : '변경사항 저장'}
@@ -372,23 +372,23 @@ function ContentListEditor({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border border-[#1E293B] rounded-xl overflow-hidden">
+    <div className="border border-rule rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0B1120]/30 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-paper-shade transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${colorClass}`}>
             {label}
           </span>
-          <span className="text-xs text-[#94A3B8]">{items.length}개 항목</span>
+          <span className="text-xs text-ink-faint">{items.length}개 항목</span>
         </div>
-        {open ? <ChevronUp size={14} className="text-[#94A3B8]" /> : <ChevronDown size={14} className="text-[#94A3B8]" />}
+        {open ? <ChevronUp size={14} className="text-ink-faint" /> : <ChevronDown size={14} className="text-ink-faint" />}
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-2 border-t border-[#1E293B]/60">
+        <div className="px-4 pb-4 space-y-2 border-t border-rule">
           {items.map((item, i) => (
             <div key={i} className="flex items-center gap-2 pt-2">
               <input
@@ -400,12 +400,12 @@ function ContentListEditor({
                   onChange(next)
                 }}
                 placeholder="설명..."
-                className="flex-1 bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/40 transition-colors"
+                className="flex-1 bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors"
               />
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, j) => j !== i))}
-                className="p-1.5 text-[#94A3B8] hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
               >
                 <X size={13} />
               </button>
@@ -414,7 +414,7 @@ function ContentListEditor({
           <button
             type="button"
             onClick={() => onChange([...items, ''])}
-            className="mt-2 text-xs text-[#94A3B8] hover:text-[#E2E8F0] flex items-center gap-1.5 transition-colors"
+            className="mt-2 text-xs text-ink-faint hover:text-ink-soft flex items-center gap-1.5 transition-colors"
           >
             <Plus size={11} />
             항목 추가

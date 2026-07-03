@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { buildReferralUrl, getAffiliateConfig } from '@/lib/affiliate'
+import { formatKRW } from '@/lib/money'
 import DynamicIcon from '@/components/DynamicIcon'
 import ReferralCopyButton from '../_components/ReferralCopyButton'
 
@@ -17,10 +18,9 @@ export const metadata = {
   description: '내 추천 링크와 적립 현황, 스토어 크레딧 잔액을 확인하세요.',
 }
 
-/** 정수 cents → 통화 표시 문자열 (표시 전용, 계산 아님) */
-function formatCents(cents: number, currency: string): string {
-  const v = (cents / 100).toFixed(2)
-  return currency === 'USD' ? `$${v}` : `${v} ${currency}`
+/** 정수 cents(KRW 기준) → ₩ 표시 문자열 (표시 전용, 계산 아님) */
+function formatCents(cents: number, _currency?: string): string {
+  return formatKRW(cents)
 }
 
 export default async function AffiliatePage() {
@@ -97,43 +97,43 @@ export default async function AffiliatePage() {
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">제휴 프로그램</h1>
-        <p className="text-text-muted text-sm mt-1">
+        <h1 className="text-2xl font-bold text-ink font-serif">제휴 프로그램</h1>
+        <p className="text-ink-faint text-sm mt-1">
           내 추천 링크로 친구를 초대하면 결제 확정 후 스토어 크레딧을 적립받습니다.
         </p>
       </div>
 
       {/* 프로그램 비활성 안내 */}
       {cfg && !cfg.program_enabled && (
-        <div className="mb-6 flex items-center gap-3 bg-warning/10 border border-warning/20 rounded-xl px-4 py-3">
-          <DynamicIcon name="Info" size={16} className="text-warning shrink-0" />
-          <p className="text-sm text-text-muted">
+        <div className="mb-6 flex items-center gap-3 bg-caution-soft border border-caution/20 rounded-xl px-4 py-3">
+          <DynamicIcon name="Info" size={16} className="text-caution shrink-0" />
+          <p className="text-sm text-ink-soft">
             제휴 프로그램은 현재 준비 중입니다. 적립은 프로그램이 활성화된 이후 결제부터 집계됩니다.
           </p>
         </div>
       )}
 
       {/* 내 추천 링크 (벤토 wide) */}
-      <section className="mb-6 bg-surface border border-border rounded-2xl p-6">
+      <section className="mb-6 bg-paper-raised border border-rule rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <DynamicIcon name="Gift" size={18} className="text-accent" />
-          <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider">내 추천 링크</h2>
+          <DynamicIcon name="Gift" size={18} className="text-mark" />
+          <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">내 추천 링크</h2>
         </div>
         {code ? (
           <>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs text-text-muted">추천 코드</span>
-              <span className="font-mono text-accent text-sm font-semibold">{code}</span>
+              <span className="text-xs text-ink-faint">추천 코드</span>
+              <span className="font-mono text-mark text-sm font-semibold">{code}</span>
             </div>
             <div className="flex items-stretch gap-2">
-              <div className="flex-1 min-w-0 bg-bg border border-border rounded-lg px-4 py-3 flex items-center">
-                <span className="font-mono text-sm text-text truncate">{referralUrl}</span>
+              <div className="flex-1 min-w-0 bg-paper border border-rule rounded-lg px-4 py-3 flex items-center">
+                <span className="font-mono text-sm text-ink truncate">{referralUrl}</span>
               </div>
               <ReferralCopyButton value={referralUrl} />
             </div>
           </>
         ) : (
-          <p className="text-sm text-text-muted">추천 코드가 아직 없습니다. 고객지원에 문의해 주세요.</p>
+          <p className="text-sm text-ink-soft">추천 코드가 아직 없습니다. 고객지원에 문의해 주세요.</p>
         )}
       </section>
 
@@ -145,14 +145,14 @@ export default async function AffiliatePage() {
       </section>
 
       {/* 스토어 크레딧 잔액 */}
-      <section className="mb-6 bg-gradient-to-br from-surface to-bg border border-accent/20 rounded-2xl p-6">
+      <section className="mb-6 bg-gradient-to-br from-paper-raised to-paper border border-mark/30 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-2">
-          <DynamicIcon name="Wallet" size={18} className="text-accent" />
-          <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider">스토어 크레딧 잔액</h2>
+          <DynamicIcon name="Wallet" size={18} className="text-mark" />
+          <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">스토어 크레딧 잔액</h2>
         </div>
-        <p className="text-4xl font-bold text-white">{formatCents(balanceCents, currency)}</p>
+        <p className="text-4xl font-bold text-ink">{formatCents(balanceCents, currency)}</p>
         {cfg && (
-          <p className="text-xs text-text-muted mt-2">
+          <p className="text-xs text-ink-faint mt-2">
             최소 전환 금액 {formatCents(cfg.min_payout_credit, currency)} · 다음 결제 시 할인으로 사용됩니다.
           </p>
         )}
@@ -160,7 +160,7 @@ export default async function AffiliatePage() {
 
       {/* 적립 현황 */}
       <section>
-        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-4">적립 현황</h2>
+        <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider mb-4">적립 현황</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatusCard tone="warning" icon="Clock"       label="대기"      sub="보류 기간 중"   cents={buckets.held.cents}     count={buckets.held.count}     currency={currency} />
           <StatusCard tone="accent"  icon="CircleCheck" label="지급 가능"  sub="전환 대기"     cents={buckets.eligible.cents} count={buckets.eligible.count} currency={currency} />
@@ -177,22 +177,22 @@ export default async function AffiliatePage() {
 /** 지표 카드 (클릭·가입·전환). hint: 라벨 아래 한 줄 설명(선택) */
 function MetricCard({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-surface border border-border rounded-2xl p-5">
-      <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
-        <DynamicIcon name={icon} size={18} className="text-accent" />
+    <div className="bg-paper-raised border border-rule rounded-2xl p-5">
+      <div className="w-9 h-9 rounded-lg bg-mark/10 flex items-center justify-center mb-3">
+        <DynamicIcon name={icon} size={18} className="text-mark" />
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-text-muted mt-1">{label}</p>
-      {hint && <p className="text-xs text-text-muted/70 mt-1 leading-snug">{hint}</p>}
+      <p className="text-2xl font-bold text-ink">{value}</p>
+      <p className="text-xs text-ink-faint mt-1">{label}</p>
+      {hint && <p className="text-xs text-ink-faint/70 mt-1 leading-snug">{hint}</p>}
     </div>
   )
 }
 
 const TONE: Record<string, { text: string; bg: string; border: string }> = {
-  warning: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
-  accent:  { text: 'text-accent',  bg: 'bg-accent/10',  border: 'border-accent/20' },
-  success: { text: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
-  error:   { text: 'text-error',   bg: 'bg-error/10',   border: 'border-error/20' },
+  warning: { text: 'text-caution', bg: 'bg-caution-soft', border: 'border-caution/20' },
+  accent:  { text: 'text-mark',    bg: 'bg-mark/10',      border: 'border-mark/30' },
+  success: { text: 'text-ok',      bg: 'bg-ok-soft',      border: 'border-ok/20' },
+  error:   { text: 'text-danger',  bg: 'bg-danger-soft',  border: 'border-danger/20' },
 }
 
 /** 상태별 적립 카드 (금액 합·건수) */
@@ -209,13 +209,13 @@ function StatusCard({
 }) {
   const t = TONE[tone]
   return (
-    <div className="bg-surface border border-border rounded-2xl p-5">
+    <div className="bg-paper-raised border border-rule rounded-2xl p-5">
       <div className={`w-8 h-8 rounded-lg ${t.bg} border ${t.border} flex items-center justify-center mb-3`}>
         <DynamicIcon name={icon} size={15} className={t.text} />
       </div>
-      <p className="text-lg font-bold text-white">{formatCents(cents, currency)}</p>
+      <p className="text-lg font-bold text-ink">{formatCents(cents, currency)}</p>
       <p className={`text-xs font-medium mt-1 ${t.text}`}>{label}</p>
-      <p className="text-xs text-text-muted mt-0.5">{sub} · {count}건</p>
+      <p className="text-xs text-ink-faint mt-0.5">{sub} · {count}건</p>
     </div>
   )
 }

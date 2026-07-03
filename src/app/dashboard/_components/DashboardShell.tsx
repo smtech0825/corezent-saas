@@ -3,6 +3,7 @@
 /**
  * @컴포넌트: DashboardShell
  * @설명: 대시보드 외부 쉘 — 모바일 햄버거, 데스크톱 상단 헤더, ToastProvider
+ *        페이퍼(라이트) 테마 · 강조색=볼펜 파랑(accent-pen)
  */
 
 import { useState } from 'react'
@@ -22,7 +23,7 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-[#0B1120] flex">
+      <div className="theme-paper accent-pen bg-paper text-ink min-h-screen flex">
         {/* 데스크톱 사이드바 */}
         <div className="hidden lg:flex lg:flex-col">
           <div className="h-screen sticky top-0">
@@ -34,7 +35,7 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
         {sidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-50 flex">
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
             />
             <div className="relative z-10 flex flex-col h-full">
@@ -51,16 +52,16 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
         {/* 메인 콘텐츠 */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* 상단 헤더 */}
-          <div className="flex items-center justify-between px-5 h-16 border-b border-[#1E293B] bg-[#0B1120] sticky top-0 z-10">
+          <div className="flex items-center justify-between px-5 h-16 border-b border-rule bg-paper/85 backdrop-blur-sm sticky top-0 z-10">
             {/* 모바일: 햄버거 + 로고 */}
             <div className="flex items-center gap-3 lg:hidden">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="text-[#E2E8F0] hover:text-white p-1"
+                className="text-ink-soft hover:text-ink p-1"
               >
                 <Menu size={20} />
               </button>
-              <span className="text-white font-semibold text-sm">대시보드</span>
+              <span className="text-ink font-semibold text-sm">대시보드</span>
             </div>
 
             {/* 데스크톱: 빈 공간 */}

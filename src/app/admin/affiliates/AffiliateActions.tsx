@@ -28,12 +28,12 @@ export function ConvertButton({ referrerId }: { referrerId: string }) {
           catch { setMsg({ ok: false, text: '처리 실패 (030 적용·권한 확인)' }) }
         })}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 disabled:opacity-60 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 bg-mark/10 border border-mark/30 text-mark hover:bg-mark/20 disabled:opacity-60 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
       >
         {pending ? <Loader2 size={12} className="animate-spin" /> : <ArrowRightLeft size={12} />}
         전환
       </button>
-      {msg && <span className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-red-400'} text-right max-w-[200px]`}>{msg.text}</span>}
+      {msg && <span className={`text-[11px] ${msg.ok ? 'text-ok' : 'text-danger'} text-right max-w-[200px]`}>{msg.text}</span>}
     </div>
   )
 }
@@ -64,25 +64,26 @@ export function IssueDiscountForm({ userId }: { userId: string }) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-[#94A3B8]">$</span>
+        <span className="text-xs text-ink-faint">₩</span>
         <input
           type="number"
-          step="0.01"
+          step="1"
+          min="0"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.00"
-          className="w-20 bg-[#0B1120] border border-[#1E293B] text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-amber-500/50"
+          placeholder="0"
+          className="w-24 bg-paper border border-rule text-ink text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-mark"
         />
         <button
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#E2E8F0] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 bg-paper-shade hover:bg-paper-shade disabled:opacity-60 text-ink-soft hover:text-ink text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
         >
           {pending ? <Loader2 size={12} className="animate-spin" /> : <Ticket size={12} />}
           할인 발급
         </button>
       </div>
-      {msg && <span className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-red-400'} text-right max-w-[260px]`}>{msg.text}</span>}
+      {msg && <span className={`text-[11px] ${msg.ok ? 'text-ok' : 'text-danger'} text-right max-w-[260px]`}>{msg.text}</span>}
     </div>
   )
 }
@@ -99,7 +100,7 @@ export function ResolveButton({ commissionId }: { commissionId: string }) {
         catch { /* 030 미적용/권한 오류 — 버튼 상태 유지 */ }
       })}
       disabled={pending || done}
-      className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#1E293B]/70 disabled:opacity-60 text-[#E2E8F0] hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+      className="inline-flex items-center gap-1.5 bg-paper-shade hover:bg-paper-shade disabled:opacity-60 text-ink-soft hover:text-ink text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
     >
       {pending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
       {done ? '해제됨' : '검토 완료'}

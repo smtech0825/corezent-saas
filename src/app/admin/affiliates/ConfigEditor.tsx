@@ -4,7 +4,7 @@
  * @컴포넌트: ConfigEditor
  * @설명: affiliate_program_config 편집 폼 — 관리자 전용.
  *        모든 규칙값(커미션·보류/쿠키 일수·캡·최소전환·통화·자기추천·반복)을 DB에 저장.
- *        금액(min_payout_credit)은 화면에선 $ 단위로 입력받아 cents로 변환해 저장.
+ *        금액(min_payout_credit)은 화면에선 원(₩) 단위로 입력받아 cents(원×100)로 변환해 저장.
  */
 
 import { useState, useTransition } from 'react'
@@ -12,17 +12,17 @@ import { Check, Loader2 } from 'lucide-react'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
 
-const INPUT_CLS = 'w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500/50'
+const INPUT_CLS = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark'
 
 interface Props {
   initial: AffiliateConfigInput
-  /** min_payout_credit 초기값(cents) — $ 입력으로 표시 */
-  minPayoutDollars: string
+  /** min_payout_credit 초기값 — 원(₩) 단위 문자열로 표시 */
+  minPayoutWon: string
 }
 
-export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
+export default function ConfigEditor({ initial, minPayoutWon }: Props) {
   const [v, setV] = useState<AffiliateConfigInput>(initial)
-  const [minDollars, setMinDollars] = useState(minPayoutDollars)
+  const [minWon, setMinWon] = useState(minPayoutWon)
   const [pending, startTransition] = useTransition()
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -33,18 +33,18 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
   function save() {
     setMsg(null)
     startTransition(async () => {
-      // $ 입력 → cents 정수 변환
-      const cents = Math.max(0, Math.round(parseFloat(minDollars || '0') * 100))
+      // 원(₩) 입력 → cents(원×100) 정수 변환
+      const cents = Math.max(0, Math.round(parseFloat(minWon || '0') * 100))
       const res = await updateAffiliateConfigAction({ ...v, min_payout_credit: cents })
       setMsg({ ok: res.ok, text: res.message })
     })
   }
 
   return (
-    <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#1E293B]">
-        <h2 className="text-sm font-semibold text-white">프로그램 설정</h2>
-        <p className="text-xs text-[#94A3B8] mt-0.5">모든 적립 규칙의 단일 출처입니다. 변경은 이후 결제부터 적용됩니다.</p>
+    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-rule">
+        <h2 className="text-sm font-semibold text-ink">프로그램 설정</h2>
+        <p className="text-xs text-ink-faint mt-0.5">모든 적립 규칙의 단일 출처입니다. 변경은 이후 결제부터 적용됩니다.</p>
       </div>
 
       <div className="p-6 space-y-4">
@@ -74,8 +74,8 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
           <Field label="보류(hold) 일수">
             <input type="number" value={v.hold_days} onChange={(e) => set('hold_days', Number(e.target.value))} className={INPUT_CLS} />
           </Field>
-          <Field label="최소 전환 금액 ($)">
-            <input type="number" step="0.01" value={minDollars} onChange={(e) => setMinDollars(e.target.value)} className={INPUT_CLS} />
+          <Field label="최소 전환 금액 (원)">
+            <input type="number" step="1" min="0" value={minWon} onChange={(e) => setMinWon(e.target.value)} className={INPUT_CLS} />
           </Field>
           <Field label="통화">
             <input value={v.currency} onChange={(e) => set('currency', e.target.value)} className={INPUT_CLS} />
@@ -83,7 +83,7 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
         </div>
 
         {msg && (
-          <p className={`text-sm ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</p>
+          <p className={`text-sm ${msg.ok ? 'text-ok' : 'text-danger'}`}>{msg.text}</p>
         )}
       </div>
 
@@ -91,7 +91,7 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
         <button
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
         >
           {pending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           {pending ? '저장 중…' : '설정 저장'}
@@ -105,7 +105,7 @@ export default function ConfigEditor({ initial, minPayoutDollars }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
+      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -118,11 +118,11 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       type="button"
       onClick={() => onChange(!checked)}
       className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors ${
-        checked ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-[#0B1120] border-[#1E293B] text-[#E2E8F0]'
+        checked ? 'bg-mark/10 border-mark/30 text-mark' : 'bg-paper border-rule text-ink-soft'
       }`}
     >
       <span>{label}</span>
-      <span className={`relative w-9 h-5 rounded-full transition-colors ${checked ? 'bg-amber-500' : 'bg-[#1E293B]'}`}>
+      <span className={`relative w-9 h-5 rounded-full transition-colors ${checked ? 'bg-mark' : 'bg-paper-shade'}`}>
         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-4' : 'translate-x-0.5'}`} />
       </span>
     </button>

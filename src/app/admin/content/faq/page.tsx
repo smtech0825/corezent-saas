@@ -65,8 +65,8 @@ export default async function FaqPage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">FAQ</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">
+        <h1 className="text-2xl font-bold font-serif text-ink">FAQ</h1>
+        <p className="text-sm text-ink-soft mt-1">
           랜딩 페이지에 표시되는 자주 묻는 질문을 관리합니다.
         </p>
       </div>

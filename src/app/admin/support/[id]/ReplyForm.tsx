@@ -31,30 +31,30 @@ export default function ReplyForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5 space-y-4">
-      <h3 className="text-sm font-semibold text-white">답변</h3>
+    <form onSubmit={handleSubmit} className="border border-rule bg-paper-raised rounded-2xl p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-ink">답변</h3>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="답변을 입력하세요..."
         rows={4}
-        className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+        className="w-full bg-paper border border-rule rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark resize-none"
         required
       />
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm text-[#E2E8F0] cursor-pointer select-none">
+        <label className="flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none">
           <input
             type="checkbox"
             checked={closing}
             onChange={(e) => setClosing(e.target.checked)}
-            className="rounded border-[#1E293B] bg-[#0B1120] accent-amber-500"
+            className="rounded border-rule bg-paper accent-mark"
           />
           답변 후 티켓 닫기
         </label>
         <button
           type="submit"
           disabled={loading || !message.trim()}
-          className="flex items-center gap-2 bg-amber-500 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 bg-mark text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Send size={14} />
           {loading ? '보내는 중…' : '답변 보내기'}

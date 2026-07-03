@@ -29,9 +29,9 @@ interface Reply {
 }
 
 const statusColors: Record<string, string> = {
-  open:     'text-amber-400 bg-amber-400/10',
-  answered: 'text-blue-400 bg-blue-400/10',
-  closed:   'text-[#94A3B8] bg-[#1E293B]',
+  open:     'text-caution bg-caution-soft',
+  answered: 'text-info bg-info-soft',
+  closed:   'text-ink-soft bg-paper-shade',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -146,12 +146,12 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
   if (tickets.length === 0) return null
 
   return (
-    <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#1E293B]">
-        <h2 className="text-sm font-semibold text-white">내 문의 내역</h2>
+    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-rule">
+        <h2 className="text-sm font-semibold text-ink">내 문의 내역</h2>
       </div>
 
-      <div className="divide-y divide-[#1E293B]/50">
+      <div className="divide-y divide-rule">
         {tickets.map((ticket) => {
           const isExpanded = expandedId === ticket.id
           const unread = hasUnread(ticket)
@@ -163,64 +163,64 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
               <button
                 type="button"
                 onClick={() => toggleTicket(ticket)}
-                className="w-full px-6 py-4 flex items-center justify-between gap-4 hover:bg-[#0B1120]/30 transition-colors text-left"
+                className="w-full px-6 py-4 flex items-center justify-between gap-4 hover:bg-paper-shade transition-colors text-left"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {/* 미읽음 뱃지 */}
                   {unread && (
-                    <span className="shrink-0 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="shrink-0 w-2 h-2 rounded-full bg-danger animate-pulse" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-sm font-medium truncate ${unread ? 'text-white' : 'text-[#E2E8F0]'}`}>
+                    <p className={`text-sm font-medium truncate ${unread ? 'text-ink' : 'text-ink-soft'}`}>
                       {ticket.subject}
                     </p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                    <p className="text-xs text-ink-faint mt-0.5">
                       {fmtDate(ticket.created_at)} · 업데이트 {fmtDate(ticket.updated_at)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[ticket.status] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[ticket.status] ?? 'text-ink-soft bg-paper-shade'}`}>
                     {STATUS_LABELS[ticket.status] ?? ticket.status}
                   </span>
                   <ChevronDown
                     size={15}
-                    className={`text-[#94A3B8] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                   />
                 </div>
               </button>
 
               {/* Accordion 본문 */}
               {isExpanded && (
-                <div className="px-6 pb-6 border-t border-[#1E293B]/50">
+                <div className="px-6 pb-6 border-t border-rule">
                   {loadingId === ticket.id ? (
                     <div className="py-8 flex justify-center">
-                      <Loader2 size={18} className="animate-spin text-[#94A3B8]" />
+                      <Loader2 size={18} className="animate-spin text-ink-faint" />
                     </div>
                   ) : (
                     <>
                       {/* 메시지 스레드 */}
                       <div className="space-y-3 pt-4 mb-4">
                         {replies.length === 0 ? (
-                          <p className="text-sm text-[#94A3B8] text-center py-4">아직 메시지가 없습니다.</p>
+                          <p className="text-sm text-ink-faint text-center py-4">아직 메시지가 없습니다.</p>
                         ) : (
                           replies.map((reply) => (
                             <div
                               key={reply.id}
                               className={`rounded-xl p-4 border ${
                                 reply.is_admin
-                                  ? 'border-amber-500/20 bg-amber-500/5 ml-6'
-                                  : 'border-[#1E293B] bg-[#0B1120]'
+                                  ? 'border-mark/30 bg-mark/10 ml-6'
+                                  : 'border-rule bg-paper'
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
-                                <span className={`text-xs font-semibold ${reply.is_admin ? 'text-amber-400' : 'text-[#38BDF8]'}`}>
+                                <span className={`text-xs font-semibold ${reply.is_admin ? 'text-mark' : 'text-ink'}`}>
                                   {reply.is_admin ? '🛡 고객지원팀' : '나'}
                                 </span>
-                                <span className="text-xs text-[#94A3B8]">{fmtDateTime(reply.created_at)}</span>
+                                <span className="text-xs text-ink-faint">{fmtDateTime(reply.created_at)}</span>
                               </div>
-                              <p className="text-sm text-[#E2E8F0] leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+                              <p className="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{reply.message}</p>
                             </div>
                           ))
                         )}
@@ -236,13 +236,13 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                               value={replyTexts[ticket.id] ?? ''}
                               onChange={(e) => setReplyTexts((prev) => ({ ...prev, [ticket.id]: e.target.value }))}
                               placeholder="답변을 작성하세요..."
-                              className="w-full bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#38BDF8]/50 resize-none transition-colors"
+                              className="w-full bg-paper border border-rule rounded-xl px-4 py-3 pr-12 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark/50 resize-none transition-colors"
                             />
                             <button
                               type="button"
                               onClick={() => submitReply(ticket.id)}
                               disabled={submitting || !(replyTexts[ticket.id] ?? '').trim()}
-                              className="absolute right-3 bottom-3 text-[#38BDF8] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              className="absolute right-3 bottom-3 text-mark hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
                               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                             </button>
@@ -254,7 +254,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                               type="button"
                               onClick={() => closeTicket(ticket.id)}
                               disabled={closing === ticket.id}
-                              className="flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-red-400 border border-[#1E293B] hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-danger border border-rule hover:border-danger/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
                             >
                               {closing === ticket.id
                                 ? <Loader2 size={11} className="animate-spin" />
@@ -267,7 +267,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                       )}
 
                       {ticket.status === 'closed' && (
-                        <p className="text-xs text-[#94A3B8] text-center py-2">
+                        <p className="text-xs text-ink-faint text-center py-2">
                           종료된 문의입니다. 다시 열려면 고객센터에 문의해 주세요.
                         </p>
                       )}

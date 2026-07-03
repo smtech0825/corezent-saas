@@ -214,11 +214,11 @@ export default async function EditProductPage({
   return (
     <div className="p-6 space-y-6">
       <div>
-        <Link href="/admin/products" className="text-sm text-[#94A3B8] hover:text-[#E2E8F0] transition-colors">
+        <Link href="/admin/products" className="text-sm text-ink-faint hover:text-ink-soft transition-colors">
           ← 제품 목록으로
         </Link>
-        <h1 className="text-2xl font-bold text-white mt-3">제품 편집</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">{product.name}</p>
+        <h1 className="text-2xl font-bold font-serif text-ink mt-3">제품 편집</h1>
+        <p className="text-sm text-ink-soft mt-1">{product.name}</p>
       </div>
 
       <ProductForm initialData={initialData} onSubmit={updateProduct} submitLabel="변경사항 저장" />

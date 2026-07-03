@@ -107,11 +107,11 @@ function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url
   return (
     <div className="space-y-1">
       {value ? (
-        <div className="flex items-center gap-2 p-2 bg-[#111A2E] rounded-lg border border-[#1E293B]">
+        <div className="flex items-center gap-2 p-2 bg-paper-raised rounded-lg border border-rule">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="feature preview" className="w-8 h-8 object-contain rounded shrink-0" />
-          <span className="text-xs text-[#94A3B8] truncate flex-1">{value.split('/').pop()}</span>
-          <button type="button" onClick={clear} className="shrink-0 text-[#94A3B8] hover:text-red-400 transition-colors">
+          <span className="text-xs text-ink-faint truncate flex-1">{value.split('/').pop()}</span>
+          <button type="button" onClick={clear} className="shrink-0 text-ink-faint hover:text-danger transition-colors">
             <X size={12} />
           </button>
         </div>
@@ -119,8 +119,8 @@ function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url
         <label
           className={`flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border transition-colors w-full ${
             uploading
-              ? 'opacity-40 cursor-not-allowed border-[#1E293B] text-[#94A3B8]'
-              : 'cursor-pointer border-[#1E293B] text-[#E2E8F0] hover:text-white hover:border-[#38BDF8]/40'
+              ? 'opacity-40 cursor-not-allowed border-rule text-ink-faint'
+              : 'cursor-pointer border-rule text-ink-soft hover:text-ink hover:border-mark/40'
           }`}
         >
           <Upload size={11} />
@@ -135,7 +135,7 @@ function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url
           />
         </label>
       )}
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   )
 }
@@ -150,13 +150,13 @@ function slugify(text: string) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#E2E8F0] uppercase tracking-wider">{label}</label>
+      <label className="block text-xs font-medium text-ink-soft uppercase tracking-wider">{label}</label>
       {children}
     </div>
   )
 }
 
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-500/50 placeholder-[#475569]'
+const inputCls = 'w-full bg-paper border border-rule text-ink text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
 const selectCls = `${inputCls} cursor-pointer`
 
 export default function ProductForm({ initialData, onSubmit, submitLabel }: Props) {
@@ -316,8 +316,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* 기본 정보 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-white">기본 정보</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-ink">기본 정보</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="제품 이름 *">
@@ -441,7 +441,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <button
                   type="button"
                   onClick={() => set('badge_text', '')}
-                  className="shrink-0 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                  className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <X size={15} />
                 </button>
@@ -450,7 +450,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             {/* 미리보기 */}
             {form.badge_text && (
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-[#94A3B8]">미리보기:</span>
+                <span className="text-xs text-ink-faint">미리보기:</span>
                 <span
                   className="inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold"
                   style={{
@@ -487,7 +487,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   type="button"
                   onClick={clearLogo}
                   title="초기화"
-                  className="shrink-0 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                  className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <X size={15} />
                 </button>
@@ -499,8 +499,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <label
                 className={`inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border transition-colors ${
                   logoMode === 'url' || uploading
-                    ? 'opacity-40 cursor-not-allowed border-[#1E293B] text-[#94A3B8]'
-                    : 'cursor-pointer border-[#1E293B] text-[#E2E8F0] hover:text-white hover:border-[#38BDF8]/40'
+                    ? 'opacity-40 cursor-not-allowed border-rule text-ink-faint'
+                    : 'cursor-pointer border-rule text-ink-soft hover:text-ink hover:border-mark/40'
                 }`}
               >
                 <Upload size={13} />
@@ -514,12 +514,12 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   onChange={handleLogoUpload}
                 />
               </label>
-              <span className="text-xs text-[#94A3B8]">PNG · JPG · WEBP · SVG · 최대 2MB</span>
+              <span className="text-xs text-ink-faint">PNG · JPG · WEBP · SVG · 최대 2MB</span>
             </div>
 
             {/* 업로드 에러 */}
             {uploadError && (
-              <p className="text-xs text-red-400">{uploadError}</p>
+              <p className="text-xs text-danger">{uploadError}</p>
             )}
 
             {/* 로고 미리보기 */}
@@ -529,9 +529,9 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <img
                   src={form.logo_url}
                   alt="로고 미리보기"
-                  className="w-10 h-10 rounded-lg object-contain border border-[#1E293B] bg-[#0B1120]"
+                  className="w-10 h-10 rounded-lg object-contain border border-rule bg-paper"
                 />
-                <span className="text-xs text-[#94A3B8] truncate max-w-xs">{form.logo_url}</span>
+                <span className="text-xs text-ink-faint truncate max-w-xs">{form.logo_url}</span>
               </div>
             )}
           </div>
@@ -548,11 +548,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 태그 (최대 5개) */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <Tag size={14} className="text-[#38BDF8]" />
-          <h2 className="text-sm font-semibold text-white">태그</h2>
-          <span className="text-xs text-[#94A3B8]">— /product, /pricing 페이지에 표시 (최대 5개)</span>
+          <Tag size={14} className="text-mark" />
+          <h2 className="text-sm font-semibold text-ink">태그</h2>
+          <span className="text-xs text-ink-faint">— /product, /pricing 페이지에 표시 (최대 5개)</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -572,11 +572,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* Pricing 전용 기능 (최대 4개) */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-amber-400" />
-          <h2 className="text-sm font-semibold text-white">특징 (Pricing 전용)</h2>
-          <span className="text-xs text-[#94A3B8]">— /pricing 페이지에만 표시 (최대 4개)</span>
+          <Sparkles size={14} className="text-mark" />
+          <h2 className="text-sm font-semibold text-ink">특징 (Pricing 전용)</h2>
+          <span className="text-xs text-ink-faint">— /pricing 페이지에만 표시 (최대 4개)</span>
         </div>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -596,12 +596,12 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* Product 전용 기능 (최대 12개, /product 확장 박스에 표시) */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <LayoutGrid size={14} className="text-[#38BDF8]" />
-            <h2 className="text-sm font-semibold text-white">특징 (Product 전용)</h2>
-            <span className="text-xs text-[#94A3B8]">— /product 확장 박스에 표시 (최대 12개)</span>
+            <LayoutGrid size={14} className="text-mark" />
+            <h2 className="text-sm font-semibold text-ink">특징 (Product 전용)</h2>
+            <span className="text-xs text-ink-faint">— /product 확장 박스에 표시 (최대 12개)</span>
           </div>
           {form.product_features.length < 12 && (
             <button
@@ -612,7 +612,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   { icon: '', image_url: '', title: '', description: '' },
                 ])
               }
-              className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs text-mark hover:text-mark border border-mark/30 hover:border-mark/40 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Plus size={13} /> 특징 추가
             </button>
@@ -620,13 +620,13 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         </div>
 
         {form.product_features.length === 0 && (
-          <p className="text-xs text-[#94A3B8] py-4 text-center">아직 추가된 특징이 없습니다. +를 눌러 추가하세요.</p>
+          <p className="text-xs text-ink-faint py-4 text-center">아직 추가된 특징이 없습니다. +를 눌러 추가하세요.</p>
         )}
 
         {/* 입력 폼: 3열 그리드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {form.product_features.map((feat, idx) => (
-            <div key={idx} className="relative p-4 bg-[#0B1120] rounded-xl border border-[#1E293B] space-y-3">
+            <div key={idx} className="relative p-4 bg-paper rounded-xl border border-rule space-y-3">
               <button
                 type="button"
                 onClick={() =>
@@ -635,7 +635,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                     form.product_features.filter((_, i) => i !== idx),
                   )
                 }
-                className="absolute top-2 right-2 p-1 text-[#94A3B8] hover:text-red-400 transition-colors"
+                className="absolute top-2 right-2 p-1 text-ink-faint hover:text-danger transition-colors"
               >
                 <Trash2 size={12} />
               </button>
@@ -688,11 +688,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 상세 페이지 콘텐츠 (/product/[slug]에 표시) */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-5">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-2">
-          <ImageIcon size={14} className="text-[#38BDF8]" />
-          <h2 className="text-sm font-semibold text-white">상세 페이지 콘텐츠</h2>
-          <span className="text-xs text-[#94A3B8]">— 상품 상세 페이지에 표시</span>
+          <ImageIcon size={14} className="text-mark" />
+          <h2 className="text-sm font-semibold text-ink">상세 페이지 콘텐츠</h2>
+          <span className="text-xs text-ink-faint">— 상품 상세 페이지에 표시</span>
         </div>
 
         <Field label="대표 이미지">
@@ -709,7 +709,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <button
                   type="button"
                   onClick={() => removeScreenshot(i)}
-                  className="shrink-0 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+                  className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -718,7 +718,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <button
               type="button"
               onClick={addScreenshot}
-              className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs text-mark hover:text-mark border border-mark/30 hover:border-mark/40 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Plus size={13} /> 스크린샷 추가
             </button>
@@ -746,28 +746,28 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 상품 FAQ */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <HelpCircle size={14} className="text-[#38BDF8]" />
-            <h2 className="text-sm font-semibold text-white">상품 FAQ</h2>
-            <span className="text-xs text-[#94A3B8]">— 상세 페이지에 표시</span>
+            <HelpCircle size={14} className="text-mark" />
+            <h2 className="text-sm font-semibold text-ink">상품 FAQ</h2>
+            <span className="text-xs text-ink-faint">— 상세 페이지에 표시</span>
           </div>
           <button
             type="button"
             onClick={addFaq}
-            className="flex items-center gap-1.5 text-xs text-[#38BDF8] hover:text-[#0ea5e9] border border-[#38BDF8]/20 hover:border-[#38BDF8]/40 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 text-xs text-mark hover:text-mark border border-mark/30 hover:border-mark/40 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Plus size={13} /> FAQ 추가
           </button>
         </div>
 
         {form.faqs.length === 0 && (
-          <p className="text-xs text-[#94A3B8] py-2 text-center">아직 추가된 FAQ가 없습니다.</p>
+          <p className="text-xs text-ink-faint py-2 text-center">아직 추가된 FAQ가 없습니다.</p>
         )}
 
         {form.faqs.map((faq, idx) => (
-          <div key={idx} className="flex items-start gap-2 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
+          <div key={idx} className="flex items-start gap-2 p-4 bg-paper rounded-xl border border-rule">
             <div className="flex-1 space-y-2 min-w-0">
               <input
                 value={faq.question}
@@ -786,7 +786,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <button
               type="button"
               onClick={() => removeFaq(idx)}
-              className="mt-0.5 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+              className="mt-0.5 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
             >
               <Trash2 size={15} />
             </button>
@@ -795,20 +795,20 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 옵션 · 가격 — 옵션 관련 설정을 한 곳에: ① 드롭다운 제목 + ② 옵션 목록(행별 가격·tier) */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">옵션 · 가격</h2>
-          <p className="text-xs text-[#94A3B8] mt-0.5">
+          <h2 className="text-sm font-semibold text-ink">옵션 · 가격</h2>
+          <p className="text-xs text-ink-faint mt-0.5">
             옵션 설정을 한 곳에 모았습니다. 옵션이 없는 상품이면 ①은 비우고 ②에 행 1개만 두세요.
           </p>
         </div>
 
         {/* ① 옵션 드롭다운 제목 (선택) — 고객이 고르는 "기준"의 이름 */}
-        <div className="border border-[#1E293B] rounded-xl p-4 space-y-3 bg-[#0B1120]/40">
+        <div className="border border-rule rounded-xl p-4 space-y-3 bg-paper-shade">
           <div className="flex items-center gap-2">
-            <LayoutGrid size={14} className="text-[#38BDF8]" />
-            <span className="text-sm font-semibold text-white">① 옵션 드롭다운 제목</span>
-            <span className="text-xs text-[#94A3B8]">고객이 고르는 &quot;기준&quot;의 이름 · 옵션 없으면 비움</span>
+            <LayoutGrid size={14} className="text-mark" />
+            <span className="text-sm font-semibold text-ink">① 옵션 드롭다운 제목</span>
+            <span className="text-xs text-ink-faint">고객이 고르는 &quot;기준&quot;의 이름 · 옵션 없으면 비움</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="축1 제목">
@@ -833,24 +833,24 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         {/* ② 옵션 목록 — 각 행 = 고객이 고를 선택지 하나 */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white">② 옵션 목록</span>
-            <span className="text-xs text-[#94A3B8]">각 행 = 선택지 하나 (가격·tier·결제링크). 옵션 없으면 행 1개.</span>
+            <span className="text-sm font-semibold text-ink">② 옵션 목록</span>
+            <span className="text-xs text-ink-faint">각 행 = 선택지 하나 (가격·tier·결제링크). 옵션 없으면 행 1개.</span>
           </div>
           <button
             type="button"
             onClick={addPrice}
-            className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 hover:border-amber-400/40 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 text-xs text-mark hover:text-mark border border-mark/30 hover:border-mark/40 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Plus size={13} /> 옵션 추가
           </button>
         </div>
 
         {form.prices.length === 0 && (
-          <p className="text-xs text-[#94A3B8] py-4 text-center">아직 추가된 옵션이 없습니다.</p>
+          <p className="text-xs text-ink-faint py-4 text-center">아직 추가된 옵션이 없습니다.</p>
         )}
 
         {form.prices.map((price, idx) => (
-          <div key={idx} className="flex items-start gap-3 p-4 bg-[#0B1120] rounded-xl border border-[#1E293B]">
+          <div key={idx} className="flex items-start gap-3 p-4 bg-paper rounded-xl border border-rule">
             <div className="flex-1 space-y-3">
               {/* 옵션 라벨 (축1/축2 값) */}
               <div className="grid grid-cols-2 gap-3">
@@ -941,7 +941,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <button
               type="button"
               onClick={() => removePrice(idx)}
-              className="mt-6 p-2 text-[#94A3B8] hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/5"
+              className="mt-6 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
             >
               <Trash2 size={15} />
             </button>
@@ -951,7 +951,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
 
       {/* 에러 & 제출 */}
       {error && (
-        <p className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">
+        <p className="text-sm text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-3">
           {error}
         </p>
       )}
@@ -960,14 +960,14 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         <button
           type="submit"
           disabled={loading || uploading}
-          className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
+          className="bg-mark hover:brightness-95 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
         >
           {loading ? '저장 중...' : submitLabel}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-sm text-[#94A3B8] hover:text-white transition-colors px-4 py-2.5"
+          className="text-sm text-ink-faint hover:text-ink transition-colors px-4 py-2.5"
         >
           취소
         </button>

@@ -68,13 +68,13 @@ export default async function CtaAdminPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">CTA 섹션</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">
+        <h1 className="text-2xl font-bold font-serif text-ink">CTA 섹션</h1>
+        <p className="text-sm text-ink-soft mt-1">
           하단 CTA(행동 유도) 섹션의 텍스트 콘텐츠를 편집합니다.
         </p>
       </div>
 
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6">
+      <div className="border border-rule bg-paper-raised rounded-2xl p-6">
         <CtaEditor initial={initial} onSave={handleSave} />
       </div>
     </div>

@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { convertReferrerCommissions, redeemStoreCredit } from '@/lib/affiliate-commission'
 import { createLsDiscount, generateSerialKey } from '@/lib/lemonsqueezy'
+import { formatKRW } from '@/lib/money'
 import type { AffiliateConfigInput } from './types'
 
 /** 현재 요청 사용자가 관리자인지 검증 — 아니면 throw(관리자 전용 보장) */
@@ -41,10 +42,10 @@ export async function convertCommissionsAction(
   revalidatePath('/admin/affiliates')
 
   if (r.ok) {
-    return { ok: true, message: `전환 완료: ${r.count ?? 0}건 · $${((r.amount ?? 0) / 100).toFixed(2)} 크레딧 적립` }
+    return { ok: true, message: `전환 완료: ${r.count ?? 0}건 · ${formatKRW(r.amount ?? 0)} 크레딧 적립` }
   }
   if (r.reason === 'below_min') {
-    return { ok: false, message: `최소 전환 금액 미달 (전환가능 합계 $${((r.total ?? 0) / 100).toFixed(2)} < 최소 $${((r.min ?? 0) / 100).toFixed(2)})` }
+    return { ok: false, message: `최소 전환 금액 미달 (전환가능 합계 ${formatKRW(r.total ?? 0)} < 최소 ${formatKRW(r.min ?? 0)})` }
   }
   return { ok: false, message: `전환 불가: ${r.reason ?? '알 수 없음'}` }
 }
@@ -65,7 +66,7 @@ export async function updateAffiliateConfigAction(
     cookie_days:           clampInt(values.cookie_days, 0),
     hold_days:             clampInt(values.hold_days, 0),
     min_payout_credit:     clampInt(values.min_payout_credit, 0),
-    currency:              (values.currency || 'USD').toUpperCase().slice(0, 3),
+    currency:              (values.currency || 'KRW').toUpperCase().slice(0, 3),
     self_referral_blocked: !!values.self_referral_blocked,
     updated_at:            new Date().toISOString(),
   }
@@ -96,7 +97,7 @@ export async function issueCreditDiscountAction(
   const redeem = await redeemStoreCredit(userId, amountCents, code)
   if (!redeem.ok) {
     if (redeem.reason === 'insufficient') {
-      return { ok: false, message: `잔액 부족 (현재 $${((redeem.balance ?? 0) / 100).toFixed(2)})` }
+      return { ok: false, message: `잔액 부족 (현재 ${formatKRW(redeem.balance ?? 0)})` }
     }
     return { ok: false, message: `차감 실패: ${redeem.reason ?? '알 수 없음'}` }
   }
@@ -111,7 +112,7 @@ export async function issueCreditDiscountAction(
   return {
     ok: true,
     code,
-    message: `크레딧 $${(amountCents / 100).toFixed(2)} 차감됨(코드 ${code}). LS 자동 발급 실패 — LS 대시보드에서 고정금액 $${(amountCents / 100).toFixed(2)} · 1회용 코드 ${code} 를 수동 발급하세요. (${disc.error})`,
+    message: `크레딧 ${formatKRW(amountCents)} 차감됨(코드 ${code}). LS 자동 발급 실패 — LS 대시보드에서 고정금액 ${formatKRW(amountCents)} · 1회용 코드 ${code} 를 수동 발급하세요. (${disc.error})`,
   }
 }
 

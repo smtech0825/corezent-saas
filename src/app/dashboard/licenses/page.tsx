@@ -62,6 +62,24 @@ export default async function LicensesPage({
     })
   }
 
+  // 선택 옵션 조회 — order_id → orders.product_price_id → product_prices(옵션 라벨)
+  //   구매 시 고른 옵션(예: "월간 · 1PC용")을 라이선스 행에 표시하기 위함.
+  const optionMap = new Map<string, string>()  // order_id → "월간 · 1PC용"
+  if (orderIds.length > 0) {
+    const { data: orderRows } = await supabase
+      .from('orders')
+      .select('id, product_prices(option_axis1_label, option_axis2_label)')
+      .in('id', orderIds)
+
+    ;(orderRows ?? []).forEach((o: Record<string, unknown>) => {
+      const ppRaw = o.product_prices
+      const pp = (Array.isArray(ppRaw) ? ppRaw[0] : ppRaw) as
+        { option_axis1_label?: string | null; option_axis2_label?: string | null } | null
+      const parts = [pp?.option_axis1_label, pp?.option_axis2_label].filter(Boolean)
+      if (parts.length) optionMap.set(o.id as string, parts.join(' · '))
+    })
+  }
+
   // 최신 릴리스(설치파일) 조회 — product_id별 latest changelog의 download_urls·version
   // URL은 하드코딩하지 않고 changelogs 테이블(빌링 페이지와 동일 출처)에서 읽는다.
   const productIds = [...new Set(
@@ -91,18 +109,18 @@ export default async function LicensesPage({
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">내 라이선스</h1>
-        <p className="text-[#E2E8F0] text-sm mt-1">
+        <h1 className="text-2xl font-bold text-ink font-serif">내 라이선스</h1>
+        <p className="text-ink-soft text-sm mt-1">
           제품 라이선스 키를 관리하세요.
-          {total > 0 && <span className="ml-2 text-[#94A3B8]">(총 {total}개)</span>}
+          {total > 0 && <span className="ml-2 text-ink-faint">(총 {total}개)</span>}
         </p>
       </div>
 
       {licenses && licenses.length > 0 ? (
         <>
-          <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl overflow-hidden">
+          <div className="bg-paper-raised border border-rule rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-[#1E293B] text-xs text-[#94A3B8] font-medium">
+            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium">
               <span>라이선스 키</span>
               <span>제품</span>
               <span>상태</span>
@@ -117,6 +135,7 @@ export default async function LicensesPage({
               const subInfo = lic.order_id ? renewalMap.get(lic.order_id) : null
               const effectiveExpiry = subInfo?.end ?? lic.expires_at
               const period = subInfo?.interval ?? null
+              const optLabel = lic.order_id ? optionMap.get(lic.order_id) : undefined
 
               // 설치파일: product의 최신 릴리스에 download_urls가 있으면 노출
               const changelog = lic.product_id ? changelogMap.get(lic.product_id) : undefined
@@ -126,58 +145,63 @@ export default async function LicensesPage({
               return (
                 <div
                   key={lic.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px_auto] gap-2 md:gap-4 items-center px-5 py-4 border-b border-[#1E293B] last:border-0 hover:bg-[#1E293B]/20 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px_auto] gap-2 md:gap-4 items-center px-5 py-4 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors"
                 >
                   {/* 시리얼 키 */}
                   <div className="flex items-center gap-2">
-                    <Key size={14} className="text-[#38BDF8] shrink-0 hidden md:block" />
-                    <span className="font-mono text-sm text-white tracking-wider truncate">
+                    <Key size={14} className="text-mark shrink-0 hidden md:block" />
+                    <span className="font-mono text-sm text-ink tracking-wider truncate">
                       {lic.serial_key}
                     </span>
                     <LicenseCopyButton serialKey={lic.serial_key} />
                   </div>
 
-                  {/* 제품명 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}
-                  <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#94A3B8] md:hidden">제품</span>
-                    <span className="text-sm text-[#E2E8F0]">{lic.products?.name ?? '—'}</span>
+                  {/* 제품명 + 선택 옵션 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}
+                  <div className="flex justify-between items-start md:block">
+                    <span className="text-xs text-ink-faint md:hidden">제품</span>
+                    <div className="text-right md:text-left">
+                      <span className="text-sm text-ink">{lic.products?.name ?? '—'}</span>
+                      {optLabel && (
+                        <span className="block text-xs text-mark mt-0.5">{optLabel}</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* 상태 */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#94A3B8] md:hidden">상태</span>
+                    <span className="text-xs text-ink-faint md:hidden">상태</span>
                     <LicenseStatusBadge status={lic.status} />
                   </div>
 
                   {/* Period */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#94A3B8] md:hidden">주기</span>
+                    <span className="text-xs text-ink-faint md:hidden">주기</span>
                     {period ? (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                         period === 'annual'
-                          ? 'text-violet-400 bg-violet-400/10 border-violet-400/20'
-                          : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
+                          ? 'text-info bg-info-soft border-info/20'
+                          : 'text-ink-soft bg-paper-shade border-rule'
                       }`}>
                         {period === 'annual' ? '연간' : '월간'}
                       </span>
                     ) : (
-                      <span className="text-xs text-[#94A3B8]">—</span>
+                      <span className="text-xs text-ink-faint">—</span>
                     )}
                   </div>
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
                   <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-[#94A3B8] md:hidden">만료일</span>
+                    <span className="text-xs text-ink-faint md:hidden">만료일</span>
                     {lic.status === 'expired' ? (
-                      <span className="text-sm text-[#E2E8F0]">만료</span>
+                      <span className="text-sm text-ink-soft">만료</span>
                     ) : lic.status === 'revoked' || lic.status === 'cancelled' ? (
-                      <span className="text-sm text-[#E2E8F0]">해지</span>
+                      <span className="text-sm text-ink-soft">해지</span>
                     ) : effectiveExpiry ? (
-                      <span className="text-sm text-[#E2E8F0]">
+                      <span className="text-sm text-ink-soft">
                         {new Date(effectiveExpiry).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     ) : (
-                      <span className="text-sm text-[#94A3B8]">평생</span>
+                      <span className="text-sm text-ink-faint">평생</span>
                     )}
                   </div>
 
@@ -196,14 +220,14 @@ export default async function LicensesPage({
                         {lic.products?.slug && (
                           <Link
                             href={`/changelog?product=${lic.products.slug}`}
-                            className="text-[11px] text-[#94A3B8] hover:text-[#E2E8F0] transition-colors"
+                            className="text-[11px] text-ink-faint hover:text-ink-soft transition-colors"
                           >
                             v{changelog.version} · 릴리스 노트
                           </Link>
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-[#94A3B8]">—</span>
+                      <span className="text-xs text-ink-faint">—</span>
                     )}
                   </div>
                 </div>
@@ -219,13 +243,13 @@ export default async function LicensesPage({
           />
         </>
       ) : (
-        <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#1E293B] flex items-center justify-center mx-auto mb-4">
-            <Key size={22} className="text-[#94A3B8]" />
+        <div className="bg-paper-raised border border-rule rounded-xl py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-paper-shade flex items-center justify-center mx-auto mb-4">
+            <Key size={22} className="text-ink-faint" />
           </div>
-          <p className="text-white font-medium mb-1">아직 라이선스가 없습니다</p>
-          <p className="text-sm text-[#94A3B8] mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
-          <a href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-[#38BDF8] hover:underline">
+          <p className="text-ink font-medium mb-1">아직 라이선스가 없습니다</p>
+          <p className="text-sm text-ink-faint mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
+          <a href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-mark hover:underline">
             제품 둘러보기 →
           </a>
         </div>
@@ -236,10 +260,10 @@ export default async function LicensesPage({
 
 function LicenseStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    active:   { label: '활성',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-    inactive: { label: '비활성', cls: 'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]' },
-    expired:  { label: '만료',   cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-    revoked:  { label: '해지',   cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
+    active:   { label: '활성',   cls: 'text-ok bg-ok-soft border-ok/20' },
+    inactive: { label: '비활성', cls: 'text-ink-soft bg-paper-shade border-rule' },
+    expired:  { label: '만료',   cls: 'text-caution bg-caution-soft border-caution/20' },
+    revoked:  { label: '해지',   cls: 'text-danger bg-danger-soft border-danger/20' },
   }
   const { label, cls } = map[status] ?? map.inactive
   return (

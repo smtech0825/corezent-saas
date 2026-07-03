@@ -3,6 +3,7 @@
 /**
  * @컴포넌트: AdminSidebar
  * @설명: 관리자 패널 사이드바 — 그룹별 네비게이션, Support 알림 뱃지, Frontend 섹션 접기/펼치기
+ *        페이퍼(라이트) 테마 · 강조색=인주 빨강(mark) · 활성 항목=색인 탭(리본)
  */
 
 import Link from 'next/link'
@@ -86,23 +87,28 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
     return pathname.startsWith(href)
   }
 
+  // 활성 네비 항목 = 색인 탭(리본) / 비활성 = 은은한 호버
+  const activeCls =
+    "relative bg-paper-raised text-ink font-semibold shadow-[0_1px_2px_rgba(35,39,46,0.05)] before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-mark"
+  const idleCls = 'text-ink-soft hover:text-ink hover:bg-ink/5'
+
   return (
-    <aside className="w-60 shrink-0 h-full flex flex-col bg-[#0B1120] border-r border-[#1E293B]">
+    <aside className="w-60 shrink-0 h-full flex flex-col bg-paper-shade border-r border-rule">
       {/* 로고 + 관리자 뱃지 */}
-      <div className="flex items-center justify-between px-5 h-16 border-b border-[#1E293B]">
-        <Link href="/admin" className="flex items-center gap-2 font-bold text-white">
-          <span className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-[#0B1120] text-sm font-black">
+      <div className="flex items-center justify-between px-5 h-16 border-b border-rule">
+        <Link href="/admin" className="flex items-center gap-2 font-bold text-ink">
+          <span className="w-7 h-7 rounded-lg bg-mark flex items-center justify-center text-white text-sm font-black">
             A
           </span>
           <span className="flex flex-col leading-none">
             <span className="text-sm">CoreZent</span>
-            <span className="text-[9px] font-semibold text-amber-400 tracking-widest uppercase">
+            <span className="text-[9px] font-semibold text-mark tracking-widest uppercase">
               관리자 패널
             </span>
           </span>
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-[#E2E8F0] hover:text-white p-1">
+          <button onClick={onClose} className="lg:hidden text-ink-soft hover:text-ink p-1">
             <X size={18} />
           </button>
         )}
@@ -111,7 +117,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
         {/* 메인 */}
-        <p className="px-3 mb-1 text-[10px] font-semibold text-[#94A3B8] uppercase tracking-widest">
+        <p className="px-3 mb-1 text-[10px] font-semibold text-ink-faint uppercase tracking-widest">
           관리자
         </p>
         {mainNav.map((item) => {
@@ -124,18 +130,16 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
               href={item.href}
               onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-amber-500/10 text-amber-400'
-                  : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
+                active ? activeCls : idleCls
               }`}
             >
-              <Icon size={16} className={active ? 'text-amber-400' : ''} />
+              <Icon size={16} className={active ? 'text-mark' : ''} />
               <span className="flex-1">{item.label}</span>
               {/* 미읽음 뱃지 (Support 전용) */}
               {isSupport && supportBadge > 0 && (
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-danger" />
                 </span>
               )}
             </Link>
@@ -147,7 +151,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           <button
             onClick={() => setFrontendOpen((v) => !v)}
             className={`w-full flex items-center justify-between px-3 py-1 mb-1 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
-              isFrontendActive ? 'text-amber-400' : 'text-[#94A3B8] hover:text-[#E2E8F0]'
+              isFrontendActive ? 'text-mark' : 'text-ink-faint hover:text-ink'
             }`}
           >
             <span>프론트엔드</span>
@@ -168,12 +172,10 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
                     href={item.href}
                     onClick={onClose}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      active
-                        ? 'bg-amber-500/10 text-amber-400'
-                        : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
+                      active ? activeCls : idleCls
                     }`}
                   >
-                    <Icon size={15} className={active ? 'text-amber-400' : ''} />
+                    <Icon size={15} className={active ? 'text-mark' : ''} />
                     {item.label}
                   </Link>
                 )
@@ -184,41 +186,37 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
 
         {/* 설정 */}
         <div className="mt-4">
-          <p className="px-3 mb-1 text-[10px] font-semibold text-[#94A3B8] uppercase tracking-widest">
+          <p className="px-3 mb-1 text-[10px] font-semibold text-ink-faint uppercase tracking-widest">
             시스템
           </p>
           <Link
             href="/admin/settings"
             onClick={onClose}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive('/admin/settings')
-                ? 'bg-amber-500/10 text-amber-400'
-                : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
+              isActive('/admin/settings') ? activeCls : idleCls
             }`}
           >
-            <Settings size={16} className={isActive('/admin/settings') ? 'text-amber-400' : ''} />
+            <Settings size={16} className={isActive('/admin/settings') ? 'text-mark' : ''} />
             설정
           </Link>
           <Link
             href="/admin/logs"
             onClick={onClose}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive('/admin/logs')
-                ? 'bg-amber-500/10 text-amber-400'
-                : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
+              isActive('/admin/logs') ? activeCls : idleCls
             }`}
           >
-            <Activity size={16} className={isActive('/admin/logs') ? 'text-amber-400' : ''} />
+            <Activity size={16} className={isActive('/admin/logs') ? 'text-mark' : ''} />
             모니터링 로그
           </Link>
         </div>
       </nav>
 
       {/* 대시보드 링크 */}
-      <div className="px-3 pt-2 border-t border-[#1E293B]">
+      <div className="px-3 pt-2 border-t border-rule">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#94A3B8] hover:text-[#E2E8F0] transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-ink-faint hover:text-ink transition-colors"
         >
           ← 사용자 대시보드
         </Link>
@@ -227,17 +225,17 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
       {/* 사용자 정보 + 로그아웃 */}
       <div className="px-3 py-3">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <span className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
+          <span className="w-8 h-8 rounded-full bg-mark/15 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
             {user.initials}
           </span>
           <div className="min-w-0">
-            <p className="text-sm text-white font-medium truncate">{user.name}</p>
-            <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
+            <p className="text-sm text-ink font-medium truncate">{user.name}</p>
+            <p className="text-xs text-ink-faint truncate">{user.email}</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
         >
           <LogOut size={16} />
           로그아웃

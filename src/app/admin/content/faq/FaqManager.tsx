@@ -83,36 +83,36 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((faq) => (
-        <div key={faq.id} className="border border-[#1E293B] bg-[#111A2E] rounded-xl overflow-hidden">
+        <div key={faq.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
           {editingId === faq.id ? (
             <div className="p-4 space-y-3">
               <input
                 value={form.question}
                 onChange={(e) => setForm({ ...form, question: e.target.value })}
-                className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark"
                 placeholder="질문"
               />
               <textarea
                 value={form.answer}
                 onChange={(e) => setForm({ ...form, answer: e.target.value })}
                 rows={3}
-                className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#E2E8F0] focus:outline-none focus:border-amber-500/50 resize-none"
+                className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink-soft focus:outline-none focus:border-mark resize-none"
                 placeholder="답변"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => handleUpdate(faq.id)}
                   disabled={isPending}
-                  className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
                 >
                   <Check size={12} /> 저장
                 </button>
                 <button
                   onClick={cancelEdit}
-                  className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors"
                 >
                   <X size={12} /> 취소
                 </button>
@@ -122,31 +122,31 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             <div className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${faq.is_published ? 'text-white' : 'text-[#94A3B8]'}`}>
+                  <p className={`text-sm font-medium ${faq.is_published ? 'text-ink' : 'text-ink-faint'}`}>
                     {faq.question}
                   </p>
-                  <p className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{faq.answer}</p>
+                  <p className="text-xs text-ink-faint mt-1 line-clamp-2">{faq.answer}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleToggle(faq.id, faq.is_published)}
                     className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${
                       faq.is_published
-                        ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-                        : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'
+                        ? 'text-ok bg-ok-soft border-ok/20'
+                        : 'text-ink-soft bg-paper-shade border-rule'
                     }`}
                   >
                     {faq.is_published ? '게시됨' : '초안'}
                   </button>
                   <button
                     onClick={() => startEdit(faq)}
-                    className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"
+                    className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"
                   >
                     <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => handleDelete(faq.id)}
-                    className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"
+                    className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -159,11 +159,11 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
 
       {/* 새 FAQ 추가 폼 */}
       {showNew ? (
-        <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-3">
+        <div className="border border-mark/30 bg-mark/5 rounded-xl p-4 space-y-3">
           <input
             value={newForm.question}
             onChange={(e) => setNewForm({ ...newForm, question: e.target.value })}
-            className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50"
+            className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark"
             placeholder="질문"
             autoFocus
           />
@@ -171,20 +171,20 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             value={newForm.answer}
             onChange={(e) => setNewForm({ ...newForm, answer: e.target.value })}
             rows={3}
-            className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-[#E2E8F0] placeholder-[#475569] focus:outline-none focus:border-amber-500/50 resize-none"
+            className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink-soft placeholder:text-ink-faint focus:outline-none focus:border-mark resize-none"
             placeholder="답변"
           />
           <div className="flex gap-2">
             <button
               onClick={handleCreate}
               disabled={isPending || !newForm.question.trim() || !newForm.answer.trim()}
-              className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
             >
               <Check size={12} /> FAQ 추가
             </button>
             <button
               onClick={() => { setShowNew(false); setNewForm({ question: '', answer: '' }) }}
-              className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors"
             >
               <X size={12} /> 취소
             </button>
@@ -193,7 +193,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
       ) : (
         <button
           onClick={() => { setShowNew(true); setEditingId(null) }}
-          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-rule rounded-xl text-sm text-ink-faint hover:text-ink-soft hover:border-mark/40 transition-colors"
         >
           <Plus size={15} /> 새 FAQ 추가
         </button>

@@ -147,13 +147,13 @@ export default function SettingsPage() {
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">설정</h1>
-        <p className="text-[#E2E8F0] text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">설정</h1>
+        <p className="text-ink-soft text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
       </div>
 
       {/* 프로필 섹션 */}
-      <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6 mb-6">
-        <h2 className="text-base font-semibold text-white mb-5">프로필</h2>
+      <section className="bg-paper-raised border border-rule rounded-xl p-6 mb-6">
+        <h2 className="text-base font-semibold text-ink mb-5">프로필</h2>
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
           <FormField label="이름">
             <input
@@ -172,7 +172,7 @@ export default function SettingsPage() {
               disabled
               className={`${inputCls} opacity-50 cursor-not-allowed`}
             />
-            <p className="text-xs text-[#94A3B8] mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
+            <p className="text-xs text-ink-faint mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
           </FormField>
 
           <FormField label="국가">
@@ -190,8 +190,8 @@ export default function SettingsPage() {
       </section>
 
       {/* 비밀번호 섹션 */}
-      <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6">
-        <h2 className="text-base font-semibold text-white mb-5">비밀번호 변경</h2>
+      <section className="bg-paper-raised border border-rule rounded-xl p-6">
+        <h2 className="text-base font-semibold text-ink mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           <FormField label="현재 비밀번호">
             <input
@@ -217,7 +217,7 @@ export default function SettingsPage() {
           </FormField>
 
           {passwordError && (
-            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">
+            <div className="flex items-center gap-2 text-sm text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-2.5">
               {passwordError}
             </div>
           )}
@@ -229,15 +229,15 @@ export default function SettingsPage() {
       </section>
 
       {/* 알림/마케팅 수신 동의 섹션 */}
-      <section className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-6 mt-6">
-        <h2 className="text-base font-semibold text-white mb-1.5">알림 수신 설정</h2>
-        <p className="text-sm text-[#E2E8F0] mb-5">
+      <section className="bg-paper-raised border border-rule rounded-xl p-6 mt-6">
+        <h2 className="text-base font-semibold text-ink mb-1.5">알림 수신 설정</h2>
+        <p className="text-sm text-ink-soft mb-5">
           제품 업데이트·혜택 등 알림/마케팅 이메일 수신 여부를 선택하세요.
           <br className="hidden sm:block" />
-          <span className="text-xs text-[#94A3B8]">주문·결제·보안 등 필수 안내 메일은 이 설정과 무관하게 발송됩니다.</span>
+          <span className="text-xs text-ink-faint">주문·결제·보안 등 필수 안내 메일은 이 설정과 무관하게 발송됩니다.</span>
         </p>
         <div className="flex items-center justify-between gap-4">
-          <label htmlFor="marketing-opt-in" className="text-sm text-white cursor-pointer">
+          <label htmlFor="marketing-opt-in" className="text-sm text-ink cursor-pointer">
             알림/마케팅 이메일 받기
           </label>
           <button
@@ -248,7 +248,7 @@ export default function SettingsPage() {
             disabled={marketingLoading}
             onClick={() => handleToggleMarketing(!marketingOptIn)}
             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-              marketingOptIn ? 'bg-[#38BDF8]' : 'bg-[#1E293B]'
+              marketingOptIn ? 'bg-mark' : 'bg-paper-shade'
             }`}
           >
             <span
@@ -268,12 +268,12 @@ export default function SettingsPage() {
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
 
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#38BDF8] transition-colors'
+const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors'
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
+      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -284,7 +284,7 @@ function SubmitButton({ loading, label }: { loading: boolean; label: string }) {
     <button
       type="submit"
       disabled={loading}
-      className="w-full sm:w-auto bg-[#38BDF8] text-[#0B1120] font-semibold py-3 sm:py-2 px-6 rounded-lg text-sm hover:bg-[#0ea5e9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className="w-full sm:w-auto bg-mark text-white font-semibold py-3 sm:py-2 px-6 rounded-lg text-sm hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
       {loading && <Loader2 size={14} className="animate-spin" />}
       {label}

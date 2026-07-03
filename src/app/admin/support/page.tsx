@@ -16,16 +16,16 @@ function fmtDate(d: string) {
 }
 
 const statusColors: Record<string, string> = {
-  open:     'text-amber-400 bg-amber-400/10',
-  answered: 'text-blue-400 bg-blue-400/10',
-  closed:   'text-[#94A3B8] bg-[#1E293B]',
+  open:     'text-caution bg-caution-soft',
+  answered: 'text-info bg-info-soft',
+  closed:   'text-ink-soft bg-paper-shade',
 }
 
 const priorityColors: Record<string, string> = {
-  low:    'text-[#94A3B8]',
-  normal: 'text-[#E2E8F0]',
-  high:   'text-amber-400',
-  urgent: 'text-red-400',
+  low:    'text-ink-faint',
+  normal: 'text-ink-soft',
+  high:   'text-caution',
+  urgent: 'text-danger',
 }
 
 export default async function SupportPage({
@@ -79,23 +79,23 @@ export default async function SupportPage({
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">고객지원 티켓</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">
+        <h1 className="text-2xl font-bold text-ink font-serif">고객지원 티켓</h1>
+        <p className="text-sm text-ink-soft mt-1">
           티켓 {total ?? 0}개
         </p>
       </div>
 
       {/* 상태 탭 필터 */}
       <div className="overflow-x-auto -mx-1 px-1">
-      <div className="flex gap-1 border border-[#1E293B] bg-[#111A2E] rounded-xl p-1 w-max min-w-full sm:w-fit sm:min-w-0">
+      <div className="flex gap-1 border border-rule bg-paper-raised rounded-xl p-1 w-max min-w-full sm:w-fit sm:min-w-0">
         {tabs.map((tab) => (
           <Link
             key={tab.value}
             href={`/admin/support?status=${tab.value}&page=1`}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab.value
-                ? 'bg-amber-500/10 text-amber-400'
-                : 'text-[#E2E8F0] hover:text-white'
+                ? 'bg-mark/10 text-mark'
+                : 'text-ink-soft hover:text-ink'
             }`}
           >
             {tab.label}
@@ -104,56 +104,56 @@ export default async function SupportPage({
       </div>
       </div>
 
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         {list.length === 0 ? (
-          <div className="py-16 text-center text-sm text-[#94A3B8]">티켓이 없습니다.</div>
+          <div className="py-16 text-center text-sm text-ink-faint">티켓이 없습니다.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1E293B]">
-                  <th className="text-left px-6 py-3 text-xs text-[#94A3B8] font-medium">ID</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">제목</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">사용자</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">우선순위</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">날짜</th>
-                  <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">작업</th>
+                <tr className="border-b border-rule">
+                  <th className="text-left px-6 py-3 text-xs text-ink-faint font-medium">ID</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">제목</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">우선순위</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상태</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">날짜</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">작업</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((t) => (
                   <tr
                     key={t.id}
-                    className={`border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors ${!t.is_read ? 'bg-amber-500/3' : ''}`}
+                    className={`border-b border-rule hover:bg-paper-shade transition-colors ${!t.is_read ? 'bg-mark/5' : ''}`}
                   >
                     <td className="px-6 py-3">
-                      <span className="font-mono text-xs text-[#94A3B8]">#{t.shortId}</span>
+                      <span className="font-mono text-xs text-ink-faint">#{t.shortId}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`font-medium ${!t.is_read ? 'text-white' : 'text-[#E2E8F0]'}`}>
+                      <span className={`font-medium ${!t.is_read ? 'text-ink' : 'text-ink-soft'}`}>
                         {!t.is_read && (
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-2 align-middle animate-pulse" />
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-danger mr-2 align-middle animate-pulse" />
                         )}
                         {t.subject}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-[#E2E8F0] truncate max-w-[160px]">{t.email}</td>
+                    <td className="px-4 py-3 text-ink-soft truncate max-w-[160px]">{t.email}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium capitalize ${priorityColors[t.priority] ?? 'text-[#E2E8F0]'}`}>
+                      <span className={`text-xs font-medium capitalize ${priorityColors[t.priority] ?? 'text-ink-soft'}`}>
                         {t.priority}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColors[t.status] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColors[t.status] ?? 'text-ink-soft bg-paper-shade'}`}>
                         {t.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">{fmtDate(t.created_at)}</td>
+                    <td className="px-4 py-3 text-ink-faint whitespace-nowrap">{fmtDate(t.created_at)}</td>
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/support/${t.id}`}
-                        className="text-xs text-[#38BDF8] hover:text-white transition-colors"
+                        className="text-xs text-mark hover:text-ink transition-colors"
                       >
                         보기 →
                       </Link>

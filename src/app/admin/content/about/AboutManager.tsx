@@ -48,9 +48,9 @@ interface Props {
 
 // ─── 공통 스타일 ──────────────────────────────────────────────
 
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
-const btnPrimary = 'flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors'
-const btnCancel = 'flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors'
+const inputCls = 'w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark'
+const btnPrimary = 'flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors'
+const btnCancel = 'flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors'
 
 // ─── 이미지 업로드 컴포넌트 ────────────────────────────────────
 
@@ -82,12 +82,12 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
     <div className="space-y-2">
       <div className="flex gap-2 flex-wrap">
         {images.map((url, idx) => (
-          <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-[#1E293B] group">
+          <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-rule group">
             <img src={url} alt="" className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={() => removeImage(idx)}
-              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-danger flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X size={10} className="text-white" />
             </button>
@@ -98,7 +98,7 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="w-24 h-24 rounded-lg border-2 border-dashed border-[#1E293B] flex flex-col items-center justify-center text-[#94A3B8] hover:border-[#38BDF8]/30 hover:text-[#E2E8F0] transition-colors disabled:opacity-50"
+            className="w-24 h-24 rounded-lg border-2 border-dashed border-rule flex flex-col items-center justify-center text-ink-faint hover:border-mark/40 hover:text-ink-soft transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <><Upload size={16} /><span className="text-[10px] mt-1">{images.length}/{max}</span></>}
           </button>
@@ -114,8 +114,8 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
 function SectionHeader({ title, open, onToggle }: { title: string; open: boolean; onToggle: () => void }) {
   return (
     <button onClick={onToggle} className="w-full flex items-center justify-between py-2 group">
-      <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
-      {open ? <ChevronUp size={14} className="text-[#94A3B8]" /> : <ChevronDown size={14} className="text-[#94A3B8]" />}
+      <h2 className="text-sm font-bold text-ink uppercase tracking-wider">{title}</h2>
+      {open ? <ChevronUp size={14} className="text-ink-faint" /> : <ChevronDown size={14} className="text-ink-faint" />}
     </button>
   )
 }
@@ -231,19 +231,19 @@ export default function AboutManager({
 
   return (
     <div className="space-y-6">
-      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {/* ────── 1. Hero ────── */}
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-xl p-4">
         <SectionHeader title="히어로 — 제목 및 설명" open={heroOpen} onToggle={() => setHeroOpen(!heroOpen)} />
         {heroOpen && (
           <div className="space-y-3 mt-3">
             <div>
-              <label className="text-[10px] text-[#94A3B8] mb-1 block">제목</label>
+              <label className="text-[10px] text-ink-faint mb-1 block">제목</label>
               <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] text-[#94A3B8] mb-1 block">설명 (줄바꿈 지원)</label>
+              <label className="text-[10px] text-ink-faint mb-1 block">설명 (줄바꿈 지원)</label>
               <textarea value={heroDesc} onChange={(e) => setHeroDesc(e.target.value)} rows={5} placeholder="회사를 소개하세요..." className={`${inputCls} resize-none`} />
             </div>
             <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
@@ -254,12 +254,12 @@ export default function AboutManager({
       </div>
 
       {/* ────── 2. Stats Cards ────── */}
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-xl p-4">
         <SectionHeader title="통계 카드" open={statsOpen} onToggle={() => setStatsOpen(!statsOpen)} />
         {statsOpen && (
           <div className="space-y-3 mt-3">
             {stats.map((s) => (
-              <div key={s.id} className="border border-[#1E293B] bg-[#0B1120] rounded-lg overflow-hidden">
+              <div key={s.id} className="border border-rule bg-paper rounded-lg overflow-hidden">
                 {editStatId === s.id ? (
                   <div className="p-3 space-y-2">
                     <div className="grid grid-cols-3 gap-2">
@@ -275,15 +275,15 @@ export default function AboutManager({
                 ) : (
                   <div className="p-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center">
-                        <DynamicIcon name={s.icon || 'Users'} size={14} className="text-[#38BDF8]" />
+                      <div className="w-8 h-8 rounded-lg bg-mark/10 border border-mark/30 flex items-center justify-center">
+                        <DynamicIcon name={s.icon || 'Users'} size={14} className="text-mark" />
                       </div>
-                      <span className="text-white font-bold text-sm">{s.value}</span>
-                      <span className="text-[#94A3B8] text-xs">{s.label}</span>
+                      <span className="text-ink font-bold text-sm">{s.value}</span>
+                      <span className="text-ink-faint text-xs">{s.label}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => startEditStat(s)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
-                      <button onClick={() => handleDeleteStat(s.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
+                      <button onClick={() => startEditStat(s)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
+                      <button onClick={() => handleDeleteStat(s.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 )}
@@ -291,7 +291,7 @@ export default function AboutManager({
             ))}
 
             {showNewStat ? (
-              <div className="border border-amber-500/20 bg-amber-500/5 rounded-lg p-3 space-y-2">
+              <div className="border border-mark/30 bg-mark/5 rounded-lg p-3 space-y-2">
                 <div className="grid grid-cols-3 gap-2">
                   <input value={newStatForm.icon} onChange={(e) => setNewStatForm({ ...newStatForm, icon: e.target.value })} placeholder="아이콘 (Users · tb:World)" className={inputCls} />
                   <input value={newStatForm.value} onChange={(e) => setNewStatForm({ ...newStatForm, value: e.target.value })} placeholder="400K+" className={inputCls} />
@@ -303,7 +303,7 @@ export default function AboutManager({
                 </div>
               </div>
             ) : (
-              <button onClick={() => { setShowNewStat(true); setEditStatId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
+              <button onClick={() => { setShowNewStat(true); setEditStatId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-rule rounded-lg text-sm text-ink-faint hover:text-ink-soft hover:border-mark/30 transition-colors">
                 <Plus size={15} /> 통계 카드 추가
               </button>
             )}
@@ -312,18 +312,18 @@ export default function AboutManager({
       </div>
 
       {/* ────── 3. Content Blocks (max 3) ────── */}
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-xl p-4">
         <SectionHeader title="콘텐츠 블록 (텍스트 + 이미지)" open={blocksOpen} onToggle={() => setBlocksOpen(!blocksOpen)} />
         {blocksOpen && (
           <div className="space-y-3 mt-3">
             {blocks.map((b, idx) => (
-              <div key={b.id} className="border border-[#1E293B] bg-[#0B1120] rounded-lg overflow-hidden">
+              <div key={b.id} className="border border-rule bg-paper rounded-lg overflow-hidden">
                 {editBlockId === b.id ? (
                   <div className="p-4 space-y-3">
                     <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                     <textarea value={blockForm.description} onChange={(e) => setBlockForm({ ...blockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                     <div>
-                      <label className="text-[10px] text-[#94A3B8] mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
+                      <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
                       <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
                     </div>
                     <div className="flex gap-2">
@@ -336,20 +336,20 @@ export default function AboutManager({
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-mono text-[#38BDF8]/60 font-bold">{String(idx + 1).padStart(2, '0')}</span>
-                          {b.title && <span className="text-xs text-white font-semibold">{b.title}</span>}
+                          <span className="text-[10px] font-mono text-mark/60 font-bold">{String(idx + 1).padStart(2, '0')}</span>
+                          {b.title && <span className="text-xs text-ink font-semibold">{b.title}</span>}
                         </div>
-                        <p className="text-xs text-[#94A3B8] line-clamp-2">{b.description}</p>
+                        <p className="text-xs text-ink-faint line-clamp-2">{b.description}</p>
                         {b.images.length > 0 && (
                           <div className="flex items-center gap-1 mt-1.5">
-                            <ImageIcon size={11} className="text-[#94A3B8]" />
-                            <span className="text-[10px] text-[#94A3B8]">이미지 {b.images.length}개</span>
+                            <ImageIcon size={11} className="text-ink-faint" />
+                            <span className="text-[10px] text-ink-faint">이미지 {b.images.length}개</span>
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => startEditBlock(b)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors"><Pencil size={13} /></button>
-                        <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors"><Trash2 size={13} /></button>
+                        <button onClick={() => startEditBlock(b)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                       </div>
                     </div>
                   </div>
@@ -359,11 +359,11 @@ export default function AboutManager({
 
             {blocks.length < 3 && (
               showNewBlock ? (
-                <div className="border border-amber-500/20 bg-amber-500/5 rounded-lg p-4 space-y-3">
+                <div className="border border-mark/30 bg-mark/5 rounded-lg p-4 space-y-3">
                   <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                   <textarea value={newBlockForm.description} onChange={(e) => setNewBlockForm({ ...newBlockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
                   <div>
-                    <label className="text-[10px] text-[#94A3B8] mb-1.5 block">이미지 (최대 3개)</label>
+                    <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개)</label>
                     <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
                   </div>
                   <div className="flex gap-2">
@@ -372,7 +372,7 @@ export default function AboutManager({
                   </div>
                 </div>
               ) : (
-                <button onClick={() => { setShowNewBlock(true); setEditBlockId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1E293B] rounded-lg text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
+                <button onClick={() => { setShowNewBlock(true); setEditBlockId(null) }} className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-rule rounded-lg text-sm text-ink-faint hover:text-ink-soft hover:border-mark/30 transition-colors">
                   <Plus size={15} /> 콘텐츠 블록 추가 ({blocks.length}/3)
                 </button>
               )

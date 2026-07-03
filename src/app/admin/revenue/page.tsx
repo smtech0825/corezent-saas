@@ -102,28 +102,28 @@ export default async function RevenuePage() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">매출 리포트</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">매출 리포트</h1>
+        <p className="text-sm text-ink-soft mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
       </div>
 
       {/* KPI 카드 */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <Kpi icon={<TrendingUp size={16} className="text-emerald-400" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
-        <Kpi icon={<ShoppingBag size={16} className="text-[#38BDF8]" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
-        <Kpi icon={<RotateCcw size={16} className="text-red-400" />} label="환불 총액" value={formatKRW(refundTotal)} sub={`${refundCount}건`} />
-        <Kpi icon={<Repeat size={16} className="text-violet-400" />} label="활성 구독" value={activeSubs.toLocaleString('ko-KR')} />
-        <Kpi icon={<TrendingUp size={16} className="text-emerald-400" />} label="MRR (추정)" value={formatKRW(mrrCents)} sub="월 환산" />
-        <Kpi icon={<Percent size={16} className="text-amber-400" />} label="해지율" value={`${churnRate}%`} sub={`${endedSubs}/${totalSubs} 구독`} />
+        <Kpi icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
+        <Kpi icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
+        <Kpi icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} sub={`${refundCount}건`} />
+        <Kpi icon={<Repeat size={16} className="text-mark" />} label="활성 구독" value={activeSubs.toLocaleString('ko-KR')} />
+        <Kpi icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={formatKRW(mrrCents)} sub="월 환산" />
+        <Kpi icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} sub={`${endedSubs}/${totalSubs} 구독`} />
       </div>
 
       {/* 월별 매출 추이 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-white mb-4">월별 매출 추이 (최근 12개월)</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-4">월별 매출 추이 (최근 12개월)</h2>
         <div className="flex items-end gap-1.5 h-40">
           {months.map((m) => (
             <div key={m.key} className="flex-1 h-full flex items-end" title={`${m.label} · ${formatKRW(m.cents)}`}>
               <div
-                className="w-full bg-[#38BDF8]/80 hover:bg-[#38BDF8] rounded-t transition-colors"
+                className="w-full bg-mark/80 hover:bg-mark rounded-t transition-colors"
                 style={{ height: `${Math.max((m.cents / monthMax) * 100, 2)}%` }}
               />
             </div>
@@ -131,26 +131,26 @@ export default async function RevenuePage() {
         </div>
         <div className="flex gap-1.5 mt-1.5">
           {months.map((m) => (
-            <span key={m.key} className="flex-1 text-center text-[9px] text-[#94A3B8]">{m.label}</span>
+            <span key={m.key} className="flex-1 text-center text-[9px] text-ink-faint">{m.label}</span>
           ))}
         </div>
       </section>
 
       {/* 상품별 매출 */}
-      <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-white mb-4">상품별 매출</h2>
+      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-ink mb-4">상품별 매출</h2>
         {products.length === 0 ? (
-          <p className="text-sm text-[#94A3B8] py-2">매출 데이터가 없습니다.</p>
+          <p className="text-sm text-ink-faint py-2">매출 데이터가 없습니다.</p>
         ) : (
           <div className="space-y-3">
             {products.map((p) => (
               <div key={p.name}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-[#E2E8F0] truncate max-w-[60%]">{p.name}</span>
-                  <span className="text-xs font-semibold text-white tabular-nums">{formatKRW(p.cents)}</span>
+                  <span className="text-xs text-ink-soft truncate max-w-[60%]">{p.name}</span>
+                  <span className="text-xs font-semibold text-ink tabular-nums">{formatKRW(p.cents)}</span>
                 </div>
-                <div className="h-2.5 bg-[#1E293B] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#38BDF8] rounded-full" style={{ width: `${Math.max((p.cents / prodMax) * 100, 3)}%` }} />
+                <div className="h-2.5 bg-paper-shade rounded-full overflow-hidden">
+                  <div className="h-full bg-mark rounded-full" style={{ width: `${Math.max((p.cents / prodMax) * 100, 3)}%` }} />
                 </div>
               </div>
             ))}
@@ -164,12 +164,12 @@ export default async function RevenuePage() {
 /** KPI 카드 */
 function Kpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
-    <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
-      <div className="w-9 h-9 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center mb-3">
+    <div className="border border-rule bg-paper-raised rounded-2xl p-5">
+      <div className="w-9 h-9 rounded-lg bg-mark/10 border border-mark/20 flex items-center justify-center mb-3">
         {icon}
       </div>
-      <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-      <p className="text-xs text-[#E2E8F0] mt-1">{label}{sub && <span className="text-[#94A3B8]"> · {sub}</span>}</p>
+      <p className="text-2xl font-bold text-ink tabular-nums">{value}</p>
+      <p className="text-xs text-ink-soft mt-1">{label}{sub && <span className="text-ink-faint"> · {sub}</span>}</p>
     </div>
   )
 }

@@ -43,12 +43,12 @@ function fmtDate(d: string) {
 
 // 막대 색상 (카테고리 순서에 따라 할당)
 const BAR_COLORS = [
-  'bg-[#38BDF8]',
-  'bg-violet-400',
-  'bg-amber-400',
-  'bg-emerald-400',
-  'bg-rose-400',
-  'bg-cyan-400',
+  'bg-mark',
+  'bg-mark',
+  'bg-mark',
+  'bg-mark',
+  'bg-mark',
+  'bg-mark',
 ]
 
 export default function ChurnAnalysis({ entries }: Props) {
@@ -98,14 +98,14 @@ export default function ChurnAnalysis({ entries }: Props) {
     <section className="space-y-4">
       {/* 헤더 + 필터 토글 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">이탈 분석</h2>
-        <div className="flex items-center gap-1 bg-[#0B1120] border border-[#1E293B] rounded-lg p-0.5">
+        <h2 className="text-sm font-semibold text-ink">이탈 분석</h2>
+        <div className="flex items-center gap-1 bg-paper border border-rule rounded-lg p-0.5">
           <button
             onClick={() => setPeriod('month')}
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
               period === 'month'
-                ? 'bg-[#38BDF8] text-[#0B1120] font-semibold'
-                : 'text-[#94A3B8] hover:text-white'
+                ? 'bg-mark text-white font-semibold'
+                : 'text-ink-faint hover:text-ink'
             }`}
           >
             이번 달
@@ -114,8 +114,8 @@ export default function ChurnAnalysis({ entries }: Props) {
             onClick={() => setPeriod('all')}
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
               period === 'all'
-                ? 'bg-[#38BDF8] text-[#0B1120] font-semibold'
-                : 'text-[#94A3B8] hover:text-white'
+                ? 'bg-mark text-white font-semibold'
+                : 'text-ink-faint hover:text-ink'
             }`}
           >
             전체 기간
@@ -124,32 +124,32 @@ export default function ChurnAnalysis({ entries }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl py-12 text-center text-sm text-[#94A3B8]">
+        <div className="border border-rule bg-paper-raised rounded-2xl py-12 text-center text-sm text-ink-faint">
           취소 데이터가 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* ── 왼쪽: 가로 막대 차트 ── */}
-          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5">
+          <div className="border border-rule bg-paper-raised rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <BarChart3 size={15} className="text-[#E2E8F0]" />
-              <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">
+              <BarChart3 size={15} className="text-ink-soft" />
+              <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
                 주요 취소 사유
               </h3>
-              <span className="text-[10px] text-[#94A3B8] ml-auto">총 {filtered.length}건</span>
+              <span className="text-[10px] text-ink-faint ml-auto">총 {filtered.length}건</span>
             </div>
 
             {chartData.length === 0 ? (
-              <p className="text-sm text-[#94A3B8] text-center py-6">데이터 없음.</p>
+              <p className="text-sm text-ink-faint text-center py-6">데이터 없음.</p>
             ) : (
               <div className="space-y-3">
                 {chartData.map((d) => (
                   <div key={d.label}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-[#E2E8F0] truncate max-w-[70%]">{d.label}</span>
-                      <span className="text-xs font-semibold text-white tabular-nums">{d.count}</span>
+                      <span className="text-xs text-ink-soft truncate max-w-[70%]">{d.label}</span>
+                      <span className="text-xs font-semibold text-ink tabular-nums">{d.count}</span>
                     </div>
-                    <div className="h-2.5 bg-[#1E293B] rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-paper-shade rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${d.color}`}
                         style={{ width: `${Math.max(d.pct, 4)}%` }}
@@ -162,17 +162,17 @@ export default function ChurnAnalysis({ entries }: Props) {
           </div>
 
           {/* ── 오른쪽: Other 코멘트 리스트 ── */}
-          <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-5 flex flex-col">
+          <div className="border border-rule bg-paper-raised rounded-2xl p-5 flex flex-col">
             <div className="flex items-center gap-2 mb-4">
-              <MessageSquare size={15} className="text-[#E2E8F0]" />
-              <h3 className="text-xs font-semibold text-[#E2E8F0] uppercase tracking-wider">
+              <MessageSquare size={15} className="text-ink-soft" />
+              <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
                 최근 피드백
               </h3>
-              <span className="text-[10px] text-[#94A3B8] ml-auto">의견 {otherComments.length}건</span>
+              <span className="text-[10px] text-ink-faint ml-auto">의견 {otherComments.length}건</span>
             </div>
 
             {otherComments.length === 0 ? (
-              <p className="text-sm text-[#94A3B8] text-center py-6 flex-1 flex items-center justify-center">
+              <p className="text-sm text-ink-faint text-center py-6 flex-1 flex items-center justify-center">
                 작성된 피드백이 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
               </p>
             ) : (
@@ -180,13 +180,13 @@ export default function ChurnAnalysis({ entries }: Props) {
                 {otherComments.map((c, i) => (
                   <div
                     key={i}
-                    className="bg-[#0B1120] border border-[#1E293B] rounded-xl px-4 py-3"
+                    className="bg-paper border border-rule rounded-xl px-4 py-3"
                   >
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-[#E2E8F0] truncate max-w-[60%]">{c.email}</span>
-                      <span className="text-[10px] text-[#94A3B8] shrink-0">{fmtDate(c.date)}</span>
+                      <span className="text-xs text-ink-soft truncate max-w-[60%]">{c.email}</span>
+                      <span className="text-[10px] text-ink-faint shrink-0">{fmtDate(c.date)}</span>
                     </div>
-                    <p className="text-sm text-[#F1F5F9] leading-relaxed">{c.text}</p>
+                    <p className="text-sm text-ink leading-relaxed">{c.text}</p>
                   </div>
                 ))}
               </div>

@@ -61,53 +61,53 @@ export default function WithdrawSection() {
   }
 
   return (
-    <section className="bg-[#111A2E] border border-red-500/20 rounded-xl p-6 mt-6">
-      <h2 className="text-base font-semibold text-red-400 mb-1.5">회원 탈퇴</h2>
-      <p className="text-sm text-[#E2E8F0] mb-5">
+    <section className="bg-paper-raised border border-danger/20 rounded-xl p-6 mt-6">
+      <h2 className="text-base font-semibold text-danger mb-1.5">회원 탈퇴</h2>
+      <p className="text-sm text-ink-soft mb-5">
         탈퇴하면 계정에 다시 로그인할 수 없습니다. 주문·라이선스 이력은 보관 목적상 보존되며,
         같은 이메일로의 재가입은 제한됩니다.
       </p>
       <button
         type="button"
         onClick={openModal}
-        className="text-sm font-medium text-red-400 border border-red-500/30 hover:border-red-500/60 hover:bg-red-500/5 px-4 py-2.5 rounded-lg transition-colors"
+        className="text-sm font-medium text-danger border border-danger/30 hover:border-danger/60 hover:bg-danger-soft px-4 py-2.5 rounded-lg transition-colors"
       >
         회원 탈퇴
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative z-10 w-full max-w-md bg-[#111A2E] border border-[#1E293B] rounded-2xl shadow-2xl p-6">
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative z-10 w-full max-w-md bg-paper-raised border border-rule rounded-2xl shadow-2xl p-6">
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={18} className="text-red-400" />
-              <h3 className="text-lg font-bold text-white">정말 탈퇴하시겠어요?</h3>
+              <AlertTriangle size={18} className="text-danger" />
+              <h3 className="text-lg font-bold text-ink">정말 탈퇴하시겠어요?</h3>
             </div>
 
             {blocked ? (
-              <div className="text-sm text-[#E2E8F0] space-y-3">
-                <p className="text-amber-400 font-medium">활성 구독이 있어 지금은 탈퇴할 수 없습니다.</p>
+              <div className="text-sm text-ink-soft space-y-3">
+                <p className="text-caution font-medium">활성 구독이 있어 지금은 탈퇴할 수 없습니다.</p>
                 <p>
                   먼저 구독을 취소한 뒤 다시 시도해 주세요. 취소해도 결제 기간이 끝날 때까지는
                   서비스를 계속 이용하실 수 있습니다.
                 </p>
-                <Link href="/dashboard/billing" className="inline-flex text-[#38BDF8] hover:underline">
+                <Link href="/dashboard/billing" className="inline-flex text-mark hover:underline">
                   결제·구독 관리로 이동 →
                 </Link>
               </div>
             ) : (
               <>
-                <p className="text-sm text-[#E2E8F0] mb-4">
+                <p className="text-sm text-ink-soft mb-4">
                   이 작업은 되돌릴 수 없습니다. 계속하려면 아래에{' '}
-                  <span className="font-semibold text-white">&lsquo;{CONFIRM_WORD}&rsquo;</span> 을(를) 입력하세요.
+                  <span className="font-semibold text-ink">&lsquo;{CONFIRM_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
                 <input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={CONFIRM_WORD}
-                  className="w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-4 py-3 text-sm text-white placeholder:text-[#94A3B8] focus:outline-none focus:border-red-500/60 transition-colors mb-3"
+                  className="w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-danger/60 transition-colors mb-3"
                 />
-                {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
+                {error && <p className="text-sm text-danger mb-3">{error}</p>}
               </>
             )}
 
@@ -116,7 +116,7 @@ export default function WithdrawSection() {
                 type="button"
                 onClick={closeModal}
                 disabled={loading}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[#38BDF8] text-[#0B1120] hover:bg-[#0ea5e9] transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-mark text-white hover:brightness-95 transition-colors disabled:opacity-50"
               >
                 계속 이용하기
               </button>
@@ -125,7 +125,7 @@ export default function WithdrawSection() {
                   type="button"
                   onClick={handleWithdraw}
                   disabled={loading || confirmText.trim() !== CONFIRM_WORD}
-                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:border-red-500/60 hover:bg-red-500/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-danger/30 text-danger hover:border-danger/60 hover:bg-danger-soft transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={14} className="animate-spin" />}
                   탈퇴하기

@@ -3,6 +3,7 @@
 /**
  * @컴포넌트: AdminShell
  * @설명: 관리자 패널 외부 쉘 — 모바일 햄버거, 상단 헤더, 사이드바 통합
+ *        페이퍼(라이트) 테마 · 강조색=인주 빨강(accent-seal)
  */
 
 import { useState } from 'react'
@@ -19,7 +20,7 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-[#0B1120] flex">
+    <div className="theme-paper accent-seal bg-paper text-ink min-h-screen flex">
       {/* 데스크톱 사이드바 */}
       <div className="hidden lg:flex lg:flex-col">
         <div className="h-screen sticky top-0">
@@ -31,7 +32,7 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
           <div className="relative z-10 flex flex-col h-full">
@@ -43,23 +44,23 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
       {/* 메인 콘텐츠 */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* 상단 헤더 */}
-        <div className="flex items-center justify-between px-5 h-16 border-b border-[#1E293B] bg-[#0B1120] sticky top-0 z-10">
+        <div className="flex items-center justify-between px-5 h-16 border-b border-rule bg-paper/85 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-3 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-[#E2E8F0] hover:text-white p-1"
+              className="text-ink-soft hover:text-ink p-1"
             >
               <Menu size={20} />
             </button>
-            <span className="text-white font-semibold text-sm">관리자 패널</span>
+            <span className="text-ink font-semibold text-sm">관리자 패널</span>
           </div>
           <div className="hidden lg:flex items-center gap-2">
-            <span className="text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25 rounded px-2 py-1 uppercase tracking-wider">
+            <span className="text-xs font-semibold bg-mark/10 text-mark border border-mark/25 rounded px-2 py-1 uppercase tracking-wider">
               관리자 패널
             </span>
           </div>
-          <div className="hidden sm:block text-xs text-[#94A3B8] truncate max-w-[200px] lg:max-w-none">
-            로그인 계정 <span className="text-[#E2E8F0]">{user.email}</span>
+          <div className="hidden sm:block text-xs text-ink-faint truncate max-w-[200px] lg:max-w-none">
+            로그인 계정 <span className="text-ink-soft">{user.email}</span>
           </div>
         </div>
 

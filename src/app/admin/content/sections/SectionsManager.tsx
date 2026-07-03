@@ -105,9 +105,9 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
   return (
     <div className="space-y-2">
       {/* 상태 메시지 */}
-      {isPending && <p className="text-xs text-amber-400 px-1">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark px-1">저장 중…</p>}
       {saveError && !isPending && (
-        <p className="text-xs text-red-400 px-1">{saveError}</p>
+        <p className="text-xs text-danger px-1">{saveError}</p>
       )}
 
       {items.map((section, idx) => (
@@ -121,27 +121,27 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
           className={[
             'flex items-center gap-4 px-5 py-4 border rounded-xl cursor-grab active:cursor-grabbing transition-all',
             dragOver === idx
-              ? 'border-amber-500/40 bg-amber-500/5'
-              : 'border-[#1E293B] bg-[#111A2E] hover:border-[#1E293B]/80',
+              ? 'border-mark/40 bg-mark/5'
+              : 'border-rule bg-paper-raised hover:border-rule',
             dragging === idx ? 'opacity-40' : 'opacity-100',
           ].join(' ')}
         >
-          <GripVertical size={16} className="text-[#94A3B8] hover:text-[#E2E8F0] shrink-0" />
+          <GripVertical size={16} className="text-ink-faint hover:text-ink-soft shrink-0" />
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white">{section.label}</p>
-            <p className="text-xs text-[#94A3B8] font-mono">{section.name}</p>
+            <p className="text-sm font-medium text-ink">{section.label}</p>
+            <p className="text-xs text-ink-faint font-mono">{section.name}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium ${section.is_visible ? 'text-emerald-400' : 'text-[#94A3B8]'}`}>
+            <span className={`text-xs font-medium ${section.is_visible ? 'text-ok' : 'text-ink-soft'}`}>
               {section.is_visible ? '표시' : '숨김'}
             </span>
             <button
               onClick={() => handleToggle(idx)}
               disabled={isPending}
               className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden disabled:opacity-60 ${
-                section.is_visible ? 'bg-emerald-500' : 'bg-[#1E293B]'
+                section.is_visible ? 'bg-ok' : 'bg-paper-shade'
               }`}
             >
               <span
@@ -151,9 +151,9 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
               />
             </button>
             {section.is_visible ? (
-              <Eye size={14} className="text-emerald-400" />
+              <Eye size={14} className="text-ok" />
             ) : (
-              <EyeOff size={14} className="text-[#94A3B8]" />
+              <EyeOff size={14} className="text-ink-soft" />
             )}
           </div>
         </div>

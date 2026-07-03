@@ -21,8 +21,8 @@ const SECTION_KEYS: Record<Section, string[]> = {
   smtp:    ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name'],
 }
 
-const INPUT_CLS    = 'w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500/50 placeholder-[#475569]'
-const TEXTAREA_CLS = 'w-full bg-[#0B1120] border border-[#1E293B] text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500/50 placeholder-[#475569] resize-y'
+const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
+const TEXTAREA_CLS = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-mark placeholder:text-ink-faint resize-y'
 
 // ─── 저장 버튼 (섹션별 로딩·성공 상태 표시) ──────────────────────────────────
 
@@ -43,7 +43,7 @@ function SaveButton({
     <button
       onClick={() => onSave(section)}
       disabled={isLoading}
-      className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-[#0B1120] font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+      className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
     >
       {isLoading && <Loader2 size={14} className="animate-spin" />}
       {isSaved   && <Check   size={14} />}
@@ -57,7 +57,7 @@ function SaveButton({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-[#E2E8F0] mb-1.5">{label}</label>
+      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -77,10 +77,10 @@ function SectionCard({
   footer: React.ReactNode
 }) {
   return (
-    <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#1E293B]">
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
-        <p className="text-xs text-[#94A3B8] mt-0.5">{description}</p>
+    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-rule">
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <p className="text-xs text-ink-faint mt-0.5">{description}</p>
       </div>
       <div className="p-6 space-y-4">{children}</div>
       <div className="px-6 pb-5">{footer}</div>
@@ -128,18 +128,20 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
   const btnProps = { saving, saved, onSave: saveSection }
 
   return (
-    <div className="p-6 space-y-8 max-w-2xl">
+    <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">설정</h1>
-        <p className="text-sm text-[#E2E8F0] mt-1">사이트 전반 설정을 구성합니다.</p>
+        <h1 className="text-2xl font-bold text-ink font-serif">설정</h1>
+        <p className="text-sm text-ink-soft mt-1">사이트 전반 설정을 구성합니다.</p>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl">
+        <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
 
+      {/* 넓은 화면에서 가로폭을 활용하도록 섹션 카드를 2열 그리드로 배치 */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
       {/* ── General Settings ─────────────────────────────────────────────── */}
       <SectionCard
         title="일반 설정"
@@ -174,7 +176,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             placeholder={'사업자등록번호: 000-00-00000\n대표: 홍길동\n통신판매업신고: 2024-서울강남-00000\n이메일: support@corezent.com'}
             className={TEXTAREA_CLS}
           />
-          <p className="text-xs text-[#94A3B8] mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
+          <p className="text-xs text-ink-faint mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
         </div>
       </SectionCard>
 
@@ -246,29 +248,30 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       </SectionCard>
 
       {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1E293B]">
-          <h2 className="text-sm font-semibold text-white">할인코드 (Lemon Squeezy)</h2>
-          <p className="text-xs text-[#94A3B8] mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>
+      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-rule">
+          <h2 className="text-sm font-semibold text-ink">할인코드 (Lemon Squeezy)</h2>
+          <p className="text-xs text-ink-faint mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>
         </div>
-        <div className="p-6 space-y-3 text-sm text-[#E2E8F0] leading-relaxed">
+        <div className="p-6 space-y-3 text-sm text-ink-soft leading-relaxed">
           <p>
-            LS 대시보드 → <strong className="text-[#F1F5F9]">Store → Discounts</strong>에서 코드를 만들면
+            LS 대시보드 → <strong className="text-ink">Store → Discounts</strong>에서 코드를 만들면
             (정률/정액, 적용 상품, 사용 횟수·기간 제한 설정 가능) 구매자가 요금제 페이지의
             할인코드 입력칸 또는 결제 화면에서 바로 사용할 수 있습니다.
           </p>
-          <p className="text-xs text-[#94A3B8]">
-            마케팅 링크로 자동 적용하려면: <code className="font-mono text-[#38BDF8]">corezent.com/pricing?discount=코드</code>
+          <p className="text-xs text-ink-faint">
+            마케팅 링크로 자동 적용하려면: <code className="font-mono text-mark">corezent.com/pricing?discount=코드</code>
           </p>
           <a
             href="https://app.lemonsqueezy.com/discounts"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[#38BDF8] hover:underline font-medium"
+            className="inline-flex items-center gap-1.5 text-mark hover:underline font-medium"
           >
             LS 할인코드 관리 열기 ↗
           </a>
         </div>
+      </div>
       </div>
     </div>
   )

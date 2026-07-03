@@ -30,7 +30,7 @@ interface Props {
 const emptyForm = { icon: 'Zap', title: '', description: '', is_published: true, order_index: 0 }
 
 // ─── 모듈 레벨 상수 — 리렌더링 시 포커스 손실 방지 ───────────────────────
-const inputCls = 'w-full bg-[#0B1120] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-amber-500/50'
+const inputCls = 'w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark'
 
 // ─── FormFields — 컴포넌트 외부에 정의하여 unmount/remount 방지 ──────────
 function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyForm) => void }) {
@@ -38,7 +38,7 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] text-[#94A3B8] mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
+          <label className="text-[10px] text-ink-faint mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
           <input
             value={f.icon}
             onChange={(e) => setF({ ...f, icon: e.target.value })}
@@ -47,7 +47,7 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
           />
         </div>
         <div>
-          <label className="text-[10px] text-[#94A3B8] mb-1 block">제목</label>
+          <label className="text-[10px] text-ink-faint mb-1 block">제목</label>
           <input
             value={f.title}
             onChange={(e) => setF({ ...f, title: e.target.value })}
@@ -57,7 +57,7 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
         </div>
       </div>
       <div>
-        <label className="text-[10px] text-[#94A3B8] mb-1 block">설명</label>
+        <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
         <textarea
           value={f.description}
           onChange={(e) => setF({ ...f, description: e.target.value })}
@@ -118,18 +118,18 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
 
   return (
     <div className="space-y-3">
-      {isPending && <p className="text-xs text-amber-400">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((s, idx) => (
-        <div key={s.id} className="border border-[#1E293B] bg-[#111A2E] rounded-xl overflow-hidden">
+        <div key={s.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
           {editingId === s.id ? (
             <div className="p-4 space-y-3">
               <FormFields f={form} setF={setForm} />
               <div className="flex gap-2">
-                <button onClick={() => handleUpdate(s.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
+                <button onClick={() => handleUpdate(s.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
                   <Check size={12} /> 저장
                 </button>
-                <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
+                <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
                   <X size={12} /> 취소
                 </button>
               </div>
@@ -138,22 +138,22 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
             <div className="p-4 flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-mono text-[#38BDF8]/60 font-bold">
+                  <span className="text-[10px] font-mono text-mark/60 font-bold">
                     {String(idx + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-xs text-[#94A3B8] font-mono">{s.icon}</span>
+                  <span className="text-xs text-ink-faint font-mono">{s.icon}</span>
                 </div>
-                <p className={`text-sm font-medium ${s.is_published ? 'text-white' : 'text-[#94A3B8]'}`}>{s.title}</p>
-                <p className="text-xs text-[#94A3B8] mt-0.5 line-clamp-2">{s.description}</p>
+                <p className={`text-sm font-medium ${s.is_published ? 'text-ink' : 'text-ink-faint'}`}>{s.title}</p>
+                <p className="text-xs text-ink-faint mt-0.5 line-clamp-2">{s.description}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => handleToggle(s.id, s.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${s.is_published ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-[#94A3B8] bg-[#1E293B] border-[#1E293B]'}`}>
+                <button onClick={() => handleToggle(s.id, s.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${s.is_published ? 'text-ok bg-ok-soft border-ok/20' : 'text-ink-soft bg-paper-shade border-rule'}`}>
                   {s.is_published ? '게시됨' : '초안'}
                 </button>
-                <button onClick={() => startEdit(s)} className="p-1.5 text-[#94A3B8] hover:text-white rounded-lg hover:bg-[#1E293B] transition-colors">
+                <button onClick={() => startEdit(s)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => handleDelete(s.id)} className="p-1.5 text-[#94A3B8] hover:text-red-400 rounded-lg hover:bg-red-500/5 transition-colors">
+                <button onClick={() => handleDelete(s.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -163,19 +163,19 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
       ))}
 
       {showNew ? (
-        <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-3">
+        <div className="border border-mark/30 bg-mark/5 rounded-xl p-4 space-y-3">
           <FormFields f={newForm} setF={setNewForm} />
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-amber-500 text-[#0B1120] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 disabled:opacity-50 transition-colors">
+            <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
               <Check size={12} /> 단계 추가
             </button>
-            <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-[#E2E8F0] border border-[#1E293B] px-3 py-1.5 rounded-lg hover:text-white transition-colors">
+            <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
               <X size={12} /> 취소
             </button>
           </div>
         </div>
       ) : (
-        <button onClick={() => { setShowNew(true); setEditingId(null) }} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#1E293B] rounded-xl text-sm text-[#94A3B8] hover:text-[#E2E8F0] hover:border-[#38BDF8]/20 transition-colors">
+        <button onClick={() => { setShowNew(true); setEditingId(null) }} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-rule rounded-xl text-sm text-ink-faint hover:text-ink-soft hover:border-mark/30 transition-colors">
           <Plus size={15} /> 새 단계 추가
         </button>
       )}

@@ -44,10 +44,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium shadow-xl pointer-events-auto
+            className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium shadow-[0_8px_28px_rgba(35,39,46,0.14)] pointer-events-auto
               ${toast.type === 'success'
-                ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-400'
-                : 'bg-red-950/90 border-red-500/30 text-red-400'
+                ? 'bg-paper-raised border-ok/40 text-ok'
+                : 'bg-paper-raised border-danger/40 text-danger'
               }`}
           >
             {toast.type === 'success'

@@ -4,6 +4,7 @@
  * @컴포넌트: DashboardSidebar
  * @설명: 대시보드 사이드바 — 네비게이션, Support 알림 뱃지, 사용자 정보, 로그아웃
  *        isAdmin이 true인 경우 하단에 'Go to Admin' 버튼 표시
+ *        페이퍼(라이트) 테마 · 강조색=볼펜 파랑(mark) · 활성 항목=색인 탭(리본)
  */
 
 import Link from 'next/link'
@@ -45,17 +46,17 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
   }
 
   return (
-    <aside className="w-60 shrink-0 h-full flex flex-col bg-[#0B1120] border-r border-[#1E293B]">
+    <aside className="w-60 shrink-0 h-full flex flex-col bg-paper-shade border-r border-rule">
       {/* 로고 + 닫기 (모바일) */}
-      <div className="flex items-center justify-between px-5 h-16 border-b border-[#1E293B]">
-        <Link href="/" className="flex items-center gap-2 font-bold text-white">
-          <span className="w-7 h-7 rounded-lg bg-[#38BDF8] flex items-center justify-center text-[#0B1120] text-sm font-black">
+      <div className="flex items-center justify-between px-5 h-16 border-b border-rule">
+        <Link href="/" className="flex items-center gap-2 font-bold text-ink">
+          <span className="w-7 h-7 rounded-lg bg-mark flex items-center justify-center text-white text-sm font-black">
             C
           </span>
           CoreZent
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-[#E2E8F0] hover:text-white p-1">
+          <button onClick={onClose} className="lg:hidden text-ink-soft hover:text-ink p-1">
             <X size={18} />
           </button>
         )}
@@ -73,17 +74,17 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
               onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-[#38BDF8]/10 text-[#38BDF8]'
-                  : 'text-[#E2E8F0] hover:text-white hover:bg-[#1E293B]/60'
+                  ? "relative bg-paper-raised text-ink font-semibold shadow-[0_1px_2px_rgba(35,39,46,0.05)] before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-mark"
+                  : 'text-ink-soft hover:text-ink hover:bg-ink/5'
               }`}
             >
-              <Icon size={16} className={active ? 'text-[#38BDF8]' : ''} />
+              <Icon size={16} className={active ? 'text-mark' : ''} />
               <span className="flex-1">{item.label}</span>
               {/* 알림 뱃지 */}
               {item.badge > 0 && (
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-danger" />
                 </span>
               )}
             </Link>
@@ -92,23 +93,23 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
       </nav>
 
       {/* 사용자 정보 + (관리자 전용) Go to Admin + 로그아웃 */}
-      <div className="px-3 py-4 border-t border-[#1E293B]">
+      <div className="px-3 py-4 border-t border-rule">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <span className="w-8 h-8 rounded-full bg-[#38BDF8]/20 border border-[#38BDF8]/30 flex items-center justify-center text-xs font-bold text-[#38BDF8] shrink-0">
+          <span className="w-8 h-8 rounded-full bg-mark/15 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
             {user.initials}
           </span>
           <div className="min-w-0">
-            <p className="text-sm text-white font-medium truncate">{user.name}</p>
-            <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
+            <p className="text-sm text-ink font-medium truncate">{user.name}</p>
+            <p className="text-xs text-ink-faint truncate">{user.email}</p>
           </div>
         </div>
 
-        {/* 관리자 전용: Go to Admin 버튼 */}
+        {/* 관리자 전용: Go to Admin 버튼 — 인주 빨강으로 관리자 영역임을 힌트 */}
         {isAdmin && (
           <Link
             href="/admin"
             onClick={onClose}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/5 transition-colors mb-0.5"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-seal hover:bg-seal/8 transition-colors mb-0.5"
           >
             <ExternalLink size={16} />
             관리자 페이지로 이동
@@ -117,7 +118,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
         >
           <LogOut size={16} />
           로그아웃

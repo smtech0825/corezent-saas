@@ -27,10 +27,10 @@ interface Props {
 }
 
 const categoryColors: Record<string, string> = {
-  desktop: 'text-violet-400 bg-violet-400/10',
-  web: 'text-[#38BDF8] bg-[#38BDF8]/10',
-  'chrome-extension': 'text-amber-400 bg-amber-400/10',
-  mobile: 'text-emerald-400 bg-emerald-400/10',
+  desktop: 'text-mark bg-mark/10',
+  web: 'text-mark bg-mark/10',
+  'chrome-extension': 'text-mark bg-mark/10',
+  mobile: 'text-mark bg-mark/10',
 }
 
 export default function ProductList({ products: initial, onDelete }: Props) {
@@ -68,46 +68,46 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   return (
     <div className="space-y-2">
       {/* 상태 메시지 */}
-      {isPending && <p className="text-xs text-amber-400 px-1">저장 중…</p>}
+      {isPending && <p className="text-xs text-mark px-1">저장 중…</p>}
       {saveMsg && !isPending && (
-        <p className={`text-xs px-1 ${saveMsg.includes('실패') ? 'text-red-400' : 'text-emerald-400'}`}>
+        <p className={`text-xs px-1 ${saveMsg.includes('실패') ? 'text-danger' : 'text-ok'}`}>
           {saveMsg}
         </p>
       )}
 
-      <div className="border border-[#1E293B] bg-[#111A2E] rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1E293B]">
-                <th className="text-left px-3 py-3 text-xs text-[#94A3B8] font-medium w-16">순서</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">제품</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">카테고리</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">월간</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">연간</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">상태</th>
-                <th className="text-left px-4 py-3 text-xs text-[#94A3B8] font-medium">작업</th>
+              <tr className="border-b border-rule">
+                <th className="text-left px-3 py-3 text-xs text-ink-faint font-medium w-16">순서</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">제품</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">카테고리</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">월간</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">연간</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상태</th>
+                <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">작업</th>
               </tr>
             </thead>
             <tbody>
               {items.map((p, idx) => (
-                <tr key={p.id} className="border-b border-[#1E293B]/50 hover:bg-[#0B1120]/40 transition-colors">
+                <tr key={p.id} className="border-b border-rule hover:bg-paper-shade transition-colors">
                   {/* 순서 변경 화살표 */}
                   <td className="px-3 py-4">
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={() => swap(idx, idx - 1)}
                         disabled={idx === 0 || isPending}
-                        className="p-0.5 text-[#94A3B8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="위로 이동"
                       >
                         <ChevronUp size={14} />
                       </button>
-                      <span className="text-[10px] text-[#94A3B8] tabular-nums font-mono">{idx + 1}</span>
+                      <span className="text-[10px] text-ink-faint tabular-nums font-mono">{idx + 1}</span>
                       <button
                         onClick={() => swap(idx, idx + 1)}
                         disabled={idx === items.length - 1 || isPending}
-                        className="p-0.5 text-[#94A3B8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="아래로 이동"
                       >
                         <ChevronDown size={14} />
@@ -116,19 +116,19 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                   </td>
 
                   <td className="px-4 py-4">
-                    <p className="font-semibold text-white">{p.name}</p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">{p.tagline}</p>
+                    <p className="font-semibold text-ink">{p.name}</p>
+                    <p className="text-xs text-ink-faint mt-0.5">{p.tagline}</p>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[p.category] ?? 'text-[#E2E8F0] bg-[#1E293B]'}`}>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[p.category] ?? 'text-ink-soft bg-paper-shade'}`}>
                       {p.category}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-[#E2E8F0]">{p.monthlyLabel}</td>
-                  <td className="px-4 py-4 text-[#E2E8F0]">{p.annualLabel}</td>
+                  <td className="px-4 py-4 text-ink-soft">{p.monthlyLabel}</td>
+                  <td className="px-4 py-4 text-ink-soft">{p.annualLabel}</td>
                   <td className="px-4 py-4">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      p.is_active ? 'text-emerald-400 bg-emerald-400/10' : 'text-[#94A3B8] bg-[#1E293B]'
+                      p.is_active ? 'text-ok bg-ok-soft' : 'text-ink-soft bg-paper-shade'
                     }`}>
                       {p.is_active ? '활성' : '비활성'}
                     </span>
@@ -137,7 +137,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                     <div className="flex items-center gap-1">
                       <Link
                         href={`/admin/products/${p.id}/edit`}
-                        className="p-1.5 text-[#94A3B8] hover:text-amber-400 transition-colors rounded"
+                        className="p-1.5 text-ink-faint hover:text-mark transition-colors rounded"
                         title="편집"
                       >
                         <Pencil size={14} />

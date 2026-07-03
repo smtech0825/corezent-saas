@@ -74,8 +74,8 @@ export default async function DashboardPage() {
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">{name}님, 다시 오신 것을 환영합니다 👋</h1>
-        <p className="text-[#E2E8F0] text-sm mt-1">계정 현황을 확인하세요.</p>
+        <h1 className="text-2xl font-bold font-serif text-ink">{name}님, 다시 오신 것을 환영합니다 👋</h1>
+        <p className="text-ink-soft text-sm mt-1">계정 현황을 확인하세요.</p>
       </div>
 
       {/* 온보딩 체크리스트 (구매 회원 · 닫기 전까지) */}
@@ -87,19 +87,19 @@ export default async function DashboardPage() {
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard
-          icon={<Key size={18} className="text-[#38BDF8]" />}
+          icon={<Key size={18} className="text-mark" />}
           label="전체 라이선스"
           value={String(licenseCount ?? 0)}
           href="/dashboard/licenses"
         />
         <StatCard
-          icon={<Package size={18} className="text-emerald-400" />}
+          icon={<Package size={18} className="text-mark" />}
           label="활성 구독"
           value={String(subscriptions?.length ?? 0)}
           href="/dashboard/billing"
         />
         <StatCard
-          icon={<CreditCard size={18} className="text-violet-400" />}
+          icon={<CreditCard size={18} className="text-mark" />}
           label="전체 주문"
           value={String(orders?.length ?? 0)}
           href="/dashboard/billing"
@@ -112,19 +112,19 @@ export default async function DashboardPage() {
           {subscriptions && subscriptions.length > 0 ? (
             <div className="flex flex-col gap-3">
               {subscriptions.map((sub: any) => (
-                <div key={sub.id} className="flex items-start justify-between gap-3 py-3 border-b border-[#1E293B] last:border-0">
+                <div key={sub.id} className="flex items-start justify-between gap-3 py-3 border-b border-rule last:border-0">
                   <div className="min-w-0">
-                    <p className="text-sm text-white font-medium truncate">
+                    <p className="text-sm text-ink font-medium truncate">
                       {priceNameMap.get(sub.product_price_id) ?? '알 수 없음'}
                     </p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                    <p className="text-xs text-ink-faint mt-0.5">
                       {sub.billing_interval === 'annual' ? '연간' : '월간'} 플랜
                     </p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                    <p className="text-xs text-ink-faint mt-0.5">
                       시작일 {fmtDate(sub.current_period_start)}
                     </p>
                   </div>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-ok-soft text-ok border border-ok/20 shrink-0">
                     활성
                   </span>
                 </div>
@@ -140,15 +140,15 @@ export default async function DashboardPage() {
           {orders && orders.length > 0 ? (
             <div className="flex flex-col gap-3">
               {orders.map((order: any) => (
-                <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1E293B] last:border-0">
+                <div key={order.id} className="flex items-center justify-between py-3 border-b border-rule last:border-0">
                   <div>
-                    <p className="text-sm text-white font-medium">{priceNameMap.get(order.product_price_id) ?? '주문'}</p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                    <p className="text-sm text-ink font-medium">{priceNameMap.get(order.product_price_id) ?? '주문'}</p>
+                    <p className="text-xs text-ink-faint mt-0.5">
                       {fmtDate(order.created_at)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-white">{formatKRW(order.amount)}</p>
+                    <p className="text-sm text-ink">{formatKRW(order.amount)}</p>
                     <StatusBadge status={order.status} />
                   </div>
                 </div>
@@ -172,15 +172,15 @@ function StatCard({ icon, label, value, href }: {
   href: string
 }) {
   return (
-    <Link href={href} className="group bg-[#111A2E] border border-[#1E293B] hover:border-[#38BDF8]/30 rounded-xl p-5 transition-colors">
+    <Link href={href} className="group bg-paper-raised border border-rule hover:border-mark/40 rounded-xl p-5 transition-colors">
       <div className="flex items-center justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-[#0B1120] border border-[#1E293B] flex items-center justify-center">
+        <div className="w-9 h-9 rounded-lg bg-paper border border-rule flex items-center justify-center">
           {icon}
         </div>
-        <ArrowRight size={14} className="text-[#94A3B8] group-hover:text-[#38BDF8] transition-colors" />
+        <ArrowRight size={14} className="text-ink-faint group-hover:text-mark transition-colors" />
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-[#E2E8F0] mt-1">{label}</p>
+      <p className="text-2xl font-bold text-ink">{value}</p>
+      <p className="text-xs text-ink-soft mt-1">{label}</p>
     </Link>
   )
 }
@@ -191,10 +191,10 @@ function Section({ title, href, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-[#111A2E] border border-[#1E293B] rounded-xl p-5">
+    <div className="bg-paper-raised border border-rule rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
-        <Link href={href} className="text-xs text-[#38BDF8] hover:underline">전체 보기</Link>
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <Link href={href} className="text-xs text-mark hover:underline">전체 보기</Link>
       </div>
       {children}
     </div>
@@ -204,18 +204,18 @@ function Section({ title, href, children }: {
 function EmptyState({ message, cta, href }: { message: string; cta: string; href: string }) {
   return (
     <div className="py-8 text-center">
-      <p className="text-sm text-[#94A3B8] mb-3">{message}</p>
-      <Link href={href} className="text-xs text-[#38BDF8] hover:underline">{cta} →</Link>
+      <p className="text-sm text-ink-soft mb-3">{message}</p>
+      <Link href={href} className="text-xs text-mark hover:underline">{cta} →</Link>
     </div>
   )
 }
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    paid:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    pending:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    failed:    'text-red-400 bg-red-500/10 border-red-500/20',
-    refunded:  'text-[#E2E8F0] bg-[#1E293B] border-[#1E293B]',
+    paid:      'text-ok bg-ok-soft border-ok/20',
+    pending:   'text-caution bg-caution-soft border-caution/20',
+    failed:    'text-danger bg-danger-soft border-danger/20',
+    refunded:  'text-info bg-info-soft border-info/20',
   }
   const labelMap: Record<string, string> = {
     paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨',
