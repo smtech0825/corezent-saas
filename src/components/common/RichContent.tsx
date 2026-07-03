@@ -7,7 +7,8 @@
  */
 
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
-import { looksLikeHtml, legacyToHtml, embedYouTubeHtml, richToPlainText } from '@/lib/rich-html'
+import { looksLikeHtml, embedYouTubeHtml, richToPlainText } from '@/lib/rich-html'
+import { legacyToHtml } from '@/lib/legacy-markdown'
 
 /**
  * @함수명: RichContent

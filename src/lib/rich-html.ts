@@ -1,8 +1,8 @@
 /**
  * @파일: lib/rich-html.ts
  * @설명: 리치 텍스트(HTML) 관련 순수 헬퍼 — 서버·클라이언트 양쪽에서 안전하게 쓰도록 외부 의존 없이 둔다.
- *        (서버 전용 sanitize는 lib/sanitize-html.ts에 분리 — 이 파일은 클라이언트 번들에 들어가도 안전)
- *        레거시 텍스트↔HTML 변환·유튜브 임베드·평문 요약을 담당한다.
+ *        (서버 전용 sanitize는 lib/sanitize-html.ts, marked 포함 레거시 변환은 lib/legacy-markdown.ts에 분리 — 이 파일은 클라이언트 번들에 들어가도 안전)
+ *        HTML 판별·유튜브 임베드·평문 요약을 담당한다.
  */
 
 /**
@@ -13,32 +13,6 @@
  */
 export function looksLikeHtml(s: string | null | undefined): boolean {
   return !!s && s.trimStart().startsWith('<')
-}
-
-/** HTML 텍스트 노드용 최소 이스케이프(&, <, >) */
-function escapeText(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/**
- * @함수명: legacyToHtml
- * @설명: 레거시 평문 설명을 HTML로 변환한다(공용 규칙). 줄바꿈 → 단락(<p>), ‘#머리글’(공백 유무 무관) → <h2>.
- *        에디터 로드와 공개 렌더러가 동일하게 사용해 표시가 어긋나지 않게 한다. 마크다운 전체 문법은 다루지 않는다.
- * @매개변수: text - 레거시 원문
- * @반환값: HTML 문자열
- */
-export function legacyToHtml(text: string | null | undefined): string {
-  if (!text) return ''
-  const lines = text.replace(/\r\n?/g, '\n').split('\n')
-  const out: string[] = []
-  for (const raw of lines) {
-    const line = raw.trim()
-    if (!line) continue
-    const heading = line.match(/^#{1,6}\s*(.+)$/)
-    if (heading) out.push(`<h2>${escapeText(heading[1].trim())}</h2>`)
-    else out.push(`<p>${escapeText(line)}</p>`)
-  }
-  return out.join('')
 }
 
 /**

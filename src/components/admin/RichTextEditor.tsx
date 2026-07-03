@@ -21,7 +21,8 @@ import {
   List, ListOrdered, Undo2, Redo2, Video, Eraser,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { looksLikeHtml, legacyToHtml, youtubeId } from '@/lib/rich-html'
+import { looksLikeHtml, youtubeId } from '@/lib/rich-html'
+import { legacyToHtml } from '@/lib/legacy-markdown'
 import { ResizableImage } from './tiptap-image'
 
 interface Props {
