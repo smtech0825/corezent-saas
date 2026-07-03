@@ -1,6 +1,6 @@
 /**
  * @파일: dashboard/billing/page.tsx
- * @설명: 결제 내역 및 구독 관리 — 각각 5개/페이지 독립 페이지네이션
+ * @설명: 결제 내역 및 구독 관리 — 독립 페이지네이션(구독 15행 표 기준 · 결제 내역 5개)
  *        구독 항목에 Download 버튼 + "New" 배지 포함
  */
 
@@ -17,7 +17,7 @@ export const metadata = {
   title: '결제',
 }
 
-const SUB_PAGE_SIZE = 5
+const SUB_PAGE_SIZE = 15  // 구독은 표(행)로 표시 — 한 화면에 더 많은 행
 const ORD_PAGE_SIZE = 5
 
 export default async function BillingPage({

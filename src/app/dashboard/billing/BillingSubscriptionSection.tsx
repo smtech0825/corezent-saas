@@ -126,72 +126,85 @@ export default function BillingSubscriptionSection({ rows }: Props) {
     }
   }
 
+  // 데스크톱 표·모바일 카드가 공통으로 쓸 파생 값을 한 번만 계산(단일 출처 deriveSubStatus)
+  const computed = rows.map((row) => {
+    const optimisticallyCancelling = cancelledIds.has(row.id)
+    const derivedStatus = deriveSubStatus({
+      status: row.status,
+      cancel_at_period_end: optimisticallyCancelling ? true : row.cancelAtPeriodEnd,
+      current_period_end: row.currentPeriodEnd,
+    })
+    const badgeActive = row.isNew && row.hasDownload && !downloadedIds.has(row.productId ?? '')
+    const isActive = derivedStatus === 'active' // 취소 버튼은 순수 활성에만 노출
+    return { row, derivedStatus, badgeActive, isActive }
+  })
+
+  function fmtRenew(d: string | null) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  // 표 그리드 템플릿(헤더·행 동일) — 제품 | 옵션 | 상태 | 갱신일 | 라이선스 확인 | 구독 취소
+  const gridCols = 'grid-cols-[minmax(0,1.4fr)_120px_90px_112px_minmax(0,1.4fr)_92px]'
+
   return (
     <>
-      <div className="flex flex-col gap-3">
-        {rows.map((row) => {
-          // 낙관적 취소는 '취소 예약(cancelling)'으로 즉시 표시. 파생 상태는 단일 출처(deriveSubStatus).
-          const optimisticallyCancelling = cancelledIds.has(row.id)
-          const derivedStatus = deriveSubStatus({
-            status: row.status,
-            cancel_at_period_end: optimisticallyCancelling ? true : row.cancelAtPeriodEnd,
-            current_period_end: row.currentPeriodEnd,
-          })
-          const badgeActive = row.isNew && row.hasDownload && !downloadedIds.has(row.productId ?? '')
-          // 취소 버튼은 순수 활성(취소 예약 아님)에만 노출
-          const isActive = derivedStatus === 'active'
-
-          return (
+      {/* 데스크톱(md+): 밀도 있는 표. 좁으면 가로 스크롤 */}
+      <div className="hidden md:block bg-paper-raised border border-rule rounded-xl overflow-x-auto">
+        <div className="min-w-[720px]">
+          <div className={`grid ${gridCols} gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium`}>
+            <span>제품</span>
+            <span>옵션</span>
+            <span>상태</span>
+            <span>갱신일</span>
+            <span>라이선스 확인</span>
+            <span className="text-right">구독 취소</span>
+          </div>
+          {computed.map(({ row, derivedStatus, badgeActive, isActive }) => (
             <div
               key={row.id}
-              className="bg-paper-raised border border-rule rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap"
+              className={`grid ${gridCols} gap-4 items-center px-5 py-3 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors`}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-paper border border-rule flex items-center justify-center shrink-0">
-                  <Package size={18} className="text-mark" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-ink font-medium">{row.productName}</p>
-                    {row.optionLabel && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
-                        {row.optionLabel}
-                      </span>
-                    )}
-                    {badgeActive && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
-                        NEW
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-ink-faint mt-0.5">
-                    {row.billingInterval === 'annual' ? '연간' : '월간'} 플랜
-                    {row.currentPeriodEnd &&
-                      ` · 갱신일 ${new Date(row.currentPeriodEnd).toLocaleDateString('ko-KR', {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                      })}`}
-                  </p>
-                </div>
+              {/* 제품 */}
+              <div className="flex items-center gap-2 min-w-0">
+                <Package size={14} className="text-mark shrink-0" />
+                <span className="text-sm text-ink truncate">{row.productName}</span>
+                {badgeActive && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30 shrink-0">NEW</span>
+                )}
               </div>
-
-              <div className="flex items-center gap-3 flex-wrap">
-                <SubStatusBadge status={derivedStatus} />
+              {/* 옵션 */}
+              <div className="min-w-0">
+                {row.optionLabel ? (
+                  <span className="inline-block max-w-full truncate text-[11px] font-medium px-2 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30 align-middle">
+                    {row.optionLabel}
+                  </span>
+                ) : (
+                  <span className="text-xs text-ink-faint">—</span>
+                )}
+              </div>
+              {/* 상태 */}
+              <SubStatusBadge status={derivedStatus} />
+              {/* 갱신일 */}
+              <span className="text-sm text-ink-soft">{fmtRenew(row.currentPeriodEnd)}</span>
+              {/* 라이선스 확인(+ 설명서·다운로드) */}
+              <div className="flex items-center gap-2 min-w-0">
                 <Link
                   href="/dashboard/licenses"
-                  className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"
                 >
                   <ExternalLink size={11} />
-                  라이선스 확인
+                  라이선스
                 </Link>
                 {row.manualUrl && (
                   <a
                     href={row.manualUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
+                    title="사용 설명서"
+                    className="inline-flex items-center text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-2 py-1.5 rounded-lg transition-colors"
                   >
-                    <BookOpen size={11} />
-                    사용 설명서
+                    <BookOpen size={12} />
                   </a>
                 )}
                 {row.hasDownload && row.changelog && row.productId && (
@@ -203,19 +216,97 @@ export default function BillingSubscriptionSection({ rows }: Props) {
                     onDownloaded={handleDownloaded}
                   />
                 )}
-                {/* 활성 구독에만 취소 버튼 표시 */}
-                {isActive && (
+              </div>
+              {/* 구독 취소 */}
+              <div className="justify-self-end">
+                {isActive ? (
                   <button
                     onClick={() => openCancelModal(row)}
-                    className="inline-flex items-center gap-1.5 text-xs text-danger hover:text-danger border border-danger/20 hover:border-danger/40 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-danger hover:text-danger border border-danger/20 hover:border-danger/40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"
                   >
-                    구독 취소
+                    취소
                   </button>
+                ) : (
+                  <span className="text-xs text-ink-faint">—</span>
                 )}
               </div>
             </div>
-          )
-        })}
+          ))}
+        </div>
+      </div>
+
+      {/* 모바일(<md): 카드 유지 */}
+      <div className="md:hidden flex flex-col gap-3">
+        {computed.map(({ row, derivedStatus, badgeActive, isActive }) => (
+          <div
+            key={row.id}
+            className="bg-paper-raised border border-rule rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-paper border border-rule flex items-center justify-center shrink-0">
+                <Package size={18} className="text-mark" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-ink font-medium">{row.productName}</p>
+                  {row.optionLabel && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
+                      {row.optionLabel}
+                    </span>
+                  )}
+                  {badgeActive && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30">
+                      NEW
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-ink-faint mt-0.5">
+                  {row.billingInterval === 'annual' ? '연간' : '월간'} 플랜
+                  {row.currentPeriodEnd && ` · 갱신일 ${fmtRenew(row.currentPeriodEnd)}`}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <SubStatusBadge status={derivedStatus} />
+              <Link
+                href="/dashboard/licenses"
+                className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <ExternalLink size={11} />
+                라이선스 확인
+              </Link>
+              {row.manualUrl && (
+                <a
+                  href={row.manualUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <BookOpen size={11} />
+                  사용 설명서
+                </a>
+              )}
+              {row.hasDownload && row.changelog && row.productId && (
+                <DownloadButton
+                  productId={row.productId}
+                  version={row.changelog.version}
+                  downloadUrls={row.changelog.download_urls}
+                  isNew={badgeActive}
+                  onDownloaded={handleDownloaded}
+                />
+              )}
+              {isActive && (
+                <button
+                  onClick={() => openCancelModal(row)}
+                  className="inline-flex items-center gap-1.5 text-xs text-danger hover:text-danger border border-danger/20 hover:border-danger/40 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  구독 취소
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 취소 사유 설문 모달 */}
