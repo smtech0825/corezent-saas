@@ -10,7 +10,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ArrowRight, Zap, Sparkles, Tag, X } from 'lucide-react'
+import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
@@ -88,7 +88,8 @@ export default function PricingClient({ products, affiliateRef }: Props) {
   const [utmData, setUtmData] = useState<UtmData | null>(null)
   // 상품별 구매 수량 (기본 1 — 같은 상품 N개 결제, 장바구니 아님)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
-  // LS 할인코드 — 모든 카드의 체크아웃 URL에 checkout[discount_code]로 전달 (검증·계산은 LS)
+  // LS 할인코드 — 페이지 입력 UI는 제거(LS 체크아웃에 자체 필드 존재). ?discount=CODE URL로 들어온 값만
+  // 체크아웃 URL의 checkout[discount_code]로 프리필한다(검증·계산은 LS).
   const [discountCode, setDiscountCode] = useState('')
 
   // 로그인 사용자 ID + UTM 데이터 조회 + 할인코드 URL 프리필(?discount=CODE)
@@ -176,34 +177,6 @@ export default function PricingClient({ products, affiliateRef }: Props) {
               </button>
             </div>
           )}
-
-          {/* 할인코드 입력 — 모든 카드의 체크아웃 URL에 checkout[discount_code]로 전달 */}
-          <div className="mt-6">
-            <div className="inline-flex items-center gap-2 border border-rule bg-paper-raised rounded-full px-4 py-2">
-              <Tag size={13} className="text-pen shrink-0" />
-              <input
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value)}
-                placeholder="할인코드 (선택)"
-                className="bg-transparent text-sm text-ink placeholder-ink-faint focus:outline-none w-36"
-              />
-              {discountCode && (
-                <button
-                  type="button"
-                  onClick={() => setDiscountCode('')}
-                  aria-label="할인코드 지우기"
-                  className="text-ink-faint hover:text-ink transition-colors cursor-pointer"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-            {discountCode.trim() && (
-              <p className="text-xs text-pen mt-2">
-                결제 화면에서 자동 입력됩니다 (할인 금액·유효성은 결제 화면에서 확인)
-              </p>
-            )}
-          </div>
         </div>
 
         {/* 카테고리 탭 */}
@@ -287,10 +260,10 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                         </span>
                       )}
                     </div>
-                    {/* 태그라인 — 빈 값이면 영역 자체를 렌더하지 않음(빈 여백 방지) */}
-                    {product.tagline && (
-                      <p className="text-sm text-ink-soft leading-relaxed mb-8">{product.tagline}</p>
-                    )}
+                    {/* 태그라인 — 2줄 클램프 + min-height로 카드 간 가격 시작선을 맞춘다(빈 값이어도 영역 유지) */}
+                    <p className="text-sm text-ink-soft leading-relaxed mb-8 line-clamp-2 min-h-[2.75rem]">
+                      {product.tagline}
+                    </p>
 
                     {/* 가격 — 숫자는 헤드라인, "VAT 포함"은 아래 안내 문구로 분리 */}
                     <div className="mb-8">
@@ -332,31 +305,10 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                       )}
                     </div>
 
-                    {/* 수량 선택 — 옵션 없는 상품만(옵션 상품은 /buy에서 수량 선택) */}
-                    {!hasOptions && (
-                      <QuantityStepper
-                        value={quantity}
-                        onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
-                      />
-                    )}
-
-                    {/* 구매/옵션선택 버튼 — 옵션 상품은 /buy/[slug]로 이동해 조합 선택 */}
-                    <Link
-                      href={hasOptions ? `/buy/${product.slug}` : (userId ? checkoutUrl : '/auth/register')}
-                      onClick={() => {
-                        track(hasOptions ? 'select_options' : 'initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
-                        if (!hasOptions) window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
-                      }}
-                      className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold mb-8 bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
-                    >
-                      {hasOptions ? '옵션 선택하기' : '시작하기'}
-                      <ArrowRight size={14} />
-                    </Link>
-
-                    {/* 기능 목록 */}
+                    {/* 핵심 기능 — 최대 4개, 각 1줄 클램프(전체 설명은 상세 페이지에서). 카드 높이 통일 */}
                     {product.pricingFeatures.length > 0 && (
-                      <ul className="space-y-3 flex-1">
-                        {product.pricingFeatures.map((feature) => {
+                      <ul className="space-y-3 mb-6">
+                        {product.pricingFeatures.slice(0, 4).map((feature) => {
                           const colonIdx = feature.indexOf(':')
                           const [title, desc] = colonIdx !== -1
                             ? [feature.slice(0, colonIdx).trim(), feature.slice(colonIdx + 1).trim()]
@@ -364,7 +316,7 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                           return (
                             <li key={feature} className="flex items-start gap-3">
                               <Check size={15} className="text-pen mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-ink-soft leading-relaxed">
+                              <span className="text-sm text-ink-soft leading-relaxed line-clamp-1 min-w-0">
                                 {desc ? (
                                   <><strong className="text-ink">{title}:</strong> {desc}</>
                                 ) : title}
@@ -374,6 +326,30 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                         })}
                       </ul>
                     )}
+
+                    {/* 하단 고정 영역 — 수량 + CTA를 카드 맨 아래로 정렬(mt-auto) */}
+                    <div className="mt-auto">
+                      {/* 수량 선택 — 옵션 없는 상품만(옵션 상품은 /buy에서 수량 선택) */}
+                      {!hasOptions && (
+                        <QuantityStepper
+                          value={quantity}
+                          onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
+                        />
+                      )}
+
+                      {/* 구매/옵션선택 버튼 — 옵션 상품은 /buy/[slug]로 이동해 조합 선택 */}
+                      <Link
+                        href={hasOptions ? `/buy/${product.slug}` : (userId ? checkoutUrl : '/auth/register')}
+                        onClick={() => {
+                          track(hasOptions ? 'select_options' : 'initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
+                          if (!hasOptions) window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
+                        }}
+                        className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
+                      >
+                        시작하기
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )

@@ -120,15 +120,15 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         시작하기
       </Button>
 
-      {/* 기능 목록 */}
+      {/* 기능 목록 — 최대 4개, 각 1줄 클램프로 카드 높이 통일(전체 설명은 상세 페이지) */}
       {product.pricingFeatures.length > 0 && (
         <ul className="flex flex-col gap-3 border-t border-rule pt-5">
-          {product.pricingFeatures.map((f) => (
-            <li key={f} className="flex items-center gap-3 text-sm text-ink-soft break-keep">
+          {product.pricingFeatures.slice(0, 4).map((f) => (
+            <li key={f} className="flex items-center gap-3 text-sm text-ink-soft">
               <span className="w-4 h-4 rounded-full bg-pen/10 flex items-center justify-center shrink-0">
                 <Check size={10} className="text-pen" />
               </span>
-              {f}
+              <span className="line-clamp-1 min-w-0">{f}</span>
             </li>
           ))}
         </ul>
