@@ -369,33 +369,6 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           />
         </Field>
 
-        {/* ── 옵션 축 제목 (v2) — 공개 카드 드롭다운 제목. 옵션 값은 아래 "옵션·가격" 표에서 행별로. ── */}
-        <div className="border border-[#1E293B] rounded-xl p-4 space-y-4 bg-[#0B1120]/40">
-          <div className="flex items-center gap-2">
-            <LayoutGrid size={14} className="text-[#38BDF8]" />
-            <span className="text-sm font-semibold text-white">옵션 설정 (선택)</span>
-            <span className="text-xs text-[#94A3B8]">아래 &quot;옵션·가격&quot; 표의 각 행이 하나의 옵션이 됩니다</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="옵션 축1 제목">
-              <input
-                value={form.option_axis1_name}
-                onChange={(e) => set('option_axis1_name', e.target.value)}
-                placeholder="예: 주기"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="옵션 축2 제목 (선택)">
-              <input
-                value={form.option_axis2_name}
-                onChange={(e) => set('option_axis2_name', e.target.value)}
-                placeholder="예: PC 수 (축이 1개면 비움)"
-                className={inputCls}
-              />
-            </Field>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="플랫폼 유형 *">
             <select
@@ -821,12 +794,47 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         ))}
       </section>
 
-      {/* 옵션 · 가격 — 각 행이 하나의 옵션 조합(라벨·가격·Variant·Checkout·tier) */}
+      {/* 옵션 · 가격 — 옵션 관련 설정을 한 곳에: ① 드롭다운 제목 + ② 옵션 목록(행별 가격·tier) */}
       <section className="border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-white">옵션 · 가격</h2>
-            <p className="text-xs text-[#94A3B8] mt-0.5">각 행 = 옵션 하나. 옵션이 없으면 행 1개만 두면 됩니다.</p>
+        <div>
+          <h2 className="text-sm font-semibold text-white">옵션 · 가격</h2>
+          <p className="text-xs text-[#94A3B8] mt-0.5">
+            옵션 설정을 한 곳에 모았습니다. 옵션이 없는 상품이면 ①은 비우고 ②에 행 1개만 두세요.
+          </p>
+        </div>
+
+        {/* ① 옵션 드롭다운 제목 (선택) — 고객이 고르는 "기준"의 이름 */}
+        <div className="border border-[#1E293B] rounded-xl p-4 space-y-3 bg-[#0B1120]/40">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={14} className="text-[#38BDF8]" />
+            <span className="text-sm font-semibold text-white">① 옵션 드롭다운 제목</span>
+            <span className="text-xs text-[#94A3B8]">고객이 고르는 &quot;기준&quot;의 이름 · 옵션 없으면 비움</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="축1 제목">
+              <input
+                value={form.option_axis1_name}
+                onChange={(e) => set('option_axis1_name', e.target.value)}
+                placeholder="예: PC 수"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="축2 제목 (선택)">
+              <input
+                value={form.option_axis2_name}
+                onChange={(e) => set('option_axis2_name', e.target.value)}
+                placeholder="기준이 1개면 비움"
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </div>
+
+        {/* ② 옵션 목록 — 각 행 = 고객이 고를 선택지 하나 */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-white">② 옵션 목록</span>
+            <span className="text-xs text-[#94A3B8]">각 행 = 선택지 하나 (가격·tier·결제링크). 옵션 없으면 행 1개.</span>
           </div>
           <button
             type="button"
