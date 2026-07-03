@@ -1,0 +1,75 @@
+# ===== 의존성 (용량 대부분·읽을 필요 없음) =====
+node_modules/
+.pnp
+.pnp.js
+
+# ===== 빌드·캐시 산출물 =====
+.next/
+out/
+build/
+dist/
+.turbo/
+.swc/
+
+# ===== 배포·환경 =====
+.vercel/
+.env
+.env.*
+!.env.example
+
+# ===== 락파일 (거대·읽을 필요 없음) =====
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# ===== 로그·임시 =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# ===== 버전관리 =====
+.git/
+
+# ===== 미디어·바이너리 (텍스트 아님·토큰 낭비) =====
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.ico
+*.mp4
+*.webm
+*.mov
+*.pdf
+*.zip
+*.tar
+*.gz
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# ===== 업로드·정적 대용량 =====
+public/uploads/
+public/downloads/
+
+# ===== 테스트·커버리지 =====
+coverage/
+.nyc_output/
+
+# ===== 에디터 =====
+.vscode/
+.idea/
+
+# ===== 이 프로젝트에서 CC가 굳이 안 읽어도 되는 문서 (선택) =====
+# 아래는 필요에 따라 주석 해제해서 사용하세요.
+# 참고 문서를 CC가 매번 읽으면 토큰을 쓰므로, 코드 작업에 불필요하면 무시.
+# *.md
+# docs/
+# prompts/

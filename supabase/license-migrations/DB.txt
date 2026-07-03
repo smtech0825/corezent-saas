@@ -1,0 +1,13 @@
+배포 후 — 운영자가 알아두면 좋은 것 (나중에)
+전부 끝나면 이 설정들을 GW Supabase에서 언제든 바꿀 수 있습니다:
+
+reset 주기: reset_period_days(30) / reset_max_per_period(2)
+누적 배수: lifetime_pc_multiplier(2 → 3pc면 누적 6대)
+분당 한도: license_api_rate_per_min(10)
+
+
+-- 예시
+UPDATE license_program_config SET
+  reset_period_days = 30,        -- reset 허용 주기
+  reset_max_per_period = 2,      -- 주기당 reset 횟수
+  lifetime_pc_multiplier = 2;    -- 누적 상한 배수 (3pc면 6대)

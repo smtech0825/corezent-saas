@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenieWork(지니워크) — 보고서, 이제 저절로 써집니다 | CoreZent</title>
+<meta name="description" content="공무원·공공기관 실무자를 위한 AI 행정 문서 자동화 데스크톱 프로그램 지니워크(GenieWork) 도입 안내. 초안 자동 작성, 빠른 자료 검색, PC 설치형 보안.">
+<meta property="og:title" content="GenieWork — 보고서, 이제 저절로 써집니다">
+<meta property="og:description" content="공무원·공공기관을 위한 AI 행정 문서 자동화 프로그램 도입 안내">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;900&family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   GenieWork 랜딩 컨셉 — "페이지 = 한 장의 기안문"
+   재료: 종이 / 먹 / 인주 / 볼펜  ·  시그니처: 스크롤 결재 + 직인
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --desk:   #D8DAD1;   /* 민원실 책상/서류받침 그린그레이 */
+  --paper:  #FCFBF7;   /* 문서 용지 */
+  --ink:    #23272E;   /* 먹색 */
+  --muted:  #6A6F73;   /* 부가 설명 */
+  --rule:   #C9C6BA;   /* 옅은 괘선 */
+  --shade:  #F1F0E8;   /* 표 머리 음영 */
+  --seal:   #C93A2C;   /* 인주 빨강 */
+  --pen:    #1D3FB0;   /* 볼펜 파랑 */
+  --serif:  'Noto Serif KR', 'Batang', serif;
+  --sans:   'Noto Sans KR', sans-serif;
+  --mono:   'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  background: var(--desk);
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.85;
+  padding: clamp(12px, 4vw, 56px) clamp(8px, 3vw, 32px);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--pen); text-underline-offset: 3px; }
+
+:focus-visible {
+  outline: 2px solid var(--pen);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── 용지 ─────────────────────────────────────────────────── */
+.paper {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--paper);
+  border: 1px solid #B9B7AC;
+  box-shadow: 0 2px 6px rgba(30,34,40,.10), 0 28px 70px rgba(30,34,40,.20);
+  padding: clamp(28px, 6vw, 76px) clamp(20px, 6vw, 72px) clamp(36px, 5vw, 60px);
+  position: relative;
+}
+/* 상단 천공(펀치) 자국 — 편철된 문서 */
+.paper::before {
+  content: '';
+  position: absolute;
+  top: 14px; left: 50%;
+  width: 200px; height: 10px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle 5px at 30px 5px, var(--desk) 4.5px, transparent 5px),
+    radial-gradient(circle 5px at 170px 5px, var(--desk) 4.5px, transparent 5px);
+  opacity: .8;
+}
+
+/* ── 두문: 기관명 ─────────────────────────────────────────── */
+.doc-head { position: relative; }
+.agency {
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(20px, 3.4vw, 27px);
+  letter-spacing: .55em;
+  text-indent: .55em; /* 자간 보정 → 시각적 중앙 */
+  padding-top: 8px;
+}
+.agency-sub {
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  letter-spacing: .14em;
+  color: var(--muted);
+  margin-top: 2px;
+  padding-bottom: 18px;
+  border-bottom: 2.5px solid var(--ink);
+}
+
+/* ── 결재란 (시그니처: 스크롤에 따라 서명됨) ─────────────── */
+.approval {
+  position: absolute;
+  top: -6px; right: 0;
+  display: flex;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  z-index: 2;
+}
+.approval .head {
+  writing-mode: vertical-rl;
+  letter-spacing: .8em;
+  text-indent: .4em;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 5px;
+  border-right: 1.5px solid var(--ink);
+  display: flex; align-items: center;
+  background: var(--shade);
+}
+.approval .cell {
+  width: 72px;
+  border-right: 1px solid var(--ink);
+  display: flex; flex-direction: column;
+}
+.approval .cell:last-child { border-right: 0; }
+.approval .cell .role {
+  font-size: 10.5px;
+  text-align: center;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--ink);
+  background: var(--shade);
+  letter-spacing: .2em;
+  text-indent: .2em;
+}
+.approval .cell .sign {
+  height: 52px;
+  display: flex; align-items: center; justify-content: center;
+}
+.approval .sign svg { width: 52px; height: 36px; overflow: visible; }
+.approval .sign path {
+  fill: none;
+  stroke: var(--pen);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  opacity: 0;
+}
+.approval .cell.signed path {
+  animation: draw .75s ease-out forwards;
+}
+@keyframes draw {
+  0%   { opacity: 1; stroke-dashoffset: 160; }
+  100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+/* ── 문서 정보(문서번호·수신 등) ──────────────────────────── */
+.doc-meta {
+  margin-top: 22px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 20px;
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  row-gap: 4px;
+  font-size: 15.5px;
+}
+.doc-meta dt {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: .28em;
+  color: var(--ink);
+  padding-top: 3px;
+}
+.doc-meta dd.num { font-family: var(--mono); font-size: 14.5px; letter-spacing: 0; }
+
+/* ── 제목(히어로) — 양식은 그대로, 크기만 파격 ────────────── */
+.hero { padding: clamp(36px, 6vw, 64px) 0 clamp(28px, 4vw, 44px); border-bottom: 1px solid var(--rule); }
+.field-label {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .32em;
+  text-indent: .32em;
+  border: 1.5px solid var(--ink);
+  padding: 3px 10px 3px 12px;
+  margin-bottom: 22px;
+}
+.hero h1 {
+  font-weight: 900;
+  font-size: clamp(38px, 7.6vw, 74px);
+  line-height: 1.22;
+  letter-spacing: -.015em;
+  word-break: keep-all;
+}
+.hero h1 .pen-under {
+  position: relative;
+  white-space: nowrap;
+}
+/* '저절로'에 볼펜 밑줄 — 검토자가 그은 표시 */
+.hero h1 .pen-under::after {
+  content: '';
+  position: absolute;
+  left: -2%; right: -2%; bottom: .06em;
+  height: .09em;
+  background: var(--pen);
+  opacity: .82;
+  border-radius: 2px;
+  transform: rotate(-.5deg);
+}
+.hero .sub {
+  margin-top: 22px;
+  max-width: 620px;
+  font-size: 18px;
+  color: var(--ink);
+  word-break: keep-all;
+}
+.hero .sub strong { font-weight: 600; }
+
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.btn {
+  font-family: var(--sans);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: 13px 26px;
+  border-radius: 5px;
+  border: 1.5px solid var(--pen);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(29,63,176,.22); }
+.btn-primary { background: var(--pen); color: #fff; }
+.btn-ghost   { background: transparent; color: var(--pen); }
+
+/* ── 미리보기: 초안이 저절로 작성되는 HWP 창 ─────────────── */
+.demo { margin-top: 40px; }
+.demo .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--shade);
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  padding: 6px 14px;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+}
+.demo .tab::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--seal);
+  opacity: .75;
+}
+.demo .sheet {
+  border: 1px solid var(--rule);
+  background: #fff;
+  padding: 24px 26px 20px;
+  font-size: 15.5px;
+  line-height: 2.0;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
+  min-height: 168px;
+}
+.demo .sheet .line { display: block; word-break: keep-all; }
+.demo .sheet .line.t { font-weight: 600; }
+.demo .caret {
+  display: inline-block;
+  width: 2px; height: 1.05em;
+  background: var(--ink);
+  vertical-align: -0.18em;
+  margin-left: 1px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.demo .cap {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+/* ── 본문 항목 ───────────────────────────────────────────── */
+.doc-body { padding-top: 34px; }
+.greeting { font-size: 17px; margin-bottom: 34px; }
+.item { margin-bottom: 44px; }
+.item h2 {
+  font-size: 21px;
+  font-weight: 900;
+  margin-bottom: 14px;
+  letter-spacing: -.01em;
+}
+.item h2 .no { margin-right: 10px; }
+.item > p { word-break: keep-all; max-width: 660px; }
+
+/* 가.나.다.라. 기능 목록 — 카드가 아니라 '문서의 항' */
+.ga-list { list-style: none; margin-top: 6px; }
+.ga-list li {
+  padding: 16px 0 16px 44px;
+  position: relative;
+  border-bottom: 1px dashed var(--rule);
+  word-break: keep-all;
+  max-width: 680px;
+}
+.ga-list li:last-child { border-bottom: 0; }
+.ga-list .marker {
+  position: absolute;
+  left: 6px; top: 17px;
+  font-weight: 900;
+}
+.ga-list .lead { font-weight: 600; }
+.ga-list .desc { color: var(--muted); font-size: 15.5px; display: block; margin-top: 2px; }
+
+/* ── 표 (절차·비용) ──────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15.5px;
+  margin-top: 8px;
+}
+th, td {
+  border: 1px solid var(--ink);
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--shade);
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: .12em;
+}
+td.step-no {
+  width: 46px;
+  text-align: center;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+td.money {
+  font-family: var(--mono);
+  font-size: 15px;
+  text-align: right;
+  white-space: nowrap;
+}
+td .td-sub { display: block; font-size: 13.5px; color: var(--muted); margin-top: 1px; }
+.tbl-note {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.item .cta-inline { margin-top: 22px; }
+
+/* ── 테스터 안내 박스 ────────────────────────────────────── */
+.notice {
+  border: 1.5px dashed var(--ink);
+  padding: 22px 26px;
+  max-width: 680px;
+  word-break: keep-all;
+}
+.notice .badge {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-indent: .18em;
+  color: var(--seal);
+  border: 1.5px solid var(--seal);
+  padding: 2px 9px 2px 11px;
+  margin-bottom: 12px;
+}
+.notice p { font-size: 16px; }
+.notice .cta-inline { margin-top: 16px; }
+
+/* ── 붙임 · 끝. ──────────────────────────────────────────── */
+.attachment {
+  margin-top: 12px;
+  padding-top: 26px;
+  border-top: 1px solid var(--rule);
+  font-size: 16.5px;
+}
+.attachment .lbl { font-weight: 900; margin-right: 16px; }
+.the-end { font-weight: 900; margin-left: 20px; }
+
+/* ── 발신명의 + 직인 ─────────────────────────────────────── */
+.closing {
+  text-align: center;
+  padding: clamp(44px, 7vw, 72px) 0 8px;
+  position: relative;
+}
+.closing .sender {
+  font-size: clamp(30px, 5.4vw, 44px);
+  font-weight: 900;
+  letter-spacing: .42em;
+  text-indent: .42em;
+  position: relative;
+  display: inline-block;
+}
+.seal {
+  position: absolute;
+  right: -78px; top: 50%;
+  width: 92px; height: 92px;
+  transform: translateY(-58%) rotate(-6deg) scale(1.9);
+  opacity: 0;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.closing.stamped .seal { animation: stamp .5s cubic-bezier(.2,.85,.35,1.25) forwards; }
+@keyframes stamp {
+  0%   { opacity: 0; transform: translateY(-58%) rotate(-6deg) scale(1.9); }
+  55%  { opacity: 1; transform: translateY(-58%) rotate(-6deg) scale(.94); }
+  78%  { transform: translateY(-58%) rotate(-6deg) scale(1.04); }
+  100% { opacity: 1; transform: translateY(-58%) rotate(-6deg) scale(1); }
+}
+.closing .cta-row { justify-content: center; margin-top: 44px; }
+
+/* ── 결문(footer) ────────────────────────────────────────── */
+.doc-foot {
+  margin-top: 48px;
+  border-top: 2.5px solid var(--ink);
+  padding-top: 14px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  justify-content: space-between;
+}
+.doc-foot .mono { font-family: var(--mono); font-size: 12.5px; }
+
+/* ── 반응형 ──────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  body { font-size: 16px; }
+  .approval {
+    position: static;
+    margin: 20px auto 0;
+    width: fit-content;
+  }
+  .approval .cell { width: 62px; }
+  .doc-meta { grid-template-columns: 78px 1fr; font-size: 14.5px; }
+  .doc-meta dt { letter-spacing: .16em; font-size: 12.5px; }
+  .seal { right: 50%; top: auto; bottom: -104px; margin-right: -46px; }
+  .closing { padding-bottom: 96px; }
+  .closing.stamped .seal,
+  .seal { transform-origin: center; }
+  .closing.stamped .seal { animation: stamp-m .5s cubic-bezier(.2,.85,.35,1.25) forwards; }
+  @keyframes stamp-m {
+    0%   { opacity: 0; transform: rotate(-6deg) scale(1.9); }
+    55%  { opacity: 1; transform: rotate(-6deg) scale(.94); }
+    78%  { transform: rotate(-6deg) scale(1.04); }
+    100% { opacity: 1; transform: rotate(-6deg) scale(1); }
+  }
+}
+
+/* ── 모션 최소화: 애니메이션 없이 완성 상태로 ────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .approval .cell.signed path { animation: none; opacity: 1; stroke-dashoffset: 0; }
+  .closing.stamped .seal { animation: none; opacity: 1; transform: translateY(-58%) rotate(-6deg) scale(1); }
+  .demo .caret { animation: none; }
+  .btn { transition: none; }
+  .btn:hover { transform: none; }
+  @media (max-width: 720px) {
+    .closing.stamped .seal { transform: rotate(-6deg) scale(1); }
+  }
+}
+</style>
+</head>
+<body>
+
+<main class="paper">
+
+  <!-- ═══ 두문 ═══ -->
+  <header class="doc-head">
+    <p class="agency">코 어 젠 트</p>
+    <p class="agency-sub">소프트웨어 개발·공급</p>
+
+    <!-- 결재란: 스크롤을 내리며 문서를 읽으면 차례로 결재됩니다 -->
+    <div class="approval" aria-hidden="true">
+      <div class="head">결재</div>
+      <div class="cell" id="sign-1">
+        <div class="role">담당</div>
+        <div class="sign">
+          <svg viewBox="0 0 52 36"><path d="M6 26 C 12 8, 18 8, 22 20 C 25 28, 30 26, 33 14 C 35 8, 40 10, 46 24"/></svg>
+        </div>
+      </div>
+      <div class="cell" id="sign-2">
+        <div class="role">팀장</div>
+        <div class="sign">
+          <svg viewBox="0 0 52 36"><path d="M8 24 C 16 6, 22 30, 28 16 C 32 8, 34 24, 40 18 C 43 15, 45 17, 46 20"/></svg>
+        </div>
+      </div>
+      <div class="cell" id="sign-3">
+        <div class="role">과장</div>
+        <div class="sign">
+          <svg viewBox="0 0 52 36"><path d="M7 20 C 13 10, 17 26, 23 22 C 30 17, 27 8, 34 10 C 42 13, 38 28, 46 22"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <dl class="doc-meta">
+      <dt>문서번호</dt><dd class="num">지니워크-2026-제0702호</dd>
+      <dt>시행일자</dt><dd class="num">2026. 7. 2.</dd>
+      <dt>수신</dt><dd>전국 행정기관 및 공공기관 문서 담당자</dd>
+      <dt>경유</dt><dd>(생략)</dd>
+    </dl>
+  </header>
+
+  <!-- ═══ 제목 = 히어로 ═══ -->
+  <section class="hero">
+    <span class="field-label">제목</span>
+    <h1>보고서, 이제<br><span class="pen-under">저절로</span> 써집니다</h1>
+    <p class="sub">공무원·공공기관 실무자를 위한 <strong>AI 행정 문서 자동화 데스크톱 프로그램</strong> 「지니워크(GenieWork)」 도입 안내입니다.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://corezent.com/pricing">라이선스 구매</a>
+      <a class="btn btn-ghost" href="https://corezent.com/contact">테스터 신청 — 무료</a>
+    </div>
+
+    <!-- 초안이 저절로 작성되는 미리보기 -->
+    <div class="demo">
+      <span class="tab">2026_하반기_추진계획(안).hwp</span>
+      <div class="sheet" id="demo-sheet" aria-label="초안 자동 작성 미리보기">
+        <span class="line t" data-type>제목: 2026년 하반기 청사 에너지 절감 추진계획(안)</span>
+        <span class="line" data-type>1. 추진 배경: 정부 에너지 이용 합리화 지침에 따라 하반기 청사 운영 전반의 절감 과제를 발굴하고자 함.</span>
+        <span class="line" data-type>2. 추진 과제: 가. 냉난방 운영 기준 조정  나. 노후 조명 교체  다. 대기전력 관리 강화</span><span class="caret" aria-hidden="true"></span>
+      </div>
+      <p class="cap">제목과 개요만 입력하면, 지니워크가 위와 같은 초안을 작성합니다.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 본문 ═══ -->
+  <div class="doc-body">
+
+    <p class="greeting">1. 귀 기관의 무궁한 발전을 기원합니다.</p>
+
+    <section class="item" id="item-2">
+      <h2><span class="no">2.</span>개요</h2>
+      <p>지니워크는 계획서·보고서·공문 초안 작성과 자료 검색 등 반복되는 문서 업무를 AI로 줄여 주는 설치형(데스크톱) 프로그램입니다. 개요만 입력하면 형식을 갖춘 초안이 작성되고, 담당자는 검토와 수정에만 집중하면 됩니다.</p>
+    </section>
+
+    <section class="item" id="item-3">
+      <h2><span class="no">3.</span>주요 기능</h2>
+      <ul class="ga-list">
+        <li>
+          <span class="marker">가.</span>
+          <span class="lead">초안 자동 작성</span>
+          <span class="desc">제목과 개요를 입력하면 본문 생성 엔진이 형식을 갖춘 초안을 작성합니다.</span>
+        </li>
+        <li>
+          <span class="marker">나.</span>
+          <span class="lead">빠른 자료 검색</span>
+          <span class="desc">홈 화면 검색으로 문서 작성에 필요한 근거와 표현을 바로 찾습니다. 경량 엔진이라 응답이 빠릅니다.</span>
+        </li>
+        <li>
+          <span class="marker">다.</span>
+          <span class="lead">설치형 보안</span>
+          <span class="desc">문서 파일을 서버에 올리지 않는 PC 설치형입니다. 감사·개인정보 부담을 덜 수 있습니다.</span>
+        </li>
+        <li>
+          <span class="marker">라.</span>
+          <span class="lead">PC 단위 라이선스</span>
+          <span class="desc">라이선스 키 1개로 지정된 PC 수만큼 인증하며, PC 교체 시 재인증(reset)을 지원합니다.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="item" id="item-4">
+      <h2><span class="no">4.</span>도입 절차</h2>
+      <table>
+        <thead>
+          <tr><th scope="col" style="width:46px">순서</th><th scope="col" style="width:140px">단계</th><th scope="col">내용</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="step-no">1</td><td>다운로드</td><td>corezent.com에서 설치 파일을 내려받습니다.</td></tr>
+          <tr><td class="step-no">2</td><td>설치</td><td>담당자 PC에 설치합니다.</td></tr>
+          <tr><td class="step-no">3</td><td>라이선스 인증</td><td>구매 후 발급된 키를 입력하면 해당 PC가 자동 등록됩니다.</td></tr>
+          <tr><td class="step-no">4</td><td>사용 시작</td><td>문서 작성·검색을 바로 사용합니다. PC 교체 시 대시보드에서 재인증합니다.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="item" id="item-5">
+      <h2><span class="no">5.</span>라이선스 및 비용 <small style="font-size:14px;font-weight:400;color:var(--muted)">(1회 구매)</small></h2>
+      <table>
+        <thead>
+          <tr><th scope="col">구분</th><th scope="col">인증 PC 수</th><th scope="col">권장 도입 범위</th><th scope="col" style="text-align:right">금액</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1PC</td><td>1대</td><td>담당자 개인</td><td class="money">₩19,000</td></tr>
+          <tr><td>3PC</td><td>3대</td><td>팀 단위</td><td class="money">₩57,000</td></tr>
+          <tr><td>5PC</td><td>5대</td><td>계·팀 단위</td><td class="money">₩95,000</td></tr>
+          <tr><td>10PC</td><td>10대</td><td>과·부서 단위</td><td class="money">₩190,000</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-note">금액은 PC 1대당 19,000원 기준의 1회 구매 금액입니다.</p>
+      <p class="cta-inline"><a class="btn btn-primary" href="https://corezent.com/pricing">라이선스 구매하기</a></p>
+    </section>
+
+    <section class="item" id="item-6">
+      <h2><span class="no">6.</span>테스터 프로그램</h2>
+      <div class="notice">
+        <span class="badge">모집 중</span>
+        <p>정식 출시에 앞서 테스터를 모집합니다. 테스터에게는 프로그램 무료 사용과 체험용 AI 사용 한도가 제공되며, 사용 의견은 정식판에 반영됩니다.</p>
+        <p class="cta-inline"><a class="btn btn-ghost" href="https://corezent.com/contact">테스터 신청하기</a></p>
+      </div>
+    </section>
+
+    <p class="attachment"><span class="lbl">붙임</span>지니워크 테스터 프로그램 안내 1부.<span class="the-end">끝.</span></p>
+  </div>
+
+  <!-- ═══ 발신명의 + 직인 ═══ -->
+  <section class="closing" id="closing">
+    <span class="sender">코어젠트 대표
+      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--seal)" stroke-width="4.5"/>
+        <text x="50" y="43" text-anchor="middle" fill="var(--seal)"
+              font-family="'Noto Serif KR', serif" font-weight="900" font-size="21" letter-spacing="1">지니워크</text>
+        <text x="50" y="70" text-anchor="middle" fill="var(--seal)"
+              font-family="'Noto Serif KR', serif" font-weight="900" font-size="21" letter-spacing="6">도입인</text>
+      </svg>
+    </span>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://corezent.com/pricing">지금 도입하기</a>
+      <a class="btn btn-ghost" href="https://corezent.com/product">제품 자세히 보기</a>
+    </div>
+  </section>
+
+  <!-- ═══ 결문 ═══ -->
+  <footer class="doc-foot">
+    <span>기안 지니워크팀 · 시행 <span class="mono">지니워크팀-2026-0702</span> (2026. 7. 2.)</span>
+    <span><a href="https://corezent.com">corezent.com</a> · 문의 <a href="https://corezent.com/contact">corezent.com/contact</a></span>
+  </footer>
+
+</main>
+
+<script>
+/**
+ * @설명: 페이지의 3막 모션 — ① 로드: 초안 타이핑 ② 스크롤: 결재란 순차 서명
+ *        ③ 발신명의 도달: 직인 스탬프. prefers-reduced-motion 시 전부 완성 상태로 표시.
+ */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ① 초안 타이핑 — 원문을 HTML에 그대로 두고(무JS 대응) JS가 지워서 다시 침 */
+  var lines = document.querySelectorAll('#demo-sheet [data-type]');
+  var caret = document.querySelector('#demo-sheet .caret');
+  if (!reduce && lines.length) {
+    var texts = [];
+    lines.forEach(function (el) { texts.push(el.textContent); el.textContent = ''; });
+    var li = 0, ci = 0;
+    (function type() {
+      if (li >= lines.length) return;
+      var t = texts[li];
+      ci += 1 + Math.floor(Math.random() * 2);       /* 1~2자씩 — 사람이 아닌 '생성' 속도 */
+      lines[li].textContent = t.slice(0, ci);
+      if (caret) lines[li].appendChild(caret);        /* 커서가 작성 중인 줄을 따라감 */
+      if (ci >= t.length) { li++; ci = 0; setTimeout(type, 260); }
+      else setTimeout(type, 22);
+    })();
+  }
+
+  /* ② 결재 서명 + ③ 직인 — 읽은 만큼 결재가 진행됨 */
+  var plan = [
+    { watch: '#item-3',  target: '#sign-1', cls: 'signed'  },
+    { watch: '#item-5',  target: '#sign-2', cls: 'signed'  },
+    { watch: '#closing', target: '#sign-3', cls: 'signed'  },
+    { watch: '#closing', target: '#closing', cls: 'stamped', delay: 550 }
+  ];
+  if (reduce || !('IntersectionObserver' in window)) {
+    plan.forEach(function (p) {
+      var el = document.querySelector(p.target);
+      if (el) el.classList.add(p.cls);
+    });
+    return;
+  }
+  plan.forEach(function (p) {
+    var watch = document.querySelector(p.watch);
+    var target = document.querySelector(p.target);
+    if (!watch || !target) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        setTimeout(function () { target.classList.add(p.cls); }, p.delay || 0);
+      });
+    }, { threshold: 0.35 });
+    io.observe(watch);
+  });
+})();
+</script>
+</body>
+</html>

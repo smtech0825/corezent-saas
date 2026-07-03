@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ko" data-scope="admin">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CoreZent · 관리자/대시보드 페이퍼 라이트 시안 (장부)</title>
+
+<!-- 프로젝트와 동일한 서체: Pretendard(본문) + Noto Serif KR(제목) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{
+  font-family:'Pretendard';
+  src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2-variations');
+  font-weight:45 920;font-style:normal;font-display:swap;
+}
+
+/* ============================================================
+ * 토큰 — globals.css 의 페이퍼 토큰을 그대로 미러링
+ * (실제 구현 시에는 @theme 변수를 그대로 쓰면 됩니다)
+ * ============================================================ */
+:root{
+  --paper:#FBFAF6;
+  --paper-raised:#FFFFFF;
+  --paper-shade:#F1EFE7;
+
+  --ink:#23272E;
+  --ink-soft:#565C66;
+  --ink-faint:#8B8F98;
+
+  --rule:#D8D4C8;
+
+  --seal:#C93A2C;      /* 인주(도장) 빨강 */
+  --pen:#1D3FB0;       /* 볼펜 파랑 */
+  --pen-dark:#16339A;
+
+  --ok:#1E7A46;        /* 라이트 배경용 상태색 */
+  --ok-bg:#E7F1EA;
+  --warn:#96690A;
+  --warn-bg:#F6EEDA;
+  --danger:#B23124;
+  --danger-bg:#F6E4E1;
+
+  /* 영역별 강조색 스위치: 관리자=인주, 대시보드=볼펜 */
+  --accent:var(--seal);
+  --accent-bg:rgba(201,58,44,0.08);
+  --accent-line:rgba(201,58,44,0.9);
+
+  --sp:8px;
+  --shadow-slip:0 1px 2px rgba(35,39,46,0.05);
+  --shadow-raise:0 8px 28px rgba(35,39,46,0.10);
+}
+:root[data-scope="dashboard"]{
+  --accent:var(--pen);
+  --accent-bg:rgba(29,63,176,0.07);
+  --accent-line:rgba(29,63,176,0.9);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-family:'Pretendard',system-ui,-apple-system,'Malgun Gothic',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+body{
+  background:var(--paper);
+  /* 장부지(帳簿紙) — 아주 옅은 괘선 배경 텍스처 */
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px);
+  background-size:100% 32px;
+  background-position:0 -1px;
+  min-height:100vh;
+}
+.serif{font-family:'Noto Serif KR','Batang',serif}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+
+/* ============================================================ 레이아웃 */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* ------------------------------- 사이드바 = 색인 탭(장부 인덱스) */
+.side{
+  background:var(--paper-shade);
+  border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:10px;height:64px;padding:0 20px;border-bottom:1px solid var(--rule)}
+.seal-badge{
+  width:30px;height:30px;border-radius:7px;background:var(--seal);color:#fff;
+  display:grid;place-items:center;font-weight:800;font-size:15px;
+  box-shadow:0 2px 6px rgba(201,58,44,.35);position:relative;
+}
+:root[data-scope="dashboard"] .seal-badge{background:var(--pen);box-shadow:0 2px 6px rgba(29,63,176,.35)}
+.brand b{font-size:14px;line-height:1.05;display:block}
+.brand .sub{font-size:9px;letter-spacing:.18em;color:var(--seal);font-weight:700;text-transform:uppercase}
+:root[data-scope="dashboard"] .brand .sub{color:var(--pen)}
+
+nav{flex:1;padding:16px 12px;overflow-y:auto}
+.group-label{padding:0 12px;margin:14px 0 4px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+.group-label:first-child{margin-top:0}
+.navi{
+  display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;
+  font-size:13.5px;font-weight:500;color:var(--ink-soft);
+  position:relative;transition:.15s;margin-bottom:1px;
+}
+.navi svg{width:16px;height:16px;flex:none;opacity:.75}
+.navi:hover{background:rgba(35,39,46,.04);color:var(--ink)}
+.navi .count{margin-left:auto;font-size:11px;font-weight:700;background:var(--seal);color:#fff;border-radius:99px;padding:1px 7px}
+/* 활성 = 파일 탭(북마크 리본): 좌측 색 탭 + 흰 종이 */
+.navi.on{
+  background:var(--paper-raised);color:var(--ink);font-weight:600;
+  box-shadow:var(--shadow-slip);
+}
+.navi.on::before{
+  content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--accent-line);
+}
+.navi.on svg{opacity:1;color:var(--accent)}
+
+.side-foot{padding:12px;border-top:1px solid var(--rule)}
+.who{display:flex;align-items:center;gap:10px;padding:6px 10px}
+.avatar{width:32px;height:32px;border-radius:99px;background:var(--accent-bg);border:1px solid var(--accent-line);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:12px}
+.who .nm{font-size:13px;font-weight:600;line-height:1.2}
+.who .em{font-size:11px;color:var(--ink-faint)}
+.logout{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:none;color:var(--danger);border-radius:8px;font-size:13px;font-weight:500}
+.logout:hover{background:var(--danger-bg)}
+
+/* ------------------------------- 메인 */
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{
+  height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;
+  background:rgba(251,250,246,.85);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:5;
+}
+.stamp{
+  font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--seal);border:1.5px solid var(--seal);border-radius:6px;padding:4px 10px;
+  transform:rotate(-2deg);
+}
+:root[data-scope="dashboard"] .stamp{color:var(--pen);border-color:var(--pen);content:""}
+.topbar .acct{font-size:12px;color:var(--ink-faint)}
+.topbar .acct b{color:var(--ink-soft);font-weight:600}
+
+/* 시연용 스코프 스위치 */
+.switch{display:inline-flex;border:1px solid var(--rule);border-radius:99px;overflow:hidden;background:var(--paper-raised)}
+.switch button{padding:6px 14px;font-size:12px;font-weight:600;border:none;background:none;color:var(--ink-faint)}
+.switch button.act{background:var(--accent);color:#fff}
+
+.content{padding:32px 28px 56px;max-width:1200px;width:100%}
+
+/* 페이지 헤더 */
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:8px 0 26px;flex-wrap:wrap}
+.page-h h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.page-h p{color:var(--ink-soft);font-size:14px;margin-top:6px}
+.h-actions{display:flex;gap:10px;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:1.5px solid transparent;transition:.18s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 16px var(--accent-bg)}
+.btn-ghost{border-color:var(--rule);color:var(--ink-soft);background:var(--paper-raised)}
+.btn-ghost:hover{border-color:var(--ink-faint);color:var(--ink)}
+
+/* 전표(슬립) KPI 카드 */
+.slips{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+.slip{
+  background:var(--paper-raised);border:1px solid var(--rule);border-radius:12px;padding:18px 18px 16px;
+  box-shadow:var(--shadow-slip);position:relative;overflow:hidden;
+}
+.slip .no{font-size:10px;letter-spacing:.12em;color:var(--ink-faint);font-weight:700}
+.slip .lbl{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.slip .val{font-size:28px;font-weight:700;margin-top:10px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.slip .delta{font-size:12px;font-weight:600;margin-top:4px}
+.up{color:var(--ok)}.down{color:var(--danger)}
+.slip::after{content:"";position:absolute;right:-12px;bottom:-12px;width:56px;height:56px;border-radius:99px;background:var(--accent-bg)}
+
+/* 본문 2단 */
+.cols{display:grid;grid-template-columns:1.9fr 1fr;gap:20px;align-items:start}
+
+/* 장부 테이블 */
+.panel{background:var(--paper-raised);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow-slip);overflow:hidden}
+.panel-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--rule)}
+.panel-h h2{font-size:15px;font-weight:700}
+.panel-h a{font-size:12px;color:var(--accent);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);
+  font-weight:700;padding:11px 20px;border-bottom:1.5px solid var(--rule);background:var(--paper-shade)
+}
+tbody td{padding:13px 20px;border-bottom:1px solid var(--rule);color:var(--ink-soft);vertical-align:middle}
+tbody tr:nth-child(even){background:#FCFBF8}          /* 장부 얼룩(zebra) */
+tbody tr:hover{background:var(--accent-bg)}
+tbody tr:last-child td{border-bottom:none}
+td .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--ink)}
+td .cust{font-weight:600;color:var(--ink)}
+td .amt{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.row-act{color:var(--accent);font-weight:600;font-size:12px}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:99px;background:currentColor}
+.p-ok{color:var(--ok);background:var(--ok-bg)}
+.p-warn{color:var(--warn);background:var(--warn-bg)}
+.p-danger{color:var(--danger);background:var(--danger-bg)}
+
+/* 우측 스택 */
+.stack{display:flex;flex-direction:column;gap:20px}
+.support-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid var(--rule)}
+.support-item:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--seal);margin-top:6px;flex:none}
+.support-item .t{font-size:13px;font-weight:600;color:var(--ink)}
+.support-item .m{font-size:12px;color:var(--ink-faint);margin-top:2px}
+.support-item .time{margin-left:auto;font-size:11px;color:var(--ink-faint);white-space:nowrap}
+
+/* 폼 미리보기 */
+.field{padding:16px 20px}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+.field input,.field select{
+  width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);
+  font-family:inherit;font-size:13.5px;color:var(--ink)
+}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+
+/* 로드 리빌 (staggered) */
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.rise{animation:up .55s cubic-bezier(.2,.7,.3,1) both}
+.rise:nth-child(1){animation-delay:.02s}.rise:nth-child(2){animation-delay:.06s}
+.rise:nth-child(3){animation-delay:.10s}.rise:nth-child(4){animation-delay:.14s}
+@media (prefers-reduced-motion:reduce){.rise{animation:none}}
+
+@media(max-width:1080px){.cols{grid-template-columns:1fr}.slips{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.app{grid-template-columns:1fr}.side{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ 사이드바 (색인 탭) ============ -->
+  <aside class="side">
+    <div class="brand">
+      <span class="seal-badge">C</span>
+      <span><b>CoreZent</b><span class="sub" id="brandsub">관리자 패널</span></span>
+    </div>
+    <nav>
+      <p class="group-label">관리자</p>
+      <a class="navi on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>개요</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/></svg>사용자</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>제품</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>주문</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>매출</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5 18 10"/></svg>라이선스</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/></svg>제휴</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>고객지원<span class="count">4</span></a>
+
+      <p class="group-label">프론트엔드</p>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h.01M6 12h.01M6 16h.01M10 8h8M10 12h8M10 16h8"/></svg>섹션 설정</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>히어로</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>FAQ</a>
+
+      <p class="group-label">시스템</p>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 14H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 5 8.6l.4-.7A2 2 0 1 1 8.2 5.1l.06.06A1.65 1.65 0 0 0 10 5.6V5a2 2 0 1 1 4 0v.09"/></svg>설정</a>
+      <a class="navi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>모니터링 로그</a>
+    </nav>
+    <div class="side-foot">
+      <div class="who">
+        <span class="avatar">S</span>
+        <span><span class="nm">운영자</span><br><span class="em">smtech.semi@gmail.com</span></span>
+      </div>
+      <button class="logout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- ============ 메인 ============ -->
+  <div class="main">
+    <div class="topbar">
+      <span class="stamp" id="stamp">관리자 · ADMIN</span>
+      <div class="switch">
+        <button class="act" onclick="setScope('admin',this)">관리자 (인주)</button>
+        <button onclick="setScope('dashboard',this)">대시보드 (볼펜)</button>
+      </div>
+      <span class="acct">로그인 계정 <b>운영자</b></span>
+    </div>
+
+    <div class="content">
+      <div class="rise">
+        <p class="eyebrow" id="eyebrow">개요 · OVERVIEW</p>
+        <div class="page-h">
+          <div>
+            <h1 class="serif">관리자 개요</h1>
+            <p>오늘까지의 매출·주문·라이선스 현황을 한 장의 장부로 봅니다.</p>
+          </div>
+          <div class="h-actions">
+            <button class="btn btn-ghost">이번 달 ▾</button>
+            <button class="btn btn-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>CSV 내보내기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 전표 -->
+      <div class="slips">
+        <div class="slip rise"><div class="no">No.01</div><div class="lbl">이번 달 매출</div><div class="val">₩ 4,820,000</div><div class="delta up">▲ 12.4% 전월 대비</div></div>
+        <div class="slip rise"><div class="no">No.02</div><div class="lbl">신규 주문</div><div class="val">138</div><div class="delta up">▲ 9건 어제</div></div>
+        <div class="slip rise"><div class="no">No.03</div><div class="lbl">활성 라이선스</div><div class="val">1,024</div><div class="delta up">▲ 3.1%</div></div>
+        <div class="slip rise"><div class="no">No.04</div><div class="lbl">미읽음 문의</div><div class="val">4</div><div class="delta down">▼ 처리 대기</div></div>
+      </div>
+
+      <div class="cols">
+        <!-- 장부 테이블 -->
+        <div class="panel rise">
+          <div class="panel-h"><h2>최근 주문</h2><a>전체 보기 →</a></div>
+          <table>
+            <thead><tr><th>주문번호</th><th>고객</th><th>제품</th><th>금액</th><th>상태</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="mono">#LS-90412</td><td class="cust">김민준</td><td>GenieWork Pro</td><td class="amt">₩ 49,000</td><td><span class="pill p-ok">결제완료</span></td><td><a class="row-act">보기</a></td></tr>
+              <tr><td class="mono">#LS-90411</td><td class="cust">이서연</td><td>GenieStock</td><td class="amt">₩ 29,000</td><td><span class="pill p-ok">결제완료</span></td><td><a class="row-act">보기</a></td></tr>
+              <tr><td class="mono">#LS-90410</td><td class="cust">박도윤</td><td>GeniePost</td><td class="amt">₩ 19,000</td><td><span class="pill p-warn">검토중</span></td><td><a class="row-act">보기</a></td></tr>
+              <tr><td class="mono">#LS-90409</td><td class="cust">최지우</td><td>GenieWork 연간</td><td class="amt">₩ 470,000</td><td><span class="pill p-ok">결제완료</span></td><td><a class="row-act">보기</a></td></tr>
+              <tr><td class="mono">#LS-90408</td><td class="cust">정하은</td><td>GenieStock</td><td class="amt">₩ 29,000</td><td><span class="pill p-danger">환불</span></td><td><a class="row-act">보기</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 우측 스택 -->
+        <div class="stack">
+          <div class="panel rise">
+            <div class="panel-h"><h2>고객지원 대기</h2><a>4건</a></div>
+            <div class="support-item"><span class="dot"></span><div><div class="t">라이선스 재발급 문의</div><div class="m">김민준 · GenieWork</div></div><span class="time">12분 전</span></div>
+            <div class="support-item"><span class="dot"></span><div><div class="t">결제 영수증 요청</div><div class="m">이서연 · GenieStock</div></div><span class="time">1시간 전</span></div>
+            <div class="support-item"><span class="dot"></span><div><div class="t">PC 교체 후 인증 오류</div><div class="m">박도윤 · GeniePost</div></div><span class="time">3시간 전</span></div>
+          </div>
+
+          <div class="panel rise">
+            <div class="panel-h"><h2>빠른 발급 · 미리보기</h2></div>
+            <div class="field"><label>제품</label><select><option>GenieWork Pro</option><option>GenieStock</option></select></div>
+            <div class="field"><label>고객 이메일</label><input value="customer@example.com"></div>
+            <div class="field"><button class="btn btn-primary" style="width:100%;justify-content:center">라이선스 발급</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 시연용: 관리자(인주) ↔ 대시보드(볼펜) 강조색 전환
+function setScope(scope, btn){
+  document.documentElement.setAttribute('data-scope', scope);
+  document.querySelectorAll('.switch button').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  const admin = scope === 'admin';
+  document.getElementById('stamp').textContent = admin ? '관리자 · ADMIN' : '대시보드 · DASHBOARD';
+  document.getElementById('brandsub').textContent = admin ? '관리자 패널' : '내 계정';
+  document.getElementById('eyebrow').textContent = admin ? '개요 · OVERVIEW' : '내 계정 · MY ACCOUNT';
+}
+</script>
+</body>
+</html>
