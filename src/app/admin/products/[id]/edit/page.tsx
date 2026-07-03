@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
+import { validateOptionRows } from '@/lib/product-validation'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
 
@@ -118,6 +120,14 @@ export default async function EditProductPage({
 
   async function updateProduct(data: ProductFormData): Promise<{ error?: string }> {
     'use server'
+    // 서버 액션도 관리자만 — 레이아웃 role 체크를 거치지 않으므로 진입부에서 직접 가드
+    const gate = await requireAdmin()
+    if (!gate.ok) return { error: '관리자 권한이 필요합니다.' }
+
+    // 저장 전 옵션 행 검증(가격·tier·variant·조합/URL 중복) — 서버측 최종 방어
+    const invalid = validateOptionRows(data.prices)
+    if (invalid) return { error: invalid }
+
     const c = createAdminClient()
 
     // 상품 기본 정보 업데이트 — 옵션 축 제목(040 컬럼)은 값 있을 때만 포함(미적용·미사용 호환)

@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductList from './ProductList'
+import { lowestPriceRow } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,8 +40,9 @@ export default async function ProductPage() {
   const products = (rawProducts ?? []).map((p) => {
     const prices = (p.product_prices ?? []) as Array<{ type: string; interval: string | null; price: number; is_active: boolean }>
     const activePrices = prices.filter((pr) => pr.is_active)
-    const monthly = activePrices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
-    const annual = activePrices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    // 대표가는 '첫 행'이 아니라 '최저가 행'으로 선택(고가 티어가 대표가로 노출되던 문제 방지)
+    const monthly = lowestPriceRow(activePrices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual = lowestPriceRow(activePrices, (pr) => pr.type === 'subscription' && pr.interval === 'annual')
     return {
       id: p.id as string,
       name: p.name as string,

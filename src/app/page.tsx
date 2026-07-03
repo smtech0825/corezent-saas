@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import HeroSection from '@/components/sections/HeroSection'
 // 타입만 import (런타임 코드 없음)
 import type { PricingSectionProduct } from '@/components/sections/PricingSection'
+import { lowestPriceRow } from '@/lib/product-pricing'
 
 // Below-fold 섹션 — 별도 JS 청크로 분리 (초기 번들 절감)
 const ProductSection      = lazy(() => import('@/components/sections/ProductSection'))
@@ -74,9 +75,10 @@ export default async function HomePage() {
   type PriceRow = { type: string; interval: string | null; price: number; checkout_url: string | null; is_active: boolean }
   const featuredProducts: PricingSectionProduct[] = ((pricingRes.data ?? []) as Record<string, unknown>[]).map((pricingRaw) => {
     const prices = ((pricingRaw.product_prices ?? []) as PriceRow[]).filter((pr) => pr.is_active)
-    const monthly  = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
-    const annual   = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
-    const oneTime  = prices.find((pr) => pr.type === 'one_time')
+    // 대표가는 '첫 행'이 아니라 '최저가 행'으로 선택(고가 티어가 대표가로 노출되던 문제 방지)
+    const monthly  = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual   = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    const oneTime  = lowestPriceRow(prices, (pr) => pr.type === 'one_time')
     const monthlyPrice = monthly?.price ?? 0
     const annualPrice  = annual?.price ?? 0
     return {

@@ -9,6 +9,7 @@ import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import PricingClient, { type PricingProduct } from './PricingClient'
+import { lowestPriceRow } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,9 +84,10 @@ export default async function PricingPage() {
       const sa = a.sortOrder ?? 999999, sb = b.sortOrder ?? 999999
       return sa - sb
     })
-    const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
-    const annual  = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
-    const oneTime = prices.find((pr) => pr.type === 'one_time')
+    // 대표가는 '첫 행'이 아니라 '최저가 행'으로 선택(고가 티어가 대표가로 노출되던 문제 방지)
+    const monthly = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual  = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    const oneTime = lowestPriceRow(prices, (pr) => pr.type === 'one_time')
 
     // 월간 가격: monthly 우선, 없으면 one_time
     const monthlyPrice = monthly?.price ?? oneTime?.price ?? 0

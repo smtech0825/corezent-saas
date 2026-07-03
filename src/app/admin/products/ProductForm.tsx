@@ -10,6 +10,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { validateOptionRows } from '@/lib/product-validation'
 
 export interface PriceEntry {
   id?: string
@@ -306,6 +307,12 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    // 저장 전 옵션 행 검증(서버 액션과 동일 규칙) — 어긋난 조합/중복을 저장 전에 차단
+    const invalid = validateOptionRows(form.prices)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
     setLoading(true)
     const result = await onSubmit(form)
     setLoading(false)
@@ -813,12 +820,15 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <span className="text-sm font-semibold text-ink">① 옵션 드롭다운 제목</span>
             <span className="text-xs text-ink-faint">고객이 고르는 &quot;기준&quot;의 이름 · 옵션 없으면 비움</span>
           </div>
+          <p className="text-xs text-ink-faint">
+            예) 축1 = 기간(월간/연간), 축2 = PC 개수(선택). 기준이 1개면 축2는 비웁니다.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="축1 제목">
               <input
                 value={form.option_axis1_name}
                 onChange={(e) => set('option_axis1_name', e.target.value)}
-                placeholder="예: PC 수"
+                placeholder="예: 기간 (월간/연간)"
                 className={inputCls}
               />
             </Field>
@@ -826,7 +836,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <input
                 value={form.option_axis2_name}
                 onChange={(e) => set('option_axis2_name', e.target.value)}
-                placeholder="기준이 1개면 비움"
+                placeholder="예: PC 개수 — 기준이 1개면 비움"
                 className={inputCls}
               />
             </Field>
