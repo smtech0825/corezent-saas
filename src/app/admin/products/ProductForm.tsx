@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { validateOptionRows } from '@/lib/product-validation'
+import OptionTable from './OptionTable'
+import FeatureImageUpload from './FeatureImageUpload'
 
 export interface PriceEntry {
   id?: string
@@ -71,76 +73,6 @@ interface Props {
 }
 
 const emptyPrice = (): PriceEntry => ({ type: 'subscription', interval: 'monthly', price: '', lemon_squeezy_variant_id: '', checkout_url: '', option_axis1_label: '', option_axis2_label: '', license_tier: '', sort_order: '' })
-
-/** Feature 이미지 업로드 컴포넌트 — 파일 업로드 → Supabase Storage logos 버킷 */
-function FeatureImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setError('')
-    const supabase = createClient()
-    const ext = file.name.split('.').pop() ?? 'png'
-    const filename = `feat-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { data, error: uploadErr } = await supabase.storage
-      .from('logos')
-      .upload(filename, file, { upsert: true })
-    if (uploadErr) {
-      setError(uploadErr.message)
-      setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
-      return
-    }
-    const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(data.path)
-    onChange(publicUrl)
-    setUploading(false)
-  }
-
-  function clear() {
-    onChange('')
-    if (fileRef.current) fileRef.current.value = ''
-    setError('')
-  }
-
-  return (
-    <div className="space-y-1">
-      {value ? (
-        <div className="flex items-center gap-2 p-2 bg-paper-raised rounded-lg border border-rule">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="feature preview" className="w-8 h-8 object-contain rounded shrink-0" />
-          <span className="text-xs text-ink-faint truncate flex-1">{value.split('/').pop()}</span>
-          <button type="button" onClick={clear} className="shrink-0 text-ink-faint hover:text-danger transition-colors">
-            <X size={12} />
-          </button>
-        </div>
-      ) : (
-        <label
-          className={`flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border transition-colors w-full ${
-            uploading
-              ? 'opacity-40 cursor-not-allowed border-rule text-ink-faint'
-              : 'cursor-pointer border-rule text-ink-soft hover:text-ink hover:border-mark/40'
-          }`}
-        >
-          <Upload size={11} />
-          {uploading ? '업로드 중...' : '이미지 업로드 (투명 PNG)'}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
-            className="hidden"
-            disabled={uploading}
-            onChange={handleUpload}
-          />
-        </label>
-      )}
-      {error && <p className="text-xs text-danger">{error}</p>}
-    </div>
-  )
-}
 
 function slugify(text: string) {
   return text
@@ -211,6 +143,21 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
     const name = e.target.value
     set('name', name)
     if (!slugManual) set('slug', slugify(name))
+  }
+
+  // 태그 칩 입력 — Enter/쉼표로 추가(최대 5개·중복 제외), Backspace로 마지막 제거
+  const [tagInput, setTagInput] = useState('')
+  function addTag() {
+    const t = tagInput.trim()
+    if (t && form.tags.length < 5 && !form.tags.includes(t)) set('tags', [...form.tags, t])
+    setTagInput('')
+  }
+  function removeTag(i: number) {
+    set('tags', form.tags.filter((_, idx) => idx !== i))
+  }
+  function handleTagKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag() }
+    else if (e.key === 'Backspace' && !tagInput && form.tags.length > 0) set('tags', form.tags.slice(0, -1))
   }
 
   // Logo URL 직접 입력
@@ -341,12 +288,13 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           </Field>
 
           <Field label="Slug *">
+            {/* Slug는 입력 길이가 짧아 콘텐츠 폭(320px)으로 제한 */}
             <input
               required
               value={form.slug}
               onChange={(e) => { setSlugManual(true); set('slug', e.target.value) }}
               placeholder="예: geniepost"
-              className={inputCls}
+              className={`${inputCls} max-w-[320px]`}
             />
           </Field>
         </div>
@@ -564,20 +512,36 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           <h2 className="text-sm font-semibold text-ink">태그</h2>
           <span className="text-xs text-ink-faint">— /product, /pricing 페이지에 표시 (최대 5개)</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+        {/* 칩 입력 — 입력 후 Enter로 추가(최대 5개). 5칸 고정 입력의 어색함 제거 */}
+        <div>
+          {form.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2.5">
+              {form.tags.map((tag, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 text-xs text-ink border border-rule bg-paper rounded-full pl-3 pr-2 py-1">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(i)}
+                    aria-label={`${tag} 태그 삭제`}
+                    className="text-ink-faint hover:text-danger transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          {form.tags.length < 5 && (
             <input
-              key={i}
-              value={form.tags[i] ?? ''}
-              onChange={(e) => {
-                const next = [...form.tags]
-                next[i] = e.target.value
-                set('tags', next.filter((t, idx) => t || idx < i))
-              }}
-              placeholder={`태그 ${i + 1}`}
-              className={inputCls}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKey}
+              onBlur={addTag}
+              placeholder="태그 입력 후 Enter (최대 5개)"
+              maxLength={20}
+              className={`${inputCls} max-w-[320px]`}
             />
-          ))}
+          )}
         </div>
       </section>
 
@@ -843,135 +807,15 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           </div>
         </div>
 
-        {/* ② 옵션 목록 — 각 행 = 고객이 고를 선택지 하나 */}
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-ink">② 옵션 목록</span>
-            <span className="text-xs text-ink-faint">각 행 = 선택지 하나. &quot;순서&quot; 번호 오름차순으로 공개 화면에 표시됩니다.</span>
-          </div>
-          <button
-            type="button"
-            onClick={addPrice}
-            className="flex items-center gap-1.5 text-xs text-mark hover:text-mark border border-mark/30 hover:border-mark/40 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Plus size={13} /> 옵션 추가
-          </button>
-        </div>
-
-        {form.prices.length === 0 && (
-          <p className="text-xs text-ink-faint py-4 text-center">아직 추가된 옵션이 없습니다.</p>
-        )}
-
-        {form.prices.map((price, idx) => (
-          <div key={idx} className="flex items-start gap-3 p-4 bg-paper rounded-xl border border-rule">
-            <div className="flex-1 space-y-3">
-              {/* 순서 번호 + 옵션 라벨 (축1/축2 값) — 순서 오름차순으로 공개 화면에 표시됨 */}
-              <div className="grid grid-cols-[80px_1fr_1fr] gap-3">
-                <Field label="순서">
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={price.sort_order}
-                    onChange={(e) => updatePrice(idx, 'sort_order', e.target.value)}
-                    placeholder="1"
-                    title="작을수록 먼저 표시됩니다 (오름차순)"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label={`옵션값 ${form.option_axis1_name || '축1'}`}>
-                  <input
-                    value={price.option_axis1_label}
-                    onChange={(e) => updatePrice(idx, 'option_axis1_label', e.target.value)}
-                    placeholder="예: 월간"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label={`옵션값 ${form.option_axis2_name || '축2'} (선택)`}>
-                  <input
-                    value={price.option_axis2_label}
-                    onChange={(e) => updatePrice(idx, 'option_axis2_label', e.target.value)}
-                    placeholder="예: 3PC용"
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Field label="유형">
-                  <select
-                    value={price.type}
-                    onChange={(e) => updatePrice(idx, 'type', e.target.value)}
-                    className={selectCls}
-                  >
-                    <option value="subscription">구독</option>
-                    <option value="one_time">단일 구매</option>
-                  </select>
-                </Field>
-
-                <Field label="주기">
-                  <select
-                    value={price.interval}
-                    onChange={(e) => updatePrice(idx, 'interval', e.target.value)}
-                    disabled={price.type === 'one_time'}
-                    className={selectCls + (price.type === 'one_time' ? ' opacity-40 cursor-not-allowed' : '')}
-                  >
-                    <option value="monthly">월간</option>
-                    <option value="annual">연간</option>
-                  </select>
-                </Field>
-
-                <Field label="가격 (원, KRW)">
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    required
-                    value={price.price}
-                    onChange={(e) => updatePrice(idx, 'price', e.target.value)}
-                    placeholder="0"
-                    className={inputCls}
-                  />
-                </Field>
-
-                <Field label="라이선스 tier">
-                  <input
-                    value={price.license_tier}
-                    onChange={(e) => updatePrice(idx, 'license_tier', e.target.value)}
-                    placeholder="예: 3pc"
-                    className={inputCls + ' font-mono text-xs'}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Lemon Squeezy Variant ID (웹훅 매칭용)">
-                <input
-                  value={price.lemon_squeezy_variant_id}
-                  onChange={(e) => updatePrice(idx, 'lemon_squeezy_variant_id', e.target.value)}
-                  placeholder="e.g. 123456"
-                  className={inputCls + ' font-mono text-xs'}
-                />
-              </Field>
-
-              <Field label="Checkout URL (구매 버튼 링크)">
-                <input
-                  value={price.checkout_url}
-                  onChange={(e) => updatePrice(idx, 'checkout_url', e.target.value)}
-                  placeholder="https://corezent.lemonsqueezy.com/checkout/buy/..."
-                  className={inputCls + ' font-mono text-xs'}
-                />
-              </Field>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => removePrice(idx)}
-              className="mt-6 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        ))}
+        {/* ② 옵션 목록 — 표(1행=1옵션). 가격·순서·tier·Variant·URL을 한 화면에 비교 */}
+        <OptionTable
+          prices={form.prices}
+          axis1Name={form.option_axis1_name}
+          axis2Name={form.option_axis2_name}
+          onAdd={addPrice}
+          onUpdate={updatePrice}
+          onRemove={removePrice}
+        />
       </section>
 
       {/* 에러 & 제출 */}
