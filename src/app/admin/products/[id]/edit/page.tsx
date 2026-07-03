@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
+import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
 
@@ -135,7 +136,7 @@ export default async function EditProductPage({
       name: data.name,
       slug: data.slug,
       tagline: data.tagline || null,
-      description: data.description || null,
+      description: sanitizeRichHtml(data.description) || null,
       category: data.category,
       category_group: data.category_group || null,
       badge_text: data.badge_text || null,

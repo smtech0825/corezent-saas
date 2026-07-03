@@ -14,7 +14,7 @@ import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
-import { stripMarkdown } from '@/lib/markdown'
+import { richToPlainText } from '@/lib/rich-html'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -97,8 +97,8 @@ export default function ProductList({ products }: Props) {
       {/* 카드 그리드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {visibleProducts.map((product) => {
-          // 카드에는 마크다운 문법 문자가 노출되지 않도록 strip한 요약을 클램프 표시
-          const desc = stripMarkdown(product.description ?? '')
+          // 카드에는 HTML 태그·마크다운 문법이 노출되지 않도록 평문 요약을 클램프 표시
+          const desc = richToPlainText(product.description ?? '')
           const isLongDesc = desc.length > DESC_CHAR_LIMIT
 
           return (

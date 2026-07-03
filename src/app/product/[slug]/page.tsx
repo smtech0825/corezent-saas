@@ -22,7 +22,7 @@ import { formatPrice } from '@/lib/price'
 import { getProductOptions, type OptionRow } from '@/lib/product-options'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductBuyBar from './ProductBuyBar'
-import RichMarkdown from '@/components/common/RichMarkdown'
+import RichContent from '@/components/common/RichContent'
 
 export const dynamic = 'force-dynamic'
 
@@ -202,9 +202,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 {description && (
                   <section className={SECTION_BOX}>
                     <h2 className={SECTION_TITLE}>소개</h2>
-                    <div className="max-w-[68ch]">
-                      <RichMarkdown content={description} />
-                    </div>
+                    <RichContent content={description} className="max-w-[68ch]" />
                   </section>
                 )}
 
