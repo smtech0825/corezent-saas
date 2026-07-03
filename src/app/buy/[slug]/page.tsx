@@ -50,6 +50,17 @@ export default async function BuyPage({ params }: { params: Promise<{ slug: stri
   const category = product.category as string | null
   const pricingFeatures = ((product.pricing_features ?? []) as string[]).filter(Boolean)
 
+  // 옵션 선택기는 기능 유무와 무관하게 동일하므로 한 번만 정의해 두 레이아웃에서 재사용한다.
+  const selector = (
+    <ProductOptionSelector
+      productName={product.name as string}
+      axis1Name={axis1Name}
+      axis2Name={axis2Name}
+      optionRows={optionRows}
+      affiliateRef={affiliateRef}
+    />
+  )
+
   return (
     <>
       <Navbar />
@@ -75,9 +86,9 @@ export default async function BuyPage({ params }: { params: Promise<{ slug: stri
             )}
 
             {optionRows.length > 0 && product.is_active ? (
-              <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_auto]">
-                {/* 기능 요약 (있으면) */}
-                {pricingFeatures.length > 0 ? (
+              pricingFeatures.length > 0 ? (
+                /* 기능 요약이 있을 때만 2컬럼 — 없으면 빈 좌측 컬럼을 두지 않는다 */
+                <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_auto]">
                   <ul className="space-y-3 order-2 md:order-1">
                     {pricingFeatures.map((feature) => {
                       const colonIdx = feature.indexOf(':')
@@ -91,19 +102,12 @@ export default async function BuyPage({ params }: { params: Promise<{ slug: stri
                       )
                     })}
                   </ul>
-                ) : <div className="order-2 md:order-1" />}
-
-                {/* 옵션 선택기 */}
-                <div className="order-1 md:order-2">
-                  <ProductOptionSelector
-                    productName={product.name as string}
-                    axis1Name={axis1Name}
-                    axis2Name={axis2Name}
-                    optionRows={optionRows}
-                    affiliateRef={affiliateRef}
-                  />
+                  <div className="order-1 md:order-2">{selector}</div>
                 </div>
-              </div>
+              ) : (
+                /* 기능 요약이 없으면 옵션 선택기만 단독 배치 */
+                <div className="max-w-sm">{selector}</div>
+              )
             ) : !product.is_active ? (
               <p className="text-ink-soft">이 상품은 아직 출시 예정입니다.</p>
             ) : (

@@ -208,16 +208,18 @@ function StatCard({ icon, label, value, href }: {
   value: string
   href: string
 }) {
+  // 숫자·라벨을 한 줄로(17 · 전체 라이선스) 배치해 카드 높이를 절반으로 줄이고 우측 여백을 없앤다.
   return (
-    <Link href={href} className="group bg-paper-raised border border-rule hover:border-mark/40 rounded-xl p-5 transition-colors">
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-paper border border-rule flex items-center justify-center">
-          {icon}
-        </div>
-        <ArrowRight size={14} className="text-ink-faint group-hover:text-mark transition-colors" />
+    <Link href={href} className="group flex items-center gap-3 bg-paper-raised border border-rule hover:border-mark/40 rounded-xl px-4 py-3 transition-colors">
+      <div className="w-8 h-8 rounded-lg bg-paper border border-rule flex items-center justify-center shrink-0">
+        {icon}
       </div>
-      <p className="text-2xl font-bold text-ink">{value}</p>
-      <p className="text-xs text-ink-soft mt-1">{label}</p>
+      <p className="flex items-baseline gap-1.5 min-w-0">
+        <span className="text-lg font-bold text-ink tabular-nums">{value}</span>
+        <span className="text-ink-faint">·</span>
+        <span className="text-sm text-ink-soft truncate">{label}</span>
+      </p>
+      <ArrowRight size={14} className="text-ink-faint group-hover:text-mark transition-colors ml-auto shrink-0" />
     </Link>
   )
 }

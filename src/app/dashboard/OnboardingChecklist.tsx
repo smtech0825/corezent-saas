@@ -40,6 +40,7 @@ export default function OnboardingChecklist({
 }) {
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [expanded, setExpanded] = useState(false) // 모든 단계 완료 시 자동 접힘 → 사용자가 펼치면 true
   const [steps, setSteps] = useState<ManualSteps>(DEFAULT_STEPS)
 
   // localStorage에서 닫힘 여부·수동 체크 복원 (SSR 하이드레이션 후)
@@ -80,6 +81,32 @@ export default function OnboardingChecklist({
   const doneCount = items.filter((i) => i.done).length
   const allDone = doneCount === items.length
 
+  // 4단계 모두 완료 시 자동으로 한 줄로 접는다(펼치기 전까지). 닫기(×)는 그대로 유지.
+  if (allDone && !expanded) {
+    return (
+      <div className="bg-paper-raised border border-mark/30 rounded-xl px-5 py-2.5 mb-8 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-2 text-sm text-ink min-w-0"
+        >
+          <span className="w-5 h-5 rounded-full bg-ok-soft border border-ok/40 text-ok flex items-center justify-center shrink-0">
+            <Check size={12} />
+          </span>
+          <span className="font-medium">시작하기 완료</span>
+          <span className="text-ink-faint">— 펼치기</span>
+        </button>
+        <button
+          onClick={dismiss}
+          className="text-ink-faint hover:text-ink transition-colors shrink-0"
+          aria-label="체크리스트 닫기"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-paper-raised border border-mark/30 rounded-xl p-5 mb-8">
       <div className="flex items-start justify-between gap-4 mb-4">
@@ -91,13 +118,23 @@ export default function OnboardingChecklist({
               : `설치부터 첫 사용까지 ${doneCount}/${items.length} 단계 완료`}
           </p>
         </div>
-        <button
-          onClick={dismiss}
-          className="text-ink-faint hover:text-ink transition-colors shrink-0"
-          aria-label="체크리스트 닫기"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          {allDone && (
+            <button
+              onClick={() => setExpanded(false)}
+              className="text-xs text-ink-faint hover:text-ink transition-colors"
+            >
+              접기
+            </button>
+          )}
+          <button
+            onClick={dismiss}
+            className="text-ink-faint hover:text-ink transition-colors"
+            aria-label="체크리스트 닫기"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">

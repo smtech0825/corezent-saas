@@ -199,9 +199,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
             )}
 
-            {/* 상세 설명 */}
+            {/* 상세 설명 — 본문 가독 폭을 68ch로 제한(공통 수치 규칙) */}
             {description && (
-              <div className="mb-12">
+              <div className="mb-12 max-w-[68ch]">
                 <h2 className="text-lg font-serif font-black text-ink mb-3">소개</h2>
                 <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{description}</p>
               </div>

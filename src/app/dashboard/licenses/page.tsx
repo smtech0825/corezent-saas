@@ -112,12 +112,13 @@ export default async function LicensesPage({
     (l: any) => l.product_id && changelogMap.has(l.product_id as string),
   )
   // 그리드 템플릿 — 다운로드 열 유무에 따라 컬럼 수를 바꾼다(Tailwind가 리터럴을 찾도록 전체 문자열로 기술)
+  // 열: 라이선스 키(1fr) · 제품(130px) · 상태(90px) · 만료일(130px) [· 다운로드(auto)]
   const headerCols = showDownloadCol
-    ? 'grid-cols-[1fr_130px_90px_90px_130px_auto]'
-    : 'grid-cols-[1fr_130px_90px_90px_130px]'
+    ? 'grid-cols-[1fr_130px_90px_130px_auto]'
+    : 'grid-cols-[1fr_130px_90px_130px]'
   const rowCols = showDownloadCol
-    ? 'md:grid-cols-[1fr_130px_90px_90px_130px_auto]'
-    : 'md:grid-cols-[1fr_130px_90px_90px_130px]'
+    ? 'md:grid-cols-[1fr_130px_90px_130px_auto]'
+    : 'md:grid-cols-[1fr_130px_90px_130px]'
 
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
@@ -137,7 +138,6 @@ export default async function LicensesPage({
               <span>라이선스 키</span>
               <span>제품</span>
               <span>상태</span>
-              <span>주기</span>
               <span>만료일</span>
               {showDownloadCol && <span>다운로드</span>}
             </div>
@@ -147,7 +147,6 @@ export default async function LicensesPage({
               // 구독 갱신일 우선, 없으면 license.expires_at
               const subInfo = lic.order_id ? renewalMap.get(lic.order_id) : null
               const effectiveExpiry = subInfo?.end ?? lic.expires_at
-              const period = subInfo?.interval ?? null
               const optLabel = lic.order_id ? optionMap.get(lic.order_id) : undefined
 
               // 설치파일: product의 최신 릴리스에 download_urls가 있으면 노출
@@ -160,11 +159,13 @@ export default async function LicensesPage({
                   key={lic.id}
                   className={`grid grid-cols-1 ${rowCols} gap-2 md:gap-4 items-center px-5 py-4 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors`}
                 >
-                  {/* 시리얼 키 */}
+                  {/* 시리얼 키 — 앞 8자만 표시, 전체 키는 복사 버튼으로만 */}
                   <div className="flex items-center gap-2">
                     <Key size={14} className="text-mark shrink-0 hidden md:block" />
-                    <span className="font-mono text-sm text-ink tracking-wider truncate">
-                      {lic.serial_key}
+                    <span className="font-mono text-sm text-ink tracking-wider truncate" title="복사 버튼으로 전체 키를 복사하세요">
+                      {typeof lic.serial_key === 'string' && lic.serial_key.length > 8
+                        ? `${lic.serial_key.slice(0, 8)}…`
+                        : lic.serial_key}
                     </span>
                     <LicenseCopyButton serialKey={lic.serial_key} />
                   </div>
@@ -180,26 +181,10 @@ export default async function LicensesPage({
                     </div>
                   </div>
 
-                  {/* 상태 */}
+                  {/* 상태 — 유일한 색 배지 (주기 배지는 제거해 상태만 색으로 구분) */}
                   <div className="flex justify-between items-center md:block">
                     <span className="text-xs text-ink-faint md:hidden">상태</span>
                     <LicenseStatusBadge status={lic.status} />
-                  </div>
-
-                  {/* Period */}
-                  <div className="flex justify-between items-center md:block">
-                    <span className="text-xs text-ink-faint md:hidden">주기</span>
-                    {period ? (
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        period === 'annual'
-                          ? 'text-info bg-info-soft border-info/20'
-                          : 'text-ink-soft bg-paper-shade border-rule'
-                      }`}>
-                        {period === 'annual' ? '연간' : '월간'}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-ink-faint">—</span>
-                    )}
                   </div>
 
                   {/* 만료일 — 구독 갱신일 > license.expires_at > Lifetime */}
