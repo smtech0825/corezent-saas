@@ -4,6 +4,8 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
+import { isNonEmptyString } from '@/lib/validate'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
@@ -15,10 +17,18 @@ interface SectionItem {
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireAdmin()
+    if (!gate.ok) return gate.response
+
     const { sections } = (await request.json()) as { sections: SectionItem[] }
 
     if (!Array.isArray(sections) || sections.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    // 각 항목의 name이 유효한 문자열인지 검증 (빈 name upsert로 잘못된 행 생성 방지)
+    if (!sections.every((s) => isNonEmptyString(s?.name))) {
+      return NextResponse.json({ error: 'Invalid payload: each section requires a name' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()

@@ -11,6 +11,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
+import { isNonEmptyString } from '@/lib/validate'
 import { updateLicenseStatus } from '@/lib/sheets'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
@@ -20,9 +22,12 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireAdmin()
+    if (!gate.ok) return gate.response
+
     const body = await req.json()
     const id = body?.id as string | undefined
-    if (!id) return NextResponse.json({ error: 'Missing license id' }, { status: 400 })
+    if (!isNonEmptyString(id)) return NextResponse.json({ error: 'Missing license id' }, { status: 400 })
 
     const adminClient = createAdminClient()
 

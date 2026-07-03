@@ -4,15 +4,25 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
+import { isNonEmptyString } from '@/lib/validate'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireAdmin()
+    if (!gate.ok) return gate.response
+
     const { ordered } = (await request.json()) as { ordered: string[] }
 
     if (!Array.isArray(ordered) || ordered.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    // 각 id가 유효한 문자열인지 검증 (잘못된 값으로 무의미한 update 실행 방지)
+    if (!ordered.every((id) => isNonEmptyString(id))) {
+      return NextResponse.json({ error: 'Invalid payload: each id must be a non-empty string' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()

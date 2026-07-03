@@ -4,11 +4,16 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
+import { isNonEmptyString } from '@/lib/validate'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireAdmin()
+    if (!gate.ok) return gate.response
+
     const { name, is_visible, label, order_index } = (await request.json()) as {
       name: string
       is_visible: boolean
@@ -16,7 +21,7 @@ export async function POST(request: Request) {
       order_index: number
     }
 
-    if (!name || typeof is_visible !== 'boolean') {
+    if (!isNonEmptyString(name) || typeof is_visible !== 'boolean') {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
     }
 

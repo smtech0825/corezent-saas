@@ -4,16 +4,28 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/require-admin'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireAdmin()
+    if (!gate.ok) return gate.response
+
     const body = await request.json() as Record<string, string>
     const entries = Object.entries(body)
 
     if (entries.length === 0) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 })
+    }
+
+    // 모든 키·값이 문자열인지 검증 (키/값 문자열이 아닌 페이로드로 upsert 오염 방지)
+    const invalid = entries.some(
+      ([key, value]) => typeof key !== 'string' || key.length === 0 || typeof value !== 'string',
+    )
+    if (invalid) {
+      return NextResponse.json({ error: 'Invalid payload: keys and values must be strings' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()
