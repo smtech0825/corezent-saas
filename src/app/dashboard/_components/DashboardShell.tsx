@@ -51,8 +51,9 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
 
         {/* 메인 콘텐츠 */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* 상단 헤더 */}
-          <div className="flex items-center justify-between px-5 h-16 border-b border-rule bg-paper/85 backdrop-blur-sm sticky top-0 z-10">
+          {/* 상단 헤더 — sticky 요소의 backdrop-filter는 스크롤 중 매 프레임 재블러로
+           * GPU 스톨(프리징)을 유발하므로 불투명 배경 사용(성능) */}
+          <div className="flex items-center justify-between px-5 h-16 border-b border-rule bg-paper sticky top-0 z-10">
             {/* 모바일: 햄버거 + 로고 */}
             <div className="flex items-center gap-3 lg:hidden">
               <button

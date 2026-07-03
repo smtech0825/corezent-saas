@@ -171,8 +171,10 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* 네비게이션 바 — 공문 두문의 굵은 밑줄 */}
-      <nav className="backdrop-blur-md bg-paper/90 border-b-2 border-ink">
+      {/* 네비게이션 바 — 공문 두문의 굵은 밑줄
+       * 스크롤 고정(sticky) 요소라 backdrop-filter는 매 프레임 뒤 배경을 재블러해
+       * 연속 스크롤 시 GPU 스톨(화면 프리징)을 유발 → 불투명 배경으로 대체(성능) */}
+      <nav className="bg-paper border-b-2 border-ink">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* 로고 */}
