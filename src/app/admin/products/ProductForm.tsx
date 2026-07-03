@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { validateOptionRows } from '@/lib/product-validation'
 import OptionTable from './OptionTable'
 import FeatureImageUpload from './FeatureImageUpload'
+import RichMarkdown from '@/components/common/RichMarkdown'
 
 export interface PriceEntry {
   id?: string
@@ -158,6 +159,34 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   function handleTagKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag() }
     else if (e.key === 'Backspace' && !tagInput && form.tags.length > 0) set('tags', form.tags.slice(0, -1))
+  }
+
+  // 설명(Markdown) 편집기 — 툴바 삽입 + 실시간 미리보기
+  const descRef = useRef<HTMLTextAreaElement>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  function insertAtDesc(snippet: string) {
+    const el = descRef.current
+    const cur = form.description
+    if (!el) { set('description', cur + snippet); return }
+    const start = el.selectionStart ?? cur.length
+    const end = el.selectionEnd ?? cur.length
+    set('description', cur.slice(0, start) + snippet + cur.slice(end))
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + snippet.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
+  function insertImage() {
+    const url = window.prompt('이미지 URL을 입력하세요')?.trim()
+    if (url) insertAtDesc(`\n![설명](${url} "=600")\n`)
+  }
+  function insertYoutube() {
+    const url = window.prompt('유튜브 URL을 입력하세요 (youtu.be/… 또는 watch?v=…)')?.trim()
+    if (url) insertAtDesc(`\n${url}\n`)
+  }
+  function insertHeading() {
+    insertAtDesc('\n## 소제목\n')
   }
 
   // Logo URL 직접 입력
@@ -309,13 +338,42 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         </Field>
 
         <Field label="설명 (Markdown)">
-          <textarea
-            rows={5}
-            value={form.description}
-            onChange={(e) => set('description', e.target.value)}
-            placeholder="제품 전체 설명..."
-            className={inputCls + ' resize-none'}
-          />
+          <div className="space-y-2">
+            {/* 툴바 — 문법 자동 삽입 + 미리보기 토글 */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button type="button" onClick={insertHeading} className="text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/40 px-2.5 py-1.5 rounded-lg transition-colors">소제목</button>
+              <button type="button" onClick={insertImage} className="text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/40 px-2.5 py-1.5 rounded-lg transition-colors">이미지 삽입</button>
+              <button type="button" onClick={insertYoutube} className="text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/40 px-2.5 py-1.5 rounded-lg transition-colors">유튜브 삽입</button>
+              <button
+                type="button"
+                onClick={() => setShowPreview((p) => !p)}
+                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ml-auto ${showPreview ? 'text-mark border-mark/40 bg-mark/5' : 'text-ink-soft border-rule hover:text-ink hover:border-mark/40'}`}
+              >
+                {showPreview ? '편집으로' : '미리보기'}
+              </button>
+            </div>
+
+            {showPreview ? (
+              <div className="border border-rule rounded-lg p-4 bg-paper min-h-[8rem] max-w-[68ch]">
+                {form.description.trim()
+                  ? <RichMarkdown content={form.description} />
+                  : <p className="text-xs text-ink-faint">미리볼 내용이 없습니다.</p>}
+              </div>
+            ) : (
+              <textarea
+                ref={descRef}
+                rows={8}
+                value={form.description}
+                onChange={(e) => set('description', e.target.value)}
+                placeholder="제품 전체 설명... (## 소제목 · ![설명](URL) · 유튜브 URL 단독 줄)"
+                className={inputCls + ' resize-y'}
+              />
+            )}
+
+            <p className="text-xs text-ink-faint">
+              <code className="font-mono">## 제목</code> · <code className="font-mono">![설명](URL &quot;=600&quot;)</code> · 유튜브 URL을 단독 줄에 두면 자동 영상
+            </p>
+          </div>
         </Field>
 
         <Field label="카테고리">

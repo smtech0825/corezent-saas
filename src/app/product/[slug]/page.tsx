@@ -22,6 +22,7 @@ import { getProductOptions } from '@/lib/product-options'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductOptionSelector from '@/components/ProductOptionSelector'
 import ProductBuyBox from './ProductBuyBox'
+import RichMarkdown from '@/components/common/RichMarkdown'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,11 +174,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </div>
                 )}
 
-                {/* 상세 설명 — 본문 가독 폭 68ch */}
+                {/* 상세 설명 — 마크다운 렌더(헤딩·이미지·유튜브), 본문 가독 폭 68ch */}
                 {description && (
                   <div className="mb-12 max-w-[68ch]">
                     <h2 className="text-lg font-serif font-black text-ink mb-3">소개</h2>
-                    <p className="text-ink-soft text-sm leading-relaxed whitespace-pre-line">{description}</p>
+                    <RichMarkdown content={description} />
                   </div>
                 )}
 
