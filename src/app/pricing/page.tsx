@@ -7,7 +7,6 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import PricingClient, { type PricingProduct } from './PricingClient'
 import { lowestPriceRow } from '@/lib/product-pricing'
 
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
 export default async function PricingPage() {
   const client = createAdminClient()
 
-  // 제품·가격·추천인 코드 병렬 조회 (추천인은 httpOnly cz_ref를 서버에서 해석)
+  // 제품·가격 병렬 조회 — /pricing 카드는 상세 페이지로 이동만 하므로 추천인 코드는 상세 구매 바에서 해석한다.
   // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 없이 기존 단독 카드로 정상 동작)
   const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_axis1_name, option_axis2_name'
   const BASE_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index'
@@ -32,13 +31,12 @@ export default async function PricingPage() {
     .eq('is_active', true)
     .order('order_index')
 
-  const [productsRes, pricesRes, affiliateRef] = await Promise.all([
+  const [productsRes, pricesRes] = await Promise.all([
     productsQuery,
     client
       .from('product_prices')
       .select('product_id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, license_tier, sort_order')
       .eq('is_active', true),
-    resolveCheckoutAffiliateRef(),
   ])
 
   const dbProducts = productsRes.error
@@ -136,7 +134,7 @@ export default async function PricingPage() {
       <Navbar />
 
       <main>
-        <PricingClient products={products} affiliateRef={affiliateRef} />
+        <PricingClient products={products} />
       </main>
 
       <Footer />

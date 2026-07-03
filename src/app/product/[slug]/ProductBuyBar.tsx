@@ -51,7 +51,7 @@ export default function ProductBuyBar({
 }: Props) {
   const rows = optionRows
 
-  // 로그인/UTM/할인코드는 클라이언트에서 스스로 확보(ProductOptionSelector와 동일 규칙)
+  // 로그인/UTM/할인코드는 클라이언트에서 스스로 확보(체크아웃 URL 주입 규칙 공통)
   const [userId, setUserId] = useState<string | null>(null)
   const [utmData, setUtmData] = useState<UtmData | null>(null)
   const [discountCode, setDiscountCode] = useState('')

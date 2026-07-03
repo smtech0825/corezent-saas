@@ -53,7 +53,7 @@ export default async function HomePage() {
     client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
     client
       .from('products')
-      .select('name, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
+      .select('name, slug, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
       .eq('is_active', true)
       .order('order_index'),
     // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
@@ -81,8 +81,17 @@ export default async function HomePage() {
     const oneTime  = lowestPriceRow(prices, (pr) => pr.type === 'one_time')
     const monthlyPrice = monthly?.price ?? 0
     const annualPrice  = annual?.price ?? 0
+    // 옵션 상품 판별(레이블 컬럼 없이): 동일 (type,interval) 조합이 2건 이상이면 옵션 상품(예: PC수별 월간 다수).
+    // 옵션 상품은 대표가만 노출하고 실제 조합 선택·구매는 상세 페이지(구매 바)로 보낸다.
+    const groupCounts = new Map<string, number>()
+    for (const pr of prices) {
+      const k = `${pr.type}|${pr.interval ?? ''}`
+      groupCounts.set(k, (groupCounts.get(k) ?? 0) + 1)
+    }
+    const hasOptions = Array.from(groupCounts.values()).some((n) => n >= 2)
     return {
       name:               pricingRaw.name as string,
+      slug:               (pricingRaw.slug as string) ?? '',
       badgeText:          (pricingRaw.badge_text as string) ?? null,
       badgeColor:         (pricingRaw.badge_color as string) ?? 'blue',
       pricingFeatures:    ((pricingRaw.pricing_features ?? []) as string[]).filter(Boolean),
@@ -94,6 +103,7 @@ export default async function HomePage() {
       hasAnnualPlan:      !!annual,
       isOneTime:          !monthly && !annual && !!oneTime,
       oneTimeCheckoutUrl: oneTime?.checkout_url ?? '#',
+      hasOptions,
     }
   })
 

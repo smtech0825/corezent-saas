@@ -8,15 +8,11 @@
  *        - 로그인 사용자의 경우 checkout URL에 user_id 자동 주입
  */
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
-import { buildCheckoutUrl } from '@/lib/lemonsqueezy'
-import { createClient } from '@/lib/supabase/client'
-import { getUtmData, type UtmData } from '@/lib/cookies'
-import QuantityStepper from '@/components/common/QuantityStepper'
 
 // 전역 분석 도구 타입 선언
 declare global {
@@ -68,7 +64,6 @@ export interface OptionRow {
 
 interface Props {
   products: PricingProduct[]
-  affiliateRef: string
 }
 
 // 카테고리 필터 레이블
@@ -81,27 +76,9 @@ const FILTER_LABELS: Record<string, string> = {
   mobile: '모바일',
 }
 
-export default function PricingClient({ products, affiliateRef }: Props) {
+export default function PricingClient({ products }: Props) {
   const [annual, setAnnual] = useState(false)
   const [activeCategory, setActiveCategory] = useState('all')
-  const [userId, setUserId] = useState<string | null>(null)
-  const [utmData, setUtmData] = useState<UtmData | null>(null)
-  // 상품별 구매 수량 (기본 1 — 같은 상품 N개 결제, 장바구니 아님)
-  const [quantities, setQuantities] = useState<Record<string, number>>({})
-  // LS 할인코드 — 페이지 입력 UI는 제거(LS 체크아웃에 자체 필드 존재). ?discount=CODE URL로 들어온 값만
-  // 체크아웃 URL의 checkout[discount_code]로 프리필한다(검증·계산은 LS).
-  const [discountCode, setDiscountCode] = useState('')
-
-  // 로그인 사용자 ID + UTM 데이터 조회 + 할인코드 URL 프리필(?discount=CODE)
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null)
-    })
-    setUtmData(getUtmData())
-    const urlCode = new URLSearchParams(window.location.search).get('discount')
-    if (urlCode) setDiscountCode(urlCode.trim().slice(0, 64))
-  }, [])
 
   // 카테고리 필터링
   const filtered = useMemo(
@@ -210,16 +187,10 @@ export default function PricingClient({ products, affiliateRef }: Props) {
               : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           }`}>
             {filtered.map((product) => {
-              // 옵션 행이 2개 이상이면 = 옵션 상품 → 일반 카드로 "부터" 가격만 보여주고
-              // 실제 옵션(주기·PC수 등) 선택은 /buy/[slug] 페이지에서 한다.
+              // 옵션 행이 2개 이상이면 = 옵션 상품 → 카드엔 "부터" 대표가만, 실제 선택·구매는 상세 페이지에서.
               const hasOptions = product.optionRows.length >= 2
               const isAnnualView = annual && product.hasAnnualPlan
               const displayPrice = isAnnualView ? product.annualMonthlyPrice : product.monthlyPrice
-              const baseCheckoutUrl = isAnnualView
-                ? product.annualCheckoutUrl
-                : product.monthlyCheckoutUrl
-              const quantity = quantities[product.id] ?? 1
-              const checkoutUrl = buildCheckoutUrl(baseCheckoutUrl, userId, { ...utmData, affiliate_ref: affiliateRef }, quantity, discountCode)
 
               // 제품별 할인율
               const productSavePct = product.hasAnnualPlan && product.monthlyPrice > 0
@@ -327,26 +298,15 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                       </ul>
                     )}
 
-                    {/* 하단 고정 영역 — 수량 + CTA를 카드 맨 아래로 정렬(mt-auto) */}
+                    {/* 하단 고정 영역 — CTA를 카드 맨 아래로 정렬(mt-auto).
+                        전 상품 공통: 상세 페이지로 이동해 옵션·수량 선택 후 구매(구매 바) */}
                     <div className="mt-auto">
-                      {/* 수량 선택 — 옵션 없는 상품만(옵션 상품은 /buy에서 수량 선택) */}
-                      {!hasOptions && (
-                        <QuantityStepper
-                          value={quantity}
-                          onChange={(next) => setQuantities((prev) => ({ ...prev, [product.id]: next }))}
-                        />
-                      )}
-
-                      {/* 구매/옵션선택 버튼 — 옵션 상품은 /buy/[slug]로 이동해 조합 선택 */}
                       <Link
-                        href={hasOptions ? `/buy/${product.slug}` : (userId ? checkoutUrl : '/auth/register')}
-                        onClick={() => {
-                          track(hasOptions ? 'select_options' : 'initiate_checkout', { product: product.name, plan: annual ? 'annual' : 'monthly', quantity })
-                          if (!hasOptions) window.fbq?.('track', 'InitiateCheckout', { content_name: product.name })
-                        }}
+                        href={`/product/${product.slug}`}
+                        onClick={() => track('view_product', { product: product.name, has_options: hasOptions })}
                         className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
                       >
-                        시작하기
+                        자세히 보기
                         <ArrowRight size={14} />
                       </Link>
                     </div>

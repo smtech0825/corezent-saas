@@ -18,6 +18,7 @@ import Section, { SectionHeader } from '@/components/ui/Section'
 
 export interface PricingSectionProduct {
   name: string
+  slug: string
   badgeText: string | null
   badgeColor: string
   pricingFeatures: string[]
@@ -29,6 +30,8 @@ export interface PricingSectionProduct {
   hasAnnualPlan: boolean
   isOneTime: boolean
   oneTimeCheckoutUrl: string
+  /** 옵션 상품 여부 — true면 대표가만 노출하고 상세 페이지에서 조합 선택·구매 */
+  hasOptions: boolean
 }
 
 interface Props {
@@ -83,18 +86,20 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
       )}
       <p className="text-ink-soft text-sm mb-2">{product.name}</p>
 
-      {/* 가격 */}
+      {/* 가격 — 옵션 상품은 최저가에 "부터" 표기 */}
       {product.isOneTime ? (
         <div className="flex items-end gap-2 mb-1">
           <span className="font-serif text-4xl font-black text-ink">
             {MONTHLY > 0 ? formatPrice(MONTHLY) : '—'}
           </span>
+          {product.hasOptions && <span className="text-ink-soft text-sm mb-1.5">부터</span>}
         </div>
       ) : (
         <div className="flex items-end gap-2 mb-1">
           <span className="font-serif text-4xl font-black text-ink">
             {annual && product.hasAnnualPlan ? formatPrice(ANNUAL) : formatPrice(MONTHLY)}
           </span>
+          {product.hasOptions && <span className="text-ink-soft text-sm mb-1.5">부터</span>}
           <span className="text-ink-soft text-base mb-1.5">
             {annual && product.hasAnnualPlan ? '/년' : '/월'}
           </span>
@@ -112,13 +117,19 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         {' · VAT 포함'}
       </p>
 
-      {/* 수량 선택 */}
-      <QuantityStepper value={qty} onChange={setQty} />
+      {/* 수량 선택 — 비옵션 상품만(옵션 상품은 상세 페이지에서 조합·수량 선택) */}
+      {!product.hasOptions && <QuantityStepper value={qty} onChange={setQty} />}
 
-      {/* CTA */}
-      <Button href={checkoutUrl} size="md" className="w-full mb-6">
-        시작하기
-      </Button>
+      {/* CTA — 옵션 상품은 상세 페이지로 이동해 조합 선택, 비옵션은 바로 체크아웃 */}
+      {product.hasOptions ? (
+        <Button href={`/product/${product.slug}`} size="md" className="w-full mb-6">
+          자세히 보기
+        </Button>
+      ) : (
+        <Button href={checkoutUrl} size="md" className="w-full mb-6">
+          시작하기
+        </Button>
+      )}
 
       {/* 기능 목록 — 최대 4개, 각 1줄 클램프로 카드 높이 통일(전체 설명은 상세 페이지) */}
       {product.pricingFeatures.length > 0 && (
