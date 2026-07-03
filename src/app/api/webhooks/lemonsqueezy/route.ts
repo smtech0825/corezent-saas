@@ -290,7 +290,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     .select('id, product_id, type, interval')
     .eq('lemon_squeezy_variant_id', variantId)
     .order('is_active', { ascending: false })
-    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
   if (ppRows && ppRows.length > 1) {
     console.warn(`[LS Webhook] variant_id ${variantId}에 옵션행 ${ppRows.length}개 매칭 — 첫 행 사용(옵션 라벨 부정확 가능·데이터 정정 필요) (order_id=${lsOrderId})`)
   }
@@ -468,7 +468,7 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
     .select('id, product_id, interval')
     .eq('lemon_squeezy_variant_id', variantId)
     .order('is_active', { ascending: false })
-    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
   if (ppRows && ppRows.length > 1) {
     console.warn(`[LS Webhook] (sub) variant_id ${variantId}에 옵션행 ${ppRows.length}개 매칭 — 첫 행 사용 (sub=${lsSubId})`)
   }
