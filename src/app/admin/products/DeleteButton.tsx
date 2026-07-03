@@ -18,7 +18,7 @@ export default function DeleteButton({ productId, productName, onDelete }: Props
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
-    if (!confirm(`"${productName}" 제품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return
+    if (!confirm(`"${productName}" 제품을 삭제하시겠습니까?\n주문·라이선스 이력이 있는 제품은 완전 삭제 대신 비활성화됩니다. 이 작업은 되돌릴 수 없습니다.`)) return
     setLoading(true)
     await onDelete(productId)
     setLoading(false)

@@ -12,11 +12,48 @@ import { formatPrice } from '@/lib/price'
 
 export const dynamic = 'force-dynamic'
 
-async function deleteProduct(id: string) {
+type DeleteResult =
+  | { ok: true; mode: 'deleted' | 'deactivated' }
+  | { ok: false; message: string }
+
+/**
+ * @함수명: deleteProduct
+ * @설명: 제품 삭제. 주문·구독·라이선스 이력이 있어 FK 제약(23503)으로 완전 삭제가 불가하면,
+ *        데이터 무결성 보존을 위해 완전 삭제 대신 비활성화(is_active=false)로 대체한다.
+ * @매개변수: id - 제품 ID
+ * @반환값: 처리 결과 — deleted(완전삭제) / deactivated(비활성화) / 실패 메시지
+ */
+async function deleteProduct(id: string): Promise<DeleteResult> {
   'use server'
   const client = createAdminClient()
-  await client.from('products').delete().eq('id', id)
-  revalidatePath('/admin/products')
+
+  // 1) 완전 삭제 시도 — product_prices·changelogs 등은 ON DELETE CASCADE로 함께 삭제됨
+  const { error } = await client.from('products').delete().eq('id', id)
+
+  if (!error) {
+    revalidatePath('/admin/products')
+    revalidatePath('/')
+    revalidatePath('/pricing')
+    revalidatePath('/product')
+    return { ok: true, mode: 'deleted' }
+  }
+
+  // 2) FK 제약(주문·구독·라이선스가 참조) → 완전 삭제 불가 → 비활성화로 대체
+  if (error.code === '23503' || /foreign key/i.test(error.message)) {
+    const { error: deactErr } = await client
+      .from('products')
+      .update({ is_active: false })
+      .eq('id', id)
+    if (deactErr) return { ok: false, message: `비활성화 실패: ${deactErr.message}` }
+    revalidatePath('/admin/products')
+    revalidatePath('/')
+    revalidatePath('/pricing')
+    revalidatePath('/product')
+    return { ok: true, mode: 'deactivated' }
+  }
+
+  // 3) 그 외 오류
+  return { ok: false, message: error.message }
 }
 
 export default async function ProductsPage() {

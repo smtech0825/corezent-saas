@@ -21,9 +21,13 @@ export interface ProductRow {
   annualLabel: string
 }
 
+type DeleteResult =
+  | { ok: true; mode: 'deleted' | 'deactivated' }
+  | { ok: false; message: string }
+
 interface Props {
   products: ProductRow[]
-  onDelete: (id: string) => Promise<void>
+  onDelete: (id: string) => Promise<DeleteResult>
 }
 
 const categoryColors: Record<string, string> = {
@@ -37,6 +41,29 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   const [items, setItems] = useState(initial)
   const [isPending, startTransition] = useTransition()
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [delMsg, setDelMsg] = useState<{ text: string; kind: 'ok' | 'warn' | 'error' } | null>(null)
+
+  /**
+   * @함수명: handleDelete
+   * @설명: 삭제 서버 액션 호출 후 결과에 따라 목록을 즉시 갱신(완전삭제=행 제거 / 비활성화=상태 변경)하고 안내 메시지를 표시.
+   * @매개변수: id - 제품 ID
+   */
+  async function handleDelete(id: string) {
+    setDelMsg(null)
+    const res = await onDelete(id)
+    if (res.ok && res.mode === 'deleted') {
+      setItems((prev) => prev.filter((p) => p.id !== id))
+      setDelMsg({ text: '제품이 삭제되었습니다.', kind: 'ok' })
+    } else if (res.ok && res.mode === 'deactivated') {
+      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: false } : p)))
+      setDelMsg({
+        text: '주문·라이선스 이력이 있어 완전 삭제 대신 비활성화했습니다. 데이터는 보존되며 공개 스토어에서는 숨겨집니다.',
+        kind: 'warn',
+      })
+    } else {
+      setDelMsg({ text: res.ok ? '삭제 실패' : `삭제 실패: ${res.message}`, kind: 'error' })
+    }
+  }
 
   function swap(fromIdx: number, toIdx: number) {
     if (toIdx < 0 || toIdx >= items.length) return
@@ -72,6 +99,13 @@ export default function ProductList({ products: initial, onDelete }: Props) {
       {saveMsg && !isPending && (
         <p className={`text-xs px-1 ${saveMsg.includes('실패') ? 'text-danger' : 'text-ok'}`}>
           {saveMsg}
+        </p>
+      )}
+      {delMsg && (
+        <p className={`text-xs px-1 ${
+          delMsg.kind === 'error' ? 'text-danger' : delMsg.kind === 'warn' ? 'text-caution' : 'text-ok'
+        }`}>
+          {delMsg.text}
         </p>
       )}
 
@@ -145,7 +179,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <DeleteButton
                         productId={p.id}
                         productName={p.name}
-                        onDelete={onDelete}
+                        onDelete={handleDelete}
                       />
                     </div>
                   </td>
