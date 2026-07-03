@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { Package, ExternalLink, BookOpen, X, Loader2 } from 'lucide-react'
 import DownloadButton from './DownloadButton'
 import { useToast } from '@/components/common/Toast'
+import { deriveSubStatus } from '@/lib/subscription-status'
 
 export interface SubRow {
   id: string
@@ -20,6 +21,7 @@ export interface SubRow {
   billingInterval: string
   currentPeriodEnd: string | null
   status: string
+  cancelAtPeriodEnd: boolean
   lsSubscriptionId: string | null
   manualUrl: string | null
   changelog: { version: string; download_urls: Record<string, string> } | undefined
@@ -128,9 +130,16 @@ export default function BillingSubscriptionSection({ rows }: Props) {
     <>
       <div className="flex flex-col gap-3">
         {rows.map((row) => {
-          const effectiveStatus = cancelledIds.has(row.id) ? 'cancelled' : row.status
+          // 낙관적 취소는 '취소 예약(cancelling)'으로 즉시 표시. 파생 상태는 단일 출처(deriveSubStatus).
+          const optimisticallyCancelling = cancelledIds.has(row.id)
+          const derivedStatus = deriveSubStatus({
+            status: row.status,
+            cancel_at_period_end: optimisticallyCancelling ? true : row.cancelAtPeriodEnd,
+            current_period_end: row.currentPeriodEnd,
+          })
           const badgeActive = row.isNew && row.hasDownload && !downloadedIds.has(row.productId ?? '')
-          const isActive = effectiveStatus === 'active'
+          // 취소 버튼은 순수 활성(취소 예약 아님)에만 노출
+          const isActive = derivedStatus === 'active'
 
           return (
             <div
@@ -166,7 +175,7 @@ export default function BillingSubscriptionSection({ rows }: Props) {
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
-                <SubStatusBadge status={effectiveStatus} />
+                <SubStatusBadge status={derivedStatus} />
                 <Link
                   href="/dashboard/licenses"
                   className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-3 py-1.5 rounded-lg transition-colors"
@@ -350,10 +359,11 @@ function CancellationModal({
 
 function SubStatusBadge({ status }: { status: string }) {
   const map: Record<string, { style: string; label: string }> = {
-    active:    { style: 'text-ok bg-ok-soft border-ok/20',           label: '활성' },
-    paused:    { style: 'text-caution bg-caution-soft border-caution/20', label: '일시정지' },
-    cancelled: { style: 'text-ink-soft bg-paper-shade border-rule',  label: '취소됨' },
-    expired:   { style: 'text-ink-soft bg-paper-shade border-rule',  label: '만료됨' },
+    active:     { style: 'text-ok bg-ok-soft border-ok/20',               label: '활성' },
+    cancelling: { style: 'text-caution bg-caution-soft border-caution/20', label: '취소 예약' },
+    paused:     { style: 'text-caution bg-caution-soft border-caution/20', label: '일시정지' },
+    cancelled:  { style: 'text-ink-soft bg-paper-shade border-rule',      label: '취소됨' },
+    expired:    { style: 'text-ink-soft bg-paper-shade border-rule',      label: '만료됨' },
   }
   const { style, label } = map[status] ?? map.cancelled
   return (

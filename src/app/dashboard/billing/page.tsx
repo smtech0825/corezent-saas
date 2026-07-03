@@ -38,7 +38,7 @@ export default async function BillingPage({
   const [{ data: subscriptions, count: subTotal }, { data: orders, count: ordTotal }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id, lemon_squeezy_subscription_id', { count: 'exact' })
+      .select('id, order_id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id, lemon_squeezy_subscription_id', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(subOffset, subOffset + SUB_PAGE_SIZE - 1),
@@ -72,6 +72,20 @@ export default async function BillingPage({
       if (pp.products?.id) priceProductMap.set(pp.id, pp.products.id)
       const parts = [pp.option_axis1_label, pp.option_axis2_label].filter(Boolean)
       if (parts.length) priceOptMap.set(pp.id, parts.join(' · '))
+    })
+  }
+
+  // "알 수 없음" 폴백 — product_price_id로 제품명을 못 구한 구독/주문을 위해
+  // 라이선스(order_id→product_id→products.name)로 2차 해석 맵 구성.
+  // 라이선스는 product_id NOT NULL이라 유료 주문이면 항상 제품명을 복원할 수 있다.
+  const productNameByOrderId = new Map<string, string>()
+  {
+    const { data: userLics } = await supabase
+      .from('licenses')
+      .select('order_id, products(name)')
+      .eq('user_id', user.id)
+    ;(userLics ?? []).forEach((l: any) => {
+      if (l.order_id && l.products?.name) productNameByOrderId.set(l.order_id, l.products.name)
     })
   }
 
@@ -141,11 +155,14 @@ export default async function BillingPage({
                 return {
                   id:                   sub.id,
                   productId,
-                  productName:          priceNameMap.get(sub.product_price_id) ?? '알 수 없음',
+                  productName:          priceNameMap.get(sub.product_price_id)
+                                          ?? (sub.order_id ? productNameByOrderId.get(sub.order_id) : undefined)
+                                          ?? 'CoreZent 제품',
                   optionLabel:          priceOptMap.get(sub.product_price_id) ?? null,
                   billingInterval:      sub.billing_interval,
                   currentPeriodEnd:     sub.current_period_end ?? null,
                   status:               sub.status,
+                  cancelAtPeriodEnd:    sub.cancel_at_period_end ?? false,
                   lsSubscriptionId:     sub.lemon_squeezy_subscription_id ?? null,
                   manualUrl:            priceManualMap.get(sub.product_price_id) ?? null,
                   changelog,
@@ -188,7 +205,7 @@ export default async function BillingPage({
                   <div className="flex items-center gap-3">
                     <CreditCard size={14} className="text-ink-faint shrink-0 hidden md:block" />
                     <div>
-                      <span className="text-sm text-ink">{priceNameMap.get(order.product_price_id) ?? '주문'}</span>
+                      <span className="text-sm text-ink">{priceNameMap.get(order.product_price_id) ?? productNameByOrderId.get(order.id) ?? '주문'}</span>
                       {priceOptMap.get(order.product_price_id) && (
                         <span className="block text-xs text-mark mt-0.5">{priceOptMap.get(order.product_price_id)}</span>
                       )}

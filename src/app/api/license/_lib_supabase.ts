@@ -349,6 +349,10 @@ export async function insertLicense(input: {
   source:     'lemon_squeezy' | 'manual'
   product:    SupabaseProduct
 }): Promise<void> {
+  // tier 누락 방어 — tier 없이 발급하면 HWID 한도를 결정할 수 없어 조용히 넘기지 않고 명시적 에러.
+  if (!input.tier) {
+    throw new Error(`insertLicense: tier 누락 — 라이선스 발급 중단 (product=${input.product})`)
+  }
   try {
     const admin = licenseClientFor(input.product)
 
@@ -401,6 +405,10 @@ export async function upsertLicenseForOrder(input: {
   source:     'lemon_squeezy' | 'manual'
   product:    SupabaseProduct
 }): Promise<{ finalKey: string; wasExisting: boolean }> {
+  // tier 누락 방어 — 신규 INSERT/메타 갱신 모두 tier가 필요(HWID 한도 결정). 조용히 넘기지 않음.
+  if (!input.tier) {
+    throw new Error(`upsertLicenseForOrder: tier 누락 — 라이선스 발급 중단 (ls_order_id=${input.lsOrderId})`)
+  }
   const admin = licenseClientFor(input.product)
 
   const { data: existing } = await admin

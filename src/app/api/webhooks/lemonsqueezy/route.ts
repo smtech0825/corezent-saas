@@ -196,7 +196,10 @@ export async function POST(req: NextRequest) {
       target: payload.data?.id ? String(payload.data.id) : null,
       error:  String(err),
     })
-    return NextResponse.json({ received: true, error: String(err) }, { status: 200 })
+    // 500 반환 → LS 재전송 유도(부분 실패 삼킴 제거). 모든 주요 INSERT는 order_id/sub_id/order_id 기준
+    // 멱등이라 재전송에 안전. 사용자 미존재·상품 미매칭 등 재시도로 해결 불가한 케이스는 핸들러가
+    // throw 대신 return으로 정상 종료(200)하므로 여기에 도달하지 않는다(무한 재전송 방지).
+    return NextResponse.json({ received: false, error: String(err) }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })
@@ -675,36 +678,33 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
   const licInfo = await findLicensesByLsSubId(lsSubId)
 
   // 구독 갱신 시 → license.expires_at 동기화 + (GenieStock: Supabase / GeniePost: Sheets) 갱신
+  // 동기화 실패는 삼키지 않고 상위로 전파 → 웹훅 500 → LS 재전송(멱등 UPDATE라 재전송 안전).
   if (attrs.renews_at && licInfo) {
-    try {
-      // DB license.expires_at를 구독 갱신일과 동기화 (주문의 모든 라이선스 공통)
-      await admin
-        .from('licenses')
-        .update({ expires_at: attrs.renews_at, status: 'active' })
-        .eq('order_id', licInfo.orderId)
+    // DB license.expires_at를 구독 갱신일과 동기화 (주문의 모든 라이선스 공통)
+    await admin
+      .from('licenses')
+      .update({ expires_at: attrs.renews_at, status: 'active' })
+      .eq('order_id', licInfo.orderId)
 
-      // 키별 라우팅: 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
-      for (const lic of licInfo.licenses) {
-        const found = await supaFindLicenseInAnyDb(lic.serialKey)
-        if (found) {
-          // GenieStock/GenieWork 경로 — 찾은 DB(found.db)에 만료일/활성 동기화
-          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-          await supaUpdateLicenseExpiry(lic.serialKey, attrs.renews_at, p)
-          if (newStatus === 'active') {
-            await supaSetLicenseActive(lic.serialKey, true, p)
-          }
-          console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
-        } else {
-          // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
-          await updateLicenseExpiry({ serialKey: lic.serialKey, expiresAt: attrs.renews_at })
-          if (newStatus === 'active') {
-            await updateLicenseStatus({ serialKey: lic.serialKey, status: '활성' })
-          }
-          console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
+    // 키별 라우팅: 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
+    for (const lic of licInfo.licenses) {
+      const found = await supaFindLicenseInAnyDb(lic.serialKey)
+      if (found) {
+        // GenieStock/GenieWork 경로 — 찾은 DB(found.db)에 만료일/활성 동기화
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaUpdateLicenseExpiry(lic.serialKey, attrs.renews_at, p)
+        if (newStatus === 'active') {
+          await supaSetLicenseActive(lic.serialKey, true, p)
         }
+        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
+      } else {
+        // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
+        await updateLicenseExpiry({ serialKey: lic.serialKey, expiresAt: attrs.renews_at })
+        if (newStatus === 'active') {
+          await updateLicenseStatus({ serialKey: lic.serialKey, status: '활성' })
+        }
+        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
       }
-    } catch (syncErr) {
-      console.error('[LS Webhook] Sheets/DB 동기화 실패:', syncErr)
     }
   }
 }
@@ -739,21 +739,18 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
       .update({ status: 'expired' })
       .eq('order_id', licInfo.orderId)
 
-    try {
-      // 키별 라우팅: 양쪽 DB(공유+GW)에서 키를 찾아 그 DB로 비활성화, 없으면 GeniePost(Sheets)
-      for (const lic of licInfo.licenses) {
-        const found = await supaFindLicenseInAnyDb(lic.serialKey)
-        if (found) {
-          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-          await supaSetLicenseActive(lic.serialKey, false, p)
-          console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${lic.serialKey.slice(0, 8)}...`)
-        } else {
-          await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
-          console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serialKey.slice(0, 8)}...`)
-        }
+    // 동기화 실패는 삼키지 않고 전파 → 500 → LS 재전송(멱등 비활성화라 재전송 안전)
+    // 키별 라우팅: 양쪽 DB(공유+GW)에서 키를 찾아 그 DB로 비활성화, 없으면 GeniePost(Sheets)
+    for (const lic of licInfo.licenses) {
+      const found = await supaFindLicenseInAnyDb(lic.serialKey)
+      if (found) {
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(lic.serialKey, false, p)
+        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${lic.serialKey.slice(0, 8)}...`)
+      } else {
+        await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serialKey.slice(0, 8)}...`)
       }
-    } catch (syncErr) {
-      console.error('[LS Webhook] 비활성화 동기화 실패:', syncErr)
     }
   }
 }
@@ -786,20 +783,17 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       .update({ status: 'expired' })
       .eq('order_id', licInfo.orderId)
 
-    try {
-      for (const lic of licInfo.licenses) {
-        const found = await supaFindLicenseInAnyDb(lic.serialKey)
-        if (found) {
-          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-          await supaSetLicenseActive(lic.serialKey, false, p)
-          console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${lic.serialKey.slice(0, 8)}...`)
-        } else {
-          await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
-          console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${lic.serialKey.slice(0, 8)}...`)
-        }
+    // 동기화 실패는 삼키지 않고 전파 → 500 → LS 재전송(멱등 비활성화라 재전송 안전)
+    for (const lic of licInfo.licenses) {
+      const found = await supaFindLicenseInAnyDb(lic.serialKey)
+      if (found) {
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(lic.serialKey, false, p)
+        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${lic.serialKey.slice(0, 8)}...`)
+      } else {
+        await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
+        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${lic.serialKey.slice(0, 8)}...`)
       }
-    } catch (syncErr) {
-      console.error('[LS Webhook] 결제 실패 동기화 실패:', syncErr)
     }
   }
 
@@ -850,20 +844,17 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
 
   console.log(`[LS Webhook] 환불 처리 완료: ${lsOrderId}`)
 
+  // 동기화 실패는 삼키지 않고 전파 → 500 → LS 재전송(멱등 비활성화라 재전송 안전)
   for (const lic of lics ?? []) {
     if (!lic?.serial_key) continue
-    try {
-      const found = await supaFindLicenseInAnyDb(lic.serial_key)
-      if (found) {
-        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-        await supaSetLicenseActive(lic.serial_key, false, p)
-        console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key.slice(0, 8)}...`)
-      } else {
-        await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key.slice(0, 8)}...`)
-      }
-    } catch (syncErr) {
-      console.error('[LS Webhook] 환불 동기화 실패:', syncErr)
+    const found = await supaFindLicenseInAnyDb(lic.serial_key)
+    if (found) {
+      const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+      await supaSetLicenseActive(lic.serial_key, false, p)
+      console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key.slice(0, 8)}...`)
+    } else {
+      await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
+      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key.slice(0, 8)}...`)
     }
   }
 
@@ -940,7 +931,9 @@ async function createLicense(
         target: lsOrderId ?? null,
         error:  `${supaSlug} 라이선스 미발급 — tier 미결정. license_tier="${licenseTier ?? ''}", slug="${productSlug}". 옵션 행에 유효 tier(1pc/3pc/5pc/10pc/lite/pro/max)를 입력하세요.`,
       })
-      return
+      // 조용히 return하지 않고 throw → 웹훅 500 → LS 재전송. 옵션 행에 유효 tier를 입력하면
+      // 재전송 시 정상 발급되어 자가 치유됨(멱등: 이 주문 라이선스 존재 시 상단에서 skip).
+      throw new Error(`${supaSlug} 라이선스 tier 미결정 — 발급 중단 (order_id=${lsOrderId ?? 'N/A'}, license_tier="${licenseTier ?? ''}", slug="${productSlug}")`)
     }
 
     // 키 목록 구성: LS 자동 발급 키 우선(LS는 수량 무관 주문당 1개가 기본), 부족분은 자체 생성

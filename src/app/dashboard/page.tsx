@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Key, CreditCard, Package, ArrowRight } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
+import { deriveSubStatus, isActiveSub } from '@/lib/subscription-status'
 import Link from 'next/link'
 import OnboardingChecklist from './OnboardingChecklist'
 
@@ -20,24 +21,41 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const [{ count: licenseCount }, { data: subscriptions }, { data: orders }, { count: downloadedCount }] = await Promise.all([
+  const [
+    { count: licenseCount },
+    { data: allSubs },
+    { data: orders },
+    { count: orderTotal },
+    { data: userLicenses },
+    { count: downloadedCount },
+  ] = await Promise.all([
     supabase
       .from('licenses')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id),
+    // 활성 집계는 파생 상태(active|cancelling)로 판정하므로 전체 구독을 가져와 JS에서 필터.
+    // (기존엔 status='active' + limit(3) 배열 길이를 카운트로 써서 3으로 상한 걸리는 버그가 있었음)
     supabase
       .from('subscriptions')
-      .select('id, status, billing_interval, current_period_start, current_period_end, product_price_id')
+      .select('id, order_id, status, cancel_at_period_end, billing_interval, current_period_start, current_period_end, product_price_id')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(3),
+      .order('created_at', { ascending: false }),
     supabase
       .from('orders')
       .select('id, amount, status, created_at, product_price_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5),
+    // 전체 주문 수 — billing 페이지의 결제 내역 총계와 동일 집계(실제 count)
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+    // "알 수 없음" 폴백용 — order_id→제품명 (라이선스는 product_id NOT NULL)
+    supabase
+      .from('licenses')
+      .select('order_id, products(name)')
+      .eq('user_id', user.id),
     // 온보딩 ① 다운로드 자동 판정 — 다운로드 기록(last_downloaded_version)이 있는 라이선스 수
     supabase
       .from('licenses')
@@ -46,9 +64,13 @@ export default async function DashboardPage() {
       .not('last_downloaded_version', 'is', null),
   ])
 
+  // 활성 구독 = 파생 상태 active|cancelling (단일 출처). 목록은 최근 3개만 표시.
+  const activeSubs = (allSubs ?? []).filter((s: any) => isActiveSub(s))
+  const subscriptions = activeSubs.slice(0, 3)
+
   // product_price_id로 제품명 조회
   const priceIds = [...new Set([
-    ...(subscriptions ?? []).map((s: any) => s.product_price_id),
+    ...activeSubs.map((s: any) => s.product_price_id),
     ...(orders ?? []).map((o: any) => o.product_price_id),
   ].filter(Boolean))]
 
@@ -62,6 +84,12 @@ export default async function DashboardPage() {
       priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent 제품')
     })
   }
+
+  // order_id→제품명 폴백 맵 (product_price_id로 못 구한 구독/주문 보완)
+  const productNameByOrderId = new Map<string, string>()
+  ;(userLicenses ?? []).forEach((l: any) => {
+    if (l.order_id && l.products?.name) productNameByOrderId.set(l.order_id, l.products.name)
+  })
 
   const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? '회원'
 
@@ -95,13 +123,13 @@ export default async function DashboardPage() {
         <StatCard
           icon={<Package size={18} className="text-mark" />}
           label="활성 구독"
-          value={String(subscriptions?.length ?? 0)}
+          value={String(activeSubs.length)}
           href="/dashboard/billing"
         />
         <StatCard
           icon={<CreditCard size={18} className="text-mark" />}
           label="전체 주문"
-          value={String(orders?.length ?? 0)}
+          value={String(orderTotal ?? 0)}
           href="/dashboard/billing"
         />
       </div>
@@ -111,11 +139,13 @@ export default async function DashboardPage() {
         <Section title="활성 구독" href="/dashboard/billing">
           {subscriptions && subscriptions.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {subscriptions.map((sub: any) => (
+              {subscriptions.map((sub: any) => {
+                const cancelling = deriveSubStatus(sub) === 'cancelling'
+                return (
                 <div key={sub.id} className="flex items-start justify-between gap-3 py-3 border-b border-rule last:border-0">
                   <div className="min-w-0">
                     <p className="text-sm text-ink font-medium truncate">
-                      {priceNameMap.get(sub.product_price_id) ?? '알 수 없음'}
+                      {priceNameMap.get(sub.product_price_id) ?? productNameByOrderId.get(sub.order_id) ?? 'CoreZent 제품'}
                     </p>
                     <p className="text-xs text-ink-faint mt-0.5">
                       {sub.billing_interval === 'annual' ? '연간' : '월간'} 플랜
@@ -124,11 +154,18 @@ export default async function DashboardPage() {
                       시작일 {fmtDate(sub.current_period_start)}
                     </p>
                   </div>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-ok-soft text-ok border border-ok/20 shrink-0">
-                    활성
-                  </span>
+                  {cancelling ? (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-caution-soft text-caution border border-caution/20 shrink-0">
+                      취소 예약
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-ok-soft text-ok border border-ok/20 shrink-0">
+                      활성
+                    </span>
+                  )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <EmptyState message="활성 구독이 없습니다." cta="제품 둘러보기" href="/pricing" />
@@ -142,7 +179,7 @@ export default async function DashboardPage() {
               {orders.map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-rule last:border-0">
                   <div>
-                    <p className="text-sm text-ink font-medium">{priceNameMap.get(order.product_price_id) ?? '주문'}</p>
+                    <p className="text-sm text-ink font-medium">{priceNameMap.get(order.product_price_id) ?? productNameByOrderId.get(order.id) ?? '주문'}</p>
                     <p className="text-xs text-ink-faint mt-0.5">
                       {fmtDate(order.created_at)}
                     </p>

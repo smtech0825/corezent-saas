@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const adminClient = createAdminClient()
     const { data: subscription, error: fetchErr } = await adminClient
       .from('subscriptions')
-      .select('id, user_id, status, lemon_squeezy_subscription_id')
+      .select('id, user_id, status, cancel_at_period_end, lemon_squeezy_subscription_id')
       .eq('id', subscriptionId)
       .single()
 
@@ -44,6 +44,11 @@ export async function POST(request: Request) {
 
     if (subscription.status !== 'active') {
       return NextResponse.json({ error: 'Subscription is not active' }, { status: 400 })
+    }
+
+    // 이미 취소 예약된 구독은 중복 취소 방지
+    if (subscription.cancel_at_period_end === true) {
+      return NextResponse.json({ error: 'Subscription is already scheduled for cancellation' }, { status: 400 })
     }
 
     const lsSubId = subscription.lemon_squeezy_subscription_id
@@ -73,11 +78,13 @@ export async function POST(request: Request) {
       throw new Error(`Lemon Squeezy API error: ${lsRes.status}`)
     }
 
-    // 4. DB 상태 업데이트 — cancelled + 취소 사유 저장
+    // 4. DB 상태 업데이트 — '취소 예약'으로 즉시 반영.
+    //    status는 'active' 유지(결제 기간 종료까지 접근 유지) + cancel_at_period_end=true로 취소 예약 표시.
+    //    최종 'cancelled'/'expired' 전환은 LS 웹훅(subscription_cancelled/expired) 도착 시 덮어씀.
+    //    (status='cancelled'로 즉시 바꾸면 접근이 남았는데도 "취소됨"으로 오표시되던 문제 교정)
     const { error: updateErr } = await adminClient
       .from('subscriptions')
       .update({
-        status: 'cancelled',
         cancel_at_period_end: true,
         cancellation_reason: reason,
         updated_at: new Date().toISOString(),
