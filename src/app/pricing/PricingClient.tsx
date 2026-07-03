@@ -287,7 +287,10 @@ export default function PricingClient({ products, affiliateRef }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-ink-soft leading-relaxed mb-8">{product.tagline}</p>
+                    {/* 태그라인 — 빈 값이면 영역 자체를 렌더하지 않음(빈 여백 방지) */}
+                    {product.tagline && (
+                      <p className="text-sm text-ink-soft leading-relaxed mb-8">{product.tagline}</p>
+                    )}
 
                     {/* 가격 — 숫자는 헤드라인, "VAT 포함"은 아래 안내 문구로 분리 */}
                     <div className="mb-8">

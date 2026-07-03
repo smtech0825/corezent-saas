@@ -186,7 +186,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-ink">{formatKRW(order.amount)}</p>
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={order.status} amount={Number(order.amount) || 0} />
                   </div>
                 </div>
               ))}
@@ -247,7 +247,15 @@ function EmptyState({ message, cta, href }: { message: string; cta: string; href
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, amount }: { status: string; amount: number }) {
+  // ₩0(무료·테스트) 주문은 "결제 완료"와 구분되는 '무료' 배지로 표시
+  if (status === 'paid' && amount <= 0) {
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full border text-info bg-info-soft border-info/20">
+        무료
+      </span>
+    )
+  }
   const map: Record<string, string> = {
     paid:      'text-ok bg-ok-soft border-ok/20',
     pending:   'text-caution bg-caution-soft border-caution/20',

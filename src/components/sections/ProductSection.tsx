@@ -9,6 +9,7 @@ import { Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import { lowestPriceRow } from '@/lib/product-pricing'
 import Section, { SectionHeader } from '@/components/ui/Section'
 import Button from '@/components/ui/Button'
 
@@ -83,8 +84,9 @@ export default async function ProductSection() {
   const dbCards: ProductCard[] = (rawProducts ?? []).map((p) => {
     const prices = ((p.product_prices ?? []) as Array<{ type: string; interval: string | null; price: number; is_active: boolean }>)
       .filter((pr) => pr.is_active)
-    const monthly = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'monthly')
-    const annual = prices.find((pr) => pr.type === 'subscription' && pr.interval === 'annual')
+    // 대표가는 '첫 행'이 아니라 '최저가 행'(고가 티어가 대표가로 노출되던 문제 방지)
+    const monthly = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')
+    const annual = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'annual')
 
     return {
       name: p.name as string,
@@ -156,7 +158,10 @@ export default async function ProductSection() {
                   </span>
                 )}
               </div>
-              <p className="text-pen text-sm font-medium mb-4">{product.tagline}</p>
+              {/* 태그라인 — 빈 값이면 영역 자체를 렌더하지 않음(빈 여백 방지) */}
+              {product.tagline && (
+                <p className="text-pen text-sm font-medium mb-4">{product.tagline}</p>
+              )}
 
               {/* 설명 — 3줄 클램프 + 더보기 → /product 이동 */}
               {product.description && (

@@ -217,7 +217,7 @@ export default async function BillingPage({
                   <span className="text-sm text-ink font-medium">
                     {formatKRW(order.amount)}
                   </span>
-                  <OrderStatusBadge status={order.status} />
+                  <OrderStatusBadge status={order.status} amount={Number(order.amount) || 0} />
                 </div>
               ))}
             </div>
@@ -245,7 +245,15 @@ function EmptyCard({ icon, message, action }: { icon: React.ReactNode; message: 
   )
 }
 
-function OrderStatusBadge({ status }: { status: string }) {
+function OrderStatusBadge({ status, amount }: { status: string; amount: number }) {
+  // ₩0(무료·테스트) 주문은 "결제 완료"와 구분되는 '무료' 배지로 표시
+  if (status === 'paid' && amount <= 0) {
+    return (
+      <span className="text-xs px-2.5 py-1 rounded-full border font-medium text-center text-info bg-info-soft border-info/20">
+        무료
+      </span>
+    )
+  }
   const map: Record<string, string> = {
     paid:      'text-ok bg-ok-soft border-ok/20',
     pending:   'text-caution bg-caution-soft border-caution/20',

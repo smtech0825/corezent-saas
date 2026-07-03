@@ -106,6 +106,19 @@ export default async function LicensesPage({
 
   const total = count ?? 0
 
+  // "다운로드" 열은 이 페이지의 라이선스 중 하나라도 릴리스(설치파일/노트) 데이터가 있을 때만 표시.
+  // 전부 없으면 열 자체를 숨겨 빈 "—" 열이 남지 않게 한다.
+  const showDownloadCol = (licenses ?? []).some(
+    (l: any) => l.product_id && changelogMap.has(l.product_id as string),
+  )
+  // 그리드 템플릿 — 다운로드 열 유무에 따라 컬럼 수를 바꾼다(Tailwind가 리터럴을 찾도록 전체 문자열로 기술)
+  const headerCols = showDownloadCol
+    ? 'grid-cols-[1fr_130px_90px_90px_130px_auto]'
+    : 'grid-cols-[1fr_130px_90px_90px_130px]'
+  const rowCols = showDownloadCol
+    ? 'md:grid-cols-[1fr_130px_90px_90px_130px_auto]'
+    : 'md:grid-cols-[1fr_130px_90px_90px_130px]'
+
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
       <div className="mb-8">
@@ -120,13 +133,13 @@ export default async function LicensesPage({
         <>
           <div className="bg-paper-raised border border-rule rounded-xl overflow-hidden">
             {/* 테이블 헤더 */}
-            <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_130px_auto] gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium">
+            <div className={`hidden md:grid ${headerCols} gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium`}>
               <span>라이선스 키</span>
               <span>제품</span>
               <span>상태</span>
               <span>주기</span>
               <span>만료일</span>
-              <span>다운로드</span>
+              {showDownloadCol && <span>다운로드</span>}
             </div>
 
             {/* 라이선스 목록 */}
@@ -145,7 +158,7 @@ export default async function LicensesPage({
               return (
                 <div
                   key={lic.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_130px_90px_90px_130px_auto] gap-2 md:gap-4 items-center px-5 py-4 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors"
+                  className={`grid grid-cols-1 ${rowCols} gap-2 md:gap-4 items-center px-5 py-4 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors`}
                 >
                   {/* 시리얼 키 */}
                   <div className="flex items-center gap-2">
@@ -205,31 +218,33 @@ export default async function LicensesPage({
                     )}
                   </div>
 
-                  {/* 다운로드 — 최신 릴리스의 설치파일(있으면) + 릴리스 노트 딥링크 */}
-                  <div>
-                    {changelog ? (
-                      <div className="flex flex-col items-start gap-1">
-                        {hasDownload && lic.product_id && (
-                          <DownloadButton
-                            productId={lic.product_id}
-                            version={changelog.version}
-                            downloadUrls={changelog.download_urls}
-                            isNew={isNewVersion}
-                          />
-                        )}
-                        {lic.products?.slug && (
-                          <Link
-                            href={`/changelog?product=${lic.products.slug}`}
-                            className="text-[11px] text-ink-faint hover:text-ink-soft transition-colors"
-                          >
-                            v{changelog.version} · 릴리스 노트
-                          </Link>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-ink-faint">—</span>
-                    )}
-                  </div>
+                  {/* 다운로드 — 이 페이지에 릴리스 데이터가 하나라도 있을 때만 열을 렌더 */}
+                  {showDownloadCol && (
+                    <div>
+                      {changelog ? (
+                        <div className="flex flex-col items-start gap-1">
+                          {hasDownload && lic.product_id && (
+                            <DownloadButton
+                              productId={lic.product_id}
+                              version={changelog.version}
+                              downloadUrls={changelog.download_urls}
+                              isNew={isNewVersion}
+                            />
+                          )}
+                          {lic.products?.slug && (
+                            <Link
+                              href={`/changelog?product=${lic.products.slug}`}
+                              className="text-[11px] text-ink-faint hover:text-ink-soft transition-colors"
+                            >
+                              v{changelog.version} · 릴리스 노트
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-ink-faint">—</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}
