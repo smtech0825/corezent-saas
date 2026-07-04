@@ -10,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const footerLinks = {
   제품: [
-    { label: '요금제', href: '/pricing' },
+    { label: '요금', href: '/pricing' },
   ],
   회사: [
     { label: '회사소개', href: '/about' },
