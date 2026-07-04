@@ -12,7 +12,6 @@ import {
   List, ListOrdered, Undo2, Redo2, Video, Eraser, Code, Table as TableIcon,
   AlignLeft, AlignCenter, AlignRight,
 } from 'lucide-react'
-import { setYoutubeControls } from '@/lib/rich-html'
 
 // 글자색 팔레트 — @theme 토큰(먹·볼펜·인주·회색) 위주 + 가독성 좋은 보조색
 const COLORS: { label: string; hex: string }[] = [
@@ -32,14 +31,6 @@ const IMG_SIZES: { label: string; width: string | null }[] = [
   { label: '중', width: '480' },
   { label: '대', width: '768' },
   { label: '원본', width: null },
-]
-
-// 유튜브 폭 프리셋(%) — 래퍼 max-width로 적용·가운데 정렬. '전체'는 width 제거(콘텐츠 폭 100%)
-const VIDEO_SIZES: { label: string; width: string | null }[] = [
-  { label: '소', width: '40%' },
-  { label: '중', width: '60%' },
-  { label: '대', width: '80%' },
-  { label: '전체', width: null },
 ]
 
 /** 툴바 아이콘 버튼 */
@@ -116,7 +107,6 @@ export default function EditorToolbar({
 }: Props) {
   const richMode = mode === 'rich'
   const imageSelected = richMode && editor.isActive('image')
-  const videoSelected = richMode && editor.isActive('youtube')
   const tableActive = richMode && editor.isActive('table')
 
   return (
@@ -188,26 +178,6 @@ export default function EditorToolbar({
               {s.label}
             </SmallBtn>
           ))}
-        </div>
-      )}
-
-      {/* 유튜브 선택 시 크기·컨트롤 조절 바 */}
-      {videoSelected && (
-        <div className="flex items-center gap-1.5 flex-wrap border-b border-rule bg-paper-shade px-3 py-1.5">
-          <span className="text-xs text-ink-faint mr-1">동영상 크기</span>
-          {VIDEO_SIZES.map((s) => (
-            <SmallBtn key={s.label} onClick={() => editor.chain().focus().updateAttributes('youtube', { width: s.width }).run()}>
-              {s.label}
-            </SmallBtn>
-          ))}
-          <span className="mx-0.5 h-4 w-px bg-rule" />
-          <span className="text-xs text-ink-faint mr-1">컨트롤</span>
-          <SmallBtn onClick={() => editor.chain().focus().updateAttributes('youtube', { src: setYoutubeControls(editor.getAttributes('youtube').src, true) }).run()}>
-            표시
-          </SmallBtn>
-          <SmallBtn onClick={() => editor.chain().focus().updateAttributes('youtube', { src: setYoutubeControls(editor.getAttributes('youtube').src, false) }).run()}>
-            숨김
-          </SmallBtn>
         </div>
       )}
 

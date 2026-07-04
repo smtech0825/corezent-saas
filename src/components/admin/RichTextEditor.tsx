@@ -127,9 +127,10 @@ export default function RichTextEditor({ value, onChange, maxWidthClass }: Props
     const autoplay = window.confirm(
       '자동재생으로 넣을까요?\n\n[확인] 무음 · 자동재생 · 자동반복 · 컨트롤 숨김 (배경 영상용, 소리는 나지 않습니다)\n[취소] 일반 삽입 (방문자가 직접 재생)',
     )
-    // 자동재생은 유튜브 파라미터로 제어(mute=1 필수, loop 반복은 playlist=<id> 필요, controls=0으로 재생바 숨김). 삽입 후 툴바에서 크기·컨트롤 조절 가능.
+    // 자동재생은 유튜브 파라미터로 제어(mute=1 필수, loop 반복은 playlist=<id> 필요, controls=0=재생바 숨김, rel=0·modestbranding=1=관련영상·로고 최소화).
+    // 삽입 후 영상에 마우스를 올리면 나타나는 오버레이 바에서 크기·컨트롤 조절 가능.
     const src = autoplay
-      ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&controls=0&playlist=${id}&playsinline=1`
+      ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&controls=0&rel=0&modestbranding=1&playlist=${id}&playsinline=1`
       : url
     editor.chain().focus().setYoutubeVideo({ src }).run()
   }, [editor])

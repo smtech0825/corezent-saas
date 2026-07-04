@@ -225,19 +225,24 @@
     overflow: hidden;
   }
   .rich-content .rc-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  /* 편집기 전용 유튜브 삭제 버튼(공개 렌더 HTML엔 이 버튼 요소가 없어 표시되지 않음) — hover/선택 시 우상단에 노출 */
-  .rich-content .rc-embed .rc-embed-del {
-    position: absolute; top: 6px; right: 6px; z-index: 2;
-    display: flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; padding: 0;
-    font-size: 1.125rem; line-height: 1; color: #fff;
-    background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 9999px; cursor: pointer; opacity: 0;
-    transition: opacity 0.15s ease, background 0.15s ease;
+  /* 편집기 전용 유튜브 편집 오버레이 바(공개 렌더 HTML엔 이 요소가 없어 표시되지 않음) — hover/선택 시 상단에 노출 */
+  .rich-content .rc-embed .rc-embed-bar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    padding: 6px; opacity: 0;
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0));
+    transition: opacity 0.15s ease;
   }
-  .rich-content .rc-embed:hover .rc-embed-del,
-  .rich-content .rc-embed.ProseMirror-selectednode .rc-embed-del { opacity: 1; }
-  .rich-content .rc-embed .rc-embed-del:hover { background: var(--color-danger); border-color: var(--color-danger); }
+  .rich-content .rc-embed:hover .rc-embed-bar,
+  .rich-content .rc-embed.ProseMirror-selectednode .rc-embed-bar { opacity: 1; }
+  .rich-content .rc-embed .rc-embed-label { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.7); margin: 0 2px 0 4px; }
+  .rich-content .rc-embed .rc-embed-btn {
+    font-size: 0.6875rem; line-height: 1; color: #fff; padding: 3px 7px;
+    background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px; cursor: pointer; transition: background 0.15s ease;
+  }
+  .rich-content .rc-embed .rc-embed-btn:hover { background: rgba(255, 255, 255, 0.28); }
+  .rich-content .rc-embed .rc-embed-btn-danger:hover { background: var(--color-danger); border-color: var(--color-danger); }
   /* 방어적 — .rc-embed 래퍼가 없는 iframe도 폭이 넘치지 않도록 */
   .rich-content iframe { max-width: 100%; }
   /* 편집기 안에서 선택된 이미지 강조 */

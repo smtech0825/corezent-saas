@@ -9,7 +9,15 @@
  */
 
 import Youtube from '@tiptap/extension-youtube'
-import { youtubeId, normalizeYoutubeSrc, YT_IFRAME_ALLOW } from '@/lib/rich-html'
+import { youtubeId, normalizeYoutubeSrc, setYoutubeControls, YT_IFRAME_ALLOW } from '@/lib/rich-html'
+
+// 편집 오버레이 크기 프리셋(래퍼 max-width %). '전체'는 width 제거(콘텐츠 폭 100%)
+const OVERLAY_SIZES: { label: string; width: string | null }[] = [
+  { label: '소', width: '40%' },
+  { label: '중', width: '60%' },
+  { label: '대', width: '80%' },
+  { label: '전체', width: null },
+]
 
 /**
  * @상수: YoutubeEmbed
@@ -63,8 +71,8 @@ export const YoutubeEmbed = Youtube.extend({
     return ['iframe', out]
   },
 
-  // 편집기 미리보기: 공개와 동일한 .rc-embed 16:9 래퍼. iframe은 pointer-events 차단해 클릭 시 노드가 선택되게 한다.
-  // atom 노드 선택이 헷갈릴 때도 확실히 지울 수 있도록 편집기 전용 삭제 버튼(×)을 오버레이한다(공개 렌더엔 없음).
+  // 편집기 미리보기: 공개와 동일한 .rc-embed 16:9 래퍼. iframe은 pointer-events 차단.
+  // 영상 위에 마우스를 올리면 나타나는 편집 오버레이 바(크기·컨트롤·삭제)를 제공한다 — 노드 선택 상태에 의존하지 않아 항상 동작(공개 렌더엔 없음).
   addNodeView() {
     return ({ node, editor, getPos }) => {
       const attrs = node.attrs as { src?: string; width?: string | null }
@@ -87,27 +95,53 @@ export const YoutubeEmbed = Youtube.extend({
       iframe.style.pointerEvents = 'none'
       dom.appendChild(iframe)
 
-      const del = document.createElement('button')
-      del.type = 'button'
-      del.className = 'rc-embed-del'
-      del.setAttribute('contenteditable', 'false')
-      del.setAttribute('title', '동영상 삭제')
-      del.setAttribute('aria-label', '동영상 삭제')
-      del.textContent = '×'
-      del.addEventListener('click', (e) => {
-        e.preventDefault()
-        if (typeof getPos !== 'function') return
-        const pos = getPos()
-        if (typeof pos !== 'number') return
-        editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run()
-      })
-      dom.appendChild(del)
+      // 이 노드의 현재 위치를 얻어 선택 후 명령을 적용(getPos는 렌더마다 최신값)
+      const pos = () => (typeof getPos === 'function' ? getPos() : undefined)
+      const apply = (fn: (p: number) => void) => {
+        const p = pos()
+        if (typeof p === 'number') fn(p)
+      }
+
+      const bar = document.createElement('div')
+      bar.className = 'rc-embed-bar'
+      bar.setAttribute('contenteditable', 'false')
+
+      const addBtn = (label: string, title: string, onClick: () => void, danger = false) => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.textContent = label
+        b.title = title
+        b.className = danger ? 'rc-embed-btn rc-embed-btn-danger' : 'rc-embed-btn'
+        b.addEventListener('click', (e) => { e.preventDefault(); onClick() })
+        bar.appendChild(b)
+        return b
+      }
+      const addLabel = (text: string) => {
+        const s = document.createElement('span')
+        s.className = 'rc-embed-label'
+        s.textContent = text
+        bar.appendChild(s)
+      }
+
+      // 크기
+      addLabel('크기')
+      for (const s of OVERLAY_SIZES) {
+        addBtn(s.label, `크기 ${s.label}`, () => apply((p) => editor.chain().setNodeSelection(p).updateAttributes('youtube', { width: s.width }).run()))
+      }
+      // 컨트롤(재생바) 표시/숨김 — src의 controls 파라미터 토글
+      addLabel('컨트롤')
+      addBtn('표시', '컨트롤 표시', () => apply((p) => editor.chain().setNodeSelection(p).updateAttributes('youtube', { src: setYoutubeControls(attrs.src || '', true) }).run()))
+      addBtn('숨김', '컨트롤 숨김', () => apply((p) => editor.chain().setNodeSelection(p).updateAttributes('youtube', { src: setYoutubeControls(attrs.src || '', false) }).run()))
+      // 삭제
+      addBtn('삭제', '동영상 삭제', () => apply((p) => editor.chain().focus().deleteRange({ from: p, to: p + node.nodeSize }).run()), true)
+
+      dom.appendChild(bar)
 
       return {
         dom,
-        // 삭제 버튼 이벤트는 ProseMirror가 가로채지 않게(노드 선택 대신 버튼 클릭이 처리되도록)
-        stopEvent: (e) => del.contains(e.target as Node),
-        // iframe 내부(교차 출처)·버튼 DOM 변경을 ProseMirror가 추적하지 않도록 무시 — atom 미리보기 안정화
+        // 오버레이 바 이벤트는 ProseMirror가 가로채지 않게(버튼 클릭이 그대로 처리되도록)
+        stopEvent: (e) => bar.contains(e.target as Node),
+        // iframe 내부(교차 출처)·버튼 DOM 변경을 ProseMirror가 추적하지 않도록 무시 — 미리보기 안정화
         ignoreMutation: () => true,
       }
     }
