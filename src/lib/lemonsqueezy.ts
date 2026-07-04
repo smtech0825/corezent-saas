@@ -35,6 +35,7 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
  *        quantity(같은 상품 N개)는 LS 공식 `quantity` URL 파라미터로 전달 — 2 이상일 때만 부착.
  *        discountCode는 LS 공식 `checkout[discount_code]` 파라미터로 전달(체크아웃에 프리필,
  *        유효성 검증·금액 계산은 LS가 수행) — 값이 있을 때만 부착.
+ *        청구지 국가는 `checkout[billing_address][country]=KR`로 기본 프리필(한국) — baseUrl에 국가가 없을 때만.
  * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터,
  *           quantity - 구매 수량(기본 1), discountCode - LS 할인코드(선택)
  * @반환값: custom_data가 포함된 체크아웃 URL
@@ -68,6 +69,13 @@ export function buildCheckoutUrl(
     if (discountCode) {
       const code = discountCode.trim().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64)
       if (code) url.searchParams.set('checkout[discount_code]', code)
+    }
+    // 청구지 국가 기본값: 한국(KR). LS 호스티드 체크아웃은 checkout[billing_address][country]로 국가를
+    // 프리필하며 ISO 3166-1 alpha-2 코드를 받는다(REST API의 checkout_data.billing_address.country와 동등).
+    // 고객이 체크아웃에서 변경 가능한 "기본값"이며(잠금 아님), 가격·세금·할인 파라미터와 독립적이라 충돌하지 않는다.
+    // baseUrl에 이미 국가가 지정돼 있으면 그 값을 우선(비파괴적 기본값).
+    if (!url.searchParams.has('checkout[billing_address][country]')) {
+      url.searchParams.set('checkout[billing_address][country]', 'KR')
     }
     if (userId)              url.searchParams.set('checkout[custom][user_id]',     userId)
     if (utm?.utm_source)     url.searchParams.set('checkout[custom][utm_source]',   utm.utm_source)
