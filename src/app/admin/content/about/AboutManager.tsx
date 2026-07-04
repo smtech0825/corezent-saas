@@ -2,7 +2,8 @@
 
 /**
  * @컴포넌트: AboutManager
- * @설명: About 페이지 관리 — Hero 텍스트, 통계 카드 CRUD, 콘텐츠 블록(텍스트+이미지 슬라이더) CRUD
+ * @설명: About 페이지 관리 — Hero(제목 + 리치 설명), 통계 카드 CRUD, 콘텐츠 블록(텍스트+이미지 슬라이더) CRUD
+ *        Hero 설명은 콘텐츠 블록과 동일한 리치 에디터(RichTextEditor)를 사용한다(서식·이미지·유튜브·표).
  */
 
 import { useState, useTransition, useRef } from 'react'
@@ -251,8 +252,9 @@ export default function AboutManager({
               <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] text-ink-faint mb-1 block">설명 (줄바꿈 지원)</label>
-              <textarea value={heroDesc} onChange={(e) => setHeroDesc(e.target.value)} rows={5} placeholder="회사를 소개하세요..." className={`${inputCls} resize-none`} />
+              <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
+              {/* 콘텐츠 블록과 동일한 리치 에디터 — 서식·정렬·이미지·유튜브·표. 저장 시 서버에서 sanitize된다 */}
+              <RichTextEditor value={heroDesc} onChange={setHeroDesc} />
             </div>
             <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
               <Check size={12} /> 히어로 저장

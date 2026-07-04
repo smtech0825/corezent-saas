@@ -15,9 +15,11 @@ export const dynamic = 'force-dynamic'
 async function updateHero(title: string, description: string) {
   'use server'
   const c = createAdminClient()
+  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(콘텐츠 블록·제품 설명과 동일 규칙)
+  const cleanDescription = sanitizeRichHtml(description)
   await Promise.all([
     c.from('front_content').upsert({ key: 'about_title', value: title }),
-    c.from('front_content').upsert({ key: 'about_description', value: description }),
+    c.from('front_content').upsert({ key: 'about_description', value: cleanDescription }),
   ])
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
