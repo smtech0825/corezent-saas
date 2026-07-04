@@ -72,6 +72,31 @@ export function normalizeYoutubeSrc(src: string): string {
 }
 
 /**
+ * @함수명: setYoutubeControls
+ * @설명: 유튜브 임베드 src의 컨트롤(재생바) 표시 여부를 토글한다. show=false면 controls=0(숨김), true면 controls 파라미터 제거(기본 표시).
+ *        먼저 normalizeYoutubeSrc로 안전 파라미터만 남긴 뒤 controls만 조정하므로 다른 재생 설정(autoplay·mute·loop)은 보존된다.
+ * @매개변수: src - 유튜브 URL 또는 임베드 src, show - 컨트롤 표시 여부
+ * @반환값: controls가 조정된 nocookie 임베드 URL(유효하지 않으면 원본)
+ */
+export function setYoutubeControls(src: string, show: boolean): string {
+  const base = normalizeYoutubeSrc(src)
+  const id = youtubeId(base)
+  if (!id) return src
+  const params = new Map<string, string>()
+  const qIdx = base.indexOf('?')
+  if (qIdx !== -1) {
+    for (const pair of base.slice(qIdx + 1).split('&')) {
+      const eq = pair.indexOf('=')
+      if (eq !== -1) params.set(pair.slice(0, eq), pair.slice(eq + 1))
+    }
+  }
+  if (show) params.delete('controls')
+  else params.set('controls', '0')
+  const qs = [...params].map(([k, v]) => `${k}=${v}`).join('&')
+  return `https://www.youtube-nocookie.com/embed/${id}${qs ? `?${qs}` : ''}`
+}
+
+/**
  * @함수명: embedYouTubeHtml
  * @설명: 단독 유튜브 URL만 담긴 <p>(텍스트 또는 단일 링크)를 안전한 16:9 임베드로 치환한다.
  *        videoId를 정규식으로 검증한 후에만 iframe을 생성하므로 임의 iframe 주입 위험이 없다(sanitize 이후 실행).
@@ -104,7 +129,12 @@ export function embedYouTubeHtml(html: string): string {
  */
 export function wrapBareIframes(html: string): string {
   if (!html || html.indexOf('<iframe') === -1) return html
-  return html.replace(/<iframe\b[^>]*>\s*<\/iframe>/gi, (m) => `<div class="rc-embed">${m}</div>`)
+  return html.replace(/<iframe\b[^>]*>\s*<\/iframe>/gi, (m) => {
+    // iframe의 width(sanitize가 이미 숫자+px/%로 검증) → 래퍼 max-width로 옮기고 가운데 정렬. 정규식이 다시 형식을 강제해 주입 차단.
+    const wm = m.match(/\bwidth="(\d{1,4}(?:px|%))"/i)
+    const style = wm ? ` style="max-width:${wm[1]};margin-left:auto;margin-right:auto"` : ''
+    return `<div class="rc-embed"${style}>${m}</div>`
+  })
 }
 
 /**

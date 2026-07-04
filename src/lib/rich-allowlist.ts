@@ -24,7 +24,7 @@ export const VOID_REMOVE_TAGS = [
 export const ALLOWED_ATTRS: Record<string, string[]> = {
   a: ['href', 'target', 'rel'],
   img: ['src', 'width', 'alt', 'loading', 'decoding'],
-  iframe: ['src', 'title', 'loading', 'allow', 'allowfullscreen'],
+  iframe: ['src', 'title', 'loading', 'allow', 'allowfullscreen', 'width'],
   table: ['align', 'width'],
   thead: ['align'],
   tbody: ['align'],
@@ -105,6 +105,16 @@ export function isAllowedIframeSrc(src: string | null | undefined): boolean {
   if (!src) return false
   const v = src.trim()
   return YT_EMBED_PREFIXES.some((p) => v.startsWith(p))
+}
+
+/**
+ * @함수명: isAllowedIframeWidth
+ * @설명: 유튜브 임베드 폭 값이 안전한 형식(1~4자리 숫자 + px/%)인지 검사한다. 래퍼 style에 주입되므로 반드시 검증한다.
+ * @매개변수: w - 폭 속성 값(예: '60%', '480px')
+ * @반환값: 허용 형식이면 true
+ */
+export function isAllowedIframeWidth(w: string | null | undefined): boolean {
+  return !!w && /^\d{1,4}(px|%)$/.test(w.trim())
 }
 
 /**

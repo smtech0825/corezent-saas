@@ -123,13 +123,13 @@ export default function RichTextEditor({ value, onChange, maxWidthClass }: Props
     const id = youtubeId(url)
     if (!id) { setErr('유효한 유튜브 URL이 아닙니다.'); return }
     setErr('')
-    // 자동재생(무음·자동반복) 여부 선택 — 확인=배경 영상처럼 소리 없이 자동재생·반복, 취소=일반(방문자가 재생 버튼 클릭)
+    // 자동재생(무음·자동반복·컨트롤 숨김) 여부 선택 — 확인=배경 영상처럼, 취소=일반(방문자가 재생 버튼 클릭)
     const autoplay = window.confirm(
-      '자동재생으로 넣을까요?\n\n[확인] 무음 · 자동재생 · 자동반복 (배경 영상용, 소리는 나지 않습니다)\n[취소] 일반 삽입 (방문자가 직접 재생)',
+      '자동재생으로 넣을까요?\n\n[확인] 무음 · 자동재생 · 자동반복 · 컨트롤 숨김 (배경 영상용, 소리는 나지 않습니다)\n[취소] 일반 삽입 (방문자가 직접 재생)',
     )
-    // 자동재생은 유튜브 파라미터로 제어(mute=1 필수, loop 반복은 playlist=<id> 필요). 소스 붙여넣기와 동일한 YoutubeEmbed 노드로 삽입.
+    // 자동재생은 유튜브 파라미터로 제어(mute=1 필수, loop 반복은 playlist=<id> 필요, controls=0으로 재생바 숨김). 삽입 후 툴바에서 크기·컨트롤 조절 가능.
     const src = autoplay
-      ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1`
+      ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&controls=0&playlist=${id}&playsinline=1`
       : url
     editor.chain().focus().setYoutubeVideo({ src }).run()
   }, [editor])

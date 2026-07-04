@@ -10,7 +10,7 @@
 import sanitizeHtml from 'sanitize-html'
 import { looksLikeHtml, embedYouTubeHtml, wrapBareIframes, normalizeYoutubeSrc, YT_IFRAME_ALLOW } from './rich-html'
 import { legacyToHtml } from './legacy-markdown'
-import { ALLOWED_TAGS, ALLOWED_ATTRS, GLOBAL_ATTRS, STYLE_RULES, isAllowedIframeSrc } from './rich-allowlist'
+import { ALLOWED_TAGS, ALLOWED_ATTRS, GLOBAL_ATTRS, STYLE_RULES, isAllowedIframeSrc, isAllowedIframeWidth } from './rich-allowlist'
 
 // 공유 허용목록으로 sanitize-html 옵션을 구성(규칙 변경은 rich-allowlist.ts 한 곳에서)
 const OPTIONS: sanitizeHtml.IOptions = {
@@ -44,18 +44,19 @@ const OPTIONS: sanitizeHtml.IOptions = {
       if (attribs.width) out.width = attribs.width
       return { tagName, attribs: out }
     },
-    // 유튜브 iframe: src를 nocookie 임베드로 정규화(재생 제어 파라미터는 화이트리스트만 보존) + 안전 속성 정규화(폭·style 등 제거).
-    // allow에 autoplay가 포함되어(YT_IFRAME_ALLOW) 무음 자동재생·반복이 동작한다.
-    iframe: (tagName, attribs) => ({
-      tagName,
-      attribs: {
+    // 유튜브 iframe: src를 nocookie 임베드로 정규화(재생 제어 파라미터는 화이트리스트만 보존) + 안전 속성 정규화(style 등 제거).
+    // allow에 autoplay가 포함되어(YT_IFRAME_ALLOW) 무음 자동재생·반복이 동작하고, 검증된 width는 크기 조절용으로 보존한다.
+    iframe: (tagName, attribs) => {
+      const out: Record<string, string> = {
         ...(attribs.src ? { src: normalizeYoutubeSrc(attribs.src) } : {}),
         title: attribs.title || 'YouTube video',
         loading: 'lazy',
         allow: YT_IFRAME_ALLOW,
         allowfullscreen: 'true',
-      },
-    }),
+      }
+      if (isAllowedIframeWidth(attribs.width)) out.width = attribs.width
+      return { tagName, attribs: out }
+    },
   },
 }
 
