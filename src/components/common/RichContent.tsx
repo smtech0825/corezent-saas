@@ -6,9 +6,8 @@
  *        (이미지 lazy loading·width는 sanitize 단계에서 반영됨)
  */
 
-import { sanitizeRichHtml } from '@/lib/sanitize-html'
-import { looksLikeHtml, embedYouTubeHtml, richToPlainText } from '@/lib/rich-html'
-import { legacyToHtml } from '@/lib/legacy-markdown'
+import { renderRichHtml } from '@/lib/sanitize-html'
+import { richToPlainText } from '@/lib/rich-html'
 
 /**
  * @함수명: RichContent
@@ -18,8 +17,7 @@ import { legacyToHtml } from '@/lib/legacy-markdown'
  */
 export default function RichContent({ content, className }: { content: string; className?: string }) {
   if (!content?.trim()) return null
-  const html = looksLikeHtml(content) ? content : legacyToHtml(content)
-  const clean = embedYouTubeHtml(sanitizeRichHtml(html))
+  const clean = renderRichHtml(content)
   // 텍스트도 미디어(이미지·임베드)도 없으면(예: 빈 <p></p>) 렌더하지 않는다.
   const hasContent = /<(img|iframe)\b/i.test(clean) || richToPlainText(clean).length > 0
   if (!hasContent) return null

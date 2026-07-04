@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { renderRichHtml } from '@/lib/sanitize-html'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FAQSection from '@/components/sections/FAQSection'
@@ -25,13 +26,20 @@ export default async function FaqPage() {
     .eq('is_published', true)
     .order('order_index')
 
+  // 답변(HTML/레거시 평문)을 서버에서 안전 HTML로 정제해 클라이언트 FAQSection에 전달
+  const faqItems = (faqs ?? []).map((f) => ({
+    id: f.id,
+    question: f.question,
+    answerHtml: renderRichHtml(f.answer),
+  }))
+
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
       <Navbar />
 
       <main className="flex-1 pt-10 sm:pt-14">
-        {faqs && faqs.length > 0 ? (
-          <FAQSection faqs={faqs} />
+        {faqItems.length > 0 ? (
+          <FAQSection faqs={faqItems} />
         ) : (
           <div className="flex items-center justify-center py-40">
             <p className="text-ink-faint text-sm">아직 등록된 FAQ가 없습니다.</p>

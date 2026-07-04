@@ -13,7 +13,8 @@ import { SectionHeader } from '@/components/ui/Section'
 export interface DbFaq {
   id: string
   question: string
-  answer: string
+  /** 서버에서 renderRichHtml로 정제된 안전 HTML(클라이언트는 sanitize 불가하므로 서버가 준비) */
+  answerHtml: string
 }
 
 interface Props {
@@ -50,9 +51,11 @@ export default function FAQSection({ faqs }: Props) {
                 </button>
                 {isOpen && (
                   <div className="pb-5 pr-8">
-                    <p className="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap break-keep">
-                      {faq.answer}
-                    </p>
+                    {/* 답변은 서버에서 정제된 리치 HTML — 단락/서식·정렬 반영(.rich-content 스코프 스타일) */}
+                    <div
+                      className="rich-content break-keep"
+                      dangerouslySetInnerHTML={{ __html: faq.answerHtml }}
+                    />
                   </div>
                 )}
               </div>

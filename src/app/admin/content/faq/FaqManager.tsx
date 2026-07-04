@@ -6,7 +6,15 @@
  */
 
 import { useState, useTransition } from 'react'
+import nextDynamic from 'next/dynamic'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { richToPlainText } from '@/lib/rich-html'
+
+// 답변은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
+const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="border border-rule rounded-lg bg-paper h-48 animate-pulse" aria-hidden />,
+})
 
 interface Faq {
   id: string
@@ -95,13 +103,10 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                 className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark"
                 placeholder="질문"
               />
-              <textarea
-                value={form.answer}
-                onChange={(e) => setForm({ ...form, answer: e.target.value })}
-                rows={3}
-                className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink-soft focus:outline-none focus:border-mark resize-none"
-                placeholder="답변"
-              />
+              <div>
+                <label className="block text-xs text-ink-faint mb-1">답변</label>
+                <RichTextEditor value={form.answer} onChange={(html) => setForm({ ...form, answer: html })} />
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleUpdate(faq.id)}
@@ -125,7 +130,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                   <p className={`text-sm font-medium ${faq.is_published ? 'text-ink' : 'text-ink-faint'}`}>
                     {faq.question}
                   </p>
-                  <p className="text-xs text-ink-faint mt-1 line-clamp-2">{faq.answer}</p>
+                  <p className="text-xs text-ink-faint mt-1 line-clamp-2">{richToPlainText(faq.answer)}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
@@ -167,13 +172,10 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             placeholder="질문"
             autoFocus
           />
-          <textarea
-            value={newForm.answer}
-            onChange={(e) => setNewForm({ ...newForm, answer: e.target.value })}
-            rows={3}
-            className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink-soft placeholder:text-ink-faint focus:outline-none focus:border-mark resize-none"
-            placeholder="답변"
-          />
+          <div>
+            <label className="block text-xs text-ink-faint mb-1">답변</label>
+            <RichTextEditor value={newForm.answer} onChange={(html) => setNewForm({ ...newForm, answer: html })} />
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleCreate}

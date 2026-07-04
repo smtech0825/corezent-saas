@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import lazy from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { renderRichHtml } from '@/lib/sanitize-html'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -68,7 +69,12 @@ export default async function HomePage() {
 
   const features     = featuresRes.data ?? []
   const testimonials = testimonialsRes.data ?? []
-  const faqs         = faqsRes.data ?? []
+  // FAQ 답변은 서버에서 안전 HTML로 정제(클라이언트 FAQSection은 sanitize 불가)
+  const faqs         = (faqsRes.data ?? []).map((f) => ({
+    id: f.id,
+    question: f.question,
+    answerHtml: renderRichHtml(f.answer),
+  }))
   const steps        = stepsRes.data ?? []
 
   // 전체 활성 상품 기반 랜딩 Pricing 섹션 데이터 빌드

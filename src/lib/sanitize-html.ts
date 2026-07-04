@@ -8,6 +8,8 @@
  */
 
 import sanitizeHtml from 'sanitize-html'
+import { looksLikeHtml, embedYouTubeHtml } from './rich-html'
+import { legacyToHtml } from './legacy-markdown'
 
 // 색상 style 값 화이트리스트 — hex / rgb(a)만 허용(그 외 style 속성은 전부 제거)
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
@@ -62,4 +64,18 @@ export function sanitizeRichHtml(dirty: string | null | undefined): string {
       },
     },
   })
+}
+
+/**
+ * @함수명: renderRichHtml
+ * @설명: 저장값(HTML 또는 레거시 평문)을 공개 렌더용 안전 HTML로 변환하는 공용 파이프라인 — ⚠️ 서버 전용.
+ *        레거시 평문은 legacyToHtml로 단락화 → sanitize → 단독 유튜브 URL 문단을 임베드로 치환.
+ *        RichContent(서버 컴포넌트)와, 클라이언트 렌더러(예: FAQSection)에 넘길 HTML 준비에 공통 사용.
+ * @매개변수: content - HTML 또는 레거시 평문
+ * @반환값: 안전하게 정제된 HTML(빈 값이면 빈 문자열)
+ */
+export function renderRichHtml(content: string | null | undefined): string {
+  if (!content?.trim()) return ''
+  const html = looksLikeHtml(content) ? content : legacyToHtml(content)
+  return embedYouTubeHtml(sanitizeRichHtml(html))
 }
