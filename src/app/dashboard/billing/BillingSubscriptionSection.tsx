@@ -47,6 +47,27 @@ const CANCEL_REASONS = [
 type CancelReason = typeof CANCEL_REASONS[number]
 const OTHER_REASON: CancelReason = '기타 / 답변하지 않음.'
 
+/**
+ * @함수명: cancelErrorMessage
+ * @설명: 서버가 반환한 실패 code를 사용자용 한국어 메시지로 매핑한다(사유별 구분).
+ * @매개변수: code - /api/subscriptions/cancel 응답의 code 필드
+ * @반환값: 토스트에 표시할 메시지
+ */
+function cancelErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case 'ALREADY_CANCELLED':
+      return '이미 취소 예약된 구독입니다. 페이지를 새로고침해 주세요.'
+    case 'NOT_ACTIVE':
+      return '이미 종료되었거나 취소할 수 없는 구독입니다.'
+    case 'NOT_FOUND':
+      return '구독 정보를 찾을 수 없습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.'
+    case 'LS_API_ERROR':
+      return '결제사에서 구독을 취소하지 못했습니다. 잠시 후 다시 시도하거나 고객센터로 문의해 주세요.'
+    default:
+      return '구독 취소에 실패했습니다. 다시 시도하거나 고객센터에 문의해 주세요.'
+  }
+}
+
 // ─── 취소 대상 구독 타입 ──────────────────────────────────────────────────────
 
 interface CancelTarget {
@@ -103,24 +124,31 @@ export default function BillingSubscriptionSection({ rows }: Props) {
         : selectedReason
 
     try {
-      const res = await fetch('/api/subscriptions/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: cancelTarget.id, reason }),
-      })
+      let res: Response
+      try {
+        res = await fetch('/api/subscriptions/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: cancelTarget.id, reason }),
+        })
+      } catch {
+        // fetch 자체가 실패 = 네트워크 오류
+        showToast('error', '네트워크 오류로 구독을 취소하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+        return
+      }
+
+      const data = (await res.json().catch(() => ({}))) as { code?: string; error?: string }
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error((data as { error?: string }).error ?? 'Failed to cancel')
+        console.error('[cancel]', res.status, data.code, data.error)
+        showToast('error', cancelErrorMessage(data.code))
+        return
       }
 
       // 낙관적 UI 업데이트
       setCancelledIds((prev) => new Set([...prev, cancelTarget.id]))
       showToast('success', '구독이 취소되었습니다. 결제 기간이 끝날 때까지 서비스를 계속 이용하실 수 있습니다.')
       closeCancelModal()
-    } catch (err) {
-      console.error('[cancel]', err)
-      showToast('error', '구독 취소에 실패했습니다. 다시 시도하거나 고객센터에 문의해 주세요.')
     } finally {
       setCancelling(false)
     }
