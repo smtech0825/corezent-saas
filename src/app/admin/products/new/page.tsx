@@ -31,6 +31,8 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
     name: data.name,
     slug: data.slug,
     tagline: data.tagline || null,
+    // 목록 전용 짧은 소개(plain text, NOT NULL DEFAULT '') — 상세 description과 별개
+    list_description: data.list_description || '',
     description: sanitizeRichHtml(data.description) || null,
     category: data.category,
     category_group: data.category_group || null,

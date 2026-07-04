@@ -24,8 +24,8 @@ export default async function EditProductPage({
   const client = createAdminClient()
 
   // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 필드 없이 편집 페이지 정상 동작)
-  const OPT_SEL = 'id, name, slug, tagline, description, category, category_group, option_axis1_name, option_axis2_name, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
-  const BASE_SEL = 'id, name, slug, tagline, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+  const OPT_SEL = 'id, name, slug, tagline, list_description, description, category, category_group, option_axis1_name, option_axis2_name, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+  const BASE_SEL = 'id, name, slug, tagline, list_description, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
 
   const optRes = await client.from('products').select(OPT_SEL).eq('id', id).single()
   const { data: product } = optRes.error
@@ -97,6 +97,7 @@ export default async function EditProductPage({
     name: product.name ?? '',
     slug: product.slug ?? '',
     tagline: product.tagline ?? '',
+    list_description: (product.list_description as string) ?? '',
     description: product.description ?? '',
     category: product.category ?? 'desktop',
     category_group: (product.category_group as string) ?? '',
@@ -136,6 +137,8 @@ export default async function EditProductPage({
       name: data.name,
       slug: data.slug,
       tagline: data.tagline || null,
+      // 목록 전용 짧은 소개(plain text, NOT NULL DEFAULT '') — 상세 description과 별개
+      list_description: data.list_description || '',
       description: sanitizeRichHtml(data.description) || null,
       category: data.category,
       category_group: data.category_group || null,

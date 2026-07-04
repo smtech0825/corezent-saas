@@ -52,6 +52,8 @@ export interface ProductFormData {
   name: string
   slug: string
   tagline: string
+  // 목록 전용 짧은 소개(plain text) — /product 목록·홈 제품 섹션·SEO 메타에 사용. 상세 본문은 description(리치 HTML)
+  list_description: string
   description: string
   category: string
   category_group: string
@@ -121,6 +123,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       name: '',
       slug: '',
       tagline: '',
+      list_description: '',
       description: '',
       category: 'desktop',
       category_group: '',
@@ -314,6 +317,20 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             placeholder="한 줄 소개 문구"
             className={inputCls}
           />
+        </Field>
+
+        <Field label="목록용 짧은 소개">
+          {/* 목록 카드·홈 화면 전용 plain text. 비우면 목록에서 설명 미표시(상세 본문은 아래 '설명'의 리치 HTML을 사용) */}
+          <textarea
+            value={form.list_description}
+            onChange={(e) => set('list_description', e.target.value)}
+            rows={3}
+            placeholder="상품 목록 카드·홈 화면에 표시될 짧은 소개"
+            className={inputCls}
+          />
+          <p className="text-xs text-ink-faint mt-1">
+            상품 목록 카드·홈 화면에 표시됩니다. 비우면 목록에서 설명이 표시되지 않습니다. (권장 80~150자, HTML 불가)
+          </p>
         </Field>
 
         <Field label="설명">
