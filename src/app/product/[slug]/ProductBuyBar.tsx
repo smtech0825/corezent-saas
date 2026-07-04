@@ -156,10 +156,10 @@ export default function ProductBuyBar({
       ref={barRef}
       className="fixed bottom-0 inset-x-0 z-[60] border-t border-rule bg-paper shadow-[0_-4px_24px_rgba(35,39,46,0.10)]"
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-5">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
           {/* 옵션1 · 옵션2 · 수량 · 결제방법 — lg 이상에서 한 줄(줄바꿈 방지), 그 아래는 접힘 */}
-          <div className="flex items-center flex-wrap lg:flex-nowrap gap-3 md:gap-4 min-w-0">
+          <div className="flex items-center flex-wrap lg:flex-nowrap gap-2.5 md:gap-3 min-w-0">
             {showAxis1 && (
               <SegmentControl
                 label={axis1Name ?? '옵션'}

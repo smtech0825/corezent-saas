@@ -34,11 +34,11 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
         aria-label="수량 줄이기"
         disabled={value <= 1}
         onClick={() => onChange(clamp(value - 1))}
-        className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        className="px-2 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
       >
         <Minus size={12} />
       </button>
-      <span className="min-w-[2rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
+      <span className="min-w-[1.75rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
         {value}
       </span>
       <button
@@ -46,7 +46,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
         aria-label="수량 늘리기"
         disabled={value >= max}
         onClick={() => onChange(clamp(value + 1))}
-        className="px-2.5 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        className="px-2 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
       >
         <Plus size={12} />
       </button>
