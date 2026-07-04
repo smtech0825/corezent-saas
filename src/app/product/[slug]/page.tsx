@@ -213,7 +213,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     → 표는 .rich-content table의 margin-inline auto로 콘텐츠 폭 기준 가운데(에디터 정렬은 인라인이 우선) */}
                 {description && (
                   <section className={SECTION_BOX}>
-                    <h2 className={SECTION_TITLE}>소개</h2>
                     <RichContent content={description} />
                   </section>
                 )}

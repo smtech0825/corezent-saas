@@ -37,9 +37,11 @@ import HtmlSourcePanel from './HtmlSourcePanel'
 interface Props {
   value: string
   onChange: (html: string) => void
+  /** 편집 영역 최대 폭 클래스(예: 'max-w-4xl') — 상품 상세 표시 폭과 비슷하게 보이도록 제한. 미지정 시 폼 폭 전체 */
+  maxWidthClass?: string
 }
 
-export default function RichTextEditor({ value, onChange }: Props) {
+export default function RichTextEditor({ value, onChange, maxWidthClass }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
@@ -155,11 +157,11 @@ export default function RichTextEditor({ value, onChange }: Props) {
   }, [editor, mode, sourceText, onChange])
 
   if (!editor) {
-    return <div className="border border-rule rounded-lg bg-paper h-48 animate-pulse" aria-hidden />
+    return <div className={`border border-rule rounded-lg bg-paper h-48 animate-pulse${maxWidthClass ? ` ${maxWidthClass}` : ''}`} aria-hidden />
   }
 
   return (
-    <div className="border border-rule rounded-lg bg-paper overflow-hidden">
+    <div className={`border border-rule rounded-lg bg-paper overflow-hidden${maxWidthClass ? ` ${maxWidthClass}` : ''}`}>
       <EditorToolbar
         editor={editor}
         mode={mode}

@@ -19,7 +19,7 @@ import nextDynamic from 'next/dynamic'
 // (파일 상단에 export const dynamic이 없어 충돌은 없지만, 컨벤션대로 next/dynamic은 nextDynamic으로 alias)
 const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
   ssr: false,
-  loading: () => <div className="border border-rule rounded-lg bg-paper h-48 animate-pulse" aria-hidden />,
+  loading: () => <div className="border border-rule rounded-lg bg-paper h-48 animate-pulse max-w-4xl" aria-hidden />,
 })
 
 export interface PriceEntry {
@@ -317,7 +317,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         </Field>
 
         <Field label="설명">
-          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} />
+          {/* 편집 폭을 상세 표시 박스(max-w-4xl)와 맞춰 편집 화면이 실제 결과와 비슷하게 보이도록 제한 */}
+          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} maxWidthClass="max-w-4xl" />
           <p className="text-xs text-ink-faint mt-2">
             문서 편집기처럼 제목·굵게·밑줄·글자색·링크·이미지·목록을 사용할 수 있습니다. 이미지는 버튼으로 업로드 후
             선택하면 크기(소/중/대/원본)를 조절할 수 있고, 유튜브 URL은 공개 페이지에서 영상으로 표시됩니다.
