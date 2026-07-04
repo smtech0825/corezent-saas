@@ -22,6 +22,7 @@ import { formatPrice } from '@/lib/price'
 import { getProductOptions, type OptionRow } from '@/lib/product-options'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductBuyBar from './ProductBuyBar'
+import ScrollTopButton from './ScrollTopButton'
 import RichContent from '@/components/common/RichContent'
 
 export const dynamic = 'force-dynamic'
@@ -352,6 +353,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           bankTransfer={bankTransfer}
         />
       )}
+
+      {/* 플로팅 '맨 위로' 버튼 — 일정 스크롤 후 구매 바 바로 위 가운데 노출 */}
+      <ScrollTopButton />
     </>
   )
 }
