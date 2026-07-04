@@ -31,6 +31,7 @@ import { sanitizeClientHtml } from '@/lib/sanitize-client'
 import { editorUnsupportedTags } from '@/lib/rich-allowlist'
 import { ResizableImage } from './tiptap-image'
 import { YoutubeEmbed } from './tiptap-youtube'
+import { PreserveStyle } from './tiptap-style'
 import EditorToolbar from './EditorToolbar'
 import HtmlSourcePanel from './HtmlSourcePanel'
 
@@ -72,6 +73,8 @@ export default function RichTextEditor({ value, onChange, maxWidthClass }: Props
       TableCell,
       // 유튜브 — 단독 임베드 iframe으로 왕복되는 노드([유튜브] 버튼·소스 붙여넣기 공통, .rc-embed 미리보기)
       YoutubeEmbed,
+      // 표·문단·제목의 인라인 style(+셀 nowrap)을 왕복 보존 — 소스에서 넣은 배경·테두리·색·정렬이 리치 전환에도 유지
+      PreserveStyle,
     ],
     content: looksLikeHtml(value) ? value : legacyToHtml(value),
     editorProps: { attributes: { class: 'rich-content min-h-[12rem] px-4 py-3 focus:outline-none' } },
