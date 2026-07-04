@@ -209,11 +209,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
               {/* 섹션 컨테이너 스택 — 각 섹션을 보더 카드로 묶는다(빈 데이터는 박스째 미렌더) */}
               <div className="space-y-6">
-                {/* 소개 — 마크다운, 본문 가독 폭 68ch */}
+                {/* 소개 — 본문·표·이미지가 섹션 박스 콘텐츠 폭(p-6 sm:p-8 안쪽) 전체를 사용. 폭 제한 없음
+                    → 표는 .rich-content table의 margin-inline auto로 콘텐츠 폭 기준 가운데(에디터 정렬은 인라인이 우선) */}
                 {description && (
                   <section className={SECTION_BOX}>
                     <h2 className={SECTION_TITLE}>소개</h2>
-                    <RichContent content={description} className="max-w-[68ch]" />
+                    <RichContent content={description} />
                   </section>
                 )}
 
