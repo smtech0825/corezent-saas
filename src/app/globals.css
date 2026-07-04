@@ -179,7 +179,8 @@
  * dangerouslySetInnerHTML로 그린 자식에는 유틸 클래스를 붙일 수 없어 스코프 CSS로 스타일링한다.
  * ---------------------------------------------------------- */
 @layer components {
-  .rich-content { color: var(--color-ink-soft); font-size: 0.875rem; line-height: 1.75; }
+  /* overflow-x:auto — nowrap 등으로 컨테이너보다 넓어진 표를 좁은 화면에서 가로 스크롤로 수용(레이아웃 보호) */
+  .rich-content { color: var(--color-ink-soft); font-size: 0.875rem; line-height: 1.75; overflow-x: auto; }
   .rich-content > :first-child { margin-top: 0; }
   .rich-content > :last-child { margin-bottom: 0; }
 
@@ -246,14 +247,12 @@
     text-align: center;
     margin-top: 0.375rem;
   }
-  /* 표 — 좁은 화면에서는 가로 스크롤(display:block + overflow-x) */
+  /* 표 — 기본값: 콘텐츠 폭으로 가운데 정렬(margin:auto). 인라인 style(margin·width·border-collapse 등)이 있으면
+     인라인이 이긴다(!important 미사용). 넘치는 표의 가로 스크롤은 상위 .rich-content(overflow-x:auto)가 담당한다. */
   .rich-content table {
-    width: 100%;
     border-collapse: collapse;
-    margin: 1rem 0;
+    margin: 1rem auto;
     font-size: 0.8125rem;
-    display: block;
-    overflow-x: auto;
   }
   .rich-content th,
   .rich-content td {

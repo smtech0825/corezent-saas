@@ -2,8 +2,8 @@
  * @파일: lib/sanitize-html.ts
  * @설명: 상품 설명·FAQ·소개 등 리치 텍스트 서버측 sanitize — ⚠️ 서버 전용(클라이언트 import 금지, sanitize-html은 Node 모듈).
  *        허용 규칙은 lib/rich-allowlist.ts(단일 출처)를 그대로 소비하며, 클라이언트 편의 정제(lib/sanitize-client.ts)와 동일 규칙을 쓴다.
- *        허용: 문단·서식·목록 + div·표(table…)·figure·blockquote·hr + img·a + 유튜브 임베드 iframe.
- *        인라인 style은 color·text-align·width·font-size만(값도 화이트리스트), 그 외 style·모든 on* 이벤트·script/style/form/object는 제거.
+ *        허용: 문단·서식·목록 + div·center·표(table…)·figure·blockquote·hr + img·a + 유튜브 임베드 iframe.
+ *        인라인 style은 표시용(색·정렬·여백·테두리·칸 폭 등, rich-allowlist STYLE_RULES)만 값까지 화이트리스트, 그 외 style·모든 on* 이벤트·script/style/form/object는 제거.
  *        저장 시점(admin 라우트)과 공개 렌더 직전(RichContent)에 각각 호출되어 이중 방어한다.
  */
 

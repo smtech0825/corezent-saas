@@ -110,7 +110,7 @@ function cleanAttributes(el: Element, tag: string): void {
 
 /**
  * @함수명: filterStyle
- * @설명: 인라인 style 문자열에서 허용 속성(color·text-align·width·font-size)·허용 값만 남긴다.
+ * @설명: 인라인 style 문자열에서 허용 속성·허용 값(rich-allowlist STYLE_RULES)만 남긴다.
  * @매개변수: style - 원본 style 속성 값
  * @반환값: 정제된 style 문자열(남은 게 없으면 빈 문자열)
  */
