@@ -169,15 +169,20 @@ export default function EditorToolbar({
         </div>
       </div>
 
-      {/* 이미지 선택 시 크기 조절 바 */}
+      {/* 이미지 선택 시 크기·정렬 조절 바 */}
       {imageSelected && (
-        <div className="flex items-center gap-1.5 border-b border-rule bg-paper-shade px-3 py-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap border-b border-rule bg-paper-shade px-3 py-1.5">
           <span className="text-xs text-ink-faint mr-1">이미지 크기</span>
           {IMG_SIZES.map((s) => (
             <SmallBtn key={s.label} onClick={() => editor.chain().focus().updateAttributes('image', { width: s.width }).run()}>
               {s.label}
             </SmallBtn>
           ))}
+          <span className="mx-0.5 h-4 w-px bg-rule" />
+          <span className="text-xs text-ink-faint mr-1">정렬</span>
+          <SmallBtn onClick={() => editor.chain().focus().updateAttributes('image', { align: 'left' }).run()}>왼쪽</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().updateAttributes('image', { align: 'center' }).run()}>가운데</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().updateAttributes('image', { align: 'right' }).run()}>오른쪽</SmallBtn>
         </div>
       )}
 

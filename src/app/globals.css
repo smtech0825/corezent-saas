@@ -214,6 +214,10 @@
     border-radius: 0.5rem;
     margin: 1rem 0;
   }
+  /* 이미지 정렬(data-align) — 블록 이미지라 auto 여백으로 좌/가운데/우 배치 */
+  .rich-content img[data-align="left"]   { display: block; margin-left: 0; margin-right: auto; }
+  .rich-content img[data-align="center"] { display: block; margin-left: auto; margin-right: auto; }
+  .rich-content img[data-align="right"]  { display: block; margin-left: auto; margin-right: 0; }
   /* 유튜브 임베드(16:9) — RichContent가 검증된 videoId로만 생성 */
   .rich-content .rc-embed {
     position: relative;

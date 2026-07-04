@@ -36,12 +36,14 @@ const OPTIONS: sanitizeHtml.IOptions = {
         rel: 'noopener noreferrer',
       },
     }),
-    // 이미지: src·alt·width만 유지 + lazy loading 자동 부여(style·on* 등 제거)
+    // 이미지: src·alt·width·정렬(data-align)만 유지 + lazy loading 자동 부여(style·on* 등 제거)
     img: (tagName, attribs) => {
       const out: Record<string, string> = { loading: 'lazy', decoding: 'async' }
       if (attribs.src) out.src = attribs.src
       if (attribs.alt) out.alt = attribs.alt
       if (attribs.width) out.width = attribs.width
+      const align = attribs['data-align']
+      if (align && ['left', 'center', 'right'].includes(align)) out['data-align'] = align
       return { tagName, attribs: out }
     },
     // 유튜브 iframe: src를 nocookie 임베드로 정규화(재생 제어 파라미터는 화이트리스트만 보존) + 안전 속성 정규화(style 등 제거).

@@ -23,7 +23,7 @@ export const VOID_REMOVE_TAGS = [
 // 표시용 레거시 속성(align·nowrap·width)은 실행 불가한 표현 속성이라 표·셀에 한해 허용한다.
 export const ALLOWED_ATTRS: Record<string, string[]> = {
   a: ['href', 'target', 'rel'],
-  img: ['src', 'width', 'alt', 'loading', 'decoding'],
+  img: ['src', 'width', 'alt', 'loading', 'decoding', 'data-align'],
   iframe: ['src', 'title', 'loading', 'allow', 'allowfullscreen', 'width'],
   table: ['align', 'width'],
   thead: ['align'],
