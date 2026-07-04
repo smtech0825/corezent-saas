@@ -269,4 +269,12 @@
     font-weight: 700;
     color: var(--color-ink);
   }
+
+  /* 편집기 표(TipTap) — 공개와 동일 외형 유지. 스크롤은 .tableWrapper가 담당하고 표 자체는 table 레이아웃 유지(셀 선택·편집 정상) */
+  .rich-content .tableWrapper { overflow-x: auto; margin: 1rem 0; }
+  .rich-content .tableWrapper > table { display: table; width: 100%; margin: 0; }
+  .rich-content .selectedCell { background: rgba(29, 63, 176, 0.12); }
+  .rich-content .column-resize-handle { display: none; }
+  /* 편집기 유튜브 노드 선택 강조(공개 렌더와 동일한 .rc-embed 미리보기) */
+  .rich-content .rc-embed.ProseMirror-selectednode { outline: 2px solid var(--color-pen); outline-offset: 2px; }
 }

@@ -4,9 +4,10 @@
  * @컴포넌트: RichTextEditor
  * @설명: 관리자 리치 텍스트 편집기(WYSIWYG) — TipTap 기반. 상품 설명·FAQ 답변·소개 블록 등 공용으로 쓰인다.
  *        툴바: 텍스트 크기·굵게·기울임·밑줄·정렬·글자색·링크·이미지 업로드·목록·유튜브·실행취소 (EditorToolbar).
+ *        표·유튜브는 정식 노드(Table 확장군·YoutubeEmbed)로 다루므로 소스↔리치 전환이 무손실이다.
  *        [HTML 소스] 토글: 현재 내용을 HTML 소스로 직접 편집·붙여넣기·.html 파일 불러오기(HtmlSourcePanel). 끄면 클라이언트에서
  *        정제(sanitizeClientHtml — 편의용, 보안 경계는 서버 저장 시)한 뒤 리치 편집으로 복귀하고, 제거된 태그를 1회 안내한다.
- *        표·유튜브 임베드 등 리치 편집기가 표현할 수 없는 태그가 있으면 내용 보존을 위해 소스 모드를 유지한다.
+ *        편집기가 왕복도 평탄화도 못 하는 태그(editorUnsupportedTags)가 남으면 그 태그만 안내하고 소스 모드를 유지한다(안전망).
  *        값은 HTML로 상위에 전달되며 서버 저장 시점에 반드시 sanitize된다(이 컴포넌트는 보안 정제를 책임지지 않는다).
  *        번들 최소화를 위해 admin에서 next/dynamic(ssr:false)로만 로드한다.
  */
@@ -19,12 +20,17 @@ import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
+import Table from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableHeader from '@tiptap/extension-table-header'
+import TableCell from '@tiptap/extension-table-cell'
 import { createClient } from '@/lib/supabase/client'
 import { looksLikeHtml, youtubeId } from '@/lib/rich-html'
 import { legacyToHtml } from '@/lib/legacy-markdown'
 import { sanitizeClientHtml } from '@/lib/sanitize-client'
-import { hasSourceOnlyTags } from '@/lib/rich-allowlist'
+import { editorUnsupportedTags } from '@/lib/rich-allowlist'
 import { ResizableImage } from './tiptap-image'
+import { YoutubeEmbed } from './tiptap-youtube'
 import EditorToolbar from './EditorToolbar'
 import HtmlSourcePanel from './HtmlSourcePanel'
 
@@ -38,8 +44,8 @@ export default function RichTextEditor({ value, onChange }: Props) {
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
-  // 표·임베드가 든 값은 리치 편집기가 표현할 수 없으므로 소스 모드로 시작한다
-  const [mode, setMode] = useState<'rich' | 'source'>(() => (hasSourceOnlyTags(value) ? 'source' : 'rich'))
+  // 편집기가 다룰 수 없는 태그가 남은 값만 소스 모드로 시작한다(표·유튜브는 노드로 지원하므로 보통 리치 모드)
+  const [mode, setMode] = useState<'rich' | 'source'>(() => (editorUnsupportedTags(value).length ? 'source' : 'rich'))
   const [sourceText, setSourceText] = useState<string>(() => value ?? '')
 
   const editor = useEditor({
@@ -57,6 +63,13 @@ export default function RichTextEditor({ value, onChange }: Props) {
       // 정렬(왼쪽/가운데/오른쪽) — 제목·본문 문단에 적용. style="text-align:…"로 출력되며 sanitize allowlist가 이 값만 허용한다.
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       ResizableImage.configure({ inline: false, allowBase64: false }),
+      // 표 — 공식 Table 확장군. resizable 비활성(공개 렌더와 동일한 고정 레이아웃). thead/tbody/tr/th/td로 왕복.
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      // 유튜브 — 단독 임베드 iframe으로 왕복되는 노드([유튜브] 버튼·소스 붙여넣기 공통, .rc-embed 미리보기)
+      YoutubeEmbed,
     ],
     content: looksLikeHtml(value) ? value : legacyToHtml(value),
     editorProps: { attributes: { class: 'rich-content min-h-[12rem] px-4 py-3 focus:outline-none' } },
@@ -104,7 +117,8 @@ export default function RichTextEditor({ value, onChange }: Props) {
     if (!url) return
     if (!youtubeId(url)) { setErr('유효한 유튜브 URL이 아닙니다.'); return }
     setErr('')
-    editor.chain().focus().insertContent({ type: 'paragraph', content: [{ type: 'text', text: url }] }).run()
+    // 소스 붙여넣기와 동일한 YoutubeEmbed 노드로 삽입(에디터 미리보기 + 무손실 왕복)
+    editor.chain().focus().setYoutubeVideo({ src: url }).run()
   }, [editor])
 
   // 소스 모드 변경 시 값 전파(서버에서 sanitize되므로 원본 그대로 전달)
@@ -127,10 +141,11 @@ export default function RichTextEditor({ value, onChange }: Props) {
     onChange(html)
     const msgs: string[] = []
     if (removed.length) msgs.push(`일부 지원되지 않는 태그가 정리되었습니다: ${removed.join(', ')}`)
-    if (hasSourceOnlyTags(html)) {
-      // 표·임베드는 리치 편집기에서 표현할 수 없으므로 소스 모드를 유지(내용은 정제·보존, 저장은 정상 동작)
+    const unsupported = editorUnsupportedTags(html)
+    if (unsupported.length) {
+      // 안전망: 편집기가 왕복도 평탄화도 못 하는 태그가 남으면 내용 보존을 위해 소스 모드를 유지(표·유튜브는 여기 해당 안 됨)
       setSourceText(html)
-      msgs.push('표·유튜브 임베드 등은 리치 편집기에서 다룰 수 없어 소스 모드를 유지합니다(저장은 정상 동작합니다).')
+      msgs.push(`다음 태그는 리치 편집기에서 다룰 수 없어 소스 모드를 유지합니다: ${unsupported.join(', ')} (저장은 정상 동작합니다).`)
       setNotice(msgs.join('\n'))
       return
     }

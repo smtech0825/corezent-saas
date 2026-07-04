@@ -106,13 +106,37 @@ export function isStyleValueAllowed(prop: string, value: string): boolean {
   return rules.some((re) => re.test(v))
 }
 
+// 리치 편집기(TipTap)가 정식 노드로 무손실 왕복(round-trip)하는 태그 — 각 태그마다 대응 확장이 있어야 한다.
+//   문단·서식·목록(StarterKit) · blockquote·hr(StarterKit) · a(Link) · img(ResizableImage) · span(TextStyle/Color)
+//   · table…(Table 확장군) · iframe(YoutubeEmbed, 유튜브 임베드만)
+export const EDITOR_ROUNDTRIP_TAGS = [
+  'p', 'h2', 'h3', 'strong', 'em', 'u', 'a', 'img', 'ul', 'ol', 'li', 'span', 'br',
+  'blockquote', 'hr',
+  'table', 'thead', 'tbody', 'tr', 'th', 'td',
+  'iframe',
+] as const
+
+// 전용 노드는 없지만 리치 편집 전환 시 래퍼만 평탄화되고 자식 내용은 보존되는 태그 — 잠금 대상 아님.
+export const EDITOR_FLATTEN_TAGS = ['div', 'figure', 'figcaption'] as const
+
+// ⚠️ 불변식: EDITOR_ROUNDTRIP_TAGS ∪ EDITOR_FLATTEN_TAGS === ALLOWED_TAGS.
+//    허용 태그를 늘렸는데 이 두 목록 어디에도 안 넣으면 editorUnsupportedTags가 그 태그를 잡아 소스 모드를 잠근다(소실 방지 안전망).
+
 /**
- * @함수명: hasSourceOnlyTags
- * @설명: HTML에 리치 편집기(TipTap)가 표현할 수 없어 소스 모드 유지가 필요한 태그(표·임베드)가 있는지 검사한다.
- * @매개변수: html - 검사할 HTML
- * @반환값: 표(table) 또는 iframe이 있으면 true
+ * @함수명: editorUnsupportedTags
+ * @설명: HTML에서 리치 편집기가 노드 왕복도 평탄화도 못 해 내용이 소실될 태그명 목록을 돌려준다.
+ *        표·유튜브가 정식 노드가 된 뒤로는 허용목록 태그에 대해 보통 빈 배열이며, 목록이 어긋난 경우에만 값이 찬다(안전망).
+ * @매개변수: html - 검사할 HTML(보통 sanitize 통과분)
+ * @반환값: 편집기가 다룰 수 없는 태그명 배열(중복 제거)
  */
-export function hasSourceOnlyTags(html: string | null | undefined): boolean {
-  if (!html) return false
-  return /<(table|iframe)\b/i.test(html)
+export function editorUnsupportedTags(html: string | null | undefined): string[] {
+  if (!html) return []
+  const roundtrip = new Set<string>(EDITOR_ROUNDTRIP_TAGS)
+  const flatten = new Set<string>(EDITOR_FLATTEN_TAGS)
+  const found = new Set<string>()
+  for (const m of html.matchAll(/<([a-z][a-z0-9]*)\b/gi)) {
+    const tag = m[1].toLowerCase()
+    if (!roundtrip.has(tag) && !flatten.has(tag)) found.add(tag)
+  }
+  return [...found]
 }

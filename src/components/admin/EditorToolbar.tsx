@@ -9,7 +9,7 @@
 import type { Editor } from '@tiptap/react'
 import {
   Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon, Image as ImageIcon,
-  List, ListOrdered, Undo2, Redo2, Video, Eraser, Code,
+  List, ListOrdered, Undo2, Redo2, Video, Eraser, Code, Table as TableIcon,
   AlignLeft, AlignCenter, AlignRight,
 } from 'lucide-react'
 
@@ -73,6 +73,19 @@ function TBText({
   )
 }
 
+/** 소형 텍스트 버튼(이미지 크기·표 편집 컨텍스트 바 공용) */
+function SmallBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-xs px-2 py-1 rounded border border-rule text-ink-soft hover:text-ink hover:border-mark/40 transition-colors"
+    >
+      {children}
+    </button>
+  )
+}
+
 interface Props {
   editor: Editor
   mode: 'rich' | 'source'
@@ -94,6 +107,7 @@ export default function EditorToolbar({
 }: Props) {
   const richMode = mode === 'rich'
   const imageSelected = richMode && editor.isActive('image')
+  const tableActive = richMode && editor.isActive('table')
 
   return (
     <>
@@ -138,6 +152,7 @@ export default function EditorToolbar({
             <TB onClick={onLink} active={editor.isActive('link')} title="링크"><LinkIcon size={15} /></TB>
             <TB onClick={onUploadClick} disabled={uploading} title={uploading ? '업로드 중…' : '이미지 삽입'}><ImageIcon size={15} /></TB>
             <TB onClick={onYoutube} title="유튜브 삽입"><Video size={15} /></TB>
+            <TB onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="표 삽입 (3×3)"><TableIcon size={15} /></TB>
 
             <span className="mx-1 h-4 w-px bg-rule" />
 
@@ -159,15 +174,27 @@ export default function EditorToolbar({
         <div className="flex items-center gap-1.5 border-b border-rule bg-paper-shade px-3 py-1.5">
           <span className="text-xs text-ink-faint mr-1">이미지 크기</span>
           {IMG_SIZES.map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              onClick={() => editor.chain().focus().updateAttributes('image', { width: s.width }).run()}
-              className="text-xs px-2 py-1 rounded border border-rule text-ink-soft hover:text-ink hover:border-mark/40 transition-colors"
-            >
+            <SmallBtn key={s.label} onClick={() => editor.chain().focus().updateAttributes('image', { width: s.width }).run()}>
               {s.label}
-            </button>
+            </SmallBtn>
           ))}
+        </div>
+      )}
+
+      {/* 표 셀 안에 있을 때 표 편집 컨텍스트 바 — TipTap 표준 명령 */}
+      {tableActive && (
+        <div className="flex items-center gap-1.5 flex-wrap border-b border-rule bg-paper-shade px-3 py-1.5">
+          <span className="text-xs text-ink-faint mr-1">표 편집</span>
+          <SmallBtn onClick={() => editor.chain().focus().addRowBefore().run()}>행↑</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().addRowAfter().run()}>행↓</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().deleteRow().run()}>행 삭제</SmallBtn>
+          <span className="mx-0.5 h-4 w-px bg-rule" />
+          <SmallBtn onClick={() => editor.chain().focus().addColumnBefore().run()}>열←</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().addColumnAfter().run()}>열→</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().deleteColumn().run()}>열 삭제</SmallBtn>
+          <span className="mx-0.5 h-4 w-px bg-rule" />
+          <SmallBtn onClick={() => editor.chain().focus().toggleHeaderRow().run()}>헤더행</SmallBtn>
+          <SmallBtn onClick={() => editor.chain().focus().deleteTable().run()}>표 삭제</SmallBtn>
         </div>
       )}
     </>
