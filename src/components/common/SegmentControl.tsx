@@ -7,6 +7,7 @@
  */
 
 import type { ReactNode } from 'react'
+import { BUY_BAR_CONTROL_BOX } from './controlBox'
 
 /** 세그먼트 옵션 하나 */
 export interface SegmentOption {
@@ -41,7 +42,7 @@ export default function SegmentControl({ label, value, options, onChange, ariaLa
       <div
         role="radiogroup"
         aria-label={ariaLabel ?? label}
-        className="inline-flex items-center border border-rule bg-paper rounded-md p-0.5 gap-0.5"
+        className={`${BUY_BAR_CONTROL_BOX} p-0.5 gap-0.5`}
       >
         {options.map((opt) => {
           const active = opt.value === value
@@ -53,7 +54,8 @@ export default function SegmentControl({ label, value, options, onChange, ariaLa
               aria-checked={active}
               disabled={opt.disabled}
               onClick={() => !opt.disabled && onChange(opt.value)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              // h-full: 바깥 박스(h-10) 안에서 높이를 채우되 바깥 높이는 좌우하지 않음(40px 고정 유지)
+              className={`whitespace-nowrap h-full inline-flex items-center px-3 rounded text-xs font-medium transition-colors ${
                 active
                   ? 'bg-pen text-white'
                   : opt.disabled

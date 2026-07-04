@@ -9,16 +9,15 @@
  *        키보드 ↑↓·Home/End·Enter·Esc 지원. 외부 클릭·ESC로 닫힘. 메뉴는 트리거 위쪽(bottom-full)으로 열린다.
  */
 
-import { useState, useRef, useEffect, useCallback, useId, type ReactNode, type KeyboardEvent } from 'react'
+import { useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
 import { ChevronUp, Check } from 'lucide-react'
+import { BUY_BAR_CONTROL_BOX } from './controlBox'
 
-/** 드롭업 옵션 하나 */
+/** 드롭업 옵션 하나 — 값 라벨만 표시(가격은 바 우측 가격 영역에서만 노출) */
 export interface DropUpOption {
   value: string
-  /** 트리거·목록에 표시되는 짧은 값 라벨(예: "10PC용") */
+  /** 트리거·목록에 표시되는 값 라벨(예: "10PC용"). 미출시 조합은 "(미출시)"를 포함해 전달 */
   label: string
-  /** 목록에서 값 오른쪽에 표시되는 보조 라벨(예: "₩690,000/년") */
-  priceLabel?: ReactNode
   disabled?: boolean
 }
 
@@ -116,7 +115,7 @@ export default function DropUpSelect({
     <div ref={containerRef} className="min-w-0">
       {label && <span className="block text-[11px] text-ink-faint mb-1 leading-none">{label}</span>}
       <div className="relative">
-        {/* 트리거 — 세그먼트 컨트롤과 동일 높이(34px)로 하단선 정렬 유지 */}
+        {/* 트리거 — 공통 박스 규격(BUY_BAR_CONTROL_BOX, h-10=40px)으로 옆 컨트롤과 하단선·높이 통일 */}
         <button
           ref={triggerRef}
           type="button"
@@ -126,7 +125,7 @@ export default function DropUpSelect({
           aria-activedescendant={open ? optId(highlight) : undefined}
           onClick={() => (open ? closeMenu() : openMenu())}
           onKeyDown={onKeyDown}
-          className={`inline-flex items-center justify-between gap-1.5 ${triggerMinWidthClass} max-w-full border border-rule bg-paper rounded-md px-3 py-2 text-xs font-medium text-ink whitespace-nowrap cursor-pointer hover:border-ink-faint transition-colors`}
+          className={`${BUY_BAR_CONTROL_BOX} justify-between gap-1.5 ${triggerMinWidthClass} max-w-full px-3 text-xs font-medium text-ink whitespace-nowrap cursor-pointer hover:border-ink-faint transition-colors`}
         >
           <span className="truncate">{selected?.label ?? '선택'}</span>
           <ChevronUp size={13} className={`shrink-0 text-ink-faint transition-transform ${open ? '' : 'rotate-180'}`} />
@@ -150,17 +149,14 @@ export default function DropUpSelect({
                     disabled={o.disabled}
                     onClick={() => choose(i)}
                     onMouseEnter={() => !o.disabled && setHighlight(i)}
-                    className={`w-full flex items-center justify-between gap-4 px-3 py-2 text-xs whitespace-nowrap transition-colors ${
-                      o.disabled ? 'text-ink-faint/50 cursor-not-allowed' : isHi ? 'bg-paper-shade cursor-pointer' : 'cursor-pointer'
-                    }`}
+                    className={`w-full flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap transition-colors ${
+                      o.disabled
+                        ? 'text-ink-faint/50 cursor-not-allowed'
+                        : isSel ? 'text-pen font-semibold' : 'text-ink'
+                    } ${isHi && !o.disabled ? 'bg-paper-shade' : ''} ${o.disabled ? '' : 'cursor-pointer'}`}
                   >
-                    <span className={`flex items-center gap-1.5 ${isSel ? 'text-pen font-semibold' : 'text-ink'}`}>
-                      <Check size={13} className={`shrink-0 ${isSel ? 'opacity-100' : 'opacity-0'}`} />
-                      {o.label}
-                    </span>
-                    {o.priceLabel != null && (
-                      <span className="text-ink-soft tabular-nums text-right">{o.priceLabel}</span>
-                    )}
+                    <Check size={13} className={`shrink-0 ${isSel ? 'opacity-100' : 'opacity-0'}`} />
+                    {o.label}
                   </button>
                 </li>
               )

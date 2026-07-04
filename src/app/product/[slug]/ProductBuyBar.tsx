@@ -172,10 +172,8 @@ export default function ProductBuyBar({
                   label={axis1Name ?? '옵션'}
                   value={a1}
                   onChange={changeA1}
-                  options={axis1Options.map((o) => {
-                    const row = findRow(o, a2)
-                    return { value: o, label: o, priceLabel: row ? `${formatPrice(row.price)}${row.suffix}` : undefined }
-                  })}
+                  // 드롭업 메뉴는 값만 표시(가격은 바 우측 가격 영역에서만)
+                  options={axis1Options.map((o) => ({ value: o, label: o }))}
                 />
               ) : (
                 <SegmentControl
@@ -193,16 +191,12 @@ export default function ProductBuyBar({
                   label={axis2Name ?? '옵션'}
                   value={a2}
                   onChange={setA2}
-                  options={axis2Options.map((o) => {
-                    const valid = validA2.has(o)
-                    const row = valid ? findRow(a1, o) : undefined
-                    return {
-                      value: o,
-                      label: o,
-                      priceLabel: row ? `${formatPrice(row.price)}${row.suffix}` : valid ? undefined : '미출시',
-                      disabled: !valid,
-                    }
-                  })}
+                  // 드롭업 메뉴는 값만 표시(가격은 바 우측 가격 영역에서만). 미출시 조합은 라벨에 표기 + 비활성
+                  options={axis2Options.map((o) => ({
+                    value: o,
+                    label: validA2.has(o) ? o : `${o} (미출시)`,
+                    disabled: !validA2.has(o),
+                  }))}
                 />
               ) : (
                 <SegmentControl

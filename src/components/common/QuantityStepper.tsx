@@ -8,6 +8,7 @@
  */
 
 import { Minus, Plus } from 'lucide-react'
+import { BUY_BAR_CONTROL_BOX } from './controlBox'
 
 /** 체크아웃 수량 상한 (LS 자체 상한과 별개로 UI 오입력·남용 방지) */
 export const MAX_CHECKOUT_QUANTITY = 10
@@ -26,12 +27,17 @@ interface Props {
 export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QUANTITY, inline = false }: Props) {
   const clamp = (n: number) => Math.min(max, Math.max(1, Math.floor(n)))
 
-  // 구매 바(inline)에서는 옆 옵션 세그먼트와 박스 높이를 맞추기 위해 세로 패딩을 키운다(py-2.5).
-  const btnCls = `${inline ? 'px-2 py-2.5' : 'px-2 py-1.5'} text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer`
+  // 구매 바(inline)에서는 공통 박스 규격(BUY_BAR_CONTROL_BOX, h-10=40px)을 써 옆 컨트롤과 높이를 통일.
+  // 버튼·숫자는 h-full로 박스 높이를 채우되 바깥 높이는 좌우하지 않는다. 카드형(default)은 기존 규격 유지.
+  const boxCls = inline
+    ? `${BUY_BAR_CONTROL_BOX} overflow-hidden`
+    : 'inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper'
+  const btnCls = `${inline ? 'h-full inline-flex items-center px-2' : 'px-2 py-1.5'} text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer`
+  const numCls = `${inline ? 'h-full inline-flex items-center justify-center' : 'text-center'} min-w-[1.75rem] text-sm font-semibold text-ink tabular-nums select-none`
 
   // +/- 스테퍼 본체(두 레이아웃 공통)
   const stepper = (
-    <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper">
+    <div className={boxCls}>
       <button
         type="button"
         aria-label="수량 줄이기"
@@ -41,7 +47,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
       >
         <Minus size={12} />
       </button>
-      <span className="min-w-[1.75rem] text-center text-sm font-semibold text-ink tabular-nums select-none">
+      <span className={numCls}>
         {value}
       </span>
       <button
