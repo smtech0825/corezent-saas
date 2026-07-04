@@ -151,6 +151,8 @@ export default function ProductBuyBar({
     { ...utmData, affiliate_ref: affiliateRef },
     qty,
     discountCode,
+    // 로그인 사용자의 가입 이메일·이름을 체크아웃에 프리필(비로그인이면 빈 값 → 빌더가 생략)
+    { email: userEmail, name: userName },
   )
 
   return (

@@ -36,9 +36,12 @@ export function verifyLSWebhook(rawBody: string, signature: string): boolean {
  *        discountCode는 LS 공식 `checkout[discount_code]` 파라미터로 전달(체크아웃에 프리필,
  *        유효성 검증·금액 계산은 LS가 수행) — 값이 있을 때만 부착.
  *        청구지 국가는 `checkout[billing_address][country]=KR`로 기본 프리필(한국) — baseUrl에 국가가 없을 때만.
+ *        로그인 사용자의 가입 이메일·이름은 `checkout[email]`·`checkout[name]`으로 기본 프리필 — 값이 있을 때만
+ *        (비로그인·이름 미설정이면 해당 키 생략). searchParams가 값을 URL 인코딩하므로 한글 이름도 안전.
  * @매개변수: baseUrl - LS 체크아웃 URL, userId - Supabase 사용자 UUID, utm - UTM/추천인 데이터,
- *           quantity - 구매 수량(기본 1), discountCode - LS 할인코드(선택)
- * @반환값: custom_data가 포함된 체크아웃 URL
+ *           quantity - 구매 수량(기본 1), discountCode - LS 할인코드(선택),
+ *           prefill - 로그인 사용자 이메일·이름 프리필(선택; 값 없으면 키 생략)
+ * @반환값: custom_data·프리필이 포함된 체크아웃 URL
  */
 export function buildCheckoutUrl(
   baseUrl: string,
@@ -54,6 +57,7 @@ export function buildCheckoutUrl(
   } | null,
   quantity?: number,
   discountCode?: string,
+  prefill?: { email?: string | null; name?: string | null } | null,
 ): string {
   if (!baseUrl || baseUrl === '#') return baseUrl || '#'
   try {
@@ -76,6 +80,17 @@ export function buildCheckoutUrl(
     // baseUrl에 이미 국가가 지정돼 있으면 그 값을 우선(비파괴적 기본값).
     if (!url.searchParams.has('checkout[billing_address][country]')) {
       url.searchParams.set('checkout[billing_address][country]', 'KR')
+    }
+    // 로그인 사용자 프리필: LS 호스티드 체크아웃의 이메일·이름 필드 기본값(고객이 변경 가능, 잠금 아님).
+    // searchParams.set이 값을 URL 인코딩하므로 한글 이름·이메일 특수문자도 안전(LS가 디코드).
+    // 값이 없으면(비로그인·이름 미설정) 키 자체를 생략해 기존 동작(파라미터 없음)과 동일하게 둔다.
+    if (prefill?.email) {
+      const em = prefill.email.trim()
+      if (em) url.searchParams.set('checkout[email]', em)
+    }
+    if (prefill?.name) {
+      const nm = prefill.name.trim()
+      if (nm) url.searchParams.set('checkout[name]', nm)
     }
     if (userId)              url.searchParams.set('checkout[custom][user_id]',     userId)
     if (utm?.utm_source)     url.searchParams.set('checkout[custom][utm_source]',   utm.utm_source)
