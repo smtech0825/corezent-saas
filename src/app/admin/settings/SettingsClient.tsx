@@ -12,13 +12,14 @@ import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 
 type Settings = Record<string, string>
-type Section = 'general' | 'footer' | 'seo' | 'smtp'
+type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank'
 
 const SECTION_KEYS: Record<Section, string[]> = {
   general: ['site_name', 'site_url', 'support_email', 'footer_copyright'],
   footer:  ['footer_info'],
   seo:     ['seo_ga_tracking_id', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords'],
   smtp:    ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name'],
+  bank:    ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder'],
 }
 
 const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
@@ -245,6 +246,36 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         <Field label="발신자 이름">
           <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
         </Field>
+      </SectionCard>
+
+      {/* ── 계좌이체(무통장 입금) 설정 ──────────────────────────────────── */}
+      <SectionCard
+        title="계좌이체(무통장 입금)"
+        description="상품 상세 페이지 결제방법에 '계좌이체'를 노출합니다. 활성화하려면 계좌번호까지 입력하세요."
+        footer={<SaveButton section="bank" {...btnProps} />}
+      >
+        <Field label="계좌이체 결제 사용">
+          <select
+            value={values.bank_transfer_enabled === 'true' ? 'true' : 'false'}
+            onChange={(e) => update('bank_transfer_enabled', e.target.value)}
+            className={INPUT_CLS}
+          >
+            <option value="false">비활성</option>
+            <option value="true">활성</option>
+          </select>
+        </Field>
+        <Field label="은행">
+          <input value={values.bank_transfer_bank ?? ''} onChange={(e) => update('bank_transfer_bank', e.target.value)} placeholder="예: 국민은행" className={INPUT_CLS} />
+        </Field>
+        <Field label="계좌번호">
+          <input value={values.bank_transfer_account_number ?? ''} onChange={(e) => update('bank_transfer_account_number', e.target.value)} placeholder="예: 123456-01-234567" className={INPUT_CLS} />
+        </Field>
+        <Field label="예금주">
+          <input value={values.bank_transfer_account_holder ?? ''} onChange={(e) => update('bank_transfer_account_holder', e.target.value)} placeholder="예: 홍길동" className={INPUT_CLS} />
+        </Field>
+        <p className="text-xs text-ink-faint">
+          계좌이체는 자동 갱신이 없어 <b className="text-ink-soft">1회 결제</b>로 기록됩니다. 입금 확인은 <b className="text-ink-soft">주문</b> 화면에서 [결제 확인]으로 처리하며, 라이선스는 수동 발송해야 합니다.
+        </p>
       </SectionCard>
 
       {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}

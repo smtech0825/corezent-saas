@@ -28,12 +28,12 @@ export const dynamic = 'force-dynamic'
 
 // 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백). checkout_url은 항상 존재하는 기본 컬럼.
 const FULL_COLS =
-  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(type, interval, price, is_active, checkout_url)'
+  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(id, type, interval, price, is_active, checkout_url)'
 const BASE_COLS =
-  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(type, interval, price, is_active, checkout_url)'
+  'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(id, type, interval, price, is_active, checkout_url)'
 
 interface ProductFeature { icon: string; image_url: string; title: string; description: string }
-interface PriceRow { type: string; interval: string | null; price: number; is_active: boolean; checkout_url: string | null }
+interface PriceRow { id: string; type: string; interval: string | null; price: number; is_active: boolean; checkout_url: string | null }
 
 // 섹션 컨테이너 공통 스타일 — 각 섹션을 통일된 카드 박스로 묶는다.
 const SECTION_BOX = 'border border-rule rounded-lg bg-paper-raised p-6 sm:p-8'
@@ -82,10 +82,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   // 옵션 있는 상품이면 하단 바에서 바로 옵션 선택·구매 (공용 조회기)
   const optClient = createAdminClient()
-  const [{ optionRows, axis1Name, axis2Name }, affiliateRef] = await Promise.all([
+  const [{ optionRows, axis1Name, axis2Name }, affiliateRef, bankRes] = await Promise.all([
     getProductOptions(optClient, product.id as string),
     resolveCheckoutAffiliateRef(),
+    optClient.from('front_settings').select('key, value')
+      .in('key', ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder']),
   ])
+
+  // 계좌이체 안내(front_settings) — 활성 + 계좌번호가 있을 때만 결제방법으로 노출
+  const bankMap = new Map((bankRes.data ?? []).map((r) => [r.key, r.value ?? '']))
+  const bankTransfer = {
+    enabled: bankMap.get('bank_transfer_enabled') === 'true' && !!(bankMap.get('bank_transfer_account_number') ?? '').trim(),
+    bank: bankMap.get('bank_transfer_bank') ?? '',
+    accountNumber: bankMap.get('bank_transfer_account_number') ?? '',
+    accountHolder: bankMap.get('bank_transfer_account_holder') ?? '',
+  }
 
   const name = product.name as string
   const tagline = product.tagline as string | null
@@ -134,9 +145,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     barAxis2Name = axis2Name
   } else {
     buyRows = []
-    if (monthly) buyRows.push({ axis1Label: '월간', axis2Label: null, price: monthly.price, checkoutUrl: monthly.checkout_url ?? '#', suffix: '/월' })
-    if (annual) buyRows.push({ axis1Label: '연간', axis2Label: null, price: annual.price, checkoutUrl: annual.checkout_url ?? '#', suffix: '/년' })
-    if (oneTime) buyRows.push({ axis1Label: '일회 구매', axis2Label: null, price: oneTime.price, checkoutUrl: oneTime.checkout_url ?? '#', suffix: '' })
+    if (monthly) buyRows.push({ priceId: monthly.id, axis1Label: '월간', axis2Label: null, price: monthly.price, checkoutUrl: monthly.checkout_url ?? '#', suffix: '/월' })
+    if (annual) buyRows.push({ priceId: annual.id, axis1Label: '연간', axis2Label: null, price: annual.price, checkoutUrl: annual.checkout_url ?? '#', suffix: '/년' })
+    if (oneTime) buyRows.push({ priceId: oneTime.id, axis1Label: '일회 구매', axis2Label: null, price: oneTime.price, checkoutUrl: oneTime.checkout_url ?? '#', suffix: '' })
     barAxis1Name = buyRows.length > 1 ? '기간' : null
     barAxis2Name = null
   }
@@ -338,6 +349,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           axis1Name={barAxis1Name}
           axis2Name={barAxis2Name}
           optionRows={buyRows}
+          bankTransfer={bankTransfer}
         />
       )}
     </>

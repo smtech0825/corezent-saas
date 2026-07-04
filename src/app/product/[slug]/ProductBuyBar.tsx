@@ -18,7 +18,16 @@ import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
 import QuantityStepper from '@/components/common/QuantityStepper'
 import SegmentControl from '@/components/common/SegmentControl'
+import BankTransferModal from './BankTransferModal'
 import type { OptionRow } from '@/lib/product-options'
+
+/** 계좌이체 안내(front_settings에서 서버가 읽어 전달) */
+export interface BankTransferInfo {
+  enabled: boolean
+  bank: string
+  accountNumber: string
+  accountHolder: string
+}
 
 interface Props {
   productName: string
@@ -27,7 +36,12 @@ interface Props {
   axis1Name: string | null
   axis2Name: string | null
   optionRows: OptionRow[]
+  bankTransfer: BankTransferInfo
 }
+
+// 구매 버튼 공통 클래스(카드 Link · 계좌이체 button 공용)
+const BUY_BTN_CLS =
+  'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] transition-all duration-200 whitespace-nowrap shrink-0 max-md:flex-1'
 
 /** 중복 제거 + 첫 등장 순서 유지 */
 function uniqueInOrder(values: (string | null)[]): string[] {
@@ -47,16 +61,30 @@ function uniqueInOrder(values: (string | null)[]): string[] {
  * @설명: 선택한 옵션 조합의 단가×수량을 즉시 갱신하고 그 행의 checkout_url로 구매 버튼을 연결합니다.
  */
 export default function ProductBuyBar({
-  productName, isActive, affiliateRef, axis1Name, axis2Name, optionRows,
+  productName, isActive, affiliateRef, axis1Name, axis2Name, optionRows, bankTransfer,
 }: Props) {
   const rows = optionRows
 
   // 로그인/UTM/할인코드는 클라이언트에서 스스로 확보(체크아웃 URL 주입 규칙 공통)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
   const [utmData, setUtmData] = useState<UtmData | null>(null)
   const [discountCode, setDiscountCode] = useState('')
+  // 결제방법(계좌이체 활성 시 노출) + 계좌이체 모달
+  const [payMethod, setPayMethod] = useState<'card' | 'bank_transfer'>('card')
+  const [modalOpen, setModalOpen] = useState(false)
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    const supa = createClient()
+    supa.auth.getUser().then(async ({ data }) => {
+      const u = data.user
+      setUserId(u?.id ?? null)
+      setUserEmail(u?.email ?? '')
+      if (u?.id) {
+        const { data: prof } = await supa.from('profiles').select('name').eq('id', u.id).maybeSingle()
+        setUserName((prof?.name as string) ?? '')
+      }
+    })
     setUtmData(getUtmData())
     const c = new URLSearchParams(window.location.search).get('discount')
     if (c) setDiscountCode(c.trim().slice(0, 64))
@@ -153,6 +181,18 @@ export default function ProductBuyBar({
               />
             )}
             <QuantityStepper inline value={qty} onChange={setQty} />
+            {/* 결제방법 — 계좌이체가 활성일 때만 노출(옵션→수량→결제방법 순서) */}
+            {bankTransfer.enabled && (
+              <SegmentControl
+                label="결제방법"
+                value={payMethod}
+                onChange={(v) => setPayMethod(v === 'bank_transfer' ? 'bank_transfer' : 'card')}
+                options={[
+                  { value: 'card', label: '신용카드' },
+                  { value: 'bank_transfer', label: '계좌이체' },
+                ]}
+              />
+            )}
           </div>
 
           {/* 가격 + 구매하기 */}
@@ -169,23 +209,48 @@ export default function ProductBuyBar({
               )}
             </div>
 
-            {isActive ? (
+            {!isActive ? (
+              <span className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-medium border border-dashed border-rule text-ink-faint whitespace-nowrap shrink-0 max-md:flex-1">
+                출시 예정
+              </span>
+            ) : payMethod === 'bank_transfer' && userId ? (
+              // 계좌이체 + 로그인 → 모달 열기
+              <button onClick={() => setModalOpen(true)} className={BUY_BTN_CLS} aria-label={`${productName} 계좌이체 구매`}>
+                구매하기
+                <ArrowRight size={14} />
+              </button>
+            ) : (
+              // 카드(기존 LS 체크아웃) · 또는 비로그인(회원가입 유도)
               <Link
                 href={userId ? checkoutUrl : '/auth/register'}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] transition-all duration-200 whitespace-nowrap shrink-0 max-md:flex-1"
+                className={BUY_BTN_CLS}
                 aria-label={`${productName} 구매`}
               >
                 구매하기
                 <ArrowRight size={14} />
               </Link>
-            ) : (
-              <span className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-medium border border-dashed border-rule text-ink-faint whitespace-nowrap shrink-0 max-md:flex-1">
-                출시 예정
-              </span>
             )}
           </div>
         </div>
       </div>
+
+      {/* 계좌이체 모달 — 로그인 사용자 + 계좌이체 선택 시 */}
+      {modalOpen && (
+        <BankTransferModal
+          onClose={() => setModalOpen(false)}
+          bank={bankTransfer.bank}
+          accountNumber={bankTransfer.accountNumber}
+          accountHolder={bankTransfer.accountHolder}
+          amountWon={displayPrice}
+          productName={productName}
+          optionLabel={[selected.axis1Label, selected.axis2Label].filter(Boolean).join(' · ')}
+          isSubscription={selected.suffix !== ''}
+          productPriceId={selected.priceId}
+          quantity={qty}
+          sessionEmail={userEmail}
+          registeredName={userName}
+        />
+      )}
     </div>
   )
 }

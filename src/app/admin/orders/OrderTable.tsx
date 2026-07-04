@@ -11,7 +11,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Download, Check, Loader2 } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
 
 const PAGE_SIZE = 15
@@ -40,6 +40,9 @@ export interface Order {
   created_at: string
   expires_at: string | null
   period: string | null
+  paymentMethod: string           // 'card' | 'bank_transfer'
+  depositorEmail: string | null
+  depositExpiresAt: string | null  // 계좌이체 입금 기한(+3일)
 }
 
 interface Props {
@@ -47,24 +50,31 @@ interface Props {
   totalRevenue: number
 }
 
-function getStatusBadge(status: string, expiresAt: string | null): { label: string; cls: string } {
+function getStatusBadge(o: Order): { label: string; cls: string } {
   // 1순위: refunded는 항상 refunded 표시
-  if (status === 'refunded') {
+  if (o.status === 'refunded') {
     return { label: '환불됨', cls: 'text-info bg-info-soft' }
   }
+  // 계좌이체 입금 대기 — 입금 기한(+3일) 경과 시 '기한 초과'
+  if (o.status === 'pending_deposit') {
+    const overdue = o.depositExpiresAt ? new Date(o.depositExpiresAt) < new Date() : false
+    return overdue
+      ? { label: '기한 초과', cls: 'text-danger bg-danger-soft' }
+      : { label: '입금 대기', cls: 'text-caution bg-caution-soft' }
+  }
   // 2순위: 만료일이 지났거나 cancelled → expired
-  const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false
-  if (status === 'cancelled' || isExpired) {
+  const isExpired = o.expires_at ? new Date(o.expires_at) < new Date() : false
+  if (o.status === 'cancelled' || isExpired) {
     return { label: '만료됨', cls: 'text-danger bg-danger-soft' }
   }
   // 3순위: paid → active
-  if (status === 'paid') {
+  if (o.status === 'paid') {
     return { label: '활성', cls: 'text-ok bg-ok-soft' }
   }
   const map: Record<string, { label: string; cls: string }> = {
     pending: { label: '대기 중', cls: 'text-caution bg-caution-soft' },
   }
-  return map[status] ?? { label: status, cls: 'text-ink-soft bg-paper-shade' }
+  return map[o.status] ?? { label: o.status, cls: 'text-ink-soft bg-paper-shade' }
 }
 
 export default function OrderTable({ orders, totalRevenue }: Props) {
@@ -77,6 +87,31 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
   const [statusFilter, setStatusFilter] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+
+  // 계좌이체 입금 확인 진행 상태(주문 id)
+  const [confirming, setConfirming] = useState<string | null>(null)
+
+  // 계좌이체 입금 확인 — status=paid + deposit_confirmed_at 기록(라이선스는 수동 발송)
+  async function confirmDeposit(orderId: string) {
+    if (!window.confirm('입금을 확인하고 결제 완료로 처리할까요?\n라이선스는 수동으로 발송해야 합니다.')) return
+    setConfirming(orderId)
+    try {
+      const res = await fetch('/api/admin/orders/confirm-deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      if (!res.ok) {
+        window.alert('확인 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+        setConfirming(null)
+        return
+      }
+      router.refresh()
+    } catch {
+      window.alert('네트워크 오류입니다. 다시 시도해 주세요.')
+      setConfirming(null)
+    }
+  }
 
   // 검색 디바운싱 400ms
   useEffect(() => {
@@ -107,13 +142,14 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
 
   // 현재 필터 결과를 CSV로 내보내기 (표시금액 + 원시 cents·통화 병행 — 회계용)
   function handleExport() {
-    const header = ['주문ID', '이름', '이메일', '상품', '옵션', '금액(표시)', '금액(cents)', '통화', '상태', '주기', '주문일시', '만료일']
+    const header = ['주문ID', '이름', '이메일', '상품', '옵션', '금액(표시)', '금액(cents)', '통화', '상태', '결제수단', '주기', '주문일시', '만료일']
     const esc = (v: unknown) => {
       const s = String(v ?? '')
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
     }
     const lines = filtered.map((o) =>
-      [o.shortId, o.name, o.email, o.productName, o.option, formatKRW(o.amount), o.amount, o.currency, o.status, o.period ?? '',
+      [o.shortId, o.name, o.email, o.productName, o.option, formatKRW(o.amount), o.amount, o.currency, o.status,
+       o.paymentMethod === 'bank_transfer' ? '계좌이체' : '신용카드', o.period ?? '',
        new Date(o.created_at).toISOString(), o.expires_at ? new Date(o.expires_at).toISOString() : '']
         .map(esc).join(','),
     )
@@ -174,6 +210,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
         >
           <option value="">전체 상태</option>
           <option value="paid">결제됨</option>
+          <option value="pending_deposit">입금 대기</option>
           <option value="pending">대기 중</option>
           <option value="refunded">환불됨</option>
           <option value="cancelled">취소됨</option>
@@ -221,6 +258,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상품 · 옵션</th>
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">금액</th>
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상태</th>
+                    <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">결제방법</th>
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">결제 주기</th>
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">날짜</th>
                     <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">만료일</th>
@@ -228,7 +266,8 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                 </thead>
                 <tbody>
                   {paged.map((o) => {
-                    const badge = getStatusBadge(o.status, o.expires_at)
+                    const badge = getStatusBadge(o)
+                    const isBank = o.paymentMethod === 'bank_transfer'
                     return (
                       <tr
                         key={o.id}
@@ -253,6 +292,29 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${badge.cls}`}>
                             {badge.label}
                           </span>
+                        </td>
+                        {/* 결제방법 — 계좌이체 입금 대기 행에는 [결제 확인] 버튼 + 수동 발송 안내 */}
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          {isBank ? (
+                            <div className="flex flex-col gap-1.5 items-start">
+                              <span className="text-xs font-semibold px-2 py-1 rounded-full text-info bg-info-soft whitespace-nowrap">계좌이체</span>
+                              {o.status === 'pending_deposit' && (
+                                <>
+                                  <button
+                                    onClick={() => confirmDeposit(o.id)}
+                                    disabled={confirming === o.id}
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-ok border border-ok/30 hover:bg-ok-soft disabled:opacity-50 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+                                  >
+                                    {confirming === o.id ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                                    결제 확인
+                                  </button>
+                                  <span className="text-[10px] text-caution whitespace-nowrap">라이선스 수동 발송 필요</span>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-ink-faint whitespace-nowrap">신용카드</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           {o.period ? (

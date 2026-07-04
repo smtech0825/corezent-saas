@@ -16,7 +16,7 @@ export default async function OrdersPage() {
   // product_prices JOIN — 상품명 + 선택 옵션(축1/축2 라벨) 함께 조회
   const { data: orders } = await adminClient
     .from('orders')
-    .select('id, user_id, amount, currency, status, created_at, subscriptions(current_period_end, billing_interval), product_prices(option_axis1_label, option_axis2_label, products(name))')
+    .select('id, user_id, amount, currency, status, created_at, payment_method, depositor_email, deposit_expires_at, deposit_confirmed_at, subscriptions(current_period_end, billing_interval), product_prices(option_axis1_label, option_axis2_label, products(name))')
     .order('created_at', { ascending: false })
 
   let emailMap: Map<string, string> = new Map()
@@ -59,6 +59,10 @@ export default async function OrdersPage() {
       expires_at: subs?.[0]?.current_period_end ?? null,
       // subscriptions.billing_interval → Period (monthly | annual | null)
       period:     subs?.[0]?.billing_interval ?? null,
+      // 계좌이체 대조용(044) — 카드 주문은 기본 'card'
+      paymentMethod:  ((o as Record<string, unknown>).payment_method as string) ?? 'card',
+      depositorEmail: ((o as Record<string, unknown>).depositor_email as string) ?? null,
+      depositExpiresAt: ((o as Record<string, unknown>).deposit_expires_at as string) ?? null,
     }
   })
 

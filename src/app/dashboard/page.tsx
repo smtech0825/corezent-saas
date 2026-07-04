@@ -259,13 +259,14 @@ function StatusBadge({ status, amount }: { status: string; amount: number }) {
     )
   }
   const map: Record<string, string> = {
-    paid:      'text-ok bg-ok-soft border-ok/20',
-    pending:   'text-caution bg-caution-soft border-caution/20',
-    failed:    'text-danger bg-danger-soft border-danger/20',
-    refunded:  'text-info bg-info-soft border-info/20',
+    paid:            'text-ok bg-ok-soft border-ok/20',
+    pending:         'text-caution bg-caution-soft border-caution/20',
+    pending_deposit: 'text-caution bg-caution-soft border-caution/20',
+    failed:          'text-danger bg-danger-soft border-danger/20',
+    refunded:        'text-info bg-info-soft border-info/20',
   }
   const labelMap: Record<string, string> = {
-    paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨',
+    paid: '결제 완료', pending: '대기 중', pending_deposit: '입금 대기', failed: '실패', refunded: '환불됨',
   }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>

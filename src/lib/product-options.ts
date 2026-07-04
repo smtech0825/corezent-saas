@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** 표시용 옵션 행 하나 (= product_prices 한 행) */
 export interface OptionRow {
+  priceId: string  // product_prices.id — 계좌이체 주문 생성 시 옵션·금액 스냅샷 참조에 사용
   axis1Label: string | null
   axis2Label: string | null
   price: number
@@ -33,9 +34,9 @@ export async function getProductOptions(
   client: SupabaseClient,
   productId: string,
 ): Promise<ProductOptions> {
-  const PP_SORT = 'type, interval, price, checkout_url, option_axis1_label, option_axis2_label, sort_order'
-  const PP_OPT  = 'type, interval, price, checkout_url, option_axis1_label, option_axis2_label'
-  const PP_BASE = 'type, interval, price, checkout_url'
+  const PP_SORT = 'id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label, sort_order'
+  const PP_OPT  = 'id, type, interval, price, checkout_url, option_axis1_label, option_axis2_label'
+  const PP_BASE = 'id, type, interval, price, checkout_url'
   const by = (sel: string) =>
     client.from('product_prices').select(sel).eq('product_id', productId).eq('is_active', true)
 
@@ -58,6 +59,7 @@ export async function getProductOptions(
   const optionRows: OptionRow[] = rows
     .filter((p) => (p.option_axis1_label as string) || (p.option_axis2_label as string))
     .map((p) => ({
+      priceId: p.id as string,
       axis1Label: (p.option_axis1_label as string) ?? null,
       axis2Label: (p.option_axis2_label as string) ?? null,
       price: p.price as number,

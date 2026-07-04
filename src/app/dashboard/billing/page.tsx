@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { CreditCard, Package } from 'lucide-react'
 import Link from 'next/link'
 import Pagination from '@/components/common/Pagination'
@@ -35,7 +36,7 @@ export default async function BillingPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const [{ data: subscriptions, count: subTotal }, { data: orders, count: ordTotal }] = await Promise.all([
+  const [{ data: subscriptions, count: subTotal }, { data: orders, count: ordTotal }, { data: pendingDeposits }] = await Promise.all([
     supabase
       .from('subscriptions')
       .select('id, order_id, status, billing_interval, current_period_end, cancel_at_period_end, customer_portal_url, product_price_id, lemon_squeezy_subscription_id', { count: 'exact' })
@@ -48,12 +49,35 @@ export default async function BillingPage({
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(ordOffset, ordOffset + ORD_PAGE_SIZE - 1),
+    // 입금 대기(계좌이체) 주문 — 안내 재확인용(페이지네이션과 별개로 전체)
+    supabase
+      .from('orders')
+      .select('id, amount, created_at, product_price_id, deposit_expires_at')
+      .eq('user_id', user.id)
+      .eq('status', 'pending_deposit')
+      .order('created_at', { ascending: false }),
   ])
+
+  // 입금 대기 주문이 있으면 계좌 안내(front_settings)를 읽어 재확인 패널에 표시(공개 설정값 — 서버에서 admin으로 조회)
+  let bankInfo = { bank: '', accountNumber: '', accountHolder: '' }
+  if ((pendingDeposits ?? []).length > 0) {
+    const adminC = createAdminClient()
+    const { data: bk } = await adminC
+      .from('front_settings').select('key, value')
+      .in('key', ['bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder'])
+    const m = new Map((bk ?? []).map((r) => [r.key, r.value ?? '']))
+    bankInfo = {
+      bank: m.get('bank_transfer_bank') ?? '',
+      accountNumber: m.get('bank_transfer_account_number') ?? '',
+      accountHolder: m.get('bank_transfer_account_holder') ?? '',
+    }
+  }
 
   // product_price_id 목록으로 제품 정보 조회
   const priceIds = [...new Set([
     ...(subscriptions ?? []).map((s: any) => s.product_price_id),
     ...(orders ?? []).map((o: any) => o.product_price_id),
+    ...(pendingDeposits ?? []).map((o: any) => o.product_price_id),
   ].filter(Boolean))]
 
   const priceNameMap    = new Map<string, string>()
@@ -136,6 +160,38 @@ export default async function BillingPage({
         <h1 className="text-2xl font-bold text-ink font-serif">결제</h1>
         <p className="text-ink-soft text-sm mt-1">구독을 관리하고 결제 내역을 확인하세요.</p>
       </div>
+
+      {/* 입금 대기(계좌이체) 안내 — 계좌·금액·기한 재확인 */}
+      {pendingDeposits && pendingDeposits.length > 0 && (
+        <section className="mb-8">
+          <div className="bg-caution-soft border border-caution/30 rounded-xl p-5">
+            <h2 className="text-sm font-bold text-ink mb-1">입금 대기 중인 주문</h2>
+            <p className="text-xs text-ink-soft mb-3">
+              아래 계좌로 <b className="text-ink">가입하신 본인 이름</b>으로 입금해 주세요. 입금이 확인되면 결제 완료로 처리됩니다.
+            </p>
+            <div className="bg-paper border border-rule rounded-lg px-4 py-3 mb-3 text-sm">
+              <div className="flex justify-between py-0.5"><span className="text-ink-faint text-xs">은행</span><span className="text-ink font-medium">{bankInfo.bank || '—'}</span></div>
+              <div className="flex justify-between py-0.5"><span className="text-ink-faint text-xs">계좌번호</span><span className="text-ink font-mono font-medium break-all">{bankInfo.accountNumber || '—'}</span></div>
+              <div className="flex justify-between py-0.5"><span className="text-ink-faint text-xs">예금주</span><span className="text-ink font-medium">{bankInfo.accountHolder || '—'}</span></div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {(pendingDeposits as any[]).map((o) => (
+                <div key={o.id} className="flex items-center justify-between gap-3 text-sm border-t border-caution/20 pt-2 first:border-0 first:pt-0">
+                  <span className="text-ink truncate">{priceNameMap.get(o.product_price_id) ?? productNameByOrderId.get(o.id) ?? '주문'}</span>
+                  <div className="text-right shrink-0">
+                    <span className="text-ink font-semibold">{formatKRW(o.amount)}</span>
+                    {o.deposit_expires_at && (
+                      <span className="block text-[11px] text-caution">
+                        입금 기한 {new Date(o.deposit_expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 구독 섹션 */}
       <section className="mb-8">
@@ -255,14 +311,15 @@ function OrderStatusBadge({ status, amount }: { status: string; amount: number }
     )
   }
   const map: Record<string, string> = {
-    paid:      'text-ok bg-ok-soft border-ok/20',
-    pending:   'text-caution bg-caution-soft border-caution/20',
-    failed:    'text-danger bg-danger-soft border-danger/20',
-    refunded:  'text-info bg-info-soft border-info/20',
-    cancelled: 'text-ink-soft bg-paper-shade border-rule',
+    paid:            'text-ok bg-ok-soft border-ok/20',
+    pending:         'text-caution bg-caution-soft border-caution/20',
+    pending_deposit: 'text-caution bg-caution-soft border-caution/20',
+    failed:          'text-danger bg-danger-soft border-danger/20',
+    refunded:        'text-info bg-info-soft border-info/20',
+    cancelled:       'text-ink-soft bg-paper-shade border-rule',
   }
   const labelMap: Record<string, string> = {
-    paid: '결제 완료', pending: '대기 중', failed: '실패', refunded: '환불됨', cancelled: '취소됨',
+    paid: '결제 완료', pending: '대기 중', pending_deposit: '입금 대기', failed: '실패', refunded: '환불됨', cancelled: '취소됨',
   }
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium text-center ${map[status] ?? map.pending}`}>
