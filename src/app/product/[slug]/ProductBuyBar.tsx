@@ -156,10 +156,10 @@ export default function ProductBuyBar({
       ref={barRef}
       className="fixed bottom-0 inset-x-0 z-[60] border-t border-rule bg-paper shadow-[0_-4px_24px_rgba(35,39,46,0.10)]"
     >
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
-        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
-          {/* 옵션1 · 옵션2 · 수량 */}
-          <div className="flex items-center flex-wrap gap-3 md:gap-4 min-w-0">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-5">
+          {/* 옵션1 · 옵션2 · 수량 · 결제방법 — lg 이상에서 한 줄(줄바꿈 방지), 그 아래는 접힘 */}
+          <div className="flex items-center flex-wrap lg:flex-nowrap gap-3 md:gap-4 min-w-0">
             {showAxis1 && (
               <SegmentControl
                 label={axis1Name ?? '옵션'}
@@ -196,7 +196,7 @@ export default function ProductBuyBar({
           </div>
 
           {/* 가격 + 구매하기 */}
-          <div className="flex items-center justify-between md:justify-end gap-4 md:ml-auto">
+          <div className="flex items-center justify-between lg:justify-end gap-4 lg:ml-auto shrink-0">
             <div className="leading-none">
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-ink tabular-nums">{formatPrice(displayPrice)}</span>
