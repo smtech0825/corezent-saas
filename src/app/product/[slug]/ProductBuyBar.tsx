@@ -40,8 +40,9 @@ interface Props {
 }
 
 // 구매 버튼 공통 클래스(카드 Link · 계좌이체 button 공용)
+// max-lg:flex-1 — lg 미만(스택 레이아웃)에서 버튼을 전폭으로(바가 lg에서 한 줄로 펴지므로 그 아래는 전폭 CTA)
 const BUY_BTN_CLS =
-  'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] transition-all duration-200 whitespace-nowrap shrink-0 max-md:flex-1'
+  'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] transition-all duration-200 whitespace-nowrap shrink-0 max-lg:flex-1'
 
 /** 중복 제거 + 첫 등장 순서 유지 */
 function uniqueInOrder(values: (string | null)[]): string[] {
@@ -210,7 +211,7 @@ export default function ProductBuyBar({
             </div>
 
             {!isActive ? (
-              <span className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-medium border border-dashed border-rule text-ink-faint whitespace-nowrap shrink-0 max-md:flex-1">
+              <span className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-medium border border-dashed border-rule text-ink-faint whitespace-nowrap shrink-0 max-lg:flex-1">
                 출시 예정
               </span>
             ) : payMethod === 'bank_transfer' && userId ? (

@@ -26,15 +26,18 @@ interface Props {
 export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QUANTITY, inline = false }: Props) {
   const clamp = (n: number) => Math.min(max, Math.max(1, Math.floor(n)))
 
+  // 구매 바(inline)에서는 옆 옵션 세그먼트와 박스 높이를 맞추기 위해 세로 패딩을 키운다(py-2.5).
+  const btnCls = `${inline ? 'px-2 py-2.5' : 'px-2 py-1.5'} text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer`
+
   // +/- 스테퍼 본체(두 레이아웃 공통)
   const stepper = (
-    <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper-raised">
+    <div className="inline-flex items-center border border-rule rounded-md overflow-hidden bg-paper">
       <button
         type="button"
         aria-label="수량 줄이기"
         disabled={value <= 1}
         onClick={() => onChange(clamp(value - 1))}
-        className="px-2 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        className={btnCls}
       >
         <Minus size={12} />
       </button>
@@ -46,7 +49,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
         aria-label="수량 늘리기"
         disabled={value >= max}
         onClick={() => onChange(clamp(value + 1))}
-        className="px-2 py-1.5 text-ink-soft hover:text-ink hover:bg-paper-shade disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        className={btnCls}
       >
         <Plus size={12} />
       </button>
