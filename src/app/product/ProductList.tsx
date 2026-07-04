@@ -3,9 +3,9 @@
 /**
  * @컴포넌트: ProductList
  * @설명: /product 페이지의 상품 카드 목록
- *        - Description 3줄 제한 + "more" 링크
- *        - "View Details" 버튼 클릭 시 아래에 확장 박스 슬라이드
- *        - 확장 박스: 전체 Description + product_features (아이콘/이미지 + 제목 + 설명)
+ *        - 목록 전용 짧은 소개(list_description)를 3줄 클램프로 표시 + 길면 "더보기"(상세 페이지 링크)
+ *        - "자세히 보기" 버튼으로 상세 페이지(/product/[slug]) 이동
+ *        ⚠️ 상세 소개 description(리치 HTML)은 목록에 노출하지 않는다(평문화 노출 버그 원인)
  */
 
 import { useState } from 'react'
@@ -14,7 +14,6 @@ import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
-import { richToPlainText } from '@/lib/rich-html'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -30,7 +29,8 @@ interface Product {
   name: string
   slug: string
   tagline: string | null
-  description: string | null
+  // 목록 전용 짧은 소개(plain text) — 상세 description(리치 HTML)은 목록에 쓰지 않는다
+  list_description: string
   category: string
   category_group: string | null
   features: string[]
@@ -97,8 +97,8 @@ export default function ProductList({ products }: Props) {
       {/* 카드 그리드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {visibleProducts.map((product) => {
-          // 카드에는 HTML 태그·마크다운 문법이 노출되지 않도록 평문 요약을 클램프 표시
-          const desc = richToPlainText(product.description ?? '')
+          // 목록 전용 짧은 소개(plain text)를 클램프 표시. 비어 있으면 아래 조건부 렌더로 설명 영역 자체를 생략
+          const desc = (product.list_description ?? '').trim()
           const isLongDesc = desc.length > DESC_CHAR_LIMIT
 
           return (

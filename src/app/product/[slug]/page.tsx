@@ -24,6 +24,7 @@ import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductBuyBar from './ProductBuyBar'
 import ScrollTopButton from './ScrollTopButton'
 import RichContent from '@/components/common/RichContent'
+import { richToPlainText } from '@/lib/rich-html'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,17 +53,21 @@ async function getProduct(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const client = createAdminClient()
-  // 메타데이터는 항상 존재하는 기본 컬럼만 사용(마이그레이션 의존 없음)
+  // 메타 설명은 list_description(046) → tagline → 상세 description 평문화 순으로 우선 사용
   const { data } = await client
     .from('products')
-    .select('name, tagline, description, logo_url')
+    .select('name, tagline, list_description, description, logo_url')
     .eq('slug', slug)
     .maybeSingle()
 
   if (!data) return { title: '제품을 찾을 수 없습니다' }
 
   const name = (data.name as string) ?? '제품'
-  const desc = (data.tagline as string) || (data.description as string) || `${name} — CoreZent 제품`
+  // 우선순위: 목록용 짧은 소개 → 태그라인 → 상세 HTML 평문화 → 기본 문구 (모두 trim 후 빈 값 스킵)
+  const listDesc = ((data.list_description as string) ?? '').trim()
+  const tagline = ((data.tagline as string) ?? '').trim()
+  const richDesc = richToPlainText((data.description as string) ?? '').trim()
+  const desc = listDesc || tagline || richDesc || `${name} — CoreZent 제품`
   const image = (data.logo_url as string) || undefined
 
   return {

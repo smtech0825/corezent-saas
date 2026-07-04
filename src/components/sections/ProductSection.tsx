@@ -17,7 +17,8 @@ interface ProductCard {
   name: string
   slug: string | null
   tagline: string
-  description: string
+  // 목록/랜딩 카드 전용 짧은 소개(plain text) — 상세 description(리치 HTML)은 카드에 쓰지 않는다
+  listDescription: string
   category: string
   categoryGroup: string | null
   tags: string[]
@@ -34,7 +35,7 @@ const COMING_SOON: ProductCard[] = [
   {
     name: '출시 예정',
     tagline: '새로운 제품 개발 중',
-    description:
+    listDescription:
       '다음 소프트웨어 제품을 준비하고 있습니다. 출시 소식을 가장 먼저 받아보시려면 가입하세요.',
     category: '',
     categoryGroup: null,
@@ -50,7 +51,7 @@ const COMING_SOON: ProductCard[] = [
   {
     name: '출시 예정',
     tagline: '더 많은 도구가 준비 중',
-    description:
+    listDescription:
       'CoreZent는 제품 라인업을 꾸준히 확장하고 있습니다. 더 강력한 소프트웨어 도구를 기대해 주세요.',
     category: '',
     categoryGroup: null,
@@ -70,10 +71,11 @@ export default async function ProductSection() {
 
   // 모든 상품 + 활성 가격 조회 (category·slug 포함)
   // category_group(마이그레이션 035) 우선 조회 → 미적용 시 폴백(랜딩 목록은 정상, 카테고리만 비활성)
-  const BASE = 'name, slug, tagline, description, category, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
+  // 랜딩 카드는 list_description(짧은 소개)만 사용 — description(상세 HTML)은 카드에 노출하지 않는다
+  const BASE = 'name, slug, tagline, list_description, category, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
   const withRes = await client
     .from('products')
-    .select('name, slug, tagline, description, category, category_group, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
+    .select('name, slug, tagline, list_description, category, category_group, tags, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
   const { data: rawProducts } = withRes.error
@@ -92,7 +94,7 @@ export default async function ProductSection() {
       name: p.name as string,
       slug: (p.slug as string) ?? null,
       tagline: (p.tagline as string) ?? '',
-      description: (p.description as string) ?? '',
+      listDescription: (p.list_description as string) ?? '',
       category: (p.category as string) ?? '',
       categoryGroup: ((p as { category_group?: string | null }).category_group) ?? null,
       tags: ((p.tags ?? []) as string[]),
@@ -163,13 +165,13 @@ export default async function ProductSection() {
                 <p className="text-pen text-sm font-medium mb-4">{product.tagline}</p>
               )}
 
-              {/* 설명 — 3줄 클램프 + 더보기 → /product 이동 */}
-              {product.description && (
+              {/* 짧은 소개 — 3줄 클램프 + 더보기 → /product 이동. 비어 있으면 영역 자체 미렌더 */}
+              {product.listDescription && (
                 <div className="relative mb-4">
                   <p className="text-ink-soft text-sm leading-relaxed line-clamp-3 break-keep">
-                    {product.description}
+                    {product.listDescription}
                   </p>
-                  {product.available && product.description.length > 120 && (
+                  {product.available && product.listDescription.length > 120 && (
                     <Link
                       href={product.slug ? `/product/${product.slug}` : '/product'}
                       className="absolute bottom-0 right-0 text-pen hover:text-pen-dark transition-colors font-medium text-sm"
