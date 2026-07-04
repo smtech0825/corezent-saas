@@ -3,6 +3,7 @@
  * @설명: 상품 설명(리치 텍스트) 서버측 sanitize — ⚠️ 서버 전용(클라이언트 import 금지, sanitize-html은 Node 모듈).
  *        허용 태그·속성 allowlist 외 모든 것(script/iframe/onclick 등)을 제거한다. 저장 시점에 반드시 호출한다.
  *        허용: p, h2, h3, strong, em, u, a[href], img[src,width,alt], ul, ol, li, span[style는 color만], br.
+ *        (p·h2·h3의 style은 text-align: left|center|right|justify 만 허용 — 정렬 기능)
  *        (img에는 lazy loading을 자동 부여, a에는 target/rel을 자동 부여 — 안전한 부가 속성)
  */
 
@@ -11,6 +12,8 @@ import sanitizeHtml from 'sanitize-html'
 // 색상 style 값 화이트리스트 — hex / rgb(a)만 허용(그 외 style 속성은 전부 제거)
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 const RGB_COLOR = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/
+// 정렬 style 값 화이트리스트 — 이 값만 text-align으로 허용(그 외 style 속성은 전부 제거)
+const TEXT_ALIGN = /^(left|center|right|justify)$/
 
 /**
  * @함수명: sanitizeRichHtml
@@ -26,11 +29,18 @@ export function sanitizeRichHtml(dirty: string | null | undefined): string {
       a: ['href', 'target', 'rel'],
       img: ['src', 'width', 'alt', 'loading', 'decoding'],
       span: ['style'],
+      // 정렬 문단·제목만 style 허용(값은 allowedStyles의 text-align 화이트리스트로 제한)
+      p: ['style'],
+      h2: ['style'],
+      h3: ['style'],
     },
     allowedSchemes: ['http', 'https', 'mailto'],
     allowedSchemesByTag: { img: ['http', 'https'] },
     allowedStyles: {
       span: { color: [HEX_COLOR, RGB_COLOR] },
+      p: { 'text-align': [TEXT_ALIGN] },
+      h2: { 'text-align': [TEXT_ALIGN] },
+      h3: { 'text-align': [TEXT_ALIGN] },
     },
     // 허용되지 않은 태그는 버리되(내용은 유지), h1 등은 자동 제거된다.
     disallowedTagsMode: 'discard',

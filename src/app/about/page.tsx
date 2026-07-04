@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
+import RichContent from '@/components/common/RichContent'
 import AboutBlockSlider from './AboutBlockSlider'
 
 export const dynamic = 'force-dynamic'
@@ -45,9 +46,8 @@ export default async function AboutPage() {
           />
           <div className="relative z-10 max-w-3xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl font-serif font-black text-ink mb-6">{title}</h1>
-            {description && (
-              <div className="text-ink-soft text-lg leading-relaxed whitespace-pre-line">{description}</div>
-            )}
+            {/* 설명 — 저장된 단락/줄바꿈·서식을 공개 페이지에 반영(제품 설명과 동일한 RichContent). 히어로는 중앙 정렬 유지 */}
+            <RichContent content={description} className="text-lg text-center" />
           </div>
         </section>
 
@@ -82,9 +82,8 @@ export default async function AboutPage() {
                 {block.title && (
                   <h2 className="text-2xl sm:text-3xl font-serif font-black text-ink mb-4">{block.title}</h2>
                 )}
-                {block.description && (
-                  <div className="text-ink-soft text-sm sm:text-base leading-relaxed whitespace-pre-line">{block.description}</div>
-                )}
+                {/* 설명 — 리치 HTML(단락·서식·정렬·이미지)을 공개 페이지에 반영. 레거시 평문은 자동 단락화 */}
+                <RichContent content={block.description} className="text-sm sm:text-base" />
               </div>
 
               {/* 이미지 슬라이더 */}

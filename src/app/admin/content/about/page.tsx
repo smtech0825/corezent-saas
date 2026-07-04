@@ -5,6 +5,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import AboutManager from './AboutManager'
 
 export const dynamic = 'force-dynamic'
@@ -61,9 +62,11 @@ type BlockData = { title: string; description: string; images: string[] }
 async function createBlock(data: BlockData) {
   'use server'
   const c = createAdminClient()
+  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
+  const clean = { ...data, description: sanitizeRichHtml(data.description) }
   const { data: maxRow } = await c.from('front_about_blocks').select('order_index').order('order_index', { ascending: false }).limit(1).single()
   const idx = (maxRow?.order_index ?? -1) + 1
-  const { data: created, error } = await c.from('front_about_blocks').insert({ ...data, order_index: idx, is_published: true }).select('id, title, description, images, order_index, is_published').single()
+  const { data: created, error } = await c.from('front_about_blocks').insert({ ...clean, order_index: idx, is_published: true }).select('id, title, description, images, order_index, is_published').single()
   if (error) console.error('[createBlock]', error)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
@@ -73,7 +76,9 @@ async function createBlock(data: BlockData) {
 async function updateBlock(id: string, data: BlockData) {
   'use server'
   const c = createAdminClient()
-  await c.from('front_about_blocks').update(data).eq('id', id)
+  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
+  const clean = { ...data, description: sanitizeRichHtml(data.description) }
+  await c.from('front_about_blocks').update(clean).eq('id', id)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }

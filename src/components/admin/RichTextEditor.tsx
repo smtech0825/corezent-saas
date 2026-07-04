@@ -16,9 +16,11 @@ import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
 import {
   Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon, Image as ImageIcon,
   List, ListOrdered, Undo2, Redo2, Video, Eraser,
+  AlignLeft, AlignCenter, AlignRight,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { looksLikeHtml, youtubeId } from '@/lib/rich-html'
@@ -106,6 +108,8 @@ export default function RichTextEditor({ value, onChange }: Props) {
       TextStyle,
       Color,
       Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } }),
+      // 정렬(왼쪽/가운데/오른쪽) — 제목·본문 문단에만 적용. style="text-align:…"로 출력되며 sanitize allowlist가 이 속성만 허용한다.
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       ResizableImage.configure({ inline: false, allowBase64: false }),
     ],
     content: looksLikeHtml(value) ? value : legacyToHtml(value),
@@ -176,6 +180,13 @@ export default function RichTextEditor({ value, onChange }: Props) {
         <TB onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="굵게"><Bold size={15} /></TB>
         <TB onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="기울임"><Italic size={15} /></TB>
         <TB onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="밑줄"><UnderlineIcon size={15} /></TB>
+
+        <span className="mx-1 h-4 w-px bg-rule" />
+
+        {/* 정렬 — 왼쪽/가운데/오른쪽 */}
+        <TB onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="왼쪽 정렬"><AlignLeft size={15} /></TB>
+        <TB onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="가운데 정렬"><AlignCenter size={15} /></TB>
+        <TB onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="오른쪽 정렬"><AlignRight size={15} /></TB>
 
         <span className="mx-1 h-4 w-px bg-rule" />
 

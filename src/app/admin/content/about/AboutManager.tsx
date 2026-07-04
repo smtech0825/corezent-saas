@@ -6,9 +6,17 @@
  */
 
 import { useState, useTransition, useRef } from 'react'
+import nextDynamic from 'next/dynamic'
 import { Plus, Pencil, Trash2, Check, X, Upload, Loader2, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { richToPlainText } from '@/lib/rich-html'
 import DynamicIcon from '@/components/DynamicIcon'
+
+// 콘텐츠 블록 "설명"은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
+const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="border border-rule rounded-lg bg-paper h-48 animate-pulse" aria-hidden />,
+})
 
 const BUCKET = 'about-images'
 
@@ -321,7 +329,10 @@ export default function AboutManager({
                 {editBlockId === b.id ? (
                   <div className="p-4 space-y-3">
                     <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
-                    <textarea value={blockForm.description} onChange={(e) => setBlockForm({ ...blockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
+                    <div>
+                      <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
+                      <RichTextEditor value={blockForm.description} onChange={(html) => setBlockForm({ ...blockForm, description: html })} />
+                    </div>
                     <div>
                       <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
                       <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
@@ -339,7 +350,7 @@ export default function AboutManager({
                           <span className="text-[10px] font-mono text-mark/60 font-bold">{String(idx + 1).padStart(2, '0')}</span>
                           {b.title && <span className="text-xs text-ink font-semibold">{b.title}</span>}
                         </div>
-                        <p className="text-xs text-ink-faint line-clamp-2">{b.description}</p>
+                        <p className="text-xs text-ink-faint line-clamp-2">{richToPlainText(b.description)}</p>
                         {b.images.length > 0 && (
                           <div className="flex items-center gap-1 mt-1.5">
                             <ImageIcon size={11} className="text-ink-faint" />
@@ -361,7 +372,10 @@ export default function AboutManager({
               showNewBlock ? (
                 <div className="border border-mark/30 bg-mark/5 rounded-lg p-4 space-y-3">
                   <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
-                  <textarea value={newBlockForm.description} onChange={(e) => setNewBlockForm({ ...newBlockForm, description: e.target.value })} rows={5} placeholder="설명 (줄바꿈 지원)" className={`${inputCls} resize-none`} />
+                  <div>
+                    <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
+                    <RichTextEditor value={newBlockForm.description} onChange={(html) => setNewBlockForm({ ...newBlockForm, description: html })} />
+                  </div>
                   <div>
                     <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개)</label>
                     <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
