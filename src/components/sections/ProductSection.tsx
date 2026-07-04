@@ -199,7 +199,7 @@ export default async function ProductSection() {
               {product.available ? (
                 <div className="mt-auto">
                   {product.monthlyPrice && (
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-baseline gap-3 mb-4">
                       <span className="text-2xl font-bold text-ink font-serif">
                         {product.monthlyPrice}
                         <span className="text-sm text-ink-soft font-sans font-normal">/월</span>

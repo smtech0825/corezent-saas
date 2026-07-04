@@ -201,7 +201,7 @@ export default function ProductList({ products }: Props) {
                 {product.is_active ? (
                   <div className="mt-auto mb-4">
                     {product.monthlyPrice != null && (
-                      <div className="flex items-center gap-3 mb-4">
+                      <div className="flex items-baseline gap-3 mb-4">
                         <span className="text-2xl font-bold text-ink">
                           {formatPrice(product.monthlyPrice)}
                           <span className="text-sm text-ink-soft font-normal">/월</span>

@@ -33,7 +33,7 @@ export function ConvertButton({ referrerId }: { referrerId: string }) {
         {pending ? <Loader2 size={12} className="animate-spin" /> : <ArrowRightLeft size={12} />}
         전환
       </button>
-      {msg && <span className={`text-[11px] ${msg.ok ? 'text-ok' : 'text-danger'} text-right max-w-[200px]`}>{msg.text}</span>}
+      {msg && <span className={`text-[11px] ${msg.ok ? 'text-ok' : 'text-danger'} text-right whitespace-nowrap`}>{msg.text}</span>}
     </div>
   )
 }

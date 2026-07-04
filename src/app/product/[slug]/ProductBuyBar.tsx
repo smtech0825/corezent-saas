@@ -162,9 +162,11 @@ export default function ProductBuyBar({
                 <span className="text-2xl font-bold text-ink tabular-nums">{formatPrice(displayPrice)}</span>
                 {selected.suffix && <span className="text-sm text-ink-soft">{selected.suffix}</span>}
               </div>
-              <p className="text-[11px] text-ink-faint mt-1">
-                {qty > 1 ? `${formatPrice(selected.price)}${selected.suffix} × ${qty} · ` : ''}VAT 포함
-              </p>
+              {qty > 1 && (
+                <p className="text-[11px] text-ink-faint mt-1">
+                  {formatPrice(selected.price)}{selected.suffix} × {qty}
+                </p>
+              )}
             </div>
 
             {isActive ? (

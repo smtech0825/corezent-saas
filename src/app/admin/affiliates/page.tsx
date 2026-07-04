@@ -82,7 +82,7 @@ export default async function AdminAffiliatesPage() {
   const minWon = cfg ? String(Math.round(cfg.min_payout_credit / 100)) : '5000'
 
   return (
-    <div className="p-6 space-y-8 max-w-4xl">
+    <div className="p-6 space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">제휴 관리</h1>
         <p className="text-sm text-ink-soft mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
@@ -146,7 +146,7 @@ export default async function AdminAffiliatesPage() {
                   <p className="text-sm text-ink truncate">{a.name}</p>
                   <p className="text-xs font-mono text-ink-faint">{a.code}</p>
                 </div>
-                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="flex-1 flex flex-wrap gap-x-5 gap-y-2 text-xs">
                   <Stat label="전환가능" value={krw(a.pendingEligible)} tone="text-caution" />
                   <Stat label="보류" value={krw(a.pendingHeld)} tone="text-ink-soft" />
                   <Stat label="지급완료" value={krw(a.paid)} tone="text-ok" />
@@ -167,12 +167,12 @@ export default async function AdminAffiliatesPage() {
   )
 }
 
-/** 제휴자 행의 소형 지표 셀(라벨 + 금액) */
+/** 제휴자 행의 소형 지표 셀(라벨 + 금액) — 라벨·값 모두 줄바꿈 없이 고정 min-width 열로 가로 정렬 */
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div>
-      <p className="text-ink-faint">{label}</p>
-      <p className={`font-mono font-semibold ${tone}`}>{value}</p>
+    <div className="min-w-24">
+      <p className="text-ink-faint whitespace-nowrap">{label}</p>
+      <p className={`font-mono font-semibold tabular-nums whitespace-nowrap ${tone}`}>{value}</p>
     </div>
   )
 }

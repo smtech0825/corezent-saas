@@ -122,8 +122,8 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       }`}
     >
       <span>{label}</span>
-      <span className={`relative w-9 h-5 rounded-full transition-colors ${checked ? 'bg-mark' : 'bg-paper-shade'}`}>
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-4' : 'translate-x-0.5'}`} />
+      <span className={`flex items-center px-0.5 w-9 h-5 rounded-full transition-colors shrink-0 ${checked ? 'bg-mark' : 'bg-paper-shade'}`}>
+        <span className={`w-4 h-4 rounded-full bg-white shadow-sm shrink-0 transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </span>
     </button>
   )

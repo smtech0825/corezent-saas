@@ -64,7 +64,7 @@ export default function Navbar() {
   const navLinks: { label: string; href: string; external?: boolean }[] = [
     { label: '회사소개', href: '/about' },
     { label: '제품', href: '/product' },
-    { label: '요금제', href: '/pricing' },
+    { label: '요금', href: '/pricing' },
     { label: '업데이트 내역', href: '/changelog' },
     { label: '사용 설명서', href: 'https://sites.google.com/view/corezent', external: true },
     { label: 'FAQ', href: '/faq' },
