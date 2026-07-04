@@ -32,6 +32,7 @@ interface UserData {
   country: string
   created_at: string
   status: string
+  hasPayout: boolean
   orders: Order[]
 }
 
@@ -241,6 +242,11 @@ export default function UserTable({ users }: Props) {
                             <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'inactive' ? 'bg-danger' : 'bg-ok'}`} />
                             {u.status === 'inactive' ? '비활성' : '활성'}
                           </span>
+                          {u.hasPayout && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full w-fit border bg-mark/10 text-mark border-mark/30">
+                              정산계좌 ✓
+                            </span>
+                          )}
                         </div>
                       </td>
 

@@ -52,7 +52,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('name, country, role, status, affiliate_code, created_at')
+    .select('name, country, role, status, affiliate_code, created_at, payout_bank, payout_account_number, payout_account_holder')
     .eq('id', id)
     .single()
 
@@ -168,6 +168,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           <h2 className="text-sm font-semibold text-ink mb-2">제휴</h2>
           <Row label="추천 코드"><span className="font-mono">{profile.affiliate_code as string}</span></Row>
           <Row label="크레딧 잔액">{fmtCredit(creditCents, creditCurrency)}</Row>
+        </section>
+      )}
+
+      {/* 정산 계좌 (등록 시) — 지급 대조용 전체 표시 */}
+      {profile.payout_account_number && (
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">정산 계좌</h2>
+          <Row label="은행">{(profile.payout_bank as string) || '—'}</Row>
+          <Row label="계좌번호"><span className="font-mono">{profile.payout_account_number as string}</span></Row>
+          <Row label="예금주">{(profile.payout_account_holder as string) || '—'}</Row>
         </section>
       )}
     </div>

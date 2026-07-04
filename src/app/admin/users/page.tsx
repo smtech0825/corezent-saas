@@ -14,7 +14,7 @@ export default async function UsersPage() {
   // 프로필 전체 조회 (status 포함)
   const { data: profiles } = await adminClient
     .from('profiles')
-    .select('id, name, role, country, created_at, status')
+    .select('id, name, role, country, created_at, status, payout_account_number')
     .order('created_at', { ascending: false })
 
   // Auth 유저 이메일 맵
@@ -57,6 +57,7 @@ export default async function UsersPage() {
     country:    p.country ?? '',
     created_at: p.created_at,
     status:     (p.status as string) ?? 'active',
+    hasPayout:  !!(p.payout_account_number as string | null),
     orders:     (ordersMap.get(p.id) ?? []).map((o) => ({
       ...o,
       cancelReason: cancelReasonMap.get(o.id) ?? null,

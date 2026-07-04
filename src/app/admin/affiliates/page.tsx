@@ -56,8 +56,8 @@ export default async function AdminAffiliatesPage() {
 
   const refIds = [...aggByRef.keys()]
   const { data: profsRaw } = refIds.length
-    ? await admin.from('profiles').select('id, name, affiliate_code').in('id', refIds)
-    : { data: [] as Array<{ id: string; name: string | null; affiliate_code: string | null }> }
+    ? await admin.from('profiles').select('id, name, affiliate_code, payout_account_number').in('id', refIds)
+    : { data: [] as Array<{ id: string; name: string | null; affiliate_code: string | null; payout_account_number: string | null }> }
   const profMap = new Map((profsRaw ?? []).map((p) => [p.id, p]))
 
   const affiliates = refIds
@@ -65,6 +65,7 @@ export default async function AdminAffiliatesPage() {
       referrerId: id,
       name: profMap.get(id)?.name ?? '(이름 없음)',
       code: profMap.get(id)?.affiliate_code ?? '—',
+      hasPayout: !!profMap.get(id)?.payout_account_number,
       ...(aggByRef.get(id) as Agg),
       balanceCents: balByUser.get(id) ?? 0,
     }))
@@ -145,6 +146,11 @@ export default async function AdminAffiliatesPage() {
                 <div className="min-w-0 lg:w-48">
                   <p className="text-sm text-ink truncate">{a.name}</p>
                   <p className="text-xs font-mono text-ink-faint">{a.code}</p>
+                  {a.hasPayout ? (
+                    <span className="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-mark/10 text-mark border border-mark/30 whitespace-nowrap">정산계좌 ✓</span>
+                  ) : (
+                    <span className="inline-block mt-1 text-[10px] text-ink-faint whitespace-nowrap">정산계좌 미등록</span>
+                  )}
                 </div>
                 <div className="flex-1 flex flex-wrap gap-x-5 gap-y-2 text-xs">
                   <Stat label="전환가능" value={krw(a.pendingEligible)} tone="text-caution" />

@@ -10,6 +10,7 @@ import { buildReferralUrl, getAffiliateConfig } from '@/lib/affiliate'
 import { formatKRW } from '@/lib/money'
 import DynamicIcon from '@/components/DynamicIcon'
 import ReferralCopyButton from '../_components/ReferralCopyButton'
+import PayoutAccountCard from './PayoutAccountCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,10 +33,15 @@ export default async function AffiliatePage() {
   //   commissions/attributions/ledger=본인 조회 정책, affiliate_clicks=030 '본인 코드 조회' 정책.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('affiliate_code')
+    .select('affiliate_code, payout_bank, payout_account_number, payout_account_holder')
     .eq('id', user.id)
     .maybeSingle()
   const code: string | null = profile?.affiliate_code ?? null
+  const payout = {
+    bank: (profile?.payout_bank as string) ?? '',
+    accountNumber: (profile?.payout_account_number as string) ?? '',
+    accountHolder: (profile?.payout_account_holder as string) ?? '',
+  }
 
   const [cfg, signupsRes, conversionsRes, commissionsRes, ledgerRes, clicksRes] = await Promise.all([
     getAffiliateConfig(),
@@ -157,6 +163,9 @@ export default async function AffiliatePage() {
           </p>
         )}
       </section>
+
+      {/* 정산 계좌 */}
+      <PayoutAccountCard initial={payout} />
 
       {/* 적립 현황 */}
       <section>
