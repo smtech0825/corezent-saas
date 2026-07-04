@@ -65,8 +65,9 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
           </div>
         </div>
 
-        {/* 페이지 콘텐츠 */}
-        <main className="flex-1 overflow-y-auto">
+        {/* 페이지 콘텐츠 — 스크롤은 문서(body)가 담당. overflow-y-auto는 실제 내부 스크롤을 만들지 않으면서
+         * 편집기 툴바 등의 position:sticky를 이 컨테이너에 가둬(무력화) 버리므로 두지 않는다. */}
+        <main className="flex-1">
           {children}
         </main>
       </div>

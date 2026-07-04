@@ -164,16 +164,21 @@ export default function RichTextEditor({ value, onChange, maxWidthClass }: Props
   }
 
   return (
-    <div className={`border border-rule rounded-lg bg-paper overflow-hidden${maxWidthClass ? ` ${maxWidthClass}` : ''}`}>
-      <EditorToolbar
-        editor={editor}
-        mode={mode}
-        uploading={uploading}
-        onToggleSource={toggleSource}
-        onLink={setLink}
-        onYoutube={insertYoutube}
-        onUploadClick={() => fileRef.current?.click()}
-      />
+    // overflow-hidden 제거 — 있으면 안쪽 툴바의 sticky가 이 박스에 갇혀 스크롤 시 따라오지 못한다.
+    <div className={`border border-rule rounded-lg bg-paper${maxWidthClass ? ` ${maxWidthClass}` : ''}`}>
+      {/* 툴바 플로팅 — 스크롤 시 admin 헤더(h-16=64px) 바로 아래에 고정(top-16). 컨테이닝 블록이 편집기 루트라
+          설명 편집기 범위 안에서만 떠 있고, 편집기 아래로 내려가면 함께 사라진다. rounded-t-lg로 상단 모서리 보정. */}
+      <div className="sticky top-16 z-10 rounded-t-lg overflow-hidden">
+        <EditorToolbar
+          editor={editor}
+          mode={mode}
+          uploading={uploading}
+          onToggleSource={toggleSource}
+          onLink={setLink}
+          onYoutube={insertYoutube}
+          onUploadClick={() => fileRef.current?.click()}
+        />
+      </div>
 
       {/* 편집 영역 — 리치는 .rich-content로 WYSIWYG, 소스는 HTML textarea. 리치 편집기 인스턴스는 유지하고 CSS로만 숨긴다 */}
       <div className={mode === 'source' ? 'hidden' : ''}>
