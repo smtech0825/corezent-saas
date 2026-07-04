@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getUtmData, type UtmData } from '@/lib/cookies'
 import QuantityStepper from '@/components/common/QuantityStepper'
 import SegmentControl from '@/components/common/SegmentControl'
+import DropUpSelect from '@/components/common/DropUpSelect'
 import BankTransferModal from './BankTransferModal'
 import type { OptionRow } from '@/lib/product-options'
 
@@ -157,29 +158,62 @@ export default function ProductBuyBar({
       ref={barRef}
       className="fixed bottom-0 inset-x-0 z-[60] border-t border-rule bg-paper shadow-[0_-4px_24px_rgba(35,39,46,0.10)]"
     >
+      {/* 좌우 패딩·max-width는 본문(px-4 sm:px-6 · max-w-4xl)과 동일 — 바 내용이 본문 폭 안에 머문다 */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
           {/* 옵션1 · 옵션2 · 수량 · 결제방법 — lg 이상에서 한 줄(줄바꿈 방지), 그 아래는 접힘 */}
           <div className="flex items-center flex-wrap lg:flex-nowrap gap-2.5 md:gap-3 min-w-0">
+            {/* 옵션1(기간) — 값 2개 이하는 세그먼트, 3개 이상은 드롭업(폭 절약·상품 무관 일반 규칙) */}
             {showAxis1 && (
-              <SegmentControl
-                label={axis1Name ?? '옵션'}
-                value={a1}
-                onChange={changeA1}
-                options={axis1Options.map((o) => ({ value: o, label: o }))}
-              />
+              axis1Options.length >= 3 ? (
+                <DropUpSelect
+                  label={axis1Name ?? '옵션'}
+                  value={a1}
+                  onChange={changeA1}
+                  options={axis1Options.map((o) => {
+                    const row = findRow(o, a2)
+                    return { value: o, label: o, priceLabel: row ? `${formatPrice(row.price)}${row.suffix}` : undefined }
+                  })}
+                />
+              ) : (
+                <SegmentControl
+                  label={axis1Name ?? '옵션'}
+                  value={a1}
+                  onChange={changeA1}
+                  options={axis1Options.map((o) => ({ value: o, label: o }))}
+                />
+              )
             )}
+            {/* 옵션2(PC수 등) — 동일 규칙. 미출시(무효) 조합은 disabled로 흐리게 */}
             {hasAxis2 && (
-              <SegmentControl
-                label={axis2Name ?? '옵션'}
-                value={a2}
-                onChange={setA2}
-                options={axis2Options.map((o) => ({
-                  value: o,
-                  label: validA2.has(o) ? o : `${o} (미출시)`,
-                  disabled: !validA2.has(o),
-                }))}
-              />
+              axis2Options.length >= 3 ? (
+                <DropUpSelect
+                  label={axis2Name ?? '옵션'}
+                  value={a2}
+                  onChange={setA2}
+                  options={axis2Options.map((o) => {
+                    const valid = validA2.has(o)
+                    const row = valid ? findRow(a1, o) : undefined
+                    return {
+                      value: o,
+                      label: o,
+                      priceLabel: row ? `${formatPrice(row.price)}${row.suffix}` : valid ? undefined : '미출시',
+                      disabled: !valid,
+                    }
+                  })}
+                />
+              ) : (
+                <SegmentControl
+                  label={axis2Name ?? '옵션'}
+                  value={a2}
+                  onChange={setA2}
+                  options={axis2Options.map((o) => ({
+                    value: o,
+                    label: validA2.has(o) ? o : `${o} (미출시)`,
+                    disabled: !validA2.has(o),
+                  }))}
+                />
+              )
             )}
             <QuantityStepper inline value={qty} onChange={setQty} />
             {/* 결제방법 — 계좌이체가 활성일 때만 노출(옵션→수량→결제방법 순서) */}
