@@ -52,6 +52,19 @@ export function embedYouTubeHtml(html: string): string {
 }
 
 /**
+ * @함수명: wrapBareIframes
+ * @설명: sanitize를 통과한 단독 iframe(유튜브 임베드)을 16:9 반응형 래퍼(.rc-embed)로 감싼다.
+ *        renderRichHtml에서 embedYouTubeHtml(단독 URL 임베드)보다 먼저 호출되므로, 이 시점의 iframe은 아직 래핑되지 않은
+ *        원본 붙여넣기 iframe뿐이다(중복 래핑 없음). embedYouTubeHtml는 <p> 문단만 다루므로 여기서 만든 래퍼를 건드리지 않는다.
+ * @매개변수: html - sanitize된 HTML
+ * @반환값: 단독 iframe이 반응형 래퍼로 감싸진 HTML
+ */
+export function wrapBareIframes(html: string): string {
+  if (!html || html.indexOf('<iframe') === -1) return html
+  return html.replace(/<iframe\b[^>]*>\s*<\/iframe>/gi, (m) => `<div class="rc-embed">${m}</div>`)
+}
+
+/**
  * @함수명: richToPlainText
  * @설명: HTML 또는 레거시 마크다운 설명을 카드 요약용 순수 텍스트로 변환한다(태그·문법 제거, 공백 정리).
  * @매개변수: input - HTML 또는 마크다운/평문
