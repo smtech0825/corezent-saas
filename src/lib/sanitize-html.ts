@@ -8,7 +8,7 @@
  */
 
 import sanitizeHtml from 'sanitize-html'
-import { looksLikeHtml, embedYouTubeHtml, wrapBareIframes } from './rich-html'
+import { looksLikeHtml, embedYouTubeHtml, wrapBareIframes, normalizeYoutubeSrc, YT_IFRAME_ALLOW } from './rich-html'
 import { legacyToHtml } from './legacy-markdown'
 import { ALLOWED_TAGS, ALLOWED_ATTRS, GLOBAL_ATTRS, STYLE_RULES, isAllowedIframeSrc } from './rich-allowlist'
 
@@ -44,14 +44,15 @@ const OPTIONS: sanitizeHtml.IOptions = {
       if (attribs.width) out.width = attribs.width
       return { tagName, attribs: out }
     },
-    // 유튜브 iframe: src만 유지 + 안전 속성 정규화(폭·style 등 제거)
+    // 유튜브 iframe: src를 nocookie 임베드로 정규화(재생 제어 파라미터는 화이트리스트만 보존) + 안전 속성 정규화(폭·style 등 제거).
+    // allow에 autoplay가 포함되어(YT_IFRAME_ALLOW) 무음 자동재생·반복이 동작한다.
     iframe: (tagName, attribs) => ({
       tagName,
       attribs: {
-        ...(attribs.src ? { src: attribs.src } : {}),
+        ...(attribs.src ? { src: normalizeYoutubeSrc(attribs.src) } : {}),
         title: attribs.title || 'YouTube video',
         loading: 'lazy',
-        allow: 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+        allow: YT_IFRAME_ALLOW,
         allowfullscreen: 'true',
       },
     }),

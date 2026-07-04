@@ -8,18 +8,7 @@
  */
 
 import Youtube from '@tiptap/extension-youtube'
-import { youtubeId } from '@/lib/rich-html'
-
-/**
- * @함수명: toEmbedUrl
- * @설명: 유튜브 URL/videoId를 nocookie 임베드 URL로 정규화한다(유효하지 않으면 원본 반환 → 최종 차단은 sanitize).
- * @매개변수: src - 유튜브 URL 또는 임베드 src
- * @반환값: `https://www.youtube-nocookie.com/embed/<id>` 또는 원본
- */
-function toEmbedUrl(src: string): string {
-  const id = youtubeId(src || '')
-  return id ? `https://www.youtube-nocookie.com/embed/${id}` : src
-}
+import { youtubeId, normalizeYoutubeSrc, YT_IFRAME_ALLOW } from '@/lib/rich-html'
 
 /**
  * @상수: YoutubeEmbed
@@ -48,27 +37,53 @@ export const YoutubeEmbed = Youtube.extend({
     ]
   },
 
-  // 저장/공개 렌더용: 래퍼 없는 임베드 iframe만 출력(반응형 래핑은 렌더 파이프라인이 담당)
+  // 저장/공개 렌더용: 래퍼 없는 임베드 iframe만 출력(반응형 래핑은 렌더 파이프라인이 담당).
+  // 재생 제어 파라미터(autoplay·mute·loop 등)는 normalizeYoutubeSrc가 보존하고, allow에 autoplay를 넣어 자동재생을 허용한다.
   renderHTML({ HTMLAttributes }) {
-    const src = toEmbedUrl((HTMLAttributes as { src?: string }).src || '')
-    return ['iframe', { src }]
+    const src = normalizeYoutubeSrc((HTMLAttributes as { src?: string }).src || '')
+    return ['iframe', { src, title: 'YouTube video', loading: 'lazy', allow: YT_IFRAME_ALLOW, allowfullscreen: 'true' }]
   },
 
   // 편집기 미리보기: 공개와 동일한 .rc-embed 16:9 래퍼. iframe은 pointer-events 차단해 클릭 시 노드가 선택되게 한다.
+  // atom 노드 선택이 헷갈릴 때도 확실히 지울 수 있도록 편집기 전용 삭제 버튼(×)을 오버레이한다(공개 렌더엔 없음).
   addNodeView() {
-    return ({ node }) => {
+    return ({ node, editor, getPos }) => {
       const dom = document.createElement('div')
       dom.className = 'rc-embed'
       dom.style.cursor = 'pointer'
+
       const iframe = document.createElement('iframe')
-      iframe.src = toEmbedUrl((node.attrs as { src?: string }).src || '')
+      iframe.src = normalizeYoutubeSrc((node.attrs as { src?: string }).src || '')
+      iframe.setAttribute('allow', YT_IFRAME_ALLOW)
       iframe.setAttribute('allowfullscreen', 'true')
       iframe.setAttribute('frameborder', '0')
       iframe.setAttribute('title', 'YouTube video')
       iframe.style.pointerEvents = 'none'
       dom.appendChild(iframe)
-      // iframe 내부(교차 출처) 변경은 ProseMirror가 추적하지 않도록 무시 — atom 미리보기 안정화
-      return { dom, ignoreMutation: () => true }
+
+      const del = document.createElement('button')
+      del.type = 'button'
+      del.className = 'rc-embed-del'
+      del.setAttribute('contenteditable', 'false')
+      del.setAttribute('title', '동영상 삭제')
+      del.setAttribute('aria-label', '동영상 삭제')
+      del.textContent = '×'
+      del.addEventListener('click', (e) => {
+        e.preventDefault()
+        if (typeof getPos !== 'function') return
+        const pos = getPos()
+        if (typeof pos !== 'number') return
+        editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run()
+      })
+      dom.appendChild(del)
+
+      return {
+        dom,
+        // 삭제 버튼 이벤트는 ProseMirror가 가로채지 않게(노드 선택 대신 버튼 클릭이 처리되도록)
+        stopEvent: (e) => del.contains(e.target as Node),
+        // iframe 내부(교차 출처)·버튼 DOM 변경을 ProseMirror가 추적하지 않도록 무시 — atom 미리보기 안정화
+        ignoreMutation: () => true,
+      }
     }
   },
 })

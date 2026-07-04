@@ -18,14 +18,57 @@ export function looksLikeHtml(s: string | null | undefined): boolean {
 /**
  * @함수명: youtubeId
  * @설명: 유튜브 URL에서 11자 videoId를 추출한다(youtu.be·watch·embed·shorts·v). 아니면 null.
+ *        ⚠️ youtube-nocookie.com(임베드 저장 도메인)도 인식해야 재편집 왕복이 깨지지 않는다 — 이게 빠지면
+ *        저장된 nocookie iframe이 편집기 노드로 안 잡혀 선택·삭제가 불가능해진다.
  * @매개변수: url - 검사할 URL 문자열
  * @반환값: videoId 또는 null
  */
 export function youtubeId(url: string): string | null {
   const m = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/,
+    /(?:youtu\.be\/|(?:youtube\.com|youtube-nocookie\.com)\/(?:watch\?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/,
   )
   return m ? m[1] : null
+}
+
+// 유튜브 임베드 iframe에 부여하는 Permissions-Policy 값(단일 출처) — ⚠️ autoplay 포함(무음 자동재생 허용).
+// 노드 renderHTML·nodeview·서버 sanitize·embedYouTubeHtml가 모두 이 값을 공유한다(허용 정의 두 벌 금지).
+export const YT_IFRAME_ALLOW =
+  'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+
+// 유튜브 임베드 src에서 보존을 허용하는 안전한 재생 제어 파라미터(값은 아래에서 영숫자·_·-만 재검증 → 주입 불가)
+const YT_SAFE_PARAMS = new Set([
+  'autoplay', 'mute', 'loop', 'playlist', 'playsinline', 'controls', 'start', 'end', 'rel', 'modestbranding',
+])
+
+/**
+ * @함수명: normalizeYoutubeSrc
+ * @설명: 유튜브 URL/임베드 src를 nocookie 임베드 URL로 정규화하되, 재생 제어용 안전 파라미터(autoplay·mute·loop 등)는 보존한다.
+ *        - muted→mute 로 교정(유튜브는 mute 파라미터를 쓴다), loop=1이면 유튜브 사양상 playlist=<id>가 필요하므로 없으면 자동 보강.
+ *        - 파라미터 값은 영숫자·_·-(≤20자)만 통과 → 따옴표/구분자/스크립트 주입 불가. videoId가 없으면 원본을 그대로 돌려준다(최종 차단은 sanitize).
+ * @매개변수: src - 유튜브 URL 또는 임베드 src
+ * @반환값: `https://www.youtube-nocookie.com/embed/<id>[?안전파라미터]` 또는 원본
+ */
+export function normalizeYoutubeSrc(src: string): string {
+  const id = youtubeId(src || '')
+  if (!id) return src
+  const params = new Map<string, string>()
+  const qIdx = src.indexOf('?')
+  if (qIdx !== -1) {
+    for (const pair of src.slice(qIdx + 1).split(/[&;]/)) {
+      const eq = pair.indexOf('=')
+      if (eq === -1) continue
+      let key = decodeURIComponent(pair.slice(0, eq)).trim().toLowerCase()
+      const val = decodeURIComponent(pair.slice(eq + 1)).trim()
+      if (key === 'muted') key = 'mute' // 유튜브는 'mute' 파라미터를 사용(muted는 무시됨)
+      if (!YT_SAFE_PARAMS.has(key)) continue
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(val)) continue // 스크립트/구분자 주입 차단
+      params.set(key, val)
+    }
+  }
+  // loop 재생은 playlist=<id>가 있어야 실제로 반복된다(유튜브 사양)
+  if (params.get('loop') === '1' && !params.has('playlist')) params.set('playlist', id)
+  const qs = [...params].map(([k, v]) => `${k}=${v}`).join('&')
+  return `https://www.youtube-nocookie.com/embed/${id}${qs ? `?${qs}` : ''}`
 }
 
 /**
@@ -43,9 +86,9 @@ export function embedYouTubeHtml(html: string): string {
     const id = youtubeId(text)
     if (!id) return whole
     return (
-      `<div class="rc-embed"><iframe src="https://www.youtube.com/embed/${id}" ` +
+      `<div class="rc-embed"><iframe src="https://www.youtube-nocookie.com/embed/${id}" ` +
       `title="YouTube video" loading="lazy" ` +
-      `allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ` +
+      `allow="${YT_IFRAME_ALLOW}" ` +
       `allowfullscreen></iframe></div>`
     )
   })
