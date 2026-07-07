@@ -3,6 +3,11 @@
 .env.local
 .env.production
 
+# Google 서비스 계정 자격증명 JSON (개인 키 포함 — 절대 커밋 금지)
+corezent-saas-*.json
+*-service-account*.json
+gcp-*.json
+
 # 오류 로그
 error_log.txt
 
