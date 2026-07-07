@@ -6,13 +6,7 @@
  */
 
 import type { MetadataRoute } from 'next'
-
-/** 사이트 기본 URL — 배포 env 우선, 없으면 운영 도메인 폴백. 끝 슬래시 제거 */
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  'https://www.corezent.com'
-).replace(/\/+$/, '')
+import { SITE_URL } from '@/lib/site'
 
 /**
  * @함수명: robots

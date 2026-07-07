@@ -9,16 +9,10 @@
 
 import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SITE_URL } from '@/lib/site'
 
 // 상품 상세를 DB에서 그리므로 빌드타임 정적 생성 대신 요청 시점에 생성(다른 DB 페이지와 동일 규칙)
 export const dynamic = 'force-dynamic'
-
-/** 사이트 기본 URL — 배포 env 우선, 없으면 운영 도메인 폴백. 끝 슬래시 제거 */
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  'https://www.corezent.com'
-).replace(/\/+$/, '')
 
 /**
  * @함수명: sitemap
