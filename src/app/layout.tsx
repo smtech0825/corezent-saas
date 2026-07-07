@@ -59,7 +59,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // GA Tracking ID를 DB에서 fetch (실패 시 조용히 무시)
+  // GA Tracking ID를 DB에서 fetch (관리자 설정 우선, 실패/미설정 시 기본 태그로 폴백)
   let gaId = ''
   try {
     const adminClient = createAdminClient()
@@ -70,8 +70,12 @@ export default async function RootLayout({
       .limit(1)
     gaId = rows?.[0]?.value ?? ''
   } catch {
-    // 환경 변수 미설정 등 실패 시 스킵
+    // DB 조회 실패 시 아래 기본값으로 폴백
   }
+
+  // 관리자가 별도로 설정하지 않았으면 이 사이트의 기본 GA4 측정 ID 사용
+  // (admin/settings → SEO 설정에서 다른 값을 입력하면 그 값이 우선함)
+  if (!gaId) gaId = 'G-MT7BYR9VLB'
 
   // XSS 방지: G-XXXXXXXXXX 또는 UA-XXXXXX-X 형식만 허용
   const isValidGaId = /^(G-|UA-)[A-Z0-9-]+$/i.test(gaId)
