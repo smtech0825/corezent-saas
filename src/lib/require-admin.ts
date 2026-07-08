@@ -45,3 +45,29 @@ export async function requireAdmin(): Promise<AdminGate> {
 
   return { ok: true, userId: user.id }
 }
+
+/**
+ * @함수명: requireAdminOrThrow
+ * @설명: 서버 액션(Server Action) 전용 관리자 검증. requireAdmin()과 동일한 검증(role 조회는
+ *        service role로 RLS 우회)이지만, NextResponse 대신 예외를 던져 액션 함수 맨 앞에
+ *        한 줄로 넣을 수 있게 한다. 서버 액션은 /admin 레이아웃의 리다이렉트를 거치지 않고
+ *        직접 호출될 수 있으므로(레이아웃은 페이지 렌더링만 막지, 액션 자체를 막지는 않음)
+ *        각 액션이 스스로도 이 가드를 통과해야 한다.
+ * @반환값: 통과 시 관리자의 user id. 미로그인·비관리자면 즉시 throw.
+ */
+export async function requireAdminOrThrow(): Promise<string> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('로그인이 필요합니다.')
+
+  const adminClient = createAdminClient()
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') throw new Error('관리자 권한이 필요합니다.')
+
+  return user.id
+}
