@@ -19,9 +19,11 @@ export interface DbFaq {
 
 interface Props {
   faqs: DbFaq[]
+  /** 독립 /faq 페이지처럼 이 섹션이 페이지 주제목을 담당할 때 'h1' 전달, 홈 섹션 내 삽입 시 기본 h2 */
+  headingLevel?: 'h1' | 'h2'
 }
 
-export default function FAQSection({ faqs }: Props) {
+export default function FAQSection({ faqs, headingLevel = 'h2' }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
 
   if (!faqs || faqs.length === 0) return null
@@ -29,7 +31,7 @@ export default function FAQSection({ faqs }: Props) {
   return (
     <section id="faq" className="py-16 sm:py-24 bg-paper-shade/60 border-y border-rule">
       <Container width="text">
-        <SectionHeader label="FAQ" title="자주 묻는 질문" align="center" />
+        <SectionHeader label="FAQ" title="자주 묻는 질문" align="center" headingLevel={headingLevel} />
 
         <div className="border-t border-rule">
           {faqs.map((faq) => {

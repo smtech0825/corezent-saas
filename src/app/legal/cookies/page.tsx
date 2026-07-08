@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { buildPageMetadata } from '@/lib/seo'
 import {
   LegalChrome,
   LegalSection,
@@ -15,10 +16,11 @@ import {
   B,
 } from '../_components/legal-ui'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/legal/cookies',
   title: '쿠키 정책',
   description: 'CoreZent가 웹사이트에서 쿠키를 어떻게 사용하고, 회원이 어떻게 관리할 수 있는지 안내합니다.',
-}
+})
 
 export default async function CookiesPage() {
   const supabase = await createClient()

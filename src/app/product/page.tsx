@@ -7,6 +7,7 @@
 
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductList from './ProductList'
@@ -14,11 +15,11 @@ import { lowestPriceRow } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/product',
   title: '제품',
-  description:
-    'CoreZent의 모든 소프트웨어 제품을 둘러보세요. 시간을 아껴주는 AI 자동화 도구와 생산성 앱.',
-}
+  description: 'CoreZent의 모든 소프트웨어 제품을 둘러보세요. 시간을 아껴주는 AI 자동화 도구와 생산성 앱.',
+})
 
 export default async function ProductPage() {
   const client = createAdminClient()

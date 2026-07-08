@@ -14,6 +14,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Check, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
@@ -70,15 +71,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const desc = listDesc || tagline || richDesc || `${name} — CoreZent 제품`
   const image = (data.logo_url as string) || undefined
 
-  return {
+  return buildPageMetadata({
+    path: `/product/${slug}`,
     title: name,
     description: desc.slice(0, 160),
-    openGraph: {
-      title: `${name} — CoreZent`,
-      description: desc.slice(0, 160),
-      ...(image ? { images: [{ url: image }] } : {}),
-    },
-  }
+    image,
+  })
 }
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {

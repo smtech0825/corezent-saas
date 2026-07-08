@@ -36,16 +36,19 @@ interface SectionHeaderProps {
   title: string
   sub?: string
   align?: 'left' | 'center'
+  /** 제목 태그 레벨 — 이 섹션이 페이지의 주제목(h1)을 담당할 때만 'h1' 전달, 기본은 h2 */
+  headingLevel?: 'h1' | 'h2'
 }
 
-export function SectionHeader({ label, title, sub, align = 'center' }: SectionHeaderProps) {
+export function SectionHeader({ label, title, sub, align = 'center', headingLevel = 'h2' }: SectionHeaderProps) {
   const alignCls = align === 'center' ? 'text-center items-center' : 'text-left items-start'
+  const Heading = headingLevel
   return (
     <div className={`flex flex-col ${alignCls} mb-12 sm:mb-16`}>
       {label && <FieldLabel>{label}</FieldLabel>}
-      <h2 className="font-serif font-black text-3xl sm:text-4xl text-ink leading-snug tracking-tight break-keep">
+      <Heading className="font-serif font-black text-3xl sm:text-4xl text-ink leading-snug tracking-tight break-keep">
         {title}
-      </h2>
+      </Heading>
       {sub && (
         <p className={`mt-4 text-base sm:text-lg text-ink-soft break-keep max-w-xl ${align === 'center' ? 'mx-auto' : ''}`}>
           {sub}

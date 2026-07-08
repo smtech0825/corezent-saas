@@ -6,16 +6,18 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderRichHtml } from '@/lib/sanitize-html'
+import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FAQSection from '@/components/sections/FAQSection'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/faq',
   title: 'FAQ',
   description: 'CoreZent 소프트웨어와 구매에 대해 자주 묻는 질문.',
-}
+})
 
 export default async function FaqPage() {
   const adminClient = createAdminClient()
@@ -39,7 +41,7 @@ export default async function FaqPage() {
 
       <main className="flex-1 pt-10 sm:pt-14">
         {faqItems.length > 0 ? (
-          <FAQSection faqs={faqItems} />
+          <FAQSection faqs={faqItems} headingLevel="h1" />
         ) : (
           <div className="flex items-center justify-center py-40">
             <p className="text-ink-faint text-sm">아직 등록된 FAQ가 없습니다.</p>

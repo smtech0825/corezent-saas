@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
@@ -13,10 +14,11 @@ import AboutBlockSlider from './AboutBlockSlider'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/about',
   title: '회사소개',
   description: 'CoreZent를 소개합니다 — 우리는 누구이며, 무엇을 만들고, 왜 그것이 중요한지.',
-}
+})
 
 export default async function AboutPage() {
   const c = createAdminClient()

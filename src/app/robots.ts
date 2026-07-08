@@ -19,7 +19,8 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // 로그인·관리자·API 등 색인 가치가 없거나 비공개인 경로 차단
-      disallow: ['/dashboard', '/admin', '/auth', '/api', '/order', '/activate', '/r/'],
+      // /changelog는 로그인 필수(app/changelog/page.tsx의 redirect)라 크롤러는 /auth/login으로 튕겨나가므로 함께 차단
+      disallow: ['/dashboard', '/admin', '/auth', '/api', '/order', '/activate', '/changelog', '/r/'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

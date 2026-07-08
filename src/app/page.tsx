@@ -3,6 +3,7 @@ import lazy from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderRichHtml } from '@/lib/sanitize-html'
 import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
+import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 // Hero는 즉시 표시 필요 — 정적 import 유지
@@ -23,10 +24,14 @@ const CTASection          = lazy(() => import('@/components/sections/CTASection'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
+  ...buildPageMetadata({
+    path: '/',
+    title: 'CoreZent — 일을 더 쉽게 만드는 소프트웨어',
+    description:
+      'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.',
+  }),
   // 홈은 제목 자체가 브랜드라 template('%s | CoreZent')을 붙이지 않도록 absolute 사용
   title: { absolute: 'CoreZent — 일을 더 쉽게 만드는 소프트웨어' },
-  description:
-    'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.',
 }
 
 // 섹션 기본 설정 (DB에 없을 경우 fallback)

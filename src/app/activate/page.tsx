@@ -9,11 +9,13 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ActivateClient from './ActivateClient'
+import { buildPageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/activate',
   title: '라이선스 활성화',
   description: '라이선스 키를 입력하여 CoreZent 제품을 확인하고 활성화하세요.',
-}
+})
 
 export default function ActivatePage() {
   return (

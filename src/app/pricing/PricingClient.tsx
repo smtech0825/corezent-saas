@@ -224,7 +224,7 @@ export default function PricingClient({ products }: Props) {
 
                     {/* 제품명 + 카테고리 배지 */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <h3 className="text-2xl font-bold text-ink">{product.name}</h3>
+                      <h2 className="text-2xl font-bold text-ink">{product.name}</h2>
                       {product.category && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[product.category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
                           {FILTER_LABELS[product.category] ?? product.category}

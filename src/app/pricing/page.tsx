@@ -7,15 +7,17 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildPageMetadata } from '@/lib/seo'
 import PricingClient, { type PricingProduct } from './PricingClient'
 import { lowestPriceRow } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/pricing',
   title: '요금제',
   description: '간단하고 투명한 요금제. 필요한 도구를 선택하세요.',
-}
+})
 
 
 export default async function PricingPage() {

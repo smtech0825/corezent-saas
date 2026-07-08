@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { buildPageMetadata } from '@/lib/seo'
 import {
   LegalChrome,
   LegalSection,
@@ -16,10 +17,11 @@ import {
   B,
 } from '../_components/legal-ui'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: '/legal/terms',
   title: '이용약관',
   description: 'CoreZent 서비스 이용에 관한 회원의 권리와 의무를 안내합니다.',
-}
+})
 
 export default async function TermsPage() {
   const supabase = await createClient()

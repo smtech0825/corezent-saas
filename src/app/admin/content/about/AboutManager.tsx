@@ -92,7 +92,7 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
       <div className="flex gap-2 flex-wrap">
         {images.map((url, idx) => (
           <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-rule group">
-            <img src={url} alt="" className="w-full h-full object-cover" />
+            <img src={url} alt={`업로드된 소개 이미지 ${idx + 1}`} className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={() => removeImage(idx)}

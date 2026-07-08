@@ -149,7 +149,7 @@ export default function ProductList({ products }: Props) {
 
                 {/* 이름 + 카테고리 배지 & 태그라인 */}
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className="text-xl font-bold text-ink">{product.name}</h3>
+                  <h2 className="text-xl font-bold text-ink">{product.name}</h2>
                   {product.category && (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_BADGE_PAPER[product.category] ?? 'bg-paper-shade text-ink-soft border-rule'}`}>
                       {CATEGORY_LABELS[product.category] ?? product.category}
