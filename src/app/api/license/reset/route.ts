@@ -18,6 +18,7 @@ import {
   resetHwidsForKey as supaResetHwidsForKey,
   resetHwidsForKeyGenieWork as supaResetHwidsForKeyGenieWork,
 } from '../_lib_supabase'
+import { logLicenseReset, type LicenseResetProduct } from '@/lib/licenseResetLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +32,12 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
+
+    // 모니터링 로그 — 성공/거부 여부와 무관하게 호출될 때마다 기록(로그인/소유권 검증 아님).
+    const normalizedProduct: LicenseResetProduct =
+      product === 'geniestock' || product === 'geniework' ? product : 'geniepost'
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    await logLicenseReset({ licenseKey: key, product: normalizedProduct, ip })
 
     // ─── Supabase 경로 (GenieStock / GenieWork) ──────────────────────────
     if (product === 'geniestock' || product === 'geniework') {
