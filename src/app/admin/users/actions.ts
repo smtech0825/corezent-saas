@@ -8,13 +8,36 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logAdminActivity } from '@/lib/adminActivityLog'
+
+/** 현재 로그인한(호출한) 관리자의 user id — 활동 로그 기록용 */
+async function currentAdminId(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id ?? null
+}
 
 /** 역할 변경 */
 export async function changeRole(userId: string, newRole: string) {
   if (!userId || !newRole) return
   const adminClient = createAdminClient()
+
+  const { data: before } = await adminClient.from('profiles').select('role').eq('id', userId).single()
   await adminClient.from('profiles').update({ role: newRole }).eq('id', userId)
+
+  const actorId = await currentAdminId()
+  if (actorId) {
+    await logAdminActivity({
+      adminUserId: actorId,
+      action: 'user.role_change',
+      targetType: 'user',
+      targetId: userId,
+      detail: { from: before?.role ?? null, to: newRole },
+    })
+  }
+
   revalidatePath('/admin/users')
 }
 
@@ -37,6 +60,16 @@ export async function withdrawUser(userId: string): Promise<{ error?: string }> 
   })
 
   if (authError) return { error: authError.message }
+
+  const actorId = await currentAdminId()
+  if (actorId) {
+    await logAdminActivity({
+      adminUserId: actorId,
+      action: 'user.withdraw',
+      targetType: 'user',
+      targetId: userId,
+    })
+  }
 
   revalidatePath('/admin/users')
   return {}

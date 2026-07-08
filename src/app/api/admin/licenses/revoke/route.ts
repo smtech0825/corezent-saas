@@ -15,6 +15,7 @@ import { requireAdmin } from '@/lib/require-admin'
 import { isNonEmptyString } from '@/lib/validate'
 import { updateLicenseStatus } from '@/lib/sheets'
 import { maskSecret } from '@/lib/mask'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   setLicenseActive as supaSetLicenseActive,
@@ -58,6 +59,14 @@ export async function POST(req: NextRequest) {
       console.error('[Revoke] DB update error:', updateErr)
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
     }
+
+    await logAdminActivity({
+      adminUserId: gate.userId,
+      action: 'license.revoke',
+      targetType: 'license',
+      targetId: id,
+      detail: { serialKey: maskSecret(license.serial_key as string, 8), previousStatus: license.status },
+    })
 
     // ② 라우팅: 양쪽 라이선스 DB(공유+GW)에서 키를 찾는다.
     //    찾으면 그 DB로 비활성화 + HWID 청소(시트 호출 X), 없으면 GeniePost(Sheets).

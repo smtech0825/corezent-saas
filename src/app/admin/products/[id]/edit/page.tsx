@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
 
@@ -162,6 +163,17 @@ export default async function EditProductPage({
     const { error } = await c.from('products').update(productUpdate).eq('id', id)
 
     if (error) return { error: error.message }
+
+    // 활성/비활성 상태가 실제로 바뀐 경우에만 활동 로그 기록(단순 내용 수정은 로그 대상 아님)
+    if (initialData.is_active !== data.is_active) {
+      await logAdminActivity({
+        adminUserId: gate.userId,
+        action: 'product.toggle_active',
+        targetType: 'product',
+        targetId: id,
+        detail: { from: initialData.is_active, to: data.is_active },
+      })
+    }
 
     // 현재 DB의 모든 is_active 가격 ID 조회
     const { data: currentPrices } = await c

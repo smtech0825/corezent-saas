@@ -13,11 +13,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
-/** 호출자가 admin인지 검증하고, 맞으면 admin 클라이언트를 반환 (돈 움직이는 액션의 방어선) */
-async function assertAdmin(): Promise<{ ok: true; admin: SupabaseClient } | { ok: false }> {
+/** 호출자가 admin인지 검증하고, 맞으면 admin 클라이언트+userId를 반환 (돈 움직이는 액션의 방어선) */
+async function assertAdmin(): Promise<{ ok: true; admin: SupabaseClient; userId: string } | { ok: false }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false }
@@ -30,7 +31,7 @@ async function assertAdmin(): Promise<{ ok: true; admin: SupabaseClient } | { ok
     .single()
 
   if (profile?.role !== 'admin') return { ok: false }
-  return { ok: true, admin }
+  return { ok: true, admin, userId: user.id }
 }
 
 /**
@@ -87,6 +88,14 @@ export async function refundOrder(orderId: string): Promise<ActionResult> {
 
   // 즉시 UI 반영용 상태만 갱신(웹훅이 동일하게 refunded로 되쏘므로 멱등)
   await admin.from('orders').update({ status: 'refunded' }).eq('id', orderId)
+
+  await logAdminActivity({
+    adminUserId: auth.userId,
+    action: 'order.refund',
+    targetType: 'order',
+    targetId: orderId,
+    detail: { previousStatus: order.status, lemonSqueezyOrderId: order.lemon_squeezy_order_id },
+  })
 
   revalidatePath(`/admin/orders/${orderId}`)
   return { ok: true }
@@ -148,6 +157,14 @@ export async function cancelSubscriptionForOrder(orderId: string): Promise<Actio
     .from('subscriptions')
     .update({ status: 'cancelled', cancel_at_period_end: true, updated_at: new Date().toISOString() })
     .eq('id', sub.id)
+
+  await logAdminActivity({
+    adminUserId: auth.userId,
+    action: 'subscription.cancel',
+    targetType: 'subscription',
+    targetId: sub.id,
+    detail: { orderId, previousStatus: sub.status },
+  })
 
   revalidatePath(`/admin/orders/${orderId}`)
   return { ok: true }

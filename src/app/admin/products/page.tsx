@@ -5,10 +5,12 @@
 
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { Plus } from 'lucide-react'
 import ProductList, { type ProductRow } from './ProductList'
 import { formatPrice } from '@/lib/price'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,10 +29,21 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
   'use server'
   const client = createAdminClient()
 
+  const session = await createClient()
+  const { data: { user } } = await session.auth.getUser()
+
   // 1) 완전 삭제 시도 — product_prices·changelogs 등은 ON DELETE CASCADE로 함께 삭제됨
   const { error } = await client.from('products').delete().eq('id', id)
 
   if (!error) {
+    if (user) {
+      await logAdminActivity({
+        adminUserId: user.id,
+        action: 'product.delete',
+        targetType: 'product',
+        targetId: id,
+      })
+    }
     revalidatePath('/admin/products')
     revalidatePath('/')
     revalidatePath('/pricing')
@@ -45,6 +58,15 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
       .update({ is_active: false })
       .eq('id', id)
     if (deactErr) return { ok: false, message: `비활성화 실패: ${deactErr.message}` }
+    if (user) {
+      await logAdminActivity({
+        adminUserId: user.id,
+        action: 'product.deactivate',
+        targetType: 'product',
+        targetId: id,
+        detail: { reason: 'delete_blocked_by_fk' },
+      })
+    }
     revalidatePath('/admin/products')
     revalidatePath('/')
     revalidatePath('/pricing')
