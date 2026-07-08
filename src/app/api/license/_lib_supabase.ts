@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { maskSecret } from '@/lib/mask'
 
 // 라이선스 데이터(license_keys / hwid_mapping)는 별도 Supabase 프로젝트에 보관.
 // CoreZent 본체용 createAdminClient(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)와
@@ -363,7 +364,7 @@ export async function insertLicense(input: {
       .eq('license_key', input.licenseKey)
       .maybeSingle()
     if (existing) {
-      console.log(`[supabase-license] insertLicense: 이미 존재 — skip (${input.licenseKey.slice(0, 8)}...)`)
+      console.log(`[supabase-license] insertLicense: 이미 존재 — skip (${maskSecret(input.licenseKey, 8)})`)
       return
     }
 

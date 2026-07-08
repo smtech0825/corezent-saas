@@ -34,6 +34,7 @@ import {
 import { accrueCommission, reverseCommissionsBySource } from '@/lib/affiliate-commission'
 import { logNotification } from '@/lib/notification-log'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
+import { maskSecret } from '@/lib/mask'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
@@ -696,14 +697,14 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
         if (newStatus === 'active') {
           await supaSetLicenseActive(lic.serialKey, true, p)
         }
-        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] Supabase(${found.db}) 만료일 동기화 완료: ${maskSecret(lic.serialKey, 8)}`)
       } else {
         // GeniePost 경로 — Sheets 동기화 (기존 로직 그대로)
         await updateLicenseExpiry({ serialKey: lic.serialKey, expiresAt: attrs.renews_at })
         if (newStatus === 'active') {
           await updateLicenseStatus({ serialKey: lic.serialKey, status: '활성' })
         }
-        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] 라이선스 만료일 동기화 완료: ${maskSecret(lic.serialKey, 8)}`)
       }
     }
   }
@@ -746,10 +747,10 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
       if (found) {
         const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
         await supaSetLicenseActive(lic.serialKey, false, p)
-        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] Supabase(${found.db}) 비활성화 완료: ${maskSecret(lic.serialKey, 8)}`)
       } else {
         await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
-        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${maskSecret(lic.serialKey, 8)}`)
       }
     }
   }
@@ -789,10 +790,10 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
       if (found) {
         const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
         await supaSetLicenseActive(lic.serialKey, false, p)
-        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] 결제 실패 → Supabase(${found.db}) 비활성화: ${maskSecret(lic.serialKey, 8)}`)
       } else {
         await updateLicenseStatus({ serialKey: lic.serialKey, status: '중지' })
-        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${lic.serialKey.slice(0, 8)}...`)
+        console.log(`[LS Webhook] 결제 실패 → Sheets 중지: ${maskSecret(lic.serialKey, 8)}`)
       }
     }
   }
@@ -851,10 +852,10 @@ async function handleOrderRefunded(payload: LSWebhookPayload) {
     if (found) {
       const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
       await supaSetLicenseActive(lic.serial_key, false, p)
-      console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${lic.serial_key.slice(0, 8)}...`)
+      console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화: ${maskSecret(lic.serial_key, 8)}`)
     } else {
       await updateLicenseStatus({ serialKey: lic.serial_key, status: '중지' })
-      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${lic.serial_key.slice(0, 8)}...`)
+      console.log(`[LS Webhook] Sheets 상태 중지 처리 완료: ${maskSecret(lic.serial_key, 8)}`)
     }
   }
 
@@ -1114,7 +1115,7 @@ async function createLicense(
     throw new Error(`라이선스 생성 실패: ${licErr?.message}`)
   }
 
-  console.log(`[LS Webhook] 라이선스 생성 완료: ${inserted.length}개 (${keys[0].key.slice(0, 8)}...)${isPro ? ' [Pro]' : ''}`)
+  console.log(`[LS Webhook] 라이선스 생성 완료: ${inserted.length}개 (${maskSecret(keys[0].key, 8)})${isPro ? ' [Pro]' : ''}`)
 
   // 주문 확인 이메일 발송 (키 N개면 한 통에 모두 표시)
   try {
@@ -1144,7 +1145,7 @@ async function createLicense(
         isPro,
         status: '활성',
       })
-      console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${key.slice(0, 8)}... (isPro: ${isPro})`)
+      console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${maskSecret(key, 8)} (isPro: ${isPro})`)
     } catch (sheetsErr) {
       console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
     }

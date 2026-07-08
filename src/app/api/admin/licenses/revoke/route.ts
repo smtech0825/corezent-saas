@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { isNonEmptyString } from '@/lib/validate'
 import { updateLicenseStatus } from '@/lib/sheets'
+import { maskSecret } from '@/lib/mask'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   setLicenseActive as supaSetLicenseActive,
@@ -74,14 +75,14 @@ export async function POST(req: NextRequest) {
       // GenieStock/GenieWork — 찾은 DB에 비활성화 + HWID 청소 (시트 호출 X)
       try {
         await supaSetLicenseActive(serialKey, false, supaDbProduct)
-        console.log(`[Revoke] Supabase(${supaDbProduct}) 비활성화 완료: ${serialKey.slice(0, 8)}...`)
+        console.log(`[Revoke] Supabase(${supaDbProduct}) 비활성화 완료: ${maskSecret(serialKey, 8)}`)
       } catch (supaErr) {
         console.error('[Revoke] Supabase setLicenseActive 실패:', supaErr)
       }
 
       try {
         await supaResetHwidsForKey(serialKey, supaDbProduct)
-        console.log(`[Revoke] Supabase(${supaDbProduct}) HWID 매핑 청소 완료: ${serialKey.slice(0, 8)}...`)
+        console.log(`[Revoke] Supabase(${supaDbProduct}) HWID 매핑 청소 완료: ${maskSecret(serialKey, 8)}`)
       } catch (hwidErr) {
         console.error('[Revoke] Supabase HWID 청소 실패:', hwidErr)
       }

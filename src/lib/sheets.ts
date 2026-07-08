@@ -5,6 +5,7 @@
  */
 
 import { google } from 'googleapis'
+import { maskSecret } from '@/lib/mask'
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID ?? ''
 const TAB_NAME       = process.env.GOOGLE_SHEETS_TAB_NAME ?? ''
@@ -107,7 +108,7 @@ export async function updateLicenseExpiry(params: {
   const sheets     = getSheetsClient()
   const rowNumber  = await findRowBySerial(sheets, params.serialKey)
   if (!rowNumber) {
-    console.warn(`[Sheets] serial_key 미발견 — 만료일 업데이트 건너뜀: ${params.serialKey.slice(0, 8)}...`)
+    console.warn(`[Sheets] serial_key 미발견 — 만료일 업데이트 건너뜀: ${maskSecret(params.serialKey, 8)}`)
     return
   }
 
@@ -136,7 +137,7 @@ export async function updateLicenseStatus(params: {
   const sheets    = getSheetsClient()
   const rowNumber = await findRowBySerial(sheets, params.serialKey)
   if (!rowNumber) {
-    console.warn(`[Sheets] serial_key 미발견 — 상태 업데이트 건너뜀: ${params.serialKey.slice(0, 8)}...`)
+    console.warn(`[Sheets] serial_key 미발견 — 상태 업데이트 건너뜀: ${maskSecret(params.serialKey, 8)}`)
     return
   }
 
