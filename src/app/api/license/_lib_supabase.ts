@@ -14,7 +14,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { maskSecret } from '@/lib/mask'
+import { maskSecret, maskPgUniqueViolation } from '@/lib/mask'
 
 // 라이선스 데이터(license_keys / hwid_mapping)는 별도 Supabase 프로젝트에 보관.
 // CoreZent 본체용 createAdminClient(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)와
@@ -119,7 +119,7 @@ export async function findLicenseByKey(
     const { data, error } = await q.maybeSingle()
 
     if (error) {
-      console.error('[supabase-license] findLicenseByKey error:', error)
+      console.error('[supabase-license] findLicenseByKey error:', maskPgUniqueViolation(error))
       throw new Error(`라이선스 조회 실패: ${error.message}`)
     }
     if (!data) return null
@@ -191,7 +191,7 @@ export async function getHwidsForKey(
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('[supabase-license] getHwidsForKey error:', error)
+      console.error('[supabase-license] getHwidsForKey error:', maskPgUniqueViolation(error))
       throw new Error(`HWID 조회 실패: ${error.message}`)
     }
 
@@ -245,7 +245,7 @@ export async function registerHwid(
         p_device_name: deviceName ?? null,
       })
       if (error) {
-        console.error('[supabase-license] register_geniework_hwid RPC error:', error)
+        console.error('[supabase-license] register_geniework_hwid RPC error:', maskPgUniqueViolation(error))
         throw new Error(`HWID 등록 실패: ${error.message}`)
       }
       const res = (data ?? {}) as { ok?: boolean; reason?: string }
@@ -273,7 +273,7 @@ export async function registerHwid(
     })
 
     if (error) {
-      console.error('[supabase-license] registerHwid insert error:', error)
+      console.error('[supabase-license] registerHwid insert error:', maskPgUniqueViolation(error))
       throw new Error(`HWID 등록 실패: ${error.message}`)
     }
 
@@ -293,7 +293,7 @@ export async function resetHwidsForKey(key: string, product?: SupabaseProduct): 
     const admin = licenseClientFor(product)
     const { error } = await admin.from('hwid_mapping').delete().eq('license_key', k)
     if (error) {
-      console.error('[supabase-license] resetHwidsForKey error:', error)
+      console.error('[supabase-license] resetHwidsForKey error:', maskPgUniqueViolation(error))
       throw new Error(`HWID 초기화 실패: ${error.message}`)
     }
   } catch (err) {
@@ -323,7 +323,7 @@ export async function resetHwidsForKeyGenieWork(
     const admin = licenseClientFor('geniework')
     const { data, error } = await admin.rpc('reset_geniework_hwids', { p_license_key: k })
     if (error) {
-      console.error('[supabase-license] reset_geniework_hwids RPC error:', error)
+      console.error('[supabase-license] reset_geniework_hwids RPC error:', maskPgUniqueViolation(error))
       throw new Error(`HWID 초기화 실패: ${error.message}`)
     }
     const res = (data ?? {}) as {
@@ -379,7 +379,7 @@ export async function insertLicense(input: {
     })
 
     if (error) {
-      console.error('[supabase-license] insertLicense error:', error)
+      console.error('[supabase-license] insertLicense error:', maskPgUniqueViolation(error))
       throw new Error(`라이선스 등록 실패: ${error.message}`)
     }
   } catch (err) {
@@ -490,7 +490,7 @@ export async function applyLsKeyForOrder(input: {
       .from('hwid_mapping')
       .update({ license_key: input.lsKey })
       .eq('license_key', oldKey)
-    if (hwidErr) console.error('[supabase-license] applyLsKeyForOrder hwid 갱신 경고:', hwidErr)
+    if (hwidErr) console.error('[supabase-license] applyLsKeyForOrder hwid 갱신 경고:', maskPgUniqueViolation(hwidErr))
 
     return { action: 'updated', replacedKey: oldKey }
   }
@@ -524,7 +524,7 @@ export async function updateLicenseExpiry(
       .update({ expires_at: expiresAt })
       .eq('license_key', k)
     if (error) {
-      console.error('[supabase-license] updateLicenseExpiry error:', error)
+      console.error('[supabase-license] updateLicenseExpiry error:', maskPgUniqueViolation(error))
       throw new Error(`만료일 갱신 실패: ${error.message}`)
     }
   } catch (err) {
@@ -549,7 +549,7 @@ export async function setLicenseActive(
       .update({ is_active: isActive })
       .eq('license_key', k)
     if (error) {
-      console.error('[supabase-license] setLicenseActive error:', error)
+      console.error('[supabase-license] setLicenseActive error:', maskPgUniqueViolation(error))
       throw new Error(`활성 상태 변경 실패: ${error.message}`)
     }
   } catch (err) {
