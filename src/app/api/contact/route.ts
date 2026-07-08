@@ -12,32 +12,37 @@ import { sendEmail, inquiryEmailHtml } from '@/lib/email'
 
 const ADMIN_EMAIL = 'smtech.semi@gmail.com'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const RATE_LIMIT_WINDOW = 60_000       // 1분
+const RATE_LIMIT_WINDOW_MS = 60_000    // 1분 고정 윈도우
 const RATE_LIMIT_MAX = 3               // 1분에 최대 3회
 
-// ─── 인메모리 Rate Limiter ─────────────────────────────────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+/**
+ * @함수명: isRateLimited
+ * @설명: Supabase 테이블(contact_rate_limit) 기반 rate limit 확인. 인메모리 Map과 달리
+ *        Vercel 서버리스 인스턴스가 여러 개 떠도 공유되는 카운터를 쓴다. 원자적 RPC
+ *        (check_contact_rate_limit)로 확인+증가를 한 번에 처리해 동시 요청 경합에도 안전하다.
+ *        RPC 자체가 실패하면(마이그레이션 미적용 등) 정상 사용자를 막지 않도록 통과시킨다(fail-open).
+ * @매개변수: admin - service role Supabase 클라이언트 / ip - 요청자 IP
+ * @반환값: 이번 요청이 분당 한도를 초과했으면 true
+ */
+async function isRateLimited(
+  admin: ReturnType<typeof createAdminClient>,
+  ip: string,
+): Promise<boolean> {
+  const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS).toISOString()
 
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
+  const { data, error } = await admin.rpc('check_contact_rate_limit', {
+    p_ip: ip,
+    p_window_start: windowStart,
+    p_max: RATE_LIMIT_MAX,
+  })
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return false
+  if (error) {
+    console.error('[Contact API] rate limit RPC error:', error)
+    return false // fail-open — 체크 자체가 깨져도 정상 문의는 막지 않음
   }
 
-  entry.count++
-  return entry.count > RATE_LIMIT_MAX
+  return Boolean((data as { limited?: boolean } | null)?.limited)
 }
-
-// 오래된 엔트리 주기적 정리 (메모리 누수 방지)
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key)
-  }
-}, 60_000)
 
 // ─── 이메일 형식 검증 ──────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -51,7 +56,8 @@ export async function POST(request: NextRequest) {
 
   // Rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  if (isRateLimited(ip)) {
+  const admin = createAdminClient()
+  if (await isRateLimited(admin, ip)) {
     return NextResponse.json(
       { error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' },
       { status: 429 }
@@ -126,7 +132,6 @@ export async function POST(request: NextRequest) {
 
   // ─── DB 저장 ───────────────────────────────────────────────────
   try {
-    const admin = createAdminClient()
     const { error: dbError } = await admin.from('inquiries').insert({
       email,
       subject,
