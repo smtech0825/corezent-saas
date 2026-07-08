@@ -28,7 +28,11 @@ export function buildPageMetadata({ path, title, description, image }: PageMetaI
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      // RSS 자동 검색(피드 리더·검색엔진)용 — /rss.xml 단일 출처를 모든 공개 페이지 <head>에 노출
+      types: { 'application/rss+xml': `${SITE_URL}/rss.xml` },
+    },
     openGraph: {
       title,
       description,
