@@ -10,6 +10,7 @@
 import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SITE_URL } from '@/lib/site'
+import { source, blog } from '@/lib/source'
 
 // 상품 상세를 DB에서 그리므로 빌드타임 정적 생성 대신 요청 시점에 생성(다른 DB 페이지와 동일 규칙)
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/product`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE_URL}/blog`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     // /changelog는 로그인 필수 페이지라 비로그인 크롤러는 접근할 수 없어 사이트맵에서 제외(robots.ts와 동일 기준)
     { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
@@ -58,5 +60,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     productRoutes = []
   }
 
-  return [...staticRoutes, ...productRoutes]
+  // 매뉴얼(/docs)·블로그(/blog) 전체 경로 — 컬렉션에서 동적 생성(문서/글 추가 시 코드 수정 불필요).
+  // 기존 정적·상품 경로 보장을 위해 try-catch로 감싼다(실패해도 사이트맵 전체가 깨지지 않도록).
+  let docsRoutes: MetadataRoute.Sitemap = []
+  let blogRoutes: MetadataRoute.Sitemap = []
+  try {
+    docsRoutes = source.getPages().map((p) => ({
+      url: `${SITE_URL}${p.url}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
+    blogRoutes = blog.getPages().map((p) => ({
+      url: `${SITE_URL}${p.url}`,
+      lastModified: p.data.date ? new Date(p.data.date) : now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }))
+  } catch {
+    // 컬렉션 조회 실패 시 매뉴얼/블로그 경로는 생략하고 정적·상품 경로만 제공
+    docsRoutes = []
+    blogRoutes = []
+  }
+
+  return [...staticRoutes, ...productRoutes, ...docsRoutes, ...blogRoutes]
 }

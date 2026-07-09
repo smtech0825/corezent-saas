@@ -10,22 +10,24 @@
 
 /* CoreZent 페이퍼(공문서) 브랜드에 맞춘 라이트 테마 매핑.
  * 종이=배경 / 먹=본문 / 볼펜 파랑=강조(사이트 CTA와 동일) / 괘선=테두리.
+ * 값은 globals.css @theme의 페이퍼 토큰을 단일 출처로 참조한다(var). /docs에서 globals.css가
+ * 항상 먼저 로드되므로 var가 해석되며, 만일을 대비해 동일 HEX 폴백을 둔다.
  * 사이트가 라이트 전용이라 .dark 값은 재정의하지 않는다(다크는 비활성). */
 :root {
-  --color-fd-background: #fbfaf6;          /* 종이 */
-  --color-fd-foreground: #23272e;          /* 먹 */
-  --color-fd-muted: #f1efe7;               /* 종이 음영 */
-  --color-fd-muted-foreground: #565c66;    /* 먹(연) */
-  --color-fd-border: #d8d4c8;              /* 괘선 */
-  --color-fd-primary: #1d3fb0;             /* 볼펜 파랑 */
-  --color-fd-primary-foreground: #ffffff;
-  --color-fd-secondary: #f1efe7;
-  --color-fd-secondary-foreground: #23272e;
-  --color-fd-accent: #eae7dc;
-  --color-fd-accent-foreground: #23272e;
-  --color-fd-card: #ffffff;
-  --color-fd-card-foreground: #23272e;
-  --color-fd-popover: #ffffff;
-  --color-fd-popover-foreground: #23272e;
-  --color-fd-ring: #1d3fb0;
+  --color-fd-background: var(--color-paper, #fbfaf6);          /* 종이 */
+  --color-fd-foreground: var(--color-ink, #23272e);           /* 먹 */
+  --color-fd-muted: var(--color-paper-shade, #f1efe7);        /* 종이 음영 */
+  --color-fd-muted-foreground: var(--color-ink-soft, #565c66);/* 먹(연) */
+  --color-fd-border: var(--color-rule, #d8d4c8);              /* 괘선 */
+  --color-fd-primary: var(--color-pen, #1d3fb0);              /* 볼펜 파랑 */
+  --color-fd-primary-foreground: var(--color-paper-raised, #ffffff);
+  --color-fd-secondary: var(--color-paper-shade, #f1efe7);
+  --color-fd-secondary-foreground: var(--color-ink, #23272e);
+  --color-fd-accent: var(--color-paper-shade, #f1efe7);
+  --color-fd-accent-foreground: var(--color-ink, #23272e);
+  --color-fd-card: var(--color-paper-raised, #ffffff);
+  --color-fd-card-foreground: var(--color-ink, #23272e);
+  --color-fd-popover: var(--color-paper-raised, #ffffff);
+  --color-fd-popover-foreground: var(--color-ink, #23272e);
+  --color-fd-ring: var(--color-pen, #1d3fb0);
 }
