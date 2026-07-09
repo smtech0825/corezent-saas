@@ -1,0 +1,31 @@
+/* ----------------------------------------------------------
+ * Fumadocs(/docs·/blog) 전용 스타일 — docs·blog 세그먼트 레이아웃에서만 import 한다.
+ * ⚠️ 루트 globals.css에는 절대 넣지 말 것.
+ *    fumadocs preset.css가 `body { background }`·`* { border-color }`를 전역으로 바꾸므로,
+ *    글로벌에 넣으면 마케팅/대시보드/관리자 페이지의 배경·테두리가 변한다. 그래서 격리한다.
+ * ---------------------------------------------------------- */
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* CoreZent 페이퍼(공문서) 브랜드에 맞춘 라이트 테마 매핑.
+ * 종이=배경 / 먹=본문 / 볼펜 파랑=강조(사이트 CTA와 동일) / 괘선=테두리.
+ * 사이트가 라이트 전용이라 .dark 값은 재정의하지 않는다(다크는 비활성). */
+:root {
+  --color-fd-background: #fbfaf6;          /* 종이 */
+  --color-fd-foreground: #23272e;          /* 먹 */
+  --color-fd-muted: #f1efe7;               /* 종이 음영 */
+  --color-fd-muted-foreground: #565c66;    /* 먹(연) */
+  --color-fd-border: #d8d4c8;              /* 괘선 */
+  --color-fd-primary: #1d3fb0;             /* 볼펜 파랑 */
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #f1efe7;
+  --color-fd-secondary-foreground: #23272e;
+  --color-fd-accent: #eae7dc;
+  --color-fd-accent-foreground: #23272e;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #23272e;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #23272e;
+  --color-fd-ring: #1d3fb0;
+}

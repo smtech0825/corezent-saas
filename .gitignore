@@ -29,6 +29,9 @@ node_modules/
 .next/
 tsconfig.tsbuildinfo
 
+# Fumadocs 생성물 (content → .source, 빌드 시 자동 생성)
+.source/
+
 # Claude 설정
 .claude/
 

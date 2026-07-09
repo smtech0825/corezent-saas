@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next'
 import { withBotId } from 'botid/next/config'
+import { createMDX } from 'fumadocs-mdx/next'
+
+// Fumadocs MDX 래퍼 — content/docs·content/blog의 MDX를 빌드 파이프라인에 연결(source.config.ts 기준)
+const withMDX = createMDX()
 
 const nextConfig: NextConfig = {
   images: {
@@ -22,4 +26,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withBotId(nextConfig)
+export default withBotId(withMDX(nextConfig))
