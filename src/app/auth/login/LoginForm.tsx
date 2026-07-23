@@ -23,7 +23,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | null>(null)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | 'naver' | null>(null)
   const [error, setError] = useState('')
   // 미인증(이메일 확인 전) 계정으로 로그인 시도 시 재전송 경로 노출
   const [needsConfirm, setNeedsConfirm] = useState(false)
@@ -80,13 +80,16 @@ export default function LoginForm() {
     router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(redirect)}`)
   }
 
-  // OAuth 로그인 (Kakao / Google / GitHub)
-  async function handleOAuth(provider: 'google' | 'github' | 'kakao') {
+  // OAuth 로그인 (Kakao / Naver / Google / GitHub)
+  async function handleOAuth(provider: 'google' | 'github' | 'kakao' | 'naver') {
     setOauthLoading(provider)
     setError('')
 
+    // 네이버는 Supabase Custom OAuth Provider 식별자(custom:naver)로 위임
+    const oauthProvider = provider === 'naver' ? 'custom:naver' : provider
+
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: oauthProvider,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=${redirect}`,
       },
@@ -126,6 +129,12 @@ export default function LoginForm() {
               label="카카오로 시작하기"
               loading={oauthLoading === 'kakao'}
               onClick={() => handleOAuth('kakao')}
+            />
+            <AuthSocialButton
+              provider="naver"
+              label="네이버로 시작하기"
+              loading={oauthLoading === 'naver'}
+              onClick={() => handleOAuth('naver')}
             />
             <AuthSocialButton
               provider="google"

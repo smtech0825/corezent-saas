@@ -23,7 +23,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | null>(null)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | 'naver' | null>(null)
   const [error, setError] = useState('')
 
   const supabase = createClient()
@@ -61,7 +61,7 @@ export default function RegisterForm() {
       }
     } catch { /* 네트워크 오류 시 가입 진행 허용 */ }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -81,17 +81,28 @@ export default function RegisterForm() {
       return
     }
 
+    // 이메일 확인이 비활성(대시보드 설정)이면 signUp이 즉시 세션을 반환한다 → 이미 로그인 상태.
+    // 이 경우 코드 없는 인증 화면에 가두지 않고 바로 대시보드로 보낸다.
+    if (data.session) {
+      router.push('/dashboard')
+      router.refresh()
+      return
+    }
+
     // 가입 요청 성공 → 6자리 인증코드 입력 화면으로 이동(이메일 인증 후 자동 로그인)
     router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent('/dashboard')}`)
   }
 
   // OAuth 가입
-  async function handleOAuth(provider: 'google' | 'github' | 'kakao') {
+  async function handleOAuth(provider: 'google' | 'github' | 'kakao' | 'naver') {
     setOauthLoading(provider)
     setError('')
 
+    // 네이버는 Supabase Custom OAuth Provider 식별자(custom:naver)로 위임
+    const oauthProvider = provider === 'naver' ? 'custom:naver' : provider
+
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: oauthProvider,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
@@ -131,6 +142,12 @@ export default function RegisterForm() {
               label="카카오로 시작하기"
               loading={oauthLoading === 'kakao'}
               onClick={() => handleOAuth('kakao')}
+            />
+            <AuthSocialButton
+              provider="naver"
+              label="네이버로 시작하기"
+              loading={oauthLoading === 'naver'}
+              onClick={() => handleOAuth('naver')}
             />
             <AuthSocialButton
               provider="google"

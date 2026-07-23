@@ -25,6 +25,14 @@ function safeRedirect(raw: string | string[] | undefined): string {
   return '/dashboard'
 }
 
+/**
+ * @함수명: PhoneOnboardingPage
+ * @설명: 전화번호 온보딩 게이트 서버 페이지. 비로그인 사용자는 로그인으로,
+ *        이미 전화번호가 있는 사용자는 목적지로 되돌리고(중복 진입 방지),
+ *        전화번호가 없는 사용자에게만 입력 폼을 렌더한다.
+ * @매개변수: searchParams - redirect(저장 후 복귀 경로)
+ * @반환값: 전화번호 입력 폼(또는 리다이렉트)
+ */
 export default async function PhoneOnboardingPage({
   searchParams,
 }: {
@@ -39,14 +47,16 @@ export default async function PhoneOnboardingPage({
     redirect(`/auth/login?redirect=${encodeURIComponent(ONBOARDING_PHONE_PATH)}`)
   }
 
-  // 이미 전화번호가 있으면 게이트를 통과한 상태 → 목적지로 복귀(중복 진입 방지)
+  // 이미 전화번호가 있으면 게이트를 통과한 상태 → 목적지로 복귀(중복 진입 방지).
+  // 레이아웃 게이트와 동일하게 공백만 있는 값은 빈값으로 취급한다.
   const { data: profile } = await supabase
     .from('profiles')
     .select('phone')
     .eq('id', user.id)
     .single()
 
-  if ((profile as { phone?: string | null } | null)?.phone) {
+  const existingPhone = ((profile as { phone?: string | null } | null)?.phone ?? '').trim()
+  if (existingPhone) {
     redirect(redirectTo)
   }
 

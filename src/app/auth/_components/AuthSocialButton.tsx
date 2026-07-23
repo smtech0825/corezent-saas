@@ -2,14 +2,15 @@
 
 /**
  * @컴포넌트: AuthSocialButton
- * @설명: 소셜 OAuth 버튼 공통 컴포넌트 (Google / GitHub / Kakao)
- *        카카오는 브랜드 가이드(#FEE500 배경 + 공식 심볼 + 검정 텍스트)를 준수한다.
+ * @설명: 소셜 OAuth 버튼 공통 컴포넌트 (Google / GitHub / Kakao / Naver)
+ *        카카오·네이버는 브랜드 가이드(카카오 #FEE500+검정, 네이버 #03C75A+흰색,
+ *        각 공식 심볼)를 준수한다.
  */
 
 import { Loader2 } from 'lucide-react'
 
 interface Props {
-  provider: 'google' | 'github' | 'kakao'
+  provider: 'google' | 'github' | 'kakao' | 'naver'
   label: string
   loading: boolean
   onClick: () => void
@@ -37,20 +38,40 @@ const KakaoIcon = () => (
   </svg>
 )
 
+// 네이버 공식 로고마크(N) — 브랜드 가이드상 배경 #03C75A 위 흰색 N
+const NaverIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
+    <path fill="#fff" d="M13.56 10.7 6.14 0H0v20h6.44V9.3L13.86 20H20V0h-6.44v10.7z"/>
+  </svg>
+)
+
+// 브랜드 채움 버튼(카카오·네이버)의 배경/텍스트/스피너 색
+const BRAND_STYLES: Record<'kakao' | 'naver', { btn: string; spinner: string }> = {
+  kakao: {
+    btn: 'bg-[#FEE500] hover:brightness-95 text-[#191919]',
+    spinner: 'text-[#191919]',
+  },
+  naver: {
+    btn: 'bg-[#03C75A] hover:brightness-95 text-white',
+    spinner: 'text-white',
+  },
+}
+
 export default function AuthSocialButton({ provider, label, loading, onClick }: Props) {
-  // 카카오는 브랜드 컬러(#FEE500) 채움 버튼, 나머지는 페이퍼 아웃라인 버튼
-  const isKakao = provider === 'kakao'
-  const cls = isKakao
-    ? 'w-full flex items-center justify-center gap-2 bg-[#FEE500] hover:brightness-95 text-[#191919] text-sm font-semibold py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  // 카카오·네이버는 브랜드 컬러 채움 버튼, 나머지(google/github)는 페이퍼 아웃라인 버튼
+  const brand = provider === 'kakao' || provider === 'naver' ? BRAND_STYLES[provider] : null
+  const cls = brand
+    ? `w-full flex items-center justify-center gap-2 ${brand.btn} text-sm font-semibold py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed`
     : 'w-full flex items-center justify-center gap-3 bg-paper-raised border border-rule hover:border-pen/40 hover:bg-paper-shade text-ink text-sm font-medium py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
 
   return (
     <button type="button" onClick={onClick} disabled={loading} className={cls}>
       {loading
-        ? <Loader2 size={16} className={`animate-spin ${isKakao ? 'text-[#191919]' : 'text-pen'}`} />
+        ? <Loader2 size={16} className={`animate-spin ${brand ? brand.spinner : 'text-pen'}`} />
         : provider === 'google' ? <GoogleIcon />
         : provider === 'github' ? <GitHubIcon />
-        : <KakaoIcon />
+        : provider === 'kakao' ? <KakaoIcon />
+        : <NaverIcon />
       }
       {label}
     </button>

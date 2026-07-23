@@ -22,6 +22,13 @@ function safeNext(raw: string | string[] | undefined): string {
   return '/dashboard'
 }
 
+/**
+ * @함수명: VerifyPage
+ * @설명: 이메일 6자리 인증코드 입력 서버 페이지. email·next 쿼리를 검증(내부 경로만)해
+ *        클라이언트 폼에 전달한다.
+ * @매개변수: searchParams - email(인증 대상), next(인증 후 이동 경로)
+ * @반환값: 인증코드 입력 폼
+ */
 export default async function VerifyPage({
   searchParams,
 }: {

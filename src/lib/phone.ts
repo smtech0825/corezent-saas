@@ -20,20 +20,26 @@ export function normalizeKoreanPhone(input: string | null | undefined): string |
   let d = input.trim().replace(/[^\d+]/g, '')
   if (!d) return null
 
-  // 2) 국가코드(+82 / 0082 / 82) → 국내 접두 0 으로 치환
+  // 2) 국가코드(+82 / 0082 / 82) 제거 — 국내 번호부만 남긴다.
+  //    선행 0을 붙이는 처리는 4)에서 일괄 수행해 "+82 10-..."(0 생략)과
+  //    "+82 010-..."(0 유지)을 모두 올바르게 흡수한다.
   if (d.startsWith('+82')) {
-    d = '0' + d.slice(3)
+    d = d.slice(3)
   } else if (d.startsWith('0082')) {
-    d = '0' + d.slice(4)
-  } else if (d.startsWith('82') && !d.startsWith('820')) {
-    // 82로 시작하고 그 다음이 0이 아닌 경우만 국가코드로 간주(0으로 시작하는 국내번호 오인 방지)
-    d = '0' + d.slice(2)
+    d = d.slice(4)
+  } else if (d.startsWith('82') && d[2] !== '0') {
+    // 82로 시작하고 다음이 0이 아닐 때만 국가코드로 간주(0으로 시작하는 국내번호 오인 방지)
+    d = d.slice(2)
   }
 
   // 3) 남은 + 등 비숫자 제거
   d = d.replace(/\D/g, '')
+  if (!d) return null
 
-  // 4) 한국 휴대폰 패턴 검증: 010/011/016/017/018/019 + 7~8자리
+  // 4) 국가코드를 벗긴 결과에 선행 0이 없으면 보정(예: +82 10-1234-5678 → 1012345678 → 01012345678)
+  if (!d.startsWith('0')) d = '0' + d
+
+  // 5) 한국 휴대폰 패턴 검증: 010/011/016/017/018/019 + 7~8자리
   return /^01[016789]\d{7,8}$/.test(d) ? d : null
 }
 
