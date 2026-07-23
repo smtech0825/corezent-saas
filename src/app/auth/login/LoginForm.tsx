@@ -25,6 +25,9 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
   const [error, setError] = useState('')
+  // 미인증(이메일 확인 전) 계정으로 로그인 시도 시 재전송 경로 노출
+  const [needsConfirm, setNeedsConfirm] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
 
   const supabase = createClient()
 
@@ -33,19 +36,48 @@ export default function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setNeedsConfirm(false)
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(error.message === 'Invalid login credentials'
-        ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-        : error.message)
+      // 이메일 미인증 계정: 인증 코드 재전송 경로 안내(기존 확인 계정 로그인은 영향 없음)
+      const isUnconfirmed =
+        error.message === 'Email not confirmed' ||
+        (error as { code?: string }).code === 'email_not_confirmed'
+      if (isUnconfirmed) {
+        setNeedsConfirm(true)
+        setError('이메일 인증이 완료되지 않았습니다. 가입 시 받은 6자리 코드로 인증해 주세요.')
+      } else {
+        setError(error.message === 'Invalid login credentials'
+          ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+          : error.message)
+      }
       setLoading(false)
       return
     }
 
     router.push(redirect)
     router.refresh()
+  }
+
+  // 미인증 계정: 인증 코드 재전송 후 검증 페이지로 이동
+  async function handleResendConfirm() {
+    if (!email) {
+      setError('이메일을 입력해 주세요.')
+      return
+    }
+    setResendLoading(true)
+    setError('')
+
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    setResendLoading(false)
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+    router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(redirect)}`)
   }
 
   // OAuth 로그인 (Google / GitHub)
@@ -154,6 +186,19 @@ export default function LoginForm() {
               <p className="text-sm text-seal bg-seal/5 border border-seal/30 rounded-md px-4 py-2.5">
                 {error}
               </p>
+            )}
+
+            {/* 미인증 계정: 인증 코드 재전송 경로 */}
+            {needsConfirm && (
+              <button
+                type="button"
+                onClick={handleResendConfirm}
+                disabled={resendLoading}
+                className="w-full border border-pen/40 text-pen font-semibold py-3 rounded-md text-sm hover:bg-pen/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {resendLoading && <Loader2 size={15} className="animate-spin" />}
+                {resendLoading ? '코드 전송 중...' : '인증 코드 받고 인증하기 →'}
+              </button>
             )}
 
             <button

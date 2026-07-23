@@ -8,13 +8,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
 
 export default function RegisterForm() {
+  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -23,7 +25,6 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
 
   const supabase = createClient()
 
@@ -80,8 +81,8 @@ export default function RegisterForm() {
       return
     }
 
-    setDone(true)
-    setLoading(false)
+    // 가입 요청 성공 → 6자리 인증코드 입력 화면으로 이동(이메일 인증 후 자동 로그인)
+    router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent('/dashboard')}`)
   }
 
   // OAuth 가입
@@ -100,37 +101,6 @@ export default function RegisterForm() {
       setError(error.message)
       setOauthLoading(null)
     }
-  }
-
-  // 인증 메일 발송 완료 화면
-  if (done) {
-    return (
-      <div className="theme-paper min-h-screen bg-paper text-ink flex">
-        <div className="flex-1 flex items-center justify-center px-6 py-12">
-          <div className="w-full max-w-sm text-center">
-            <div className="w-16 h-16 rounded-full bg-pen/5 border border-pen/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={32} className="text-pen" />
-            </div>
-            <h1 className="text-2xl font-serif font-black text-ink mb-3">이메일을 확인해 주세요</h1>
-            <p className="text-ink-soft text-sm leading-relaxed mb-6">
-              <span className="text-ink font-medium">{email}</span>{' '}
-              주소로 인증 링크를 보냈습니다.<br />
-              이메일의 링크를 클릭하여 계정을 인증해 주세요.
-            </p>
-            <p className="text-xs text-ink-faint">
-              이메일이 보이지 않으면 스팸함을 확인해 주세요.
-            </p>
-            <Link
-              href="/auth/login"
-              className="mt-8 inline-block text-sm text-pen hover:underline"
-            >
-              ← 로그인으로 돌아가기
-            </Link>
-          </div>
-        </div>
-        <AuthBrand />
-      </div>
-    )
   }
 
   return (
