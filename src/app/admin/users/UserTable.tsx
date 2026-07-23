@@ -29,7 +29,6 @@ interface UserData {
   name: string
   email: string
   role: string
-  country: string
   created_at: string
   status: string
   hasPayout: boolean
@@ -201,7 +200,6 @@ export default function UserTable({ users }: Props) {
                   <th className="text-left px-5 py-3 text-xs text-ink-faint font-medium">사용자</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">이메일 / 상태</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">역할</th>
-                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium hidden md:table-cell">국가</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium hidden lg:table-cell">가입일</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">역할 변경</th>
                   <th className="text-right px-4 py-3 text-xs text-ink-faint font-medium">작업</th>
@@ -262,11 +260,6 @@ export default function UserTable({ users }: Props) {
                         </span>
                       </td>
 
-                      {/* 국가 */}
-                      <td className="px-4 py-3 text-ink-faint hidden md:table-cell">
-                        {u.country || '—'}
-                      </td>
-
                       {/* 가입일 */}
                       <td className="px-4 py-3 text-ink-faint whitespace-nowrap hidden lg:table-cell">
                         {fmtDate(u.created_at)}
@@ -314,7 +307,7 @@ export default function UserTable({ users }: Props) {
                     {/* ── 아코디언 — 구매 내역 ── */}
                     {expandedId === u.id && (
                       <tr className="border-b border-rule/50">
-                        <td colSpan={7} className="px-5 py-4 bg-paper-shade">
+                        <td colSpan={6} className="px-5 py-4 bg-paper-shade">
                           <p className="text-xs font-semibold text-ink-faint uppercase tracking-widest mb-3">
                             구매 내역 — {u.name || u.email}
                           </p>

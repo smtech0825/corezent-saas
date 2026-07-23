@@ -128,7 +128,7 @@ CoreZent_SaaS/
 │   │   │   ├── FAQSection.tsx
 │   │   │   ├── CTASection.tsx
 │   │   │   └── MetricsSection.tsx
-│   │   ├── common/            # CountrySelect(다크·페이퍼 이중 테마, `.theme-paper` 조상 셀렉터로 override), Toast, Pagination
+│   │   ├── common/            # Toast, Pagination 등 공통 컴포넌트
 │   │   ├── Navbar.tsx, Footer.tsx     # Navbar: fixed→sticky 전환, 페이퍼 테마 적용
 │   │   ├── DynamicIcon.tsx    # lucide/tabler/radix 동적 import + 캐시
 │   │   ├── Analytics.tsx      # GA/GTM 등 외부 스크립트 로더
@@ -187,7 +187,7 @@ CoreZent_SaaS/
 | 히어로 보조 컴포넌트 ⭐신규 | [HeroDraftDemo.tsx](src/components/sections/HeroDraftDemo.tsx) — 초안 자동 타이핑 데모 · [StampSeal.tsx](src/components/sections/StampSeal.tsx) — 직인 스탬프 애니메이션(IntersectionObserver) |
 | SEO 표준 URL / robots·sitemap ⭐신규 | [src/lib/site.ts](src/lib/site.ts) — `getSiteUrl()`/`SITE_URL` 단일 출처(env `NEXT_PUBLIC_SITE_URL`→`NEXT_PUBLIC_APP_URL`→폴백, apex→www 정규화). [src/app/robots.ts](src/app/robots.ts)·[src/app/sitemap.ts](src/app/sitemap.ts)가 공통 사용(Host·URL 표기 통일) |
 
-> **테마 이원화 (GenieWork 재브랜딩)**: 퍼블릭 페이지(`/`·`/pricing`·`/product`·`/changelog`·`/activate`·`/contact`·`/faq`·`/about`·`/legal`·`/auth/*`)는 각 페이지 루트에 `theme-paper bg-paper text-ink` 클래스를 적용한 **페이퍼(라이트, 공문서) 테마**. `/dashboard`·`/admin`은 기존 **다크 테마**를 그대로 유지(변경 없음). `globals.css`에 두 테마 토큰이 공존(`--color-bg` 등 다크 + `--color-paper`/`--color-ink`/`--color-rule`/`--color-seal`/`--color-pen` 등 페이퍼), `@theme inline`으로 `layout.tsx`의 `Noto_Serif_KR`(`--font-serif-kr`)을 `font-serif` 유틸리티에 연결. 다크·페이퍼 양쪽에서 쓰이는 `CountrySelect`는 `.theme-paper` 조상 셀렉터로 색상만 override. `Navbar`는 `fixed`→`sticky`로 전환.
+> **테마 이원화 (GenieWork 재브랜딩)**: 퍼블릭 페이지(`/`·`/pricing`·`/product`·`/changelog`·`/activate`·`/contact`·`/faq`·`/about`·`/legal`·`/auth/*`)는 각 페이지 루트에 `theme-paper bg-paper text-ink` 클래스를 적용한 **페이퍼(라이트, 공문서) 테마**. `/dashboard`·`/admin`은 기존 **다크 테마**를 그대로 유지(변경 없음). `globals.css`에 두 테마 토큰이 공존(`--color-bg` 등 다크 + `--color-paper`/`--color-ink`/`--color-rule`/`--color-seal`/`--color-pen` 등 페이퍼), `@theme inline`으로 `layout.tsx`의 `Noto_Serif_KR`(`--font-serif-kr`)을 `font-serif` 유틸리티에 연결. 다크·페이퍼 양쪽에서 쓰이는 공통 컴포넌트는 `.theme-paper` 조상 셀렉터로 색상만 override. `Navbar`는 `fixed`→`sticky`로 전환.
 
 ### 2.3 관리자 (Admin Console)
 
@@ -393,7 +393,7 @@ POST /api/contact
 
 | 테이블 | 주요 컬럼 | 출처 마이그레이션 |
 |---|---|---|
-| `profiles` | id (auth.users FK), email, full_name, avatar_url, role(user/admin), country, status(active/inactive), created_at | 001, 023 |
+| `profiles` | id (auth.users FK), email, full_name, avatar_url, role(user/admin), status(active/inactive), created_at | 001, 023, 052(country 제거) |
 | `user_status` 흐름 | 탈퇴 시 status='inactive' → check-email API에서 재가입 차단 | 023 |
 
 ### 4.2 상품·가격
@@ -574,7 +574,7 @@ npm run lint   # ESLint
 | LS 웹훅 멱등성 | 같은 이벤트 재전송 가능 | `lemon_squeezy_order_id` UNIQUE로 중복 INSERT 방지 |
 | Rate Limit (Contact) | in-memory Map → 다중 인스턴스에서 정확하지 않음 | Vercel은 단일 region serverless라 큰 문제 없음 |
 | BotID 토큰 | 클라이언트만 발급 가능 (네이티브 앱 X) | 앱 호출 라우트(`/api/license/*`)는 BotID 미적용 |
-| 디자인 시스템 이원화 (GenieWork 재브랜딩) | 퍼블릭(페이퍼: `--color-paper`/`--color-ink` 등)과 `dashboard`·`admin`(다크: `--color-bg`/`--color-surface` 등)이 서로 다른 토큰·컴포넌트를 사용 | 새 컴포넌트 작성 시 대상 영역(퍼블릭 vs 대시보드/관리자) 확인 후 `src/components/ui/`(페이퍼 전용) 또는 기존 다크 스타일 중 맞는 쪽 사용. `CountrySelect`처럼 양쪽에서 쓰이는 컴포넌트는 `.theme-paper` 조상 셀렉터로 분기 |
+| 디자인 시스템 이원화 (GenieWork 재브랜딩) | 퍼블릭(페이퍼: `--color-paper`/`--color-ink` 등)과 `dashboard`·`admin`(다크: `--color-bg`/`--color-surface` 등)이 서로 다른 토큰·컴포넌트를 사용 | 새 컴포넌트 작성 시 대상 영역(퍼블릭 vs 대시보드/관리자) 확인 후 `src/components/ui/`(페이퍼 전용) 또는 기존 다크 스타일 중 맞는 쪽 사용. 양쪽에서 쓰이는 컴포넌트는 `.theme-paper` 조상 셀렉터로 분기 |
 | Google Indexing API 일일 할당량 | 기본 200건/일, 공식 지원 범위는 채용·라이브 구조화 데이터가 우선(그 외 URL은 승인이 보수적일 수 있음) | 대량 URL은 IndexNow(Bing·Naver 등, 별도 제한 없음)가 더 안정적 — 두 채널 모두 시도하되 부분 실패 허용 |
 | Google 서비스 계정 JSON 커밋 방지 | 리포지토리 루트에 다운로드한 `.json` 키 파일을 실수로 두는 사례 발생 | `.gitignore`에 `corezent-saas-*.json`·`*-service-account*.json`·`gcp-*.json` 패턴 추가 — 신규 서비스 계정 키 파일명도 이 패턴을 따를 것 |
 
@@ -586,6 +586,7 @@ npm run lint   # ESLint
 |---|---|---|
 | 2026-07-02 | 퍼블릭 페이지 GenieWork 재브랜딩(페이퍼 테마) — 공통 UI 프리미티브(`ui/`) 6종, 히어로 보조 컴포넌트 2종 신규, `globals.css` 페이퍼 토큰·애니메이션 추가, `layout.tsx` Noto Serif KR 도입, 퍼블릭 전 페이지 `theme-paper` 적용(dashboard·admin은 다크 유지), `products.ts` 페이퍼 뱃지 상수, `CountrySelect` 이중 테마 지원, Navbar fixed→sticky | 신규 8 · 수정 다수(프레젠테이션 레이어, 로직/DB/API 변경 없음) |
 | 2026-07-07 | SEO 색인 자동화 — 표준 URL 단일 출처(`lib/site.ts`) 신규 도입해 `robots.ts`·`sitemap.ts`가 공통 사용(Host를 항상 www.corezent.com으로 정규화), IndexNow+Google Indexing API 제출 헬퍼(`lib/seo/indexing.ts`) 및 관리자 전용 재색인 API(`/api/admin/seo/reindex`)·설정 페이지 버튼(`ReindexPanel`) 추가, IndexNow 키 소유 증명 파일 배포, Google 서비스 계정 JSON `.gitignore` 패턴 추가 | 신규 5 · 수정 3(+.gitignore) |
+| 2026-07-23 | 국가(country) 필드 전면 제거 — 회원가입 국가 선택·저장 흐름, dashboard 설정·admin(사용자 목록/상세·주문 상세) 국가 표시 삭제, `profiles.country` 컬럼 DROP(052), 죽은 코드 `CountrySelect`·`lib/countries.ts` 삭제 | 삭제 2 · 수정 7 · 마이그레이션 1(052) |
 
 ---
 

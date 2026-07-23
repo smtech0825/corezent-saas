@@ -2,13 +2,12 @@
 
 /**
  * @파일: dashboard/settings/page.tsx
- * @설명: 설정 페이지 — 프로필(이름+국가) 수정, 비밀번호 변경(현재 비밀번호 검증)
+ * @설명: 설정 페이지 — 프로필(이름) 수정, 비밀번호 변경(현재 비밀번호 검증)
  */
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, CheckCircle } from 'lucide-react'
-import CountrySelect from '@/components/common/CountrySelect'
 import { useToast } from '@/components/common/Toast'
 import WithdrawSection from './WithdrawSection'
 
@@ -19,7 +18,6 @@ export default function SettingsPage() {
   // 프로필
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [country, setCountry] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
 
   // 비밀번호
@@ -39,12 +37,11 @@ export default function SettingsPage() {
       setEmail(data.user.email ?? '')
       supabase
         .from('profiles')
-        .select('name, country')
+        .select('name')
         .eq('id', data.user.id)
         .single()
         .then(({ data: profile }) => {
           setName(profile?.name ?? data.user!.user_metadata?.name ?? '')
-          setCountry(profile?.country ?? '')
         })
       // 수신 동의는 별도 조회 — 컬럼(033) 미적용 상태에서도 프로필 로드가 깨지지 않도록 분리
       supabase
@@ -70,7 +67,7 @@ export default function SettingsPage() {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ name, country })
+      .update({ name })
       .eq('id', user.id)
 
     if (error) {
@@ -173,14 +170,6 @@ export default function SettingsPage() {
               className={`${inputCls} opacity-50 cursor-not-allowed`}
             />
             <p className="text-xs text-ink-faint mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
-          </FormField>
-
-          <FormField label="국가">
-            <CountrySelect
-              value={country}
-              onChange={setCountry}
-              placeholder="국가를 선택하세요"
-            />
           </FormField>
 
           <div className="flex justify-stretch sm:justify-end pt-1">

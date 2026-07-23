@@ -52,7 +52,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('name, country, role, status, affiliate_code, created_at, payout_bank, payout_account_number, payout_account_holder')
+    .select('name, role, status, affiliate_code, created_at, payout_bank, payout_account_number, payout_account_holder')
     .eq('id', id)
     .single()
 
@@ -91,7 +91,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         <h2 className="text-sm font-semibold text-ink mb-2">계정</h2>
         <Row label="이메일">{email}</Row>
         <Row label="이름">{profile.name || '—'}</Row>
-        <Row label="국가">{profile.country || '—'}</Row>
         <Row label="역할">{profile.role === 'admin' ? '관리자' : '사용자'}</Row>
         <Row label="상태">{profile.status === 'inactive' ? '비활성(탈퇴)' : '활성'}</Row>
         <Row label="가입일">{fmtDate(profile.created_at as string)}</Row>

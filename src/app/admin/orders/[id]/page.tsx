@@ -84,7 +84,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   // 연관 데이터 병렬 조회
   const [profileRes, authRes, priceRes, licRes, subRes] = await Promise.all([
-    admin.from('profiles').select('name, country').eq('id', order.user_id).single(),
+    admin.from('profiles').select('name').eq('id', order.user_id).single(),
     admin.auth.admin.getUserById(order.user_id as string),
     order.product_price_id
       ? admin.from('product_prices').select('interval, type, products(name, slug)').eq('id', order.product_price_id).single()

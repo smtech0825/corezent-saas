@@ -2,7 +2,7 @@
 
 /**
  * @컴포넌트: RegisterForm
- * @설명: 회원가입 페이지 — 국가 선택(필수) 포함, 법적 문서 링크 연결
+ * @설명: 회원가입 페이지 — 법적 문서 링크 연결
  *        이메일 가입 시 이메일 인증 필수, Google / GitHub OAuth 지원
  */
 
@@ -12,12 +12,10 @@ import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
-import CountrySelect from '@/components/common/CountrySelect'
 
 export default function RegisterForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [country, setCountry] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -30,10 +28,6 @@ export default function RegisterForm() {
   // 이메일 회원가입
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (!country) {
-      setError('국가를 선택해 주세요.')
-      return
-    }
     if (password.length < 8) {
       setError('비밀번호는 8자 이상이어야 합니다.')
       return
@@ -61,7 +55,7 @@ export default function RegisterForm() {
       email,
       password,
       options: {
-        data: { name, country },
+        data: { name },
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     })
@@ -196,18 +190,6 @@ export default function RegisterForm() {
                 placeholder="you@example.com"
                 required
                 className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-ink-soft mb-1.5">
-                국가 <span className="text-seal">*</span>
-              </label>
-              <CountrySelect
-                value={country}
-                onChange={setCountry}
-                required
-                placeholder="국가를 선택하세요"
               />
             </div>
 

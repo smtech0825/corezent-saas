@@ -2,7 +2,6 @@
  * @파일: auth/callback/route.ts
  * @설명: OAuth 및 이메일 인증 콜백 처리 Route Handler
  *        Supabase가 인증 완료 후 이 URL로 리다이렉트함
- *        signup 시 국가(country) 메타데이터를 profiles에 저장
  */
 
 import { NextResponse } from 'next/server'
@@ -70,24 +69,6 @@ export async function GET(request: Request) {
       // 신규 회원 이메일 인증 완료 처리
       if (type === 'signup' && data.user) {
         const user = data.user
-
-        // 회원가입 시 입력한 country를 profiles에 저장 (비어있는 경우에만)
-        const country = user.user_metadata?.country as string | undefined
-        if (country) {
-          const { error: profileErr } = await supabase
-            .from('profiles')
-            .update({ country })
-            .eq('id', user.id)
-            .is('country', null)
-          if (profileErr) {
-            // OR 조건: country가 빈 문자열인 경우도 업데이트
-            await supabase
-              .from('profiles')
-              .update({ country })
-              .eq('id', user.id)
-              .eq('country', '')
-          }
-        }
 
         // 추천 귀속: cz_ref 쿠키의 추천 코드를 referred_by에 기록 + 귀속 행 생성
         // (자기추천 차단·중복 방지는 유틸 내부에서 처리, 실패해도 가입 흐름 유지)
