@@ -135,8 +135,14 @@ export default function LoginForm() {
               loading={oauthLoading === 'kakao'}
               onClick={() => handleOAuth('kakao')}
             />
-            {/* 네이버: Supabase 일반 OAuth2가 네이버의 중첩 응답(response.email)에서 email을 못 읽어
-                로그인 실패 → userinfo 브리지 구현 전까지 버튼 숨김(핸들러·매퍼는 유지). */}
+            {/* 네이버: Supabase Custom OAuth의 UserInfo URL을 브리지(/api/auth/naver/userinfo)로
+                설정해 네이버 중첩 응답을 표준 클레임으로 평탄화 → 로그인 정상화. */}
+            <AuthSocialButton
+              provider="naver"
+              label="네이버로 시작하기"
+              loading={oauthLoading === 'naver'}
+              onClick={() => handleOAuth('naver')}
+            />
             <AuthSocialButton
               provider="google"
               label="Google로 계속하기"
