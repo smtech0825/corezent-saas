@@ -10,12 +10,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
 
 export default function RegisterForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -28,6 +30,13 @@ export default function RegisterForm() {
   // 이메일 회원가입
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
+
+    // 전화번호 필수 + 형식 검증(정규화 결과가 null이면 유효하지 않음)
+    const normalizedPhone = normalizeKoreanPhone(phone)
+    if (!normalizedPhone) {
+      setError('올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)')
+      return
+    }
     if (password.length < 8) {
       setError('비밀번호는 8자 이상이어야 합니다.')
       return
@@ -55,7 +64,8 @@ export default function RegisterForm() {
       email,
       password,
       options: {
-        data: { name },
+        // phone은 정규화된 숫자만(01012345678) 저장 — 보호영역 진입 시 profiles로 동기화됨
+        data: { name, phone: normalizedPhone },
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     })
@@ -191,6 +201,27 @@ export default function RegisterForm() {
                 required
                 className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm text-ink-soft mb-1.5">휴대폰 번호</label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="010-1234-5678"
+                required
+                className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
+              />
+              {phone.length > 0 && (
+                <p className={`text-xs mt-1.5 ${normalizeKoreanPhone(phone) ? 'text-emerald-600' : 'text-ink-faint'}`}>
+                  {normalizeKoreanPhone(phone)
+                    ? `확인: ${formatPhoneForDisplay(normalizeKoreanPhone(phone))}`
+                    : '숫자만 입력하거나 010-1234-5678 형식으로 입력해 주세요.'}
+                </p>
+              )}
             </div>
 
             <div>

@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
+import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import WithdrawSection from './WithdrawSection'
 
 export default function SettingsPage() {
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   // 프로필
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
 
   // 비밀번호
@@ -37,11 +39,14 @@ export default function SettingsPage() {
       setEmail(data.user.email ?? '')
       supabase
         .from('profiles')
-        .select('name')
+        .select('name, phone')
         .eq('id', data.user.id)
         .single()
         .then(({ data: profile }) => {
           setName(profile?.name ?? data.user!.user_metadata?.name ?? '')
+          setPhone(
+            formatPhoneForDisplay((profile as { phone?: string | null } | null)?.phone) ?? ''
+          )
         })
       // 수신 동의는 별도 조회 — 컬럼(033) 미적용 상태에서도 프로필 로드가 깨지지 않도록 분리
       supabase
@@ -60,6 +65,14 @@ export default function SettingsPage() {
   // 프로필 저장
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
+
+    // 전화번호 필수 + 형식 검증(정규화된 숫자만 저장)
+    const normalizedPhone = normalizeKoreanPhone(phone)
+    if (!normalizedPhone) {
+      showToast('error', '올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)')
+      return
+    }
+
     setProfileLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -67,13 +80,15 @@ export default function SettingsPage() {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ name })
+      .update({ name, phone: normalizedPhone })
       .eq('id', user.id)
 
     if (error) {
       showToast('error', error.message)
     } else {
       showToast('success', '프로필이 업데이트되었습니다.')
+      // 저장된 정규화 값을 표시용 하이픈 표기로 반영
+      setPhone(formatPhoneForDisplay(normalizedPhone))
     }
     setProfileLoading(false)
   }
@@ -160,6 +175,24 @@ export default function SettingsPage() {
               required
               className={inputCls}
             />
+          </FormField>
+
+          <FormField label="휴대폰 번호">
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="010-1234-5678"
+              required
+              className={inputCls}
+            />
+            {phone.length > 0 && !normalizeKoreanPhone(phone) && (
+              <p className="text-xs text-danger mt-1.5">
+                숫자만 입력하거나 010-1234-5678 형식으로 입력해 주세요.
+              </p>
+            )}
           </FormField>
 
           <FormField label="이메일">

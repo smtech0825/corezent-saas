@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ensureOnboardedPhone, buildPhoneGateRedirect } from '@/lib/onboarding'
 import DashboardShell from './_components/DashboardShell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -14,13 +15,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?redirect=/dashboard')
 
-  // role 포함하여 프로필 조회 (RLS 우회 위해 adminClient 사용)
+  // role·phone 포함하여 프로필 조회 (RLS 우회 위해 adminClient 사용)
   const adminClient = createAdminClient()
   const { data: profile } = await adminClient
     .from('profiles')
-    .select('name, avatar_url, role')
+    .select('name, avatar_url, role, phone')
     .eq('id', user.id)
     .single()
+
+  // 온보딩 게이트: 전화번호가 없으면(메타데이터 동기화도 실패 시) 입력 페이지로 유도.
+  // 기존 조회에 phone만 얹어 추가 왕복 없이 판정한다. 소급 수집 대상(기존 회원·소셜)도 여기서 걸린다.
+  const phone = await ensureOnboardedPhone(
+    adminClient,
+    user.id,
+    (profile as { phone?: string | null } | null)?.phone ?? null,
+    user.user_metadata,
+  )
+  if (!phone) redirect(buildPhoneGateRedirect('/dashboard'))
 
   const name     = profile?.name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '회원'
   const initials = name[0].toUpperCase()
