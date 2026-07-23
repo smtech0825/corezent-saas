@@ -23,7 +23,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | null>(null)
   const [error, setError] = useState('')
   // 미인증(이메일 확인 전) 계정으로 로그인 시도 시 재전송 경로 노출
   const [needsConfirm, setNeedsConfirm] = useState(false)
@@ -80,8 +80,8 @@ export default function LoginForm() {
     router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(redirect)}`)
   }
 
-  // OAuth 로그인 (Google / GitHub)
-  async function handleOAuth(provider: 'google' | 'github') {
+  // OAuth 로그인 (Kakao / Google / GitHub)
+  async function handleOAuth(provider: 'google' | 'github' | 'kakao') {
     setOauthLoading(provider)
     setError('')
 
@@ -121,6 +121,12 @@ export default function LoginForm() {
 
           {/* OAuth 버튼 */}
           <div className="flex flex-col gap-3 mb-6">
+            <AuthSocialButton
+              provider="kakao"
+              label="카카오로 시작하기"
+              loading={oauthLoading === 'kakao'}
+              onClick={() => handleOAuth('kakao')}
+            />
             <AuthSocialButton
               provider="google"
               label="Google로 계속하기"

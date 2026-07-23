@@ -23,7 +23,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | 'kakao' | null>(null)
   const [error, setError] = useState('')
 
   const supabase = createClient()
@@ -86,7 +86,7 @@ export default function RegisterForm() {
   }
 
   // OAuth 가입
-  async function handleOAuth(provider: 'google' | 'github') {
+  async function handleOAuth(provider: 'google' | 'github' | 'kakao') {
     setOauthLoading(provider)
     setError('')
 
@@ -126,6 +126,12 @@ export default function RegisterForm() {
 
           {/* OAuth 버튼 */}
           <div className="flex flex-col gap-3 mb-6">
+            <AuthSocialButton
+              provider="kakao"
+              label="카카오로 시작하기"
+              loading={oauthLoading === 'kakao'}
+              onClick={() => handleOAuth('kakao')}
+            />
             <AuthSocialButton
               provider="google"
               label="Google로 가입하기"

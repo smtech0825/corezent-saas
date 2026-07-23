@@ -2,13 +2,14 @@
 
 /**
  * @컴포넌트: AuthSocialButton
- * @설명: Google / GitHub OAuth 버튼 공통 컴포넌트
+ * @설명: 소셜 OAuth 버튼 공통 컴포넌트 (Google / GitHub / Kakao)
+ *        카카오는 브랜드 가이드(#FEE500 배경 + 공식 심볼 + 검정 텍스트)를 준수한다.
  */
 
 import { Loader2 } from 'lucide-react'
 
 interface Props {
-  provider: 'google' | 'github'
+  provider: 'google' | 'github' | 'kakao'
   label: string
   loading: boolean
   onClick: () => void
@@ -29,17 +30,27 @@ const GitHubIcon = () => (
   </svg>
 )
 
+// 카카오 공식 심볼(말풍선) — 브랜드 가이드상 배경 #FEE500 위 검정 심볼
+const KakaoIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#191919" d="M12 3.5C6.94 3.5 2.84 6.72 2.84 10.69c0 2.52 1.66 4.73 4.16 6.01-.18.66-.66 2.4-.76 2.77-.12.46.17.45.36.33.15-.1 2.33-1.58 3.28-2.23.68.1 1.38.15 2.12.15 5.06 0 9.16-3.22 9.16-7.19S17.06 3.5 12 3.5z"/>
+  </svg>
+)
+
 export default function AuthSocialButton({ provider, label, loading, onClick }: Props) {
+  // 카카오는 브랜드 컬러(#FEE500) 채움 버튼, 나머지는 페이퍼 아웃라인 버튼
+  const isKakao = provider === 'kakao'
+  const cls = isKakao
+    ? 'w-full flex items-center justify-center gap-2 bg-[#FEE500] hover:brightness-95 text-[#191919] text-sm font-semibold py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+    : 'w-full flex items-center justify-center gap-3 bg-paper-raised border border-rule hover:border-pen/40 hover:bg-paper-shade text-ink text-sm font-medium py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="w-full flex items-center justify-center gap-3 bg-paper-raised border border-rule hover:border-pen/40 hover:bg-paper-shade text-ink text-sm font-medium py-3 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-    >
+    <button type="button" onClick={onClick} disabled={loading} className={cls}>
       {loading
-        ? <Loader2 size={16} className="animate-spin text-pen" />
-        : provider === 'google' ? <GoogleIcon /> : <GitHubIcon />
+        ? <Loader2 size={16} className={`animate-spin ${isKakao ? 'text-[#191919]' : 'text-pen'}`} />
+        : provider === 'google' ? <GoogleIcon />
+        : provider === 'github' ? <GitHubIcon />
+        : <KakaoIcon />
       }
       {label}
     </button>

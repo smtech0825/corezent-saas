@@ -7,8 +7,10 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
+import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -50,6 +52,15 @@ export async function GET(request: Request) {
       const isFreshSignup = Number.isFinite(createdMs) && Date.now() - createdMs <= NEW_SIGNUP_WINDOW_MS
       if (u && isFreshSignup) {
         await attributeReferralOnSignup(u.id, cookieStore.get(REF_COOKIE)?.value)
+      }
+      // 소셜 전화번호 자동 수집 — profiles.phone이 비어 있을 때만(카카오/네이버 등).
+      // 실패해도 가입은 진행되고 온보딩 게이트가 소급 수집(검수 전에도 배포 가능).
+      if (u) {
+        try {
+          await syncProviderPhoneIfMissing(createAdminClient(), u, data.session)
+        } catch (err) {
+          console.error('[callback] provider phone sync 실패:', err)
+        }
       }
       return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
