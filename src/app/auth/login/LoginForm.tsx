@@ -88,11 +88,16 @@ export default function LoginForm() {
     // 네이버는 Supabase Custom OAuth Provider 식별자(custom:naver)로 위임
     const oauthProvider = provider === 'naver' ? 'custom:naver' : provider
 
+    const options: { redirectTo: string; scopes?: string } = {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=${redirect}`,
+    }
+    // 카카오 기본 scope에 포함되는 profile_image(동의항목 미설정 시 "Invalid scope" 오류)를
+    // 피하기 위해 실제로 필요한 항목만 명시 요청한다.
+    if (provider === 'kakao') options.scopes = 'account_email profile_nickname'
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: oauthProvider,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=${redirect}`,
-      },
+      options,
     })
 
     if (error) {
@@ -130,12 +135,8 @@ export default function LoginForm() {
               loading={oauthLoading === 'kakao'}
               onClick={() => handleOAuth('kakao')}
             />
-            <AuthSocialButton
-              provider="naver"
-              label="네이버로 시작하기"
-              loading={oauthLoading === 'naver'}
-              onClick={() => handleOAuth('naver')}
-            />
+            {/* 네이버: Supabase 일반 OAuth2가 네이버의 중첩 응답(response.email)에서 email을 못 읽어
+                로그인 실패 → userinfo 브리지 구현 전까지 버튼 숨김(핸들러·매퍼는 유지). */}
             <AuthSocialButton
               provider="google"
               label="Google로 계속하기"
