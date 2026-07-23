@@ -177,8 +177,8 @@ export default function RegisterForm() {
             <div className="flex-1 h-px bg-rule" />
           </div>
 
-          {/* 이메일 폼 */}
-          <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          {/* 이메일 폼 (자동완성 차단 — 가입 화면은 항상 빈칸으로 시작) */}
+          <form onSubmit={handleRegister} autoComplete="off" className="flex flex-col gap-4">
             <div>
               <label className="block text-sm text-ink-soft mb-1.5">이름</label>
               <input
@@ -187,6 +187,7 @@ export default function RegisterForm() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="이름을 입력하세요"
                 required
+                autoComplete="off"
                 className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
@@ -199,6 +200,7 @@ export default function RegisterForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoComplete="off"
                 className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
@@ -208,7 +210,7 @@ export default function RegisterForm() {
               <input
                 type="tel"
                 inputMode="numeric"
-                autoComplete="tel"
+                autoComplete="off"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="010-1234-5678"
@@ -234,6 +236,7 @@ export default function RegisterForm() {
                   placeholder="8자 이상 입력하세요"
                   required
                   minLength={8}
+                  autoComplete="new-password"
                   className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                 />
                 <button

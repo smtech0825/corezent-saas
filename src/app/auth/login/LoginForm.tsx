@@ -6,13 +6,16 @@
  *        이메일+비밀번호, Google OAuth, GitHub OAuth 지원
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
+
+/** "아이디 저장" 이메일 보관 localStorage 키 */
+const SAVED_EMAIL_KEY = 'corezent_saved_email'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -28,8 +31,21 @@ export default function LoginForm() {
   // 미인증(이메일 확인 전) 계정으로 로그인 시도 시 재전송 경로 노출
   const [needsConfirm, setNeedsConfirm] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+  // "아이디 저장" — 체크 시에만 이메일을 localStorage에 보관하고 다음 방문 시 채운다.
+  const [rememberId, setRememberId] = useState(false)
 
   const supabase = createClient()
+
+  // 저장된 아이디(이메일) 불러오기 — 저장돼 있을 때만 채우고 체크박스도 켠다.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SAVED_EMAIL_KEY)
+      if (saved) {
+        setEmail(saved)
+        setRememberId(true)
+      }
+    } catch { /* localStorage 접근 불가 시 무시 */ }
+  }, [])
 
   // 이메일+비밀번호 로그인
   async function handleEmailLogin(e: React.FormEvent) {
@@ -56,6 +72,12 @@ export default function LoginForm() {
       setLoading(false)
       return
     }
+
+    // "아이디 저장" 처리 — 체크 시 이메일 보관, 아니면 제거(다음 방문 시 빈칸)
+    try {
+      if (rememberId) localStorage.setItem(SAVED_EMAIL_KEY, email)
+      else localStorage.removeItem(SAVED_EMAIL_KEY)
+    } catch { /* localStorage 접근 불가 시 무시 */ }
 
     router.push(redirect)
     router.refresh()
@@ -164,8 +186,8 @@ export default function LoginForm() {
             <div className="flex-1 h-px bg-rule" />
           </div>
 
-          {/* 이메일 폼 */}
-          <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
+          {/* 이메일 폼 (자동완성 차단 — 저장은 "아이디 저장"으로만 제어) */}
+          <form onSubmit={handleEmailLogin} autoComplete="off" className="flex flex-col gap-4">
             <div>
               <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
               <input
@@ -174,6 +196,7 @@ export default function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoComplete="off"
                 className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
               />
             </div>
@@ -192,6 +215,7 @@ export default function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  autoComplete="off"
                   className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
                 />
                 <button
@@ -203,6 +227,17 @@ export default function LoginForm() {
                 </button>
               </div>
             </div>
+
+            {/* 아이디 저장 */}
+            <label className="flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberId}
+                onChange={(e) => setRememberId(e.target.checked)}
+                className="w-4 h-4 rounded border-rule text-pen focus:ring-2 focus:ring-pen/30"
+              />
+              아이디 저장
+            </label>
 
             {error && (
               <p className="text-sm text-seal bg-seal/5 border border-seal/30 rounded-md px-4 py-2.5">
