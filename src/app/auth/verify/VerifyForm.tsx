@@ -35,7 +35,8 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
     return () => clearTimeout(t)
   }, [cooldown])
 
-  const isValidCode = /^\d{6}$/.test(code)
+  // Supabase 이메일 OTP 길이는 설정에 따라 6~8자리로 달라질 수 있어 고정하지 않는다(하드코딩 금지).
+  const isValidCode = /^\d{6,8}$/.test(code)
 
   // 인증코드 확인 → 자동 로그인
   async function handleVerify(e: React.FormEvent) {
@@ -44,7 +45,7 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
     setInfo('')
 
     if (!isValidCode) {
-      setError('6자리 숫자 코드를 입력해 주세요.')
+      setError('이메일로 받은 인증 코드(숫자)를 입력해 주세요.')
       return
     }
 
@@ -125,7 +126,7 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
         <h1 className="text-2xl font-serif font-black text-ink mb-2 text-center">이메일 인증</h1>
         <p className="text-ink-soft text-sm leading-relaxed mb-8 text-center">
           <span className="text-ink font-medium break-all">{email}</span>
-          {' '}주소로 보낸<br />6자리 인증 코드를 입력해 주세요.
+          {' '}주소로 보낸<br />인증 코드를 입력해 주세요.
         </p>
 
         <form onSubmit={handleVerify} className="flex flex-col gap-4">
@@ -136,11 +137,11 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
               inputMode="numeric"
               autoComplete="one-time-code"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder="인증 코드 입력"
               required
               autoFocus
-              maxLength={6}
+              maxLength={8}
               className="w-full bg-paper-raised border border-rule rounded-md px-4 py-3 text-center text-lg tracking-[0.4em] font-mono text-ink placeholder:text-ink-faint placeholder:tracking-[0.4em] focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"
             />
           </div>
