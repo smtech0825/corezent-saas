@@ -101,16 +101,17 @@ export default function RegisterForm() {
     // 네이버는 Supabase Custom OAuth Provider 식별자(custom:naver)로 위임
     const oauthProvider = provider === 'naver' ? 'custom:naver' : provider
 
-    const options: { redirectTo: string; scopes?: string } = {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    }
-    // 카카오 기본 scope에 포함되는 profile_image(동의항목 미설정 시 "Invalid scope" 오류)를
-    // 피하기 위해 실제로 필요한 항목만 명시 요청한다.
-    if (provider === 'kakao') options.scopes = 'account_email profile_nickname'
-
+    // ⚠️ 카카오 scope 주의: Supabase(GoTrue) 내장 Kakao provider는
+    //    account_email·profile_image·profile_nickname을 "기본 scope로 하드코딩"하고,
+    //    클라이언트가 넘긴 scopes는 덮어쓰지 않고 뒤에 덧붙이기만 한다.
+    //    → 프론트에서 profile_image를 제거할 수 없다. "Invalid scope: profile_image"는
+    //    카카오 디벨로퍼스 > 카카오 로그인 > 동의항목에서 '프로필 사진'을 사용(선택 동의)으로
+    //    설정해야 사라진다(코드로 해결 불가). 그래서 여기서 scopes를 지정하지 않는다.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: oauthProvider,
-      options,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      },
     })
 
     if (error) {
