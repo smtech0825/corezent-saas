@@ -68,7 +68,7 @@ export function licenseClientFor(product?: SupabaseProduct) {
 
 // ─── 타입 ────────────────────────────────────────────────────────────────
 
-export type Tier = 'lite' | 'pro' | 'max' | '1pc' | '3pc' | '5pc' | '10pc'
+export type Tier = 'lite' | 'pro' | 'max' | `${number}pc`
 export type SupabaseProduct = 'geniestock' | 'geniework'
 
 export interface SupabaseLicense {
@@ -89,14 +89,28 @@ export interface HwidEntry {
 
 // ─── 티어별 HWID 한도 ─────────────────────────────────────────────────────
 
-export const HWID_LIMITS: Record<Tier, number> = {
+/** 고정 티어(GenieStock)의 PC 한도. */
+export const HWID_LIMITS: Record<string, number> = {
   lite: 1,
   pro:  2,
   max:  3,
-  '1pc':  1,
-  '3pc':  3,
-  '5pc':  5,
-  '10pc': 10,
+}
+
+/**
+ * tier → 등록 가능한 PC 대수.
+ *  - 'lite' | 'pro' | 'max'      : 위 표 그대로 (GenieStock 무변경)
+ *  - '1pc' · '30pc' 처럼 숫자+pc : 그 숫자 (GenieWork — 계약마다 자유)
+ *  - 그 밖의 알 수 없는 값        : 1 (지금 동작과 같다. 모르는 값에 문을 넓히지 않는다)
+ */
+export function hwidLimitForTier(tier: string): number {
+  const t = String(tier ?? '').toLowerCase().trim()
+  if (HWID_LIMITS[t] !== undefined) return HWID_LIMITS[t]
+  const m = /^(\d{1,4})pc$/.exec(t)
+  if (m) {
+    const n = parseInt(m[1], 10)
+    return n >= 1 ? n : 1
+  }
+  return 1
 }
 
 // ─── 조회 ────────────────────────────────────────────────────────────────
@@ -125,8 +139,10 @@ export async function findLicenseByKey(
     if (!data) return null
 
     const rawTier = String(data.tier ?? '').toLowerCase().trim()
-    const validTiers: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
-    const tier: Tier = validTiers.includes(rawTier) ? (rawTier as Tier) : 'lite'
+    // 'lite'|'pro'|'max' 또는 숫자+pc(GenieWork 자유 대수)만 인정한다.
+    const isValidTier =
+      rawTier === 'lite' || rawTier === 'pro' || rawTier === 'max' || /^\d{1,4}pc$/.test(rawTier)
+    const tier: Tier = isValidTier ? (rawTier as Tier) : 'lite'
 
     const rawProduct = String(data.product ?? 'geniestock').toLowerCase().trim()
     const productResolved: SupabaseProduct = rawProduct === 'geniework' ? 'geniework' : 'geniestock'
@@ -230,7 +246,7 @@ export async function registerHwid(
     if (!license) return { ok: false, reason: 'NOT_FOUND' }
 
     // 티어별 동시 한도(동시한도는 코드 유지 — tier 문자열이 단일 출처)
-    const limit = HWID_LIMITS[license.tier]
+    const limit = hwidLimitForTier(license.tier)
 
     // ── GenieWork: 원자적 RPC로 처리(직렬화로 TOCTOU 차단 + 분당 rate limit) ──
     //    "카운트→insert"를 DB 함수 한 트랜잭션(키 단위 advisory lock)에서 수행하므로
