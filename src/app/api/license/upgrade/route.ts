@@ -138,11 +138,14 @@ async function upgradeSupabase(
     if (!result.ok) {
       // 분당 호출 한도 초과 — 429로 구분
       if (result.reason === 'RATE_LIMITED') {
+        // RPC가 계산한 '다음 슬롯까지 남은 초'. 없으면 윈도우 크기(60초)로 폴백.
+        const retryAfter = result.retryAfter && result.retryAfter > 0 ? result.retryAfter : 60
         return NextResponse.json({
           success: false,
           error: '요청이 너무 잦아요. 잠시 후 다시 시도해주세요.',
           errorCode: 'RATE_LIMITED',
-        }, { status: 429 })
+          retryAfter,
+        }, { status: 429, headers: { 'Retry-After': String(retryAfter) } })
       }
       // 동시 PC 한도 초과 — 기존 UX 유지
       if (result.reason === 'HWID_LIMIT_REACHED') {

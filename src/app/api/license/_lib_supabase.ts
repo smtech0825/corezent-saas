@@ -236,7 +236,7 @@ export async function registerHwid(
   hwid: string,
   product?: SupabaseProduct,
   deviceName?: string,
-): Promise<{ ok: boolean; reason?: string }> {
+): Promise<{ ok: boolean; reason?: string; retryAfter?: number }> {
   const k = key?.trim()
   const h = hwid?.trim()
   if (!k || !h) return { ok: false, reason: 'INVALID_INPUT' }
@@ -264,8 +264,9 @@ export async function registerHwid(
         console.error('[supabase-license] register_geniework_hwid RPC error:', maskPgUniqueViolation(error))
         throw new Error(`HWID 등록 실패: ${error.message}`)
       }
-      const res = (data ?? {}) as { ok?: boolean; reason?: string }
-      return { ok: Boolean(res.ok), reason: res.reason }
+      const res = (data ?? {}) as { ok?: boolean; reason?: string; retry_after?: number }
+      // RATE_LIMITED 시 RPC가 계산한 '다음 슬롯까지 남은 초'를 그대로 전달(429 Retry-After용).
+      return { ok: Boolean(res.ok), reason: res.reason, retryAfter: res.retry_after }
     }
 
     // ── GenieStock(기존) — read-then-insert 경로. 변경 없음. ──
