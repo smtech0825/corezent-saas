@@ -65,6 +65,7 @@ export default function Navbar() {
     { label: '회사소개', href: '/about' },
     { label: '제품', href: '/product' },
     { label: '요금', href: '/pricing' },
+    { label: '기관 도입', href: '/public-sector' },
     { label: '업데이트 내역', href: '/changelog' },
     { label: '매뉴얼', href: '/docs' },
     { label: '블로그', href: '/blog' },
