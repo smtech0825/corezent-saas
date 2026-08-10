@@ -2,9 +2,12 @@
 
 /**
  * @컴포넌트: OnboardingChecklist
- * @설명: 결제 후 첫 로그인 회원용 '시작하기' 체크리스트 (다운로드 → 설치 → 인증 → 첫 사용).
+ * @설명: 결제 후 첫 로그인 회원용 '시작하기' 체크리스트
+ *        (다운로드 → 설치 → 라이선스 인증 → AI 키 등록 → 첫 사용).
+ *        각 단계 문구는 지니워크 사용 설명서 "01. 시작하기"의 실제 절차를 따른다
+ *        (설치·인증·AI 키 등록 3가지). 설명서에 없는 내용은 넣지 않는다.
  *        - ① 다운로드는 기존 데이터(hasDownloaded=licenses.last_downloaded_version)로 자동 판정.
- *        - ②③④(설치·인증·첫 사용)는 자동 판정이 불가해 수동 체크 + 안내 링크로 제공.
+ *        - 나머지는 앱 안에서 일어나는 일이라 자동 판정이 불가해 수동 체크 + 안내 링크로 제공.
  *        - 수동 체크·닫기 상태는 localStorage에 저장(브라우저 기준, DB/마이그레이션 없음).
  *        - 라이선스가 없거나(구매 전) 닫은 경우 표시하지 않는다.
  */
@@ -12,13 +15,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { Check, Download, Package, KeyRound, Rocket, X } from 'lucide-react'
+import { Check, Download, Package, KeyRound, Rocket, Settings, X } from 'lucide-react'
 
 const LS_DISMISS = 'cz_onboarding_dismissed'
 const LS_STEPS = 'cz_onboarding_steps'
 
-type ManualSteps = { install: boolean; activate: boolean; firstUse: boolean }
-const DEFAULT_STEPS: ManualSteps = { install: false, activate: false, firstUse: false }
+type ManualSteps = { install: boolean; activate: boolean; aiKey: boolean; firstUse: boolean }
+const DEFAULT_STEPS: ManualSteps = { install: false, activate: false, aiKey: false, firstUse: false }
 
 interface Item {
   key: string
@@ -72,16 +75,18 @@ export default function OnboardingChecklist({
   if (!hasLicense || !mounted || dismissed) return null
 
   const items: Item[] = [
+    // 문구 근거: 지니워크 사용 설명서 "01. 시작하기" — 설치 → 라이선스 인증 → AI 키 등록.
     { key: 'download', label: '앱 다운로드', desc: '구매한 제품의 설치파일을 내려받으세요.', icon: Download, done: hasDownloaded, href: '/dashboard/licenses', hrefLabel: '다운로드하러 가기', mkey: null },
-    { key: 'install',  label: '설치',        desc: '내려받은 설치파일을 실행해 설치하세요.', icon: Package,  done: steps.install,  mkey: 'install' },
-    { key: 'activate', label: '라이선스 인증', desc: '앱에 라이선스 키를 입력해 인증하세요.', icon: KeyRound, done: steps.activate, href: '/activate', hrefLabel: '인증 방법 보기', mkey: 'activate' },
-    { key: 'firstUse', label: '첫 사용',      desc: '인증이 끝나면 바로 사용할 수 있어요.',   icon: Rocket,   done: steps.firstUse, mkey: 'firstUse' },
+    { key: 'install',  label: '설치',        desc: '설치파일을 두 번 눌러 실행하세요. 관리자 권한은 필요 없습니다.', icon: Package, done: steps.install, mkey: 'install' },
+    { key: 'activate', label: '라이선스 인증', desc: '앱을 처음 켜면 나오는 인증 화면에 라이선스 키를 입력하세요.', icon: KeyRound, done: steps.activate, href: '/dashboard/licenses', hrefLabel: '내 라이선스 키 복사하기', mkey: 'activate' },
+    { key: 'aiKey',    label: 'AI 키 등록',   desc: '앱의 설정 → API 키 탭에서 본인 AI 키를 등록하세요. 앱은 자체 AI 키를 갖고 있지 않습니다.', icon: Settings, done: steps.aiKey, mkey: 'aiKey' },
+    { key: 'firstUse', label: '첫 사용',      desc: '여기까지 마치면 바로 사용할 수 있어요.', icon: Rocket, done: steps.firstUse, mkey: 'firstUse' },
   ]
 
   const doneCount = items.filter((i) => i.done).length
   const allDone = doneCount === items.length
 
-  // 4단계 모두 완료 시 자동으로 한 줄로 접는다(펼치기 전까지). 닫기(×)는 그대로 유지.
+  // 전 단계 완료 시 자동으로 한 줄로 접는다(펼치기 전까지). 닫기(×)는 그대로 유지.
   if (allDone && !expanded) {
     return (
       <div className="bg-paper-raised border border-mark/30 rounded-xl px-5 py-2.5 mb-8 flex items-center justify-between gap-4">
