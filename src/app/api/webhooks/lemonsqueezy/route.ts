@@ -35,7 +35,7 @@ import {
 import { accrueCommission, reverseCommissionsBySource } from '@/lib/affiliate-commission'
 import { logNotification } from '@/lib/notification-log'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
-import { maskSecret } from '@/lib/mask'
+import { maskSecret, maskSecretsInText } from '@/lib/mask'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
@@ -197,7 +197,8 @@ async function notifyWebhookFailure(
     }
 
     // 본문에는 원인 파악에 필요한 최소 정보만 넣는다. 전체 페이로드·비밀값은 넣지 않는다.
-    const message = String(err).slice(0, 500)
+    // DB 중복키 오류 메시지에는 라이선스 키 값이 그대로 들어오므로 값만 가려서 내보낸다.
+    const message = maskSecretsInText(String(err)).slice(0, 500)
     const html = `<!DOCTYPE html><html lang="ko"><body style="font-family:Arial,sans-serif;color:#23272E;">
   <h2 style="margin:0 0 16px;font-size:18px;">결제 웹훅 처리 실패</h2>
   <table cellpadding="6" style="border-collapse:collapse;font-size:14px;">
@@ -286,14 +287,16 @@ export async function POST(req: NextRequest) {
       status: 'failure',
       event:  eventName ?? null,
       target: payload.data?.id ? String(payload.data.id) : null,
-      error:  String(err),
+      // 관리자 로그 화면에 남는 값이라 메일과 같은 기준으로 가린다.
+      error:  maskSecretsInText(String(err)),
     })
     // 관리자 메일 알림(best-effort — 발송 실패해도 아래 응답/재전송 흐름 불변)
     await notifyWebhookFailure(eventName, payload.data?.id ? String(payload.data.id) : null, err)
     // 500 반환 → LS 재전송 유도(부분 실패 삼킴 제거). 모든 주요 INSERT는 order_id/sub_id/order_id 기준
     // 멱등이라 재전송에 안전. 사용자 미존재·상품 미매칭 등 재시도로 해결 불가한 케이스는 핸들러가
     // throw 대신 return으로 정상 종료(200)하므로 여기에 도달하지 않는다(무한 재전송 방지).
-    return NextResponse.json({ received: false, error: String(err) }, { status: 500 })
+    // 응답 본문도 외부(LS 대시보드)에 남으므로 같은 기준으로 가린다.
+    return NextResponse.json({ received: false, error: maskSecretsInText(String(err)) }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })

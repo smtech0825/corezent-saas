@@ -16,6 +16,20 @@ export function maskSecret(value: string, visible = 4): string {
 }
 
 /**
+ * @함수명: maskSecretsInText
+ * @설명: 오류 메시지 "문자열"에 섞여 나오는 값을 maskSecret으로 가립니다.
+ *        maskPgUniqueViolation은 에러 객체(code 23505)용이라, 이미 문자열로 바뀐
+ *        메시지(메일 본문·로그 기록 등)에는 이 함수를 씁니다.
+ * @매개변수: text - 가릴 원본 메시지
+ * @반환값: 값만 가려진 메시지 (무엇이 잘못됐는지는 그대로 남는다)
+ */
+export function maskSecretsInText(text: string): string {
+  // Postgres 23505는 "Key (serial_key)=(ABCD-1234-...) already exists." 처럼 실제 값을
+  // 메시지 안에 그대로 담는다. 값 부분만 가리고 나머지 문장은 남긴다.
+  return text.replace(/=\(([^)]*)\)/g, (_m, value: string) => `=(${maskSecret(value, 4)})`)
+}
+
+/**
  * @함수명: maskPgUniqueViolation
  * @설명: Postgres UNIQUE 제약 위반(SQLSTATE 23505)은 detail에 실제 컬럼값을 그대로 담아
  *        반환한다(예: "Key (license_key)=(ABCD-1234-...) already exists."). 이 코드일 때만
