@@ -817,19 +817,75 @@ async function handleSubscriptionStatusChange(payload: LSWebhookPayload, status:
 
 // ─── order_refunded 핸들러 ────────────────────────────────────────────────────
 
+/**
+ * @함수명: deactivateExternalLicensesByLsOrder
+ * @설명: 본체 orders/licenses 행이 없을 때, LS 주문번호로 라이선스 키를 되찾아
+ *        외부 라이선스 DB(GenieStock 공유 / GenieWork 전용)에서 비활성화한다.
+ *        본체 DB를 거치지 않으므로 주문 행이 지워진 뒤에도 환불된 키를 정지할 수 있다.
+ *        어떤 실패도 예외로 올리지 않는다 — 환불 웹훅이 500으로 떨어져 재전송이
+ *        폭주하는 것을 막기 위해서다(이번 39건 실패의 원인이 그것이었다).
+ * @매개변수: lsOrderId - Lemon Squeezy 주문 ID
+ * @반환값: 없음(항상 정상 종료)
+ */
+async function deactivateExternalLicensesByLsOrder(lsOrderId: string) {
+  try {
+    const keys = await fetchLsLicenseKeys(lsOrderId)
+    if (keys.length === 0) {
+      console.warn(`[LS Webhook] 환불 — LS에서 라이선스 키를 찾지 못해 외부 DB 비활성화 생략 (order_id=${lsOrderId})`)
+      return
+    }
+    for (const key of keys) {
+      try {
+        const found = await supaFindLicenseInAnyDb(key)
+        if (!found) {
+          console.warn(`[LS Webhook] 환불 — 외부 DB에 없는 키라 비활성화 생략: ${maskSecret(key, 8)}`)
+          continue
+        }
+        const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+        await supaSetLicenseActive(key, false, p)
+        console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화(주문 미발견 경로): ${maskSecret(key, 8)}`)
+      } catch (keyErr) {
+        // 키 하나가 실패해도 나머지는 계속 처리한다.
+        console.error(`[LS Webhook] 환불 — 키 비활성화 실패(계속 진행): ${maskSecret(key, 8)}`, keyErr)
+      }
+    }
+  } catch (err) {
+    console.error(`[LS Webhook] 환불 — 외부 DB 비활성화 시도 중 오류(무시) (order_id=${lsOrderId}):`, err)
+  }
+}
+
 async function handleOrderRefunded(payload: LSWebhookPayload) {
   const lsOrderId = String(payload.data.id)
   const admin = createAdminClient()
 
-  const { data: order, error } = await admin
+  // .single()을 쓰지 않는다: 주문이 0건이면 PostgREST가 에러를 내고 아래에서 그대로 throw되어
+  // 웹훅이 500 → LS가 무한 재전송한다(실제로 13개 주문에 39건 실패가 쌓였다).
+  // lemon_squeezy_order_id는 UNIQUE(003_orders_licenses.sql:12)라 최대 1행이므로 배열 첫 행이 곧 그 주문이다.
+  const { data: updatedOrders, error } = await admin
     .from('orders')
     .update({ status: 'refunded' })
     .eq('lemon_squeezy_order_id', lsOrderId)
     .select('id')
-    .single()
 
   if (error) throw new Error(`환불 처리 실패: ${error.message}`)
-  if (!order) return
+
+  const order = updatedOrders?.[0] ?? null
+
+  if (!order) {
+    // 주문 미발견 — 재전송해도 영원히 성공할 수 없으므로 경고만 남기고 정상 종료(200)한다.
+    // status는 'success'로 기록한다: 실패 알림(메일) 대상에서 제외하기 위한 경고 수준 기록이다.
+    // (notification_logs.status는 success|failure만 허용 — 034_notification_logs.sql:14)
+    console.warn(`[LS Webhook] 환불 대상 주문 없음 — 본체 주문·라이선스 갱신 건너뜀 (order_id=${lsOrderId})`)
+    await logNotification({
+      kind:   'webhook',
+      status: 'success',
+      event:  'order_refunded_order_not_found',
+      target: lsOrderId,
+    })
+    // 본체에 행이 없어도 외부 라이선스 DB는 LS 주문번호로 키를 되찾아 정지할 수 있다.
+    await deactivateExternalLicensesByLsOrder(lsOrderId)
+    return
+  }
 
   // 수량 N 주문이면 라이선스 N개 전부 revoke
   const { data: lics } = await admin
