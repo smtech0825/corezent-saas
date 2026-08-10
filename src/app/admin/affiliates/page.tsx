@@ -9,6 +9,7 @@ import { getAffiliateConfig } from '@/lib/affiliate'
 import { formatKRW } from '@/lib/money'
 import ConfigEditor from './ConfigEditor'
 import { ConvertButton, IssueDiscountForm, ResolveButton } from './AffiliateActions'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,7 +84,7 @@ export default async function AdminAffiliatesPage() {
   const minWon = cfg ? String(Math.round(cfg.min_payout_credit / 100)) : '5000'
 
   return (
-    <div className="p-6 space-y-8 max-w-6xl">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">제휴 관리</h1>
         <p className="text-sm text-ink-soft mt-1">프로그램 규칙 설정, 커미션 전환, 어뷰징 검토, 크레딧 할인 발급.</p>
@@ -169,7 +170,7 @@ export default async function AdminAffiliatesPage() {
           <p className="text-sm text-ink-faint bg-paper-raised border border-rule rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }
 

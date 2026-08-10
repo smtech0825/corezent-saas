@@ -5,6 +5,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +36,7 @@ export default async function LogsPage() {
   const logs = (data ?? []) as LogRow[]
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">모니터링 로그</h1>
         <p className="text-sm text-ink-soft mt-1">이메일 발송·웹훅 처리 결과 (최근 200건).</p>
@@ -88,6 +89,6 @@ export default async function LogsPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -13,6 +13,7 @@ import {
   TrendingUp, TrendingDown, UserPlus,
 } from 'lucide-react'
 import ChurnAnalysis, { type CancelEntry } from './ChurnAnalysis'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,7 +170,7 @@ export default async function AdminPage() {
   }))
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+    <PageContainer variant="admin" className="space-y-6">
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">개요</h1>
@@ -336,7 +337,7 @@ export default async function AdminPage() {
 
       {/* Churn Analysis */}
       <ChurnAnalysis entries={cancelEntries} />
-    </div>
+    </PageContainer>
   )
 }
 

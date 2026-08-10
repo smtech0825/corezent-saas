@@ -9,6 +9,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,7 +101,7 @@ export default async function RevenuePage() {
   mrrCents = Math.round(mrrCents)
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">매출 리포트</h1>
         <p className="text-sm text-ink-soft mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
@@ -157,7 +158,7 @@ export default async function RevenuePage() {
           </div>
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }
 

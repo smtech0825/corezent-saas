@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Search, ChevronLeft, ChevronRight, Ban, X } from 'lucide-react'
+import PageContainer from '@/components/common/PageContainer'
 
 export interface License {
   id: string
@@ -125,7 +126,7 @@ export default function LicenseTable({ licenses }: Props) {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">라이선스</h1>
@@ -317,6 +318,6 @@ export default function LicenseTable({ licenses }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

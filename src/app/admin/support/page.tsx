@@ -6,6 +6,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Pagination from '@/components/common/Pagination'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +78,7 @@ export default async function SupportPage({
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">고객지원 티켓</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -172,6 +173,6 @@ export default async function SupportPage({
         pageSize={PAGE_SIZE}
         buildHref={buildHref}
       />
-    </div>
+    </PageContainer>
   )
 }

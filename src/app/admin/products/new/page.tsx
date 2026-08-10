@@ -11,6 +11,7 @@ import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import ProductForm, { type ProductFormData } from '../ProductForm'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,7 +102,7 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
 
 export default function NewProductPage() {
   return (
-    <div className="p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <Link href="/admin/products" className="text-sm text-ink-faint hover:text-ink-soft transition-colors">
           ← 제품 목록으로
@@ -111,6 +112,6 @@ export default function NewProductPage() {
       </div>
 
       <ProductForm onSubmit={createProduct} submitLabel="제품 생성" />
-    </div>
+    </PageContainer>
   )
 }

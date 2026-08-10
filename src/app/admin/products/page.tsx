@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react'
 import ProductList, { type ProductRow } from './ProductList'
 import { formatPrice } from '@/lib/price'
 import { logAdminActivity } from '@/lib/adminActivityLog'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,7 +102,7 @@ export default async function ProductsPage() {
   })
 
   return (
-    <div className="p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-serif text-ink">제품</h1>
@@ -125,6 +126,6 @@ export default async function ProductsPage() {
       ) : (
         <ProductList products={list} onDelete={deleteProduct} />
       )}
-    </div>
+    </PageContainer>
   )
 }

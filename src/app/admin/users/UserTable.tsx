@@ -12,6 +12,7 @@ import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronR
 import RoleSelect from './RoleSelect'
 import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
+import PageContainer from '@/components/common/PageContainer'
 
 const PAGE_SIZE = 20
 
@@ -152,7 +153,7 @@ export default function UserTable({ users }: Props) {
   }, [page, totalPages])
 
   return (
-    <div className="p-4 sm:p-6 space-y-5">
+    <PageContainer variant="admin" className="space-y-6">
 
       {/* ── 헤더 + 검색바 ─────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -456,6 +457,6 @@ export default function UserTable({ users }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

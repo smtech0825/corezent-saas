@@ -13,6 +13,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, Download, Check, Loader2 } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
+import PageContainer from '@/components/common/PageContainer'
 
 const PAGE_SIZE = 15
 
@@ -175,7 +176,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
   for (let i = pageStart; i <= pageEnd; i++) pageNums.push(i)
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       {/* 헤더 — Total Revenue를 왼쪽 하단으로 이동 */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -386,6 +387,6 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

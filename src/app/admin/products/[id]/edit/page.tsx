@@ -13,6 +13,7 @@ import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import { logAdminActivity } from '@/lib/adminActivityLog'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -264,7 +265,7 @@ export default async function EditProductPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <PageContainer variant="admin" className="space-y-6">
       <div>
         <Link href="/admin/products" className="text-sm text-ink-faint hover:text-ink-soft transition-colors">
           ← 제품 목록으로
@@ -276,6 +277,6 @@ export default async function EditProductPage({
       <ProductForm initialData={initialData} onSubmit={updateProduct} submitLabel="변경사항 저장" />
 
       <ChangelogSection productId={id} initialChangelogs={changelogs} />
-    </div>
+    </PageContainer>
   )
 }
