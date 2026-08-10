@@ -209,13 +209,17 @@ export default async function LicensesPage({
                     <div>
                       {changelog ? (
                         <div className="flex flex-col items-start gap-1">
-                          {hasDownload && lic.product_id && (
+                          {hasDownload && lic.product_id ? (
                             <DownloadButton
                               productId={lic.product_id}
                               version={changelog.version}
                               downloadUrls={changelog.download_urls}
                               isNew={isNewVersion}
                             />
+                          ) : (
+                            /* 릴리스는 등록됐지만 설치파일 주소가 아직 없는 상태.
+                               버튼만 조용히 사라지면 "내 화면만 안 보이나" 싶으므로 이유를 남긴다. */
+                            <span className="text-[11px] text-ink-faint">설치파일 준비 중</span>
                           )}
                           {lic.products?.slug && (
                             <Link
