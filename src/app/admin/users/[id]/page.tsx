@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,108 +78,110 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const creditCurrency = (cfgRes.data?.currency as string | undefined) ?? 'USD'
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
-      {/* 헤더 */}
-      <div>
-        <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors">
-          <ArrowLeft size={14} /> 사용자 목록
-        </Link>
-        <h1 className="text-2xl font-bold font-serif text-ink mt-3">{profile.name || email}</h1>
+    <PageContainer variant="admin">
+      <div className="max-w-3xl space-y-6">
+        {/* 헤더 */}
+        <div>
+          <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors">
+            <ArrowLeft size={14} /> 사용자 목록
+          </Link>
+          <h1 className="text-2xl font-bold font-serif text-ink mt-3">{profile.name || email}</h1>
+        </div>
+
+        {/* 계정 */}
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">계정</h2>
+          <Row label="이메일">{email}</Row>
+          <Row label="이름">{profile.name || '—'}</Row>
+          <Row label="역할">{profile.role === 'admin' ? '관리자' : '사용자'}</Row>
+          <Row label="상태">{profile.status === 'inactive' ? '비활성(탈퇴)' : '활성'}</Row>
+          <Row label="가입일">{fmtDate(profile.created_at as string)}</Row>
+        </section>
+
+        {/* 구매 이력 */}
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">구매 이력 ({orders.length})</h2>
+          {orders.length === 0 ? (
+            <p className="text-sm text-ink-faint py-2">구매 내역이 없습니다.</p>
+          ) : (
+            orders.map((o) => (
+              <Link
+                key={o.id}
+                href={`/admin/orders/${o.id}`}
+                className="grid grid-cols-[1fr_auto_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0 hover:bg-paper-shade -mx-2 px-2 rounded transition-colors"
+              >
+                <span className="text-xs font-mono text-ink-soft">#{o.id.slice(0, 8).toUpperCase()}</span>
+                <span className="text-sm text-ink tabular-nums">{formatKRW(o.amount)}</span>
+                <span className="text-xs text-ink-faint whitespace-nowrap">{ORDER_STATUS[o.status] ?? o.status} · {fmtDate(o.created_at)}</span>
+              </Link>
+            ))
+          )}
+        </section>
+
+        {/* 보유 라이선스 */}
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">보유 라이선스 ({licenses.length})</h2>
+          {licenses.length === 0 ? (
+            <p className="text-sm text-ink-faint py-2">라이선스가 없습니다.</p>
+          ) : (
+            licenses.map((lic) => (
+              <div key={lic.id} className="grid grid-cols-[130px_1fr] gap-3 py-2.5 border-b border-rule last:border-0">
+                <span className="text-xs text-ink-faint font-mono pt-0.5">{maskKey(lic.serial_key)}</span>
+                <span className="text-sm text-ink">
+                  {lic.products?.name ?? '—'}
+                  <span className="text-ink-faint ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
+                  {lic.expires_at && <span className="text-ink-faint ml-2 text-xs">· 만료 {fmtDate(lic.expires_at)}</span>}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
+
+        {/* 구독 */}
+        {subs.length > 0 && (
+          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">구독 ({subs.length})</h2>
+            {subs.map((s) => (
+              <Row key={s.id} label={SUB_STATUS[s.status] ?? s.status}>
+                {s.billing_interval === 'annual' ? '연간' : s.billing_interval === 'monthly' ? '월간' : '—'}
+                {s.current_period_end && <span className="text-ink-faint ml-2 text-xs">· 갱신일 {fmtDate(s.current_period_end)}</span>}
+              </Row>
+            ))}
+          </section>
+        )}
+
+        {/* 문의 */}
+        {tickets.length > 0 && (
+          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">문의 ({tickets.length})</h2>
+            {tickets.map((t) => (
+              <div key={t.id} className="grid grid-cols-[1fr_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0">
+                <span className="text-sm text-ink truncate">{t.subject}</span>
+                <span className="text-xs text-ink-faint whitespace-nowrap">{TICKET_STATUS[t.status] ?? t.status} · {fmtDate(t.created_at)}</span>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* 제휴 (참여자만) */}
+        {profile.affiliate_code && (
+          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">제휴</h2>
+            <Row label="추천 코드"><span className="font-mono">{profile.affiliate_code as string}</span></Row>
+            <Row label="크레딧 잔액">{fmtCredit(creditCents, creditCurrency)}</Row>
+          </section>
+        )}
+
+        {/* 정산 계좌 (등록 시) — 지급 대조용 전체 표시 */}
+        {profile.payout_account_number && (
+          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">정산 계좌</h2>
+            <Row label="은행">{(profile.payout_bank as string) || '—'}</Row>
+            <Row label="계좌번호"><span className="font-mono">{profile.payout_account_number as string}</span></Row>
+            <Row label="예금주">{(profile.payout_account_holder as string) || '—'}</Row>
+          </section>
+        )}
       </div>
-
-      {/* 계정 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">계정</h2>
-        <Row label="이메일">{email}</Row>
-        <Row label="이름">{profile.name || '—'}</Row>
-        <Row label="역할">{profile.role === 'admin' ? '관리자' : '사용자'}</Row>
-        <Row label="상태">{profile.status === 'inactive' ? '비활성(탈퇴)' : '활성'}</Row>
-        <Row label="가입일">{fmtDate(profile.created_at as string)}</Row>
-      </section>
-
-      {/* 구매 이력 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">구매 이력 ({orders.length})</h2>
-        {orders.length === 0 ? (
-          <p className="text-sm text-ink-faint py-2">구매 내역이 없습니다.</p>
-        ) : (
-          orders.map((o) => (
-            <Link
-              key={o.id}
-              href={`/admin/orders/${o.id}`}
-              className="grid grid-cols-[1fr_auto_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0 hover:bg-paper-shade -mx-2 px-2 rounded transition-colors"
-            >
-              <span className="text-xs font-mono text-ink-soft">#{o.id.slice(0, 8).toUpperCase()}</span>
-              <span className="text-sm text-ink tabular-nums">{formatKRW(o.amount)}</span>
-              <span className="text-xs text-ink-faint whitespace-nowrap">{ORDER_STATUS[o.status] ?? o.status} · {fmtDate(o.created_at)}</span>
-            </Link>
-          ))
-        )}
-      </section>
-
-      {/* 보유 라이선스 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">보유 라이선스 ({licenses.length})</h2>
-        {licenses.length === 0 ? (
-          <p className="text-sm text-ink-faint py-2">라이선스가 없습니다.</p>
-        ) : (
-          licenses.map((lic) => (
-            <div key={lic.id} className="grid grid-cols-[130px_1fr] gap-3 py-2.5 border-b border-rule last:border-0">
-              <span className="text-xs text-ink-faint font-mono pt-0.5">{maskKey(lic.serial_key)}</span>
-              <span className="text-sm text-ink">
-                {lic.products?.name ?? '—'}
-                <span className="text-ink-faint ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
-                {lic.expires_at && <span className="text-ink-faint ml-2 text-xs">· 만료 {fmtDate(lic.expires_at)}</span>}
-              </span>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* 구독 */}
-      {subs.length > 0 && (
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-ink mb-2">구독 ({subs.length})</h2>
-          {subs.map((s) => (
-            <Row key={s.id} label={SUB_STATUS[s.status] ?? s.status}>
-              {s.billing_interval === 'annual' ? '연간' : s.billing_interval === 'monthly' ? '월간' : '—'}
-              {s.current_period_end && <span className="text-ink-faint ml-2 text-xs">· 갱신일 {fmtDate(s.current_period_end)}</span>}
-            </Row>
-          ))}
-        </section>
-      )}
-
-      {/* 문의 */}
-      {tickets.length > 0 && (
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-ink mb-2">문의 ({tickets.length})</h2>
-          {tickets.map((t) => (
-            <div key={t.id} className="grid grid-cols-[1fr_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0">
-              <span className="text-sm text-ink truncate">{t.subject}</span>
-              <span className="text-xs text-ink-faint whitespace-nowrap">{TICKET_STATUS[t.status] ?? t.status} · {fmtDate(t.created_at)}</span>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {/* 제휴 (참여자만) */}
-      {profile.affiliate_code && (
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-ink mb-2">제휴</h2>
-          <Row label="추천 코드"><span className="font-mono">{profile.affiliate_code as string}</span></Row>
-          <Row label="크레딧 잔액">{fmtCredit(creditCents, creditCurrency)}</Row>
-        </section>
-      )}
-
-      {/* 정산 계좌 (등록 시) — 지급 대조용 전체 표시 */}
-      {profile.payout_account_number && (
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-ink mb-2">정산 계좌</h2>
-          <Row label="은행">{(profile.payout_bank as string) || '—'}</Row>
-          <Row label="계좌번호"><span className="font-mono">{profile.payout_account_number as string}</span></Row>
-          <Row label="예금주">{(profile.payout_account_holder as string) || '—'}</Row>
-        </section>
-      )}
-    </div>
+    </PageContainer>
   )
 }

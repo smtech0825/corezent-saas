@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import OrderActions from './OrderActions'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,91 +110,93 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const badge = ORDER_STATUS[order.status as string] ?? { label: order.status as string, cls: 'text-ink-soft bg-paper-shade border-rule' }
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
-      {/* 헤더 */}
-      <div>
-        <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors">
-          <ArrowLeft size={14} /> 주문 목록
-        </Link>
-        <div className="flex items-center gap-3 mt-3">
-          <h1 className="text-2xl font-bold text-ink font-serif">주문 #{shortId}</h1>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>{badge.label}</span>
+    <PageContainer variant="admin">
+      <div className="max-w-3xl space-y-6">
+        {/* 헤더 */}
+        <div>
+          <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors">
+            <ArrowLeft size={14} /> 주문 목록
+          </Link>
+          <div className="flex items-center gap-3 mt-3">
+            <h1 className="text-2xl font-bold text-ink font-serif">주문 #{shortId}</h1>
+            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>{badge.label}</span>
+          </div>
         </div>
-      </div>
 
-      {/* 주문자 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">주문자</h2>
-        <Row label="이름">{name}</Row>
-        <Row label="이메일">{email}</Row>
-      </section>
-
-      {/* 주문 정보 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">주문 정보</h2>
-        <Row label="상품">
-          {productName}
-          {product?.slug && <span className="text-ink-faint ml-2 font-mono text-xs">{product.slug}</span>}
-        </Row>
-        <Row label="수량">{orderQuantity ?? '—'}</Row>
-        <Row label="금액">{formatKRW(order.amount as number)}</Row>
-        {discountAmount > 0 && (
-          <Row label="할인">
-            <span className="text-ok">-{formatKRW(discountAmount)}</span>
-            <span className="text-ink-faint ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
-          </Row>
-        )}
-        <Row label="통화">{(order.currency as string) ?? '—'}</Row>
-        <Row label="결제수단">—</Row>
-        <Row label="LS order_id"><span className="font-mono text-xs">{(order.lemon_squeezy_order_id as string) ?? '—'}</span></Row>
-        <Row label="주문일시">{fmtDateTime(order.created_at as string)}</Row>
-        <Row label="상태">{badge.label}</Row>
-      </section>
-
-      {/* 주문 처리 — 환불/구독취소 (실제 결제/구독 반영) */}
-      <OrderActions
-        orderId={order.id as string}
-        orderStatus={order.status as string}
-        hasLsOrderId={Boolean(order.lemon_squeezy_order_id)}
-        amountLabel={formatKRW(order.amount as number)}
-        canCancelSub={!!subscription && (subscription.status === 'active' || subscription.status === 'paused')}
-      />
-
-      {/* 발급 라이선스 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-ink mb-2">발급 라이선스</h2>
-        {licenses.length === 0 ? (
-          <p className="text-sm text-ink-faint py-2">발급된 라이선스가 없습니다.</p>
-        ) : (
-          licenses.map((lic) => (
-            <div key={lic.id} className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-rule/60 last:border-0">
-              <span className="text-xs text-ink-faint pt-0.5 font-mono">{maskKey(lic.serial_key)}</span>
-              <span className="text-sm text-ink">
-                {lic.products?.name ?? '—'}
-                <span className="text-ink-faint ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
-                {lic.expires_at && (
-                  <span className="text-ink-faint ml-2 text-xs">· 만료 {fmtDateTime(lic.expires_at)}</span>
-                )}
-              </span>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* 구독 (있을 때만) */}
-      {subscription && (
+        {/* 주문자 */}
         <section className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-ink mb-2">구독</h2>
-          <Row label="구독 상태">
-            {SUB_STATUS[subscription.status] ?? subscription.status}
-            {subscription.cancel_at_period_end && <span className="text-caution ml-2 text-xs">기간 말 취소 예약</span>}
-          </Row>
-          <Row label="주기">{subscription.billing_interval === 'annual' ? '연간' : subscription.billing_interval === 'monthly' ? '월간' : '—'}</Row>
-          <Row label="시작일">{fmtDateTime(subscription.current_period_start)}</Row>
-          <Row label="갱신일">{fmtDateTime(subscription.current_period_end)}</Row>
-          <Row label="LS sub_id"><span className="font-mono text-xs">{subscription.lemon_squeezy_subscription_id ?? '—'}</span></Row>
+          <h2 className="text-sm font-semibold text-ink mb-2">주문자</h2>
+          <Row label="이름">{name}</Row>
+          <Row label="이메일">{email}</Row>
         </section>
-      )}
-    </div>
+
+        {/* 주문 정보 */}
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">주문 정보</h2>
+          <Row label="상품">
+            {productName}
+            {product?.slug && <span className="text-ink-faint ml-2 font-mono text-xs">{product.slug}</span>}
+          </Row>
+          <Row label="수량">{orderQuantity ?? '—'}</Row>
+          <Row label="금액">{formatKRW(order.amount as number)}</Row>
+          {discountAmount > 0 && (
+            <Row label="할인">
+              <span className="text-ok">-{formatKRW(discountAmount)}</span>
+              <span className="text-ink-faint ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
+            </Row>
+          )}
+          <Row label="통화">{(order.currency as string) ?? '—'}</Row>
+          <Row label="결제수단">—</Row>
+          <Row label="LS order_id"><span className="font-mono text-xs">{(order.lemon_squeezy_order_id as string) ?? '—'}</span></Row>
+          <Row label="주문일시">{fmtDateTime(order.created_at as string)}</Row>
+          <Row label="상태">{badge.label}</Row>
+        </section>
+
+        {/* 주문 처리 — 환불/구독취소 (실제 결제/구독 반영) */}
+        <OrderActions
+          orderId={order.id as string}
+          orderStatus={order.status as string}
+          hasLsOrderId={Boolean(order.lemon_squeezy_order_id)}
+          amountLabel={formatKRW(order.amount as number)}
+          canCancelSub={!!subscription && (subscription.status === 'active' || subscription.status === 'paused')}
+        />
+
+        {/* 발급 라이선스 */}
+        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-ink mb-2">발급 라이선스</h2>
+          {licenses.length === 0 ? (
+            <p className="text-sm text-ink-faint py-2">발급된 라이선스가 없습니다.</p>
+          ) : (
+            licenses.map((lic) => (
+              <div key={lic.id} className="grid grid-cols-[120px_1fr] gap-3 py-2.5 border-b border-rule/60 last:border-0">
+                <span className="text-xs text-ink-faint pt-0.5 font-mono">{maskKey(lic.serial_key)}</span>
+                <span className="text-sm text-ink">
+                  {lic.products?.name ?? '—'}
+                  <span className="text-ink-faint ml-2 text-xs">{LICENSE_STATUS[lic.status] ?? lic.status}</span>
+                  {lic.expires_at && (
+                    <span className="text-ink-faint ml-2 text-xs">· 만료 {fmtDateTime(lic.expires_at)}</span>
+                  )}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
+
+        {/* 구독 (있을 때만) */}
+        {subscription && (
+          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">구독</h2>
+            <Row label="구독 상태">
+              {SUB_STATUS[subscription.status] ?? subscription.status}
+              {subscription.cancel_at_period_end && <span className="text-caution ml-2 text-xs">기간 말 취소 예약</span>}
+            </Row>
+            <Row label="주기">{subscription.billing_interval === 'annual' ? '연간' : subscription.billing_interval === 'monthly' ? '월간' : '—'}</Row>
+            <Row label="시작일">{fmtDateTime(subscription.current_period_start)}</Row>
+            <Row label="갱신일">{fmtDateTime(subscription.current_period_end)}</Row>
+            <Row label="LS sub_id"><span className="font-mono text-xs">{subscription.lemon_squeezy_subscription_id ?? '—'}</span></Row>
+          </section>
+        )}
+      </div>
+    </PageContainer>
   )
 }
