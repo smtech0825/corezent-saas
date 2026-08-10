@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import CtaEditor from './CtaEditor'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,7 @@ const defaults: Record<string, string> = {
 
 async function saveCta(data: Record<string, string>) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const rows = Object.entries(data).map(([key, value]) => ({
     key: `cta_${key}`,
@@ -63,6 +65,7 @@ export default async function CtaAdminPage() {
 
   async function handleSave(formData: typeof initial) {
     'use server'
+    await requireAdminOrThrow()
     await saveCta(formData)
   }
 

@@ -8,11 +8,13 @@ import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import FaqManager from './FaqManager'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
 async function createFaq(question: string, answer: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const { data: maxRow } = await adminClient
     .from('front_faqs')
@@ -32,6 +34,7 @@ async function createFaq(question: string, answer: string) {
 
 async function updateFaq(id: string, question: string, answer: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').update({ question, answer: sanitizeRichHtml(answer) }).eq('id', id)
   revalidatePath('/admin/content/faq')
@@ -41,6 +44,7 @@ async function updateFaq(id: string, question: string, answer: string) {
 
 async function deleteFaq(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').delete().eq('id', id)
   revalidatePath('/admin/content/faq')
@@ -50,6 +54,7 @@ async function deleteFaq(id: string) {
 
 async function toggleFaqPublish(id: string, published: boolean) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/faq')

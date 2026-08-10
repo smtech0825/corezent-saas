@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import StepsManager from './StepsManager'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,7 @@ type StepData = {
 
 async function createStep(data: StepData) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const { data: created } = await adminClient.from('front_steps').insert(data).select('id, icon, title, description, is_published, order_index').single()
   revalidatePath('/admin/content/how-it-works')
@@ -29,6 +31,7 @@ async function createStep(data: StepData) {
 
 async function updateStep(id: string, data: StepData) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_steps').update(data).eq('id', id)
   revalidatePath('/admin/content/how-it-works')
@@ -37,6 +40,7 @@ async function updateStep(id: string, data: StepData) {
 
 async function deleteStep(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_steps').delete().eq('id', id)
   revalidatePath('/admin/content/how-it-works')
@@ -45,6 +49,7 @@ async function deleteStep(id: string) {
 
 async function toggleStepPublish(id: string, published: boolean) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_steps').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/how-it-works')

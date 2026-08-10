@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache'
 import ReplyForm from './ReplyForm'
 import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,6 +62,7 @@ export default async function TicketDetailPage({
 
   async function handleReply(message: string, close: boolean) {
     'use server'
+    await requireAdminOrThrow()
     const client = createAdminClient()
     const serverClient = await createClient()
     const { data: { user: currentUser } } = await serverClient.auth.getUser()
@@ -92,6 +94,7 @@ export default async function TicketDetailPage({
 
   async function closeTicket() {
     'use server'
+    await requireAdminOrThrow()
     const client = createAdminClient()
     await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
     revalidatePath(`/admin/support/${id}`)
@@ -99,6 +102,7 @@ export default async function TicketDetailPage({
 
   async function reopenTicket() {
     'use server'
+    await requireAdminOrThrow()
     const client = createAdminClient()
     await client.from('support_tickets').update({ status: 'open' }).eq('id', id)
     revalidatePath(`/admin/support/${id}`)

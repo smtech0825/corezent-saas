@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import BannerEditor from './BannerEditor'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,7 @@ export default async function AnnouncementAdminPage() {
 
   async function handleSave(formData: typeof initial) {
     'use server'
+    await requireAdminOrThrow()
     const adminClient = createAdminClient()
     const rows = Object.entries(formData).map(([key, value]) => ({
       key: `banner_${key}`,

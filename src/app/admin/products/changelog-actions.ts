@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 import { revalidatePath } from 'next/cache'
 
 export interface ChangelogContent {
@@ -73,6 +74,7 @@ export async function upsertChangelog(
   data: ChangelogFormData,
   changelogId?: string
 ): Promise<{ error?: string; id?: string }> {
+  await requireAdminOrThrow()
   const client = createAdminClient()
 
   // 다운로드 URL: 빈 값 제거 + http/https 형식 검증 (서버가 최종 방어선)
@@ -122,6 +124,7 @@ export async function upsertChangelog(
 
 /** Changelog 삭제 */
 export async function deleteChangelog(changelogId: string): Promise<{ error?: string }> {
+  await requireAdminOrThrow()
   const client = createAdminClient()
   const { error } = await client.from('changelogs').delete().eq('id', changelogId)
   if (error) return { error: error.message }

@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import AboutManager from './AboutManager'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic'
 
 async function updateHero(title: string, description: string) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(콘텐츠 블록·제품 설명과 동일 규칙)
   const cleanDescription = sanitizeRichHtml(description)
@@ -32,6 +34,7 @@ type StatData = { icon: string; value: string; label: string }
 
 async function createStat(data: StatData) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   const { data: maxRow } = await c.from('front_about_stats').select('order_index').order('order_index', { ascending: false }).limit(1).single()
   const idx = (maxRow?.order_index ?? -1) + 1
@@ -44,6 +47,7 @@ async function createStat(data: StatData) {
 
 async function updateStat(id: string, data: StatData) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   await c.from('front_about_stats').update(data).eq('id', id)
   revalidatePath('/admin/content/about')
@@ -52,6 +56,7 @@ async function updateStat(id: string, data: StatData) {
 
 async function deleteStat(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   await c.from('front_about_stats').delete().eq('id', id)
   revalidatePath('/admin/content/about')
@@ -64,6 +69,7 @@ type BlockData = { title: string; description: string; images: string[] }
 
 async function createBlock(data: BlockData) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const clean = { ...data, description: sanitizeRichHtml(data.description) }
@@ -78,6 +84,7 @@ async function createBlock(data: BlockData) {
 
 async function updateBlock(id: string, data: BlockData) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const clean = { ...data, description: sanitizeRichHtml(data.description) }
@@ -88,6 +95,7 @@ async function updateBlock(id: string, data: BlockData) {
 
 async function deleteBlock(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const c = createAdminClient()
   await c.from('front_about_blocks').delete().eq('id', id)
   revalidatePath('/admin/content/about')

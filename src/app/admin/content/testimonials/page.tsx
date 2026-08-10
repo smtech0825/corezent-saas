@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import TestimonialsManager from './TestimonialsManager'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,7 @@ type TestimonialData = {
 
 async function createTestimonial(data: TestimonialData) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const { data: created, error } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
   if (error) console.error('[createTestimonial]', error)
@@ -31,6 +33,7 @@ async function createTestimonial(data: TestimonialData) {
 
 async function updateTestimonial(id: string, data: TestimonialData) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').update(data).eq('id', id)
   revalidatePath('/admin/content/testimonials')
@@ -39,6 +42,7 @@ async function updateTestimonial(id: string, data: TestimonialData) {
 
 async function deleteTestimonial(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').delete().eq('id', id)
   revalidatePath('/admin/content/testimonials')
@@ -47,6 +51,7 @@ async function deleteTestimonial(id: string) {
 
 async function toggleTestimonialPublish(id: string, published: boolean) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_interviews').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/testimonials')

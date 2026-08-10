@@ -7,11 +7,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import FeaturesManager from './FeaturesManager'
 import PageContainer from '@/components/common/PageContainer'
+import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
 async function createFeature(icon: string, tag: string, title: string, description: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const { data: maxRow } = await adminClient
     .from('front_features')
@@ -29,6 +31,7 @@ async function createFeature(icon: string, tag: string, title: string, descripti
 
 async function updateFeature(id: string, icon: string, tag: string, title: string, description: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_features').update({ icon, tag, title, description }).eq('id', id)
   revalidatePath('/admin/content/features')
@@ -37,6 +40,7 @@ async function updateFeature(id: string, icon: string, tag: string, title: strin
 
 async function deleteFeature(id: string) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_features').delete().eq('id', id)
   revalidatePath('/admin/content/features')
@@ -45,6 +49,7 @@ async function deleteFeature(id: string) {
 
 async function toggleFeaturePublish(id: string, published: boolean) {
   'use server'
+  await requireAdminOrThrow()
   const adminClient = createAdminClient()
   await adminClient.from('front_features').update({ is_published: published }).eq('id', id)
   revalidatePath('/admin/content/features')
