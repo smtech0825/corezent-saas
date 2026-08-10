@@ -16,7 +16,9 @@ type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank'
 
 const SECTION_KEYS: Record<Section, string[]> = {
   general: ['site_name', 'site_url', 'support_email', 'footer_copyright'],
-  footer:  ['footer_info'],
+  // 조달청 등록번호는 공공 구매담당자가 가장 먼저 찾는 값이라 푸터·기관 도입 페이지에 노출한다.
+  // front_settings는 key-value 구조라 컬럼 추가(마이그레이션) 없이 키만 늘리면 된다.
+  footer:  ['footer_info', 'procurement_item_number', 'procurement_class_number'],
   seo:     ['seo_ga_tracking_id', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords'],
   smtp:    ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name'],
   bank:    ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder'],
@@ -179,6 +181,26 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           />
           <p className="text-xs text-ink-faint mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
         </div>
+
+        <Field label="조달청 물품식별번호">
+          <input
+            value={values.procurement_item_number ?? ''}
+            onChange={(e) => update('procurement_item_number', e.target.value)}
+            placeholder="예: 26391406"
+            className={INPUT_CLS}
+          />
+        </Field>
+        <Field label="조달청 물품분류번호">
+          <input
+            value={values.procurement_class_number ?? ''}
+            onChange={(e) => update('procurement_class_number', e.target.value)}
+            placeholder="예: 43232698"
+            className={INPUT_CLS}
+          />
+        </Field>
+        <p className="text-xs text-ink-faint">
+          입력하면 푸터와 기관 도입 페이지에 표시됩니다. 비워 두면 그 줄이 아예 나오지 않습니다.
+        </p>
       </SectionCard>
 
       {/* ── SEO Settings ─────────────────────────────────────────────────── */}

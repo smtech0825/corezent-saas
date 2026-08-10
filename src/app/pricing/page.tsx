@@ -4,6 +4,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -137,6 +138,24 @@ export default async function PricingPage() {
 
       <main>
         <PricingClient products={products} />
+
+        {/* 기관 예산으로 구매하는 경로 안내 — 공공기관 담당자가 요금만 보고 이탈하지 않게 한다 */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
+          <div className="border border-rule bg-paper-raised rounded-2xl px-6 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">기관 예산으로 도입하시나요?</p>
+              <p className="text-sm text-ink-soft mt-1">
+                대수별 요금, 조달청 등록 정보, 견적 요청을 한 페이지에 모아두었습니다.
+              </p>
+            </div>
+            <Link
+              href="/public-sector"
+              className="shrink-0 inline-flex items-center gap-1.5 bg-mark text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:brightness-95 transition-colors"
+            >
+              기관 도입 안내 보기
+            </Link>
+          </div>
+        </div>
       </main>
 
       <Footer />

@@ -31,10 +31,17 @@ export default async function Footer() {
   const { data: rows } = await adminClient
     .from('front_settings')
     .select('key, value')
-    .in('key', ['footer_info', 'footer_copyright'])
+    .in('key', ['footer_info', 'footer_copyright', 'procurement_item_number', 'procurement_class_number'])
 
   const map = new Map((rows ?? []).map((r) => [r.key, r.value ?? '']))
   const footerInfo  = map.get('footer_info') ?? ''
+  // 조달청 등록번호 — 값이 없으면 줄 자체를 렌더하지 않는다(빈칸·"-" 노출 금지)
+  const itemNo  = (map.get('procurement_item_number') ?? '').trim()
+  const classNo = (map.get('procurement_class_number') ?? '').trim()
+  const procurement = [
+    itemNo  ? `조달청 물품식별번호: ${itemNo}` : '',
+    classNo ? `물품분류번호: ${classNo}` : '',
+  ].filter(Boolean).join(' | ')
   const copyright   = map.get('footer_copyright') ?? `© ${new Date().getFullYear()} CoreZent Inc. All rights reserved.`
 
   return (
@@ -86,7 +93,12 @@ export default async function Footer() {
 
         {/* 하단 바 — 사업자 정보 */}
         <div className="mt-12 pt-8 border-t border-rule flex flex-col sm:flex-row justify-between items-start gap-4">
-          <p className="text-xs text-ink-faint shrink-0">{copyright}</p>
+          <div className="shrink-0">
+            <p className="text-xs text-ink-faint">{copyright}</p>
+            {procurement && (
+              <p className="text-xs text-ink-faint mt-1 font-mono">{procurement}</p>
+            )}
+          </div>
           {footerInfo && (
             <p
               className="text-xs text-ink-faint sm:text-right"
