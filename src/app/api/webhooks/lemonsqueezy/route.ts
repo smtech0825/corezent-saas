@@ -161,7 +161,12 @@ async function notifyWebhookFailure(
 ): Promise<void> {
   try {
     const admin = createAdminClient()
-    const subject = `[CoreZent] 결제 웹훅 실패 — ${eventName ?? 'unknown'}`
+    // 중복 방지 기준에 주문 식별자를 포함한다. 이벤트 종류만으로 묶으면 다른 주문이 같은
+    // 종류로 실패했을 때 두 번째 알림이 통째로 사라져 진짜 사고를 놓친다.
+    // 식별자를 알 수 없는 실패는 서로 구분할 방법이 없으므로 한 묶음('식별자 없음')으로 다룬다
+    // — 매번 다른 제목을 만들면 폭주 방지가 사라지기 때문이다.
+    const subjectKey = dataId ?? '식별자 없음'
+    const subject = `[CoreZent] 결제 웹훅 실패 — ${eventName ?? 'unknown'} (${subjectKey})`
 
     // 수신 주소: 설정에 없으면 알림을 건너뛰되 그 사실을 남긴다.
     const { data: setting } = await admin
