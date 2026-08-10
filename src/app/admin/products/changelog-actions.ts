@@ -38,6 +38,35 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
+/**
+ * @함수명: unsetOtherLatest
+ * @설명: 방금 저장한 항목을 "최신"으로 켰다면, 같은 제품의 다른 항목에서 최신 표시를 끈다.
+ *        제품 하나에 최신이 둘 이상 켜져 있으면 화면이 어느 쪽을 고를지 알 수 없기 때문이다.
+ *        product_id로 범위를 좁히므로 다른 제품의 최신 표시는 건드리지 않는다.
+ *        기존 데이터를 일괄 정리하지는 않는다 — 저장하는 시점부터 적용된다.
+ * @매개변수: client - service role 클라이언트 / productId - 대상 제품 / isLatest - 이번에 켰는지
+ *            keepId - 방금 저장한 항목 id(이건 켠 채로 둔다)
+ * @반환값: 없음(실패해도 저장 자체는 성공으로 둔다)
+ */
+async function unsetOtherLatest(
+  client: ReturnType<typeof createAdminClient>,
+  productId: string,
+  isLatest: boolean,
+  keepId?: string,
+): Promise<void> {
+  if (!isLatest || !keepId) return
+  const { error } = await client
+    .from('changelogs')
+    .update({ is_latest: false })
+    .eq('product_id', productId)
+    .eq('is_latest', true)
+    .neq('id', keepId)
+  if (error) {
+    // 저장은 이미 끝났다. 여기서 실패해도 되돌리지 않고 로그만 남긴다.
+    console.error('[changelog] 이전 최신 표시 해제 실패:', error.message)
+  }
+}
+
 /** Changelog 추가 또는 수정 */
 export async function upsertChangelog(
   productId: string,
@@ -72,6 +101,7 @@ export async function upsertChangelog(
   if (changelogId) {
     const { error } = await client.from('changelogs').update(payload).eq('id', changelogId)
     if (error) return { error: error.message }
+    await unsetOtherLatest(client, productId, data.is_latest, changelogId)
   } else {
     const { error, data: inserted } = await client
       .from('changelogs')
@@ -79,6 +109,7 @@ export async function upsertChangelog(
       .select('id')
       .single()
     if (error) return { error: error.message }
+    await unsetOtherLatest(client, productId, data.is_latest, inserted?.id as string | undefined)
     revalidatePath('/admin/products')
     revalidatePath('/changelog')
     return { id: inserted?.id as string }

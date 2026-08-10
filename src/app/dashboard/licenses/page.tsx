@@ -91,11 +91,14 @@ export default async function LicensesPage({
 
   const changelogMap = new Map<string, { version: string; download_urls: Record<string, string> }>()
   if (productIds.length > 0) {
+    // 한 제품에 '최신'이 둘 이상 켜진 과거 데이터가 있어도 실제 최신이 잡히도록 정렬한다.
+    // 오래된 것부터 받아 같은 제품을 덮어쓰면, 마지막에 남는 값이 릴리스 날짜가 가장 늦은 항목이 된다.
     const { data: changelogs } = await supabase
       .from('changelogs')
-      .select('product_id, version, download_urls')
+      .select('product_id, version, release_date, download_urls')
       .in('product_id', productIds)
       .eq('is_latest', true)
+      .order('release_date', { ascending: true })
 
     ;(changelogs ?? []).forEach((c: Record<string, unknown>) => {
       changelogMap.set(c.product_id as string, {
