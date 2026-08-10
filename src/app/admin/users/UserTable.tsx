@@ -296,15 +296,17 @@ export default function UserTable({ users }: Props) {
                             <Receipt size={14} />
                           </IconBtn>
 
-                          {/* 탈퇴 처리 */}
-                          <IconBtn
+                          {/* 탈퇴 처리 — 되돌릴 수 없는 동작이라 아이콘 단독 노출을 피하고
+                              테두리형 + 위험색 글자로 안전한 버튼과 구분한다 */}
+                          <button
                             onClick={() => setWithdrawTarget(u)}
                             disabled={u.status === 'inactive'}
-                            tooltip={u.status === 'inactive' ? '이미 탈퇴함' : '회원 탈퇴'}
-                            danger
+                            aria-label={u.status === 'inactive' ? `${u.email} 이미 탈퇴함` : `${u.email} 회원 탈퇴`}
+                            className="inline-flex items-center gap-1.5 text-xs text-danger border border-danger/20 hover:border-danger/40 hover:bg-danger-soft px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-danger/20 disabled:hover:bg-transparent"
                           >
-                            <UserX size={14} />
-                          </IconBtn>
+                            <UserX size={12} />
+                            탈퇴
+                          </button>
                         </div>
                       </td>
                     </tr>
