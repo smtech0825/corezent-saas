@@ -53,6 +53,24 @@ function payLabel(method: string): string {
 }
 
 /**
+ * @함수명: nextStepHint
+ * @설명: 주문 상태에서 "다음에 무슨 일이 일어나는지"를 한 줄로 돌려준다.
+ *        orders.status의 실제 값(pending·paid·refunded·cancelled·pending_deposit)만 쓰고
+ *        새 상태를 만들지 않는다. 처리 시간은 확인된 안내 문구가 없어 언급하지 않는다.
+ * @매개변수: orderStatus - orders.status 값
+ * @반환값: 안내 문구. 설명이 필요 없는 상태(paid 등)는 null
+ */
+function nextStepHint(orderStatus: string): string | null {
+  switch (orderStatus) {
+    case 'pending_deposit': return '입금이 확인되면 라이선스가 발급됩니다.'
+    case 'pending':         return '결제 확인 후 라이선스가 발급됩니다.'
+    case 'refunded':        return '환불 처리되어 라이선스가 회수되었습니다.'
+    case 'cancelled':       return '취소된 주문입니다. 발급된 라이선스가 없습니다.'
+    default:                return null   // paid — 별도 안내 불필요
+  }
+}
+
+/**
  * @함수명: rowStatus
  * @설명: 주문·구독 상태를 통합 표시 배지로 정규화한다. 주문 종결상태(환불·입금대기) 우선 →
  *        구독이 있으면 파생 상태(활성/취소 예약/일시정지/해지/만료) → 아니면 주문 상태.
@@ -181,8 +199,13 @@ export default function BillingTable({ rows }: Props) {
                 <span className="text-sm text-ink font-medium tabular-nums">{formatKRW(row.amount)}</span>
                 {/* 결제수단 */}
                 <span className="text-xs text-ink-soft">{payLabel(row.paymentMethod)}</span>
-                {/* 상태 */}
-                <span className={`text-xs px-2.5 py-1 rounded-full border font-medium text-center ${badge.cls}`}>{badge.label}</span>
+                {/* 상태 — 배지 + 다음에 무슨 일이 일어나는지 한 줄 */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`text-xs px-2.5 py-1 rounded-full border font-medium text-center ${badge.cls}`}>{badge.label}</span>
+                  {nextStepHint(row.orderStatus) && (
+                    <span className="text-[11px] text-ink-faint text-center leading-snug">{nextStepHint(row.orderStatus)}</span>
+                  )}
+                </div>
                 {/* 관리 */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link href="/dashboard/licenses" className="inline-flex items-center gap-1.5 text-xs text-mark hover:text-ink border border-mark/40 hover:border-mark/60 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
@@ -226,6 +249,9 @@ export default function BillingTable({ rows }: Props) {
                 <div className="text-right shrink-0">
                   <p className="text-sm text-ink font-medium">{formatKRW(row.amount)}</p>
                   <span className={`inline-block mt-1 text-xs px-2.5 py-1 rounded-full border font-medium ${badge.cls}`}>{badge.label}</span>
+                  {nextStepHint(row.orderStatus) && (
+                    <p className="text-[11px] text-ink-faint mt-1 leading-snug max-w-[160px]">{nextStepHint(row.orderStatus)}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-rule">
