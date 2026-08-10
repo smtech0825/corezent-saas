@@ -77,8 +77,14 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
   async function handleDelete(id: string, question: string) {
     if (!confirm(`FAQ "${question}"을(를) 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
-      await onDelete(id)
-      setItems((prev) => prev.filter((f) => f.id !== id))
+      // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
+      try {
+        await onDelete(id)
+        setItems((prev) => prev.filter((f) => f.id !== id))
+      } catch (err) {
+        console.error('[FAQ 삭제 실패]', err)
+        alert('FAQ 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      }
     })
   }
 

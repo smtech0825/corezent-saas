@@ -140,9 +140,21 @@ export default function UserTable({ users }: Props) {
   async function handleWithdraw() {
     if (!withdrawTarget) return
     setWithdrawing(true)
-    await withdrawUser(withdrawTarget.id)
-    setWithdrawing(false)
-    setWithdrawTarget(null)
+    try {
+      const result = await withdrawUser(withdrawTarget.id)
+      if (result?.error) {
+        // 실패하면 확인 창을 닫지 않는다 — 닫히면 처리된 것으로 오해한다.
+        alert(`탈퇴 처리에 실패했습니다.\n${result.error}`)
+        return
+      }
+      setWithdrawTarget(null)
+    } catch (err) {
+      console.error('[UserTable] 탈퇴 처리 실패:', err)
+      alert('탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      // 성공·실패·예외 어느 쪽이든 "처리 중…"에 갇히지 않게 한다.
+      setWithdrawing(false)
+    }
   }
 
   // ─── 페이지 번호 목록 (최대 5개) ─────────────────────────────

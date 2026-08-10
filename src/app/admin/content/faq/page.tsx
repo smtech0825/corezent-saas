@@ -46,7 +46,8 @@ async function deleteFaq(id: string) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_faqs').delete().eq('id', id)
+  const { error } = await adminClient.from('front_faqs').delete().eq('id', id)
+  if (error) throw new Error(`FAQ 삭제 실패: ${error.message}`)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')

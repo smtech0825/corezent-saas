@@ -202,8 +202,14 @@ export default function AboutManager({
   function handleDeleteStat(id: string, label: string) {
     if (!confirm(`통계 "${label}"을(를) 삭제할까요?\n\n소개 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
-      await onDeleteStat(id)
-      setStats((prev) => prev.filter((s) => s.id !== id))
+      // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
+      try {
+        await onDeleteStat(id)
+        setStats((prev) => prev.filter((s) => s.id !== id))
+      } catch (err) {
+        console.error('[통계 삭제 실패]', err)
+        alert('통계 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      }
     })
   }
 
@@ -235,8 +241,14 @@ export default function AboutManager({
   function handleDeleteBlock(id: string, title: string) {
     if (!confirm(`블록 "${title}"을(를) 삭제할까요?\n\n안에 담긴 이미지까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
-      await onDeleteBlock(id)
-      setBlocks((prev) => prev.filter((b) => b.id !== id))
+      // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
+      try {
+        await onDeleteBlock(id)
+        setBlocks((prev) => prev.filter((b) => b.id !== id))
+      } catch (err) {
+        console.error('[블록 삭제 실패]', err)
+        alert('블록 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      }
     })
   }
 

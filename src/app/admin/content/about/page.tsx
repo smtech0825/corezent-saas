@@ -58,7 +58,8 @@ async function deleteStat(id: string) {
   'use server'
   await requireAdminOrThrow()
   const c = createAdminClient()
-  await c.from('front_about_stats').delete().eq('id', id)
+  const { error } = await c.from('front_about_stats').delete().eq('id', id)
+  if (error) throw new Error(`통계 삭제 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }
@@ -97,7 +98,8 @@ async function deleteBlock(id: string) {
   'use server'
   await requireAdminOrThrow()
   const c = createAdminClient()
-  await c.from('front_about_blocks').delete().eq('id', id)
+  const { error } = await c.from('front_about_blocks').delete().eq('id', id)
+  if (error) throw new Error(`블록 삭제 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }

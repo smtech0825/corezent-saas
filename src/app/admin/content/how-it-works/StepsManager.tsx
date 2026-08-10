@@ -106,8 +106,14 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
   async function handleDelete(id: string, title: string) {
     if (!confirm(`단계 "${title}"을(를) 삭제할까요?\n\n랜딩 페이지의 도입 절차에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
-      await onDelete(id)
-      setItems((prev) => prev.filter((s) => s.id !== id))
+      // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
+      try {
+        await onDelete(id)
+        setItems((prev) => prev.filter((s) => s.id !== id))
+      } catch (err) {
+        console.error('[단계 삭제 실패]', err)
+        alert('단계 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      }
     })
   }
 

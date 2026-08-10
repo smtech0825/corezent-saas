@@ -42,7 +42,8 @@ async function deleteFeature(id: string) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_features').delete().eq('id', id)
+  const { error } = await adminClient.from('front_features').delete().eq('id', id)
+  if (error) throw new Error(`특징 삭제 실패: ${error.message}`)
   revalidatePath('/admin/content/features')
   revalidatePath('/')
 }

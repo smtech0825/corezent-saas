@@ -64,6 +64,7 @@ export default function RoleSelect({ userId, userEmail, currentRole, onChange }:
       value={role}
       onChange={handleChange}
       disabled={saving}
+      aria-label={userEmail?.trim() ? `${userEmail.trim()} 권한 변경` : '사용자 권한 변경'}
       className="bg-paper border border-rule text-ink-soft text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-mark cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <option value="user">사용자</option>

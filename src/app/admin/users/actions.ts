@@ -15,11 +15,13 @@ import { logAdminActivity } from '@/lib/adminActivityLog'
 /** 역할 변경 */
 export async function changeRole(userId: string, newRole: string) {
   const actorId = await requireAdminOrThrow()
-  if (!userId || !newRole) return
+  // 실패는 조용히 넘기지 않는다 — 화면이 "바뀐 것처럼" 보이면 관리자가 잘못 알게 된다.
+  if (!userId || !newRole) throw new Error('역할 변경 실패: 대상 또는 역할 값이 비어 있습니다.')
   const adminClient = createAdminClient()
 
   const { data: before } = await adminClient.from('profiles').select('role').eq('id', userId).single()
-  await adminClient.from('profiles').update({ role: newRole }).eq('id', userId)
+  const { error: updateError } = await adminClient.from('profiles').update({ role: newRole }).eq('id', userId)
+  if (updateError) throw new Error(`역할 변경 실패: ${updateError.message}`)
 
   await logAdminActivity({
     adminUserId: actorId,

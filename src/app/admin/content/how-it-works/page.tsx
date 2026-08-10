@@ -42,7 +42,8 @@ async function deleteStep(id: string) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_steps').delete().eq('id', id)
+  const { error } = await adminClient.from('front_steps').delete().eq('id', id)
+  if (error) throw new Error(`단계 삭제 실패: ${error.message}`)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
 }
