@@ -23,10 +23,14 @@ export function ConvertButton({ referrerId }: { referrerId: string }) {
   return (
     <div className="flex flex-col items-end gap-1">
       <button
-        onClick={() => start(async () => {
-          try { const r = await convertCommissionsAction(referrerId); setMsg({ ok: r.ok, text: r.message }) }
-          catch { setMsg({ ok: false, text: '처리 실패 (030 적용·권한 확인)' }) }
-        })}
+        onClick={() => {
+          // 커미션이 크레딧으로 옮겨가면 사람 손 없이는 되돌릴 수 없다 → 실행 전 재확인.
+          if (!confirm('이 제휴자의 전환 가능한 커미션을 스토어 크레딧으로 전환할까요?\n\n전환된 커미션은 원래대로 되돌릴 수 없습니다.')) return
+          start(async () => {
+            try { const r = await convertCommissionsAction(referrerId); setMsg({ ok: r.ok, text: r.message }) }
+            catch { setMsg({ ok: false, text: '처리 실패 (030 적용·권한 확인)' }) }
+          })
+        }}
         disabled={pending}
         className="inline-flex items-center gap-1.5 bg-mark/10 border border-mark/30 text-mark hover:bg-mark/20 disabled:opacity-60 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
       >
@@ -50,6 +54,9 @@ export function IssueDiscountForm({ userId }: { userId: string }) {
       setMsg({ ok: false, text: '금액을 입력하세요.' })
       return
     }
+    // 크레딧 차감 + 할인코드 발급은 되돌릴 수 없다 → 금액을 다시 보여주고 확인받는다.
+    const won = (cents / 100).toLocaleString('ko-KR')
+    if (!confirm(`₩${won} 만큼 할인코드를 발급할까요?\n\n같은 금액이 이 회원의 스토어 크레딧에서 차감되며 되돌릴 수 없습니다.`)) return
     start(async () => {
       try {
         const r = await issueCreditDiscountAction(userId, cents)

@@ -91,8 +91,8 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
     })
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('이 특징을 삭제할까요?')) return
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`특징 "${title}"을(를) 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((f) => f.id !== id))
@@ -150,7 +150,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                 <button onClick={() => startEdit(feature)} title="특징 수정" aria-label="특징 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => handleDelete(feature.id)} title="특징 삭제" aria-label="특징 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
+                <button onClick={() => handleDelete(feature.id, feature.title)} title="특징 삭제" aria-label="특징 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
                   <Trash2 size={13} />
                 </button>
               </div>

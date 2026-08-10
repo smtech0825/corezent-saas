@@ -160,8 +160,8 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
   }
 
   // ─── 삭제 ─────────────────────────────────────────────────────
-  async function handleDelete(id: string) {
-    if (!confirm('이 변경 이력 항목을 삭제하시겠습니까?')) return
+  async function handleDelete(id: string, version: string) {
+    if (!confirm(`버전 ${version}의 변경 이력을 삭제할까요?\n\n다운로드 링크까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     setDeletingId(id)
     const result = await deleteChangelog(id)
     if (result.error) { alert(result.error); setDeletingId(null); return }
@@ -227,7 +227,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(entry.id)}
+                      onClick={() => handleDelete(entry.id, entry.version)}
                       disabled={deletingId === entry.id}
                       className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors disabled:opacity-40"
                     >

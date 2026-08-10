@@ -103,8 +103,8 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
     })
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('이 단계를 삭제할까요?')) return
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`단계 "${title}"을(를) 삭제할까요?\n\n랜딩 페이지의 도입 절차에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((s) => s.id !== id))
@@ -153,7 +153,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
                 <button onClick={() => startEdit(s)} title="단계 수정" aria-label="단계 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => handleDelete(s.id)} title="단계 삭제" aria-label="단계 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
+                <button onClick={() => handleDelete(s.id, s.title)} title="단계 삭제" aria-label="단계 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
                   <Trash2 size={13} />
                 </button>
               </div>

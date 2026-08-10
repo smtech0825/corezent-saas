@@ -271,7 +271,7 @@ export default function UserTable({ users }: Props) {
 
                       {/* 역할 변경 드롭다운 */}
                       <td className="px-4 py-3">
-                        <RoleSelect userId={u.id} currentRole={u.role} onChange={changeRole} />
+                        <RoleSelect userId={u.id} userEmail={u.email} currentRole={u.role} onChange={changeRole} />
                       </td>
 
                       {/* 액션 버튼 */}

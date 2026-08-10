@@ -271,8 +271,8 @@ export default function TestimonialsManager({
     })
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('이 고객 후기를 삭제할까요?')) return
+  async function handleDelete(id: string, authorName: string) {
+    if (!confirm(`${authorName}님의 고객 후기를 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await onDelete(id)
       setItems((prev) => prev.filter((t) => t.id !== id))
@@ -375,7 +375,7 @@ export default function TestimonialsManager({
                   <Pencil size={13} />
                 </button>
                 <button
-                  onClick={() => handleDelete(t.id)}
+                  onClick={() => handleDelete(t.id, t.author_name)}
                   title="후기 삭제"
                   aria-label="후기 삭제"
                   className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"

@@ -199,8 +199,8 @@ export default function AboutManager({
     })
   }
 
-  function handleDeleteStat(id: string) {
-    if (!confirm('이 통계를 삭제하시겠습니까?')) return
+  function handleDeleteStat(id: string, label: string) {
+    if (!confirm(`통계 "${label}"을(를) 삭제할까요?\n\n소개 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await onDeleteStat(id)
       setStats((prev) => prev.filter((s) => s.id !== id))
@@ -232,8 +232,8 @@ export default function AboutManager({
     })
   }
 
-  function handleDeleteBlock(id: string) {
-    if (!confirm('이 블록을 삭제하시겠습니까?')) return
+  function handleDeleteBlock(id: string, title: string) {
+    if (!confirm(`블록 "${title}"을(를) 삭제할까요?\n\n안에 담긴 이미지까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await onDeleteBlock(id)
       setBlocks((prev) => prev.filter((b) => b.id !== id))
@@ -295,7 +295,7 @@ export default function AboutManager({
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => startEditStat(s)} title="통계 수정" aria-label="통계 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
-                      <button onClick={() => handleDeleteStat(s.id)} title="통계 삭제" aria-label="통계 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
+                      <button onClick={() => handleDeleteStat(s.id, s.label)} title="통계 삭제" aria-label="통계 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 )}
@@ -364,7 +364,7 @@ export default function AboutManager({
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => startEditBlock(b)} title="블록 수정" aria-label="블록 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
-                        <button onClick={() => handleDeleteBlock(b.id)} title="블록 삭제" aria-label="블록 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
+                        <button onClick={() => handleDeleteBlock(b.id, b.title)} title="블록 삭제" aria-label="블록 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                       </div>
                     </div>
                   </div>
