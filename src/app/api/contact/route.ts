@@ -10,7 +10,8 @@ import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, inquiryEmailHtml } from '@/lib/email'
 
-const ADMIN_EMAIL = 'smtech.semi@gmail.com'
+/** 설정(front_settings.support_email)이 비어 있을 때만 쓰는 최후 폴백 — 기존 동작 보존용 */
+const FALLBACK_ADMIN_EMAIL = 'smtech.semi@gmail.com'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const RATE_LIMIT_WINDOW_MS = 60_000    // 1분 고정 윈도우
 const RATE_LIMIT_MAX = 3               // 1분에 최대 3회
@@ -151,8 +152,24 @@ export async function POST(request: NextRequest) {
 
   // ─── 이메일 발송 (실패해도 사용자에게는 성공 반환) ────────────
   try {
+    // 수신 주소는 설정에서 읽는다(웹훅 실패 알림과 같은 방식). 조회 실패·공란이면
+    // 기존에 쓰던 주소로 폴백해 문의 알림이 끊기지 않게 한다.
+    let adminEmail = FALLBACK_ADMIN_EMAIL
+    try {
+      const { data: setting } = await createAdminClient()
+        .from('front_settings')
+        .select('value')
+        .eq('key', 'support_email')
+        .maybeSingle()
+      const configured = (setting?.value ?? '').trim()
+      if (configured) adminEmail = configured
+      else console.warn('[Contact API] front_settings.support_email 미설정 — 기본 주소로 발송')
+    } catch (settingErr) {
+      console.warn('[Contact API] support_email 조회 실패 — 기본 주소로 발송:', settingErr)
+    }
+
     await sendEmail({
-      to: ADMIN_EMAIL,
+      to: adminEmail,
       subject: `[CoreZent Inquiry] ${subject}`,
       html: inquiryEmailHtml({ email, subject, message, attachmentName }),
       replyTo: email,

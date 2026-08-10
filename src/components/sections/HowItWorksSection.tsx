@@ -29,7 +29,9 @@ export default function HowItWorksSection({ steps }: Props) {
 
   return (
     <Section id="how-it-works">
-      <SectionHeader label="도입 절차" title="다운로드에서 사용까지, 네 단계" />
+      {/* 단계 수는 DB(front_steps)에서 오므로 제목의 숫자도 실제 행 수에서 만든다.
+          문구에 숫자를 박아두면 관리자가 단계를 추가·삭제할 때마다 다시 어긋난다. */}
+      <SectionHeader label="도입 절차" title={`다운로드에서 사용까지, ${items.length}단계`} />
 
       <div className="overflow-x-auto max-w-3xl mx-auto">
         <table className="w-full border-collapse text-sm sm:text-base">
