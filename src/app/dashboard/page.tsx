@@ -29,6 +29,8 @@ export default async function DashboardPage() {
     { count: orderTotal },
     { data: userLicenses },
     { count: downloadedCount },
+    { count: activeLicenseCount },
+    { count: pendingDepositCount },
   ] = await Promise.all([
     supabase
       .from('licenses')
@@ -63,6 +65,18 @@ export default async function DashboardPage() {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .not('last_downloaded_version', 'is', null),
+    // 개요 분기용 — 쓸 수 있는(활성) 라이선스 수. 화면에 숫자로 표시하지 않고 분기에만 쓴다.
+    supabase
+      .from('licenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'active'),
+    // 개요 분기용 — 입금 대기 주문 수 (044 마이그레이션의 pending_deposit)
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'pending_deposit'),
   ])
 
   // 활성 구독 = 파생 상태 active|cancelling (단일 출처). 목록은 최근 3개만 표시.
@@ -94,6 +108,20 @@ export default async function DashboardPage() {
 
   const name = user.user_metadata?.name ?? user.email?.split('@')[0] ?? '회원'
 
+  // ─── 개요 화면 분기 ────────────────────────────────────────────────────────
+  // 구매 판정은 기존 방법(라이선스 보유)을 그대로 쓴다. 새 기준을 만들지 않는다.
+  // 조회가 실패해 count가 null이어도 0으로 떨어져 빈 화면·오류가 되지 않는다.
+  const totalLicenses  = licenseCount ?? 0
+  const activeLicenses = activeLicenseCount ?? 0
+  const awaitingDeposit = (pendingDepositCount ?? 0) > 0
+
+  /** 배너 종류 — 'none'이면 배너를 띄우지 않는다(정상 사용 중). */
+  const overviewState: 'none' | 'no_purchase' | 'awaiting_deposit' | 'inactive_license' =
+    awaitingDeposit          ? 'awaiting_deposit'   // 입금 대기가 있으면 그것부터 알린다
+    : totalLicenses === 0    ? 'no_purchase'        // 산 적 없음
+    : activeLicenses === 0   ? 'inactive_license'   // 라이선스는 있지만 만료·회수됨
+    : 'none'
+
   function fmtDate(d: string | null) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -107,9 +135,57 @@ export default async function DashboardPage() {
         <p className="text-ink-soft text-sm mt-1">계정 현황을 확인하세요.</p>
       </div>
 
-      {/* 온보딩 체크리스트 (구매 회원 · 닫기 전까지) */}
+      {/* 상태 안내 — 정상 사용 중이면 띄우지 않는다(아래 시작하기 체크리스트와 중복 방지) */}
+      {overviewState === 'no_purchase' && (
+        <div className="bg-paper-raised border border-rule rounded-xl p-5 mb-8">
+          <h2 className="text-base font-semibold text-ink">아직 구매하신 제품이 없습니다</h2>
+          <p className="text-sm text-ink-soft mt-1">
+            제품을 둘러보고 필요한 것을 고르시면, 결제 후 이 화면에서 바로 설치 안내를 받으실 수 있습니다.
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Link href="/product" className="inline-flex items-center gap-1.5 bg-mark text-white text-sm font-semibold px-4 py-2 rounded-lg hover:brightness-95 transition-colors">
+              제품 둘러보기 <ArrowRight size={14} />
+            </Link>
+            <Link href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-ink-soft border border-rule px-4 py-2 rounded-lg hover:text-ink transition-colors">
+              요금제 보기
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {overviewState === 'awaiting_deposit' && (
+        <div className="bg-caution-soft border border-caution/20 rounded-xl p-5 mb-8">
+          <h2 className="text-base font-semibold text-caution">입금 확인을 기다리는 주문이 있습니다</h2>
+          <p className="text-sm text-ink-soft mt-1">
+            입금이 확인되면 라이선스가 발급되고, 이 화면에서 설치 안내를 받으실 수 있습니다.
+          </p>
+          <Link href="/dashboard/billing" className="inline-flex items-center gap-1.5 text-sm text-mark hover:brightness-95 mt-3 transition-colors">
+            입금 계좌·주문 확인하기 <ArrowRight size={14} />
+          </Link>
+        </div>
+      )}
+
+      {overviewState === 'inactive_license' && (
+        <div className="bg-paper-raised border border-rule rounded-xl p-5 mb-8">
+          <h2 className="text-base font-semibold text-ink">지금 사용할 수 있는 라이선스가 없습니다</h2>
+          <p className="text-sm text-ink-soft mt-1">
+            보유하신 라이선스가 만료되었거나 회수된 상태입니다. 라이선스 화면에서 상태를 확인하실 수 있습니다.
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Link href="/dashboard/licenses" className="inline-flex items-center gap-1.5 text-sm text-mark hover:brightness-95 transition-colors">
+              내 라이선스 상태 보기 <ArrowRight size={14} />
+            </Link>
+            <Link href="/dashboard/support" className="inline-flex items-center gap-1.5 text-sm text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
+              문의하기
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* 시작하기 체크리스트 — 쓸 수 있는 라이선스가 있을 때만.
+          만료·회수 상태에서는 위 안내가 대신 뜨므로 안내가 두 개 겹치지 않는다. */}
       <OnboardingChecklist
-        hasLicense={(licenseCount ?? 0) > 0}
+        hasLicense={activeLicenses > 0}
         hasDownloaded={(downloadedCount ?? 0) > 0}
       />
 
