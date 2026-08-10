@@ -132,7 +132,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <button
                         onClick={() => swap(idx, idx - 1)}
                         disabled={idx === 0 || isPending}
-                        className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         title="위로 이동"
                         aria-label="순서 위로 이동"
                       >
@@ -142,7 +142,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <button
                         onClick={() => swap(idx, idx + 1)}
                         disabled={idx === items.length - 1 || isPending}
-                        className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         title="아래로 이동"
                         aria-label="순서 아래로 이동"
                       >
