@@ -67,26 +67,43 @@ export default async function TicketDetailPage({
     const serverClient = await createClient()
     const { data: { user: currentUser } } = await serverClient.auth.getUser()
 
-    await client.from('support_replies').insert({
+    // 답변 저장이 실패하면 여기서 멈춘다 — 저장도 안 됐는데 티켓이 "답변됨"이 되고
+    // 고객에게 알림 메일까지 나가면, 고객은 없는 답변을 보러 오게 된다.
+    const { error: replyErr } = await client.from('support_replies').insert({
       ticket_id: id,
       user_id: currentUser?.id,
       is_admin: true,
       message,
     })
-
-    if (close) {
-      await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
-    } else {
-      await client.from('support_tickets').update({ status: 'answered' }).eq('id', id)
+    if (replyErr) {
+      console.error('[support] 답변 저장 실패:', replyErr.message)
+      throw new Error(`답변 저장에 실패했습니다: ${replyErr.message}`)
     }
 
-    // 사용자에게 답변 알림 이메일 발송
+    const { error: statusErr } = await client
+      .from('support_tickets')
+      .update({ status: close ? 'closed' : 'answered' })
+      .eq('id', id)
+    if (statusErr) {
+      console.error('[support] 티켓 상태 변경 실패:', statusErr.message)
+      // 답변은 이미 저장됐다는 것을 문구에 담아, 관리자가 같은 답변을 다시 보내지 않게 한다.
+      throw new Error(`답변은 저장되었지만 티켓 상태 변경에 실패했습니다: ${statusErr.message}`)
+    }
+
+    // 사용자에게 답변 알림 이메일 발송.
+    // 메일만 실패한 경우는 답변을 되돌리지 않는다 — 답변은 고객이 대시보드에서 볼 수 있고,
+    // 되돌리면 관리자가 작성한 내용이 사라져 더 나쁘다. 실패는 sendEmail이 모니터링 로그에
+    // 남기므로 관리자 → 모니터링 로그에서 확인하고 다른 경로로 연락할 수 있다.
     if (ticket && userEmail !== '—') {
-      sendEmail({
-        to: userEmail,
-        subject: `Re: ${ticket.subject}`,
-        html: supportReplyEmailHtml(ticket.subject, message, 'CoreZent'),
-      }).catch((err) => console.error('[email] 답변 알림 이메일 발송 실패:', err))
+      try {
+        await sendEmail({
+          to: userEmail,
+          subject: `Re: ${ticket.subject}`,
+          html: supportReplyEmailHtml(ticket.subject, message, 'CoreZent'),
+        })
+      } catch (mailErr) {
+        console.error('[support] 답변 알림 메일 발송 실패(답변은 저장됨):', mailErr instanceof Error ? mailErr.message : String(mailErr))
+      }
     }
 
     revalidatePath(`/admin/support/${id}`)
@@ -96,7 +113,8 @@ export default async function TicketDetailPage({
     'use server'
     await requireAdminOrThrow()
     const client = createAdminClient()
-    await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
+    const { error } = await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
+    if (error) throw new Error(`티켓 닫기에 실패했습니다: ${error.message}`)
     revalidatePath(`/admin/support/${id}`)
   }
 
@@ -104,7 +122,8 @@ export default async function TicketDetailPage({
     'use server'
     await requireAdminOrThrow()
     const client = createAdminClient()
-    await client.from('support_tickets').update({ status: 'open' }).eq('id', id)
+    const { error } = await client.from('support_tickets').update({ status: 'open' }).eq('id', id)
+    if (error) throw new Error(`티켓 다시 열기에 실패했습니다: ${error.message}`)
     revalidatePath(`/admin/support/${id}`)
   }
 
