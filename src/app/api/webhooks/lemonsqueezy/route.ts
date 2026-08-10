@@ -25,6 +25,7 @@ import {
   verifyLSWebhook,
   generateSerialKey,
   fetchLsLicenseKeys,
+  fetchLsLicenseKeysForOrder,
   type LSWebhookPayload,
   type LSOrderAttributes,
   type LSSubscriptionAttributes,
@@ -916,11 +917,26 @@ async function handleSubscriptionStatusChange(payload: LSWebhookPayload, status:
  */
 async function deactivateExternalLicensesByLsOrder(lsOrderId: string) {
   try {
-    const keys = await fetchLsLicenseKeys(lsOrderId)
-    if (keys.length === 0) {
+    const rows = await fetchLsLicenseKeysForOrder(lsOrderId)
+    if (rows.length === 0) {
       console.warn(`[LS Webhook] 환불 — LS에서 라이선스 키를 찾지 못해 외부 DB 비활성화 생략 (order_id=${lsOrderId})`)
       return
     }
+
+    // ★ 소유권 대조 — 응답에 실린 주문 식별자가 이 환불 건과 일치하는 키만 정지시킨다.
+    //   LS가 필터를 무시하거나 응답 형식이 바뀌면 무관한 고객의 키가 돌아올 수 있는데,
+    //   본체 DB를 거치지 않는 경로라 그때 걸러줄 안전장치가 여기밖에 없다.
+    //   주문 식별자가 없는 항목도 대조 불가로 보고 정지시키지 않는다.
+    const keys = rows.filter((r) => r.orderId === lsOrderId).map((r) => r.key)
+    const skipped = rows.length - keys.length
+    if (skipped > 0) {
+      console.warn(`[LS Webhook] 환불 — 주문 식별자가 일치하지 않아 ${skipped}개 키를 정지 대상에서 제외 (order_id=${lsOrderId}, 응답 ${rows.length}개 중 ${keys.length}개만 처리)`)
+    }
+    if (keys.length === 0) {
+      console.warn(`[LS Webhook] 환불 — 대조를 통과한 키가 없어 외부 DB 비활성화 생략 (order_id=${lsOrderId})`)
+      return
+    }
+
     for (const key of keys) {
       try {
         const found = await supaFindLicenseInAnyDb(key)

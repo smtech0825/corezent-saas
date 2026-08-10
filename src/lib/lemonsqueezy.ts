@@ -164,6 +164,55 @@ export async function fetchLsLicenseKeys(lsOrderId: string): Promise<string[]> {
 }
 
 /**
+ * @함수명: fetchLsLicenseKeysForOrder
+ * @설명: 주문에 연결된 라이선스 키를 "응답에 실린 주문 식별자와 함께" 가져옵니다.
+ *        호출측이 그 값으로 정말 이 주문의 키인지 대조할 수 있게 하기 위한 것입니다.
+ *        라이선스를 정지시키는 경로처럼 잘못 건드리면 되돌리기 어려운 곳에서 씁니다.
+ *        (발급 경로가 쓰는 fetchLsLicenseKeys는 동작을 바꾸지 않기 위해 그대로 둡니다)
+ * @매개변수: lsOrderId - Lemon Squeezy 주문 ID (숫자 문자열)
+ * @반환값: { key, orderId } 배열. 응답에 주문 식별자가 없으면 orderId는 null
+ */
+export async function fetchLsLicenseKeysForOrder(
+  lsOrderId: string,
+): Promise<{ key: string; orderId: string | null }[]> {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY
+  if (!apiKey) {
+    console.warn('[LS API] LEMONSQUEEZY_API_KEY 미설정 — 라이선스 키 조회 건너뜀')
+    return []
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.lemonsqueezy.com/v1/license-keys?filter[order_id]=${lsOrderId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/vnd.api+json',
+        },
+      },
+    )
+
+    if (!res.ok) {
+      console.error(`[LS API] 라이선스 키 조회 실패: ${res.status}`)
+      return []
+    }
+
+    const json = await res.json()
+    const rows = json.data as Array<{ attributes?: { key?: string; order_id?: number | string } }> | undefined
+    return (rows ?? [])
+      .map((r) => ({
+        key: r.attributes?.key ?? '',
+        // 응답에 order_id가 없으면 null — 호출측이 "대조 불가"로 처리한다
+        orderId: r.attributes?.order_id != null ? String(r.attributes.order_id) : null,
+      }))
+      .filter((r) => Boolean(r.key))
+  } catch (err) {
+    console.error('[LS API] 라이선스 키 조회 오류:', err)
+    return []
+  }
+}
+
+/**
  * @함수명: fetchLsLicenseKey
  * @설명: 주문에 연결된 첫 번째 라이선스 키를 가져옵니다 (단일 키 호환용).
  * @매개변수: lsOrderId - Lemon Squeezy 주문 ID (숫자 문자열)
