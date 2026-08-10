@@ -47,9 +47,12 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
          * GPU 스톨(프리징)을 유발하므로 불투명 배경 사용(성능) */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-rule bg-paper sticky top-0 z-10">
           <div className="flex items-center gap-3 lg:hidden">
+            {/* 터치 영역 44×44px 확보 — 아이콘 20px + 패딩 12px×2 (아이콘 크기는 유지) */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-ink-soft hover:text-ink p-1"
+              title="메뉴 열기"
+              aria-label="메뉴 열기"
+              className="text-ink-soft hover:text-ink p-3"
             >
               <Menu size={20} />
             </button>
