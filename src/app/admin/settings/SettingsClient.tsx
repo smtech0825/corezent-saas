@@ -129,7 +129,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
   const btnProps = { saving, saved, onSave: saveSection }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">설정</h1>
         <p className="text-sm text-ink-soft mt-1">사이트 전반 설정을 구성합니다.</p>

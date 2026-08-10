@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import SettingsClient from './SettingsClient'
 import ReindexPanel from './ReindexPanel'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,12 +20,12 @@ export default async function SettingsPage() {
   const initial = Object.fromEntries((rows ?? []).map((r) => [r.key, r.value ?? '']))
 
   return (
-    <>
+    <PageContainer variant="admin" className="space-y-6">
       <SettingsClient initial={initial} />
       {/* 검색엔진 색인 재요청 도구 (SEO) */}
-      <div className="px-6 pb-8">
+      <div className="pb-8">
         <ReindexPanel />
       </div>
-    </>
+    </PageContainer>
   )
 }
