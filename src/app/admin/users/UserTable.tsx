@@ -282,7 +282,7 @@ export default function UserTable({ users }: Props) {
                             href={`/admin/users/${u.id}`}
                             title="사용자 상세"
                             aria-label={`${u.email} 사용자 상세 보기`}
-                            className="p-1.5 rounded-lg text-ink-faint hover:text-ink hover:bg-paper-shade transition-colors"
+                            className="p-2 rounded-lg text-ink-faint hover:text-ink hover:bg-paper-shade transition-colors"
                           >
                             <ExternalLink size={14} />
                           </Link>
