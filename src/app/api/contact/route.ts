@@ -158,29 +158,30 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── 알림 메일 발송 ───────────────────────────────────────────
-  // 이 지점에서는 문의가 이미 DB에 저장돼 있다. 메일이 실패해도 문의는 남고 관리자
-  // 화면에서 볼 수 있으므로 성공으로 응답한다. 여기서 실패로 답하면 손님이 다시 보내
-  // 같은 문의가 중복으로 쌓인다.
+  // 알림이 나가지 않으면 "접수됐다"고 답하지 않는다. 손님이 접수된 줄 알고 기다리는데
+  // 아무도 못 보는 상황이 가장 나쁘다. 저장은 됐으므로 관리자 문의 목록에는 남는다.
+  const FAIL_BODY = { error: '접수 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' }
+
+  // 수신 주소는 설정에서만 읽는다(웹훅 실패 알림과 같은 정책 — 코드에 주소를 박지 않는다).
+  let adminEmail = ''
   try {
-    // 수신 주소는 설정에서만 읽는다(웹훅 실패 알림과 같은 정책 — 코드에 주소를 박지 않는다).
-    // 비어 있으면 메일만 건너뛴다. 문의 자체는 이미 저장됐으므로 접수가 끊기지는 않는다.
-    let adminEmail = ''
-    try {
-      const { data: setting } = await createAdminClient()
-        .from('front_settings')
-        .select('value')
-        .eq('key', 'support_email')
-        .maybeSingle()
-      adminEmail = (setting?.value ?? '').trim()
-    } catch (settingErr) {
-      console.warn('[Contact API] support_email 조회 실패 — 알림 메일 건너뜀:', settingErr)
-    }
+    const { data: setting } = await admin
+      .from('front_settings')
+      .select('value')
+      .eq('key', 'support_email')
+      .maybeSingle()
+    adminEmail = (setting?.value ?? '').trim()
+  } catch (settingErr) {
+    // 로그에는 원인만 남긴다 — 문의 본문·보낸사람 주소 같은 개인정보는 넣지 않는다.
+    console.error('[Contact API] support_email 조회 실패:', settingErr instanceof Error ? settingErr.message : String(settingErr))
+  }
 
-    if (!adminEmail) {
-      console.warn('[Contact API] 알림 메일 건너뜀 — front_settings.support_email 미설정 (문의는 저장됨)')
-      return NextResponse.json({ success: true })
-    }
+  if (!adminEmail) {
+    console.error('[Contact API] 알림 미발송 — front_settings.support_email 미설정 (문의는 저장됨)')
+    return NextResponse.json(FAIL_BODY, { status: 500 })
+  }
 
+  try {
     await sendEmail({
       to: adminEmail,
       subject: `[CoreZent Inquiry] ${subject}`,
@@ -191,9 +192,8 @@ export async function POST(request: NextRequest) {
         : undefined,
     })
   } catch (err) {
-    console.error('[Contact API] Email send error:', err)
-    // 이메일 실패는 로그만 남기고 사용자에게는 성공 반환
-    // (DB에 저장됐으므로 나중에 관리자가 확인 가능)
+    console.error('[Contact API] 알림 메일 발송 실패:', err instanceof Error ? err.message : String(err))
+    return NextResponse.json(FAIL_BODY, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
