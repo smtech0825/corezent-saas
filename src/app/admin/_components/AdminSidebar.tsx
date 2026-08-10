@@ -17,6 +17,7 @@ import {
   Key,
   Gift,
   MessageSquare,
+  Inbox,
   Settings,
   LogOut,
   X,
@@ -44,6 +45,7 @@ const mainNav = [
   { label: '라이선스',   href: '/admin/licenses',  icon: Key },
   { label: '제휴',       href: '/admin/affiliates', icon: Gift },
   { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
+  { label: '문의',       href: '/admin/inquiries', icon: Inbox },
 ]
 
 const frontendNav = [
