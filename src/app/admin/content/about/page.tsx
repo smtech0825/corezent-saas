@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import AboutManager from './AboutManager'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,7 +108,7 @@ export default async function AboutAdminPage() {
   const contentMap = Object.fromEntries((contentRes.data ?? []).map((r) => [r.key, r.value]))
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">소개 페이지</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -128,6 +129,6 @@ export default async function AboutAdminPage() {
         onUpdateBlock={updateBlock}
         onDeleteBlock={deleteBlock}
       />
-    </div>
+    </PageContainer>
   )
 }

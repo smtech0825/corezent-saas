@@ -3,11 +3,13 @@
  * @설명: Tools 섹션 콘텐츠 관리 (Phase 2 — 현재 플레이스홀더)
  */
 
+import PageContainer from '@/components/common/PageContainer'
+
 export const dynamic = 'force-dynamic'
 
 export default function ToolsPage() {
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-ink">도구</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -21,6 +23,6 @@ export default function ToolsPage() {
           제품은 <a href="/admin/products" className="text-mark hover:underline">제품</a> 페이지에서 관리됩니다.
         </p>
       </div>
-    </div>
+    </PageContainer>
   )
 }

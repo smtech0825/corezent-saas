@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import CtaEditor from './CtaEditor'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,7 @@ export default async function CtaAdminPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-ink">CTA 섹션</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -77,6 +78,6 @@ export default async function CtaAdminPage() {
       <div className="border border-rule bg-paper-raised rounded-2xl p-6">
         <CtaEditor initial={initial} onSave={handleSave} />
       </div>
-    </div>
+    </PageContainer>
   )
 }

@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import HeroEditor from './HeroEditor'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,7 @@ export default async function HeroAdminPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">히어로 섹션</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -77,6 +78,6 @@ export default async function HeroAdminPage() {
       <div className="border border-rule bg-paper-raised rounded-2xl p-6">
         <HeroEditor initial={initial} onSave={handleSave} />
       </div>
-    </div>
+    </PageContainer>
   )
 }

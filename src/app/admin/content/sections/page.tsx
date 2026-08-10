@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import SectionsManager from './SectionsManager'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,7 @@ export default async function SectionsPage() {
     .sort((a, b) => a.order_index - b.order_index)
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">섹션 설정</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -57,6 +58,6 @@ export default async function SectionsPage() {
         </p>
         <SectionsManager sections={sections} />
       </div>
-    </div>
+    </PageContainer>
   )
 }

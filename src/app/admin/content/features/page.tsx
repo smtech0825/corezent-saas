@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import FeaturesManager from './FeaturesManager'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +60,7 @@ export default async function FeaturesPage() {
     .order('order_index')
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-ink">CoreZent 특징</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -74,6 +75,6 @@ export default async function FeaturesPage() {
         onDelete={deleteFeature}
         onTogglePublish={toggleFeaturePublish}
       />
-    </div>
+    </PageContainer>
   )
 }

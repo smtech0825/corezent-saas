@@ -3,11 +3,13 @@
  * @설명: 정적 페이지(Privacy Policy, Terms) 편집 (Phase 2)
  */
 
+import PageContainer from '@/components/common/PageContainer'
+
 export const dynamic = 'force-dynamic'
 
 export default function PagesPage() {
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <PageContainer variant="admin-form" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-ink">페이지</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -17,6 +19,6 @@ export default function PagesPage() {
       <div className="border border-dashed border-rule rounded-2xl py-20 text-center">
         <p className="text-ink-faint text-sm">페이지 편집기는 Phase 2에서 제공될 예정입니다.</p>
       </div>
-    </div>
+    </PageContainer>
   )
 }
