@@ -59,10 +59,16 @@ export default function QuoteForm() {
       body.append('website', get('website'))
 
       const res = await fetch('/api/contact', { method: 'POST', body })
-      if (!res.ok) throw new Error(String(res.status))
+      // 서버가 이유를 담아 보내면 그대로 보여준다 — 횟수 초과(429)·저장 실패(500)를
+      // "전송 실패" 한 문구로 뭉뚱그리면 손님이 원인을 몰라 계속 재시도한다.
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(data?.error ?? '전송에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+        return
+      }
       setDone(true)
     } catch {
-      setError('전송에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      setError('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.')
     } finally {
       setSending(false)
     }

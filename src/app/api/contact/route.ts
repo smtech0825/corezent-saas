@@ -10,8 +10,6 @@ import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, inquiryEmailHtml } from '@/lib/email'
 
-/** 설정(front_settings.support_email)이 비어 있을 때만 쓰는 최후 폴백 — 기존 동작 보존용 */
-const FALLBACK_ADMIN_EMAIL = 'smtech.semi@gmail.com'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const RATE_LIMIT_WINDOW_MS = 60_000    // 1분 고정 윈도우
 const RATE_LIMIT_MAX = 3               // 1분에 최대 3회
@@ -132,6 +130,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── DB 저장 ───────────────────────────────────────────────────
+  // 저장이 실패하면 문의가 어디에도 남지 않는다. 그때는 성공이라고 답하지 않는다
+  // — "접수되었습니다"를 보고 안심했는데 실제로는 사라지는 것이 가장 나쁜 결과다.
   try {
     const { error: dbError } = await admin.from('inquiries').insert({
       email,
@@ -144,28 +144,41 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('[Contact API] DB insert error:', dbError)
-      // DB 저장 실패해도 이메일 발송은 시도
+      return NextResponse.json(
+        { error: '문의 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' },
+        { status: 500 },
+      )
     }
   } catch (err) {
     console.error('[Contact API] DB exception:', err)
+    return NextResponse.json(
+      { error: '문의 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    )
   }
 
-  // ─── 이메일 발송 (실패해도 사용자에게는 성공 반환) ────────────
+  // ─── 알림 메일 발송 ───────────────────────────────────────────
+  // 이 지점에서는 문의가 이미 DB에 저장돼 있다. 메일이 실패해도 문의는 남고 관리자
+  // 화면에서 볼 수 있으므로 성공으로 응답한다. 여기서 실패로 답하면 손님이 다시 보내
+  // 같은 문의가 중복으로 쌓인다.
   try {
-    // 수신 주소는 설정에서 읽는다(웹훅 실패 알림과 같은 방식). 조회 실패·공란이면
-    // 기존에 쓰던 주소로 폴백해 문의 알림이 끊기지 않게 한다.
-    let adminEmail = FALLBACK_ADMIN_EMAIL
+    // 수신 주소는 설정에서만 읽는다(웹훅 실패 알림과 같은 정책 — 코드에 주소를 박지 않는다).
+    // 비어 있으면 메일만 건너뛴다. 문의 자체는 이미 저장됐으므로 접수가 끊기지는 않는다.
+    let adminEmail = ''
     try {
       const { data: setting } = await createAdminClient()
         .from('front_settings')
         .select('value')
         .eq('key', 'support_email')
         .maybeSingle()
-      const configured = (setting?.value ?? '').trim()
-      if (configured) adminEmail = configured
-      else console.warn('[Contact API] front_settings.support_email 미설정 — 기본 주소로 발송')
+      adminEmail = (setting?.value ?? '').trim()
     } catch (settingErr) {
-      console.warn('[Contact API] support_email 조회 실패 — 기본 주소로 발송:', settingErr)
+      console.warn('[Contact API] support_email 조회 실패 — 알림 메일 건너뜀:', settingErr)
+    }
+
+    if (!adminEmail) {
+      console.warn('[Contact API] 알림 메일 건너뜀 — front_settings.support_email 미설정 (문의는 저장됨)')
+      return NextResponse.json({ success: true })
     }
 
     await sendEmail({
