@@ -129,6 +129,91 @@ function normalizeQuantity(raw: unknown): number {
   return Math.max(1, Math.min(100, Math.floor(n)))
 }
 
+// ─── 웹훅 실패 관리자 알림 ────────────────────────────────────────────────────
+
+/** 같은 종류의 실패로 메일을 다시 보내기까지의 최소 간격(분). LS 재전송 폭주(83초에 39건)를 1통으로 묶는다. */
+const WEBHOOK_ALERT_WINDOW_MIN = 30
+
+/** 메일 본문에 값을 넣기 전 HTML 특수문자를 무해화한다. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * @함수명: notifyWebhookFailure
+ * @설명: 결제 웹훅 처리가 실패했을 때 관리자에게 메일로 알린다.
+ *        수신 주소는 front_settings.support_email에서 읽는다(코드에 박지 않는다).
+ *        같은 이벤트 종류로 최근 WEBHOOK_ALERT_WINDOW_MIN분 안에 이미 메일을 보냈으면 건너뛴다
+ *        — LS가 실패한 웹훅을 초 단위로 재전송하므로 그대로 두면 메일이 수십 통 간다.
+ *        어떤 실패도 예외로 올리지 않는다: 알림 때문에 결제 처리가 막히면 안 된다.
+ * @매개변수: eventName - LS 이벤트 종류 / dataId - 관련 주문·구독 식별자 / err - 발생한 오류
+ * @반환값: 없음(항상 정상 종료)
+ */
+async function notifyWebhookFailure(
+  eventName: string | undefined,
+  dataId: string | null,
+  err: unknown,
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const subject = `[CoreZent] 결제 웹훅 실패 — ${eventName ?? 'unknown'}`
+
+    // 수신 주소: 설정에 없으면 알림을 건너뛰되 그 사실을 남긴다.
+    const { data: setting } = await admin
+      .from('front_settings')
+      .select('value')
+      .eq('key', 'support_email')
+      .maybeSingle()
+    const to = (setting?.value ?? '').trim()
+    if (!to) {
+      console.warn('[LS Webhook] 실패 알림 건너뜀 — front_settings.support_email 미설정')
+      return
+    }
+
+    // 폭주 방지: 같은 제목으로 최근에 보낸 기록이 있으면 재발송하지 않는다.
+    // sendEmail이 성공·실패 모두 notification_logs(kind='email', event=제목)에 남기므로
+    // SMTP가 계속 실패하는 상황에서도 매 재전송마다 시도하지 않는다.
+    const since = new Date(Date.now() - WEBHOOK_ALERT_WINDOW_MIN * 60_000).toISOString()
+    const { data: recent } = await admin
+      .from('notification_logs')
+      .select('id')
+      .eq('kind', 'email')
+      .eq('event', subject)
+      .gte('created_at', since)
+      .limit(1)
+    if (recent && recent.length > 0) {
+      console.log(`[LS Webhook] 실패 알림 생략(${WEBHOOK_ALERT_WINDOW_MIN}분 내 발송 이력 있음): ${subject}`)
+      return
+    }
+
+    // 본문에는 원인 파악에 필요한 최소 정보만 넣는다. 전체 페이로드·비밀값은 넣지 않는다.
+    const message = String(err).slice(0, 500)
+    const html = `<!DOCTYPE html><html lang="ko"><body style="font-family:Arial,sans-serif;color:#23272E;">
+  <h2 style="margin:0 0 16px;font-size:18px;">결제 웹훅 처리 실패</h2>
+  <table cellpadding="6" style="border-collapse:collapse;font-size:14px;">
+    <tr><td style="color:#565C66;">이벤트 종류</td><td><strong>${escapeHtml(eventName ?? 'unknown')}</strong></td></tr>
+    <tr><td style="color:#565C66;">실패 시각</td><td>${new Date().toISOString()}</td></tr>
+    <tr><td style="color:#565C66;">관련 식별자</td><td>${escapeHtml(dataId ?? '없음')}</td></tr>
+    <tr><td style="color:#565C66;">오류 메시지</td><td>${escapeHtml(message)}</td></tr>
+  </table>
+  <p style="margin:16px 0 0;font-size:13px;color:#565C66;">
+    관리자 → 모니터링 로그에서 전체 기록을 확인하세요.
+    같은 종류의 실패는 ${WEBHOOK_ALERT_WINDOW_MIN}분에 한 통만 발송됩니다.
+  </p>
+</body></html>`
+
+    await sendEmail({ to, subject, html })
+    console.log(`[LS Webhook] 실패 알림 메일 발송: ${subject}`)
+  } catch (notifyErr) {
+    // 알림 실패는 삼킨다 — 웹훅 본 흐름(응답 코드·재전송 판단)에 영향을 주지 않는다.
+    console.error('[LS Webhook] 실패 알림 발송 중 오류(무시):', notifyErr)
+  }
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   const signature = req.headers.get('x-signature') ?? ''
@@ -197,6 +282,8 @@ export async function POST(req: NextRequest) {
       target: payload.data?.id ? String(payload.data.id) : null,
       error:  String(err),
     })
+    // 관리자 메일 알림(best-effort — 발송 실패해도 아래 응답/재전송 흐름 불변)
+    await notifyWebhookFailure(eventName, payload.data?.id ? String(payload.data.id) : null, err)
     // 500 반환 → LS 재전송 유도(부분 실패 삼킴 제거). 모든 주요 INSERT는 order_id/sub_id/order_id 기준
     // 멱등이라 재전송에 안전. 사용자 미존재·상품 미매칭 등 재시도로 해결 불가한 케이스는 핸들러가
     // throw 대신 return으로 정상 종료(200)하므로 여기에 도달하지 않는다(무한 재전송 방지).
