@@ -134,6 +134,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                         disabled={idx === 0 || isPending}
                         className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="위로 이동"
+                        aria-label="순서 위로 이동"
                       >
                         <ChevronUp size={14} />
                       </button>
@@ -143,6 +144,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                         disabled={idx === items.length - 1 || isPending}
                         className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="아래로 이동"
+                        aria-label="순서 아래로 이동"
                       >
                         <ChevronDown size={14} />
                       </button>
@@ -173,6 +175,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                         href={`/admin/products/${p.id}/edit`}
                         className="p-1.5 text-ink-faint hover:text-mark transition-colors rounded"
                         title="편집"
+                        aria-label={`${p.name} 제품 편집`}
                       >
                         <Pencil size={14} />
                       </Link>

@@ -148,6 +148,7 @@ export default function OnboardingChecklist({
                 onClick={it.mkey ? () => toggle(it.mkey!) : undefined}
                 disabled={!it.mkey}
                 aria-pressed={it.done}
+                aria-label={`${it.label} 완료 표시`}
                 className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
                   it.done
                     ? 'bg-ok-soft border-ok/40 text-ok'

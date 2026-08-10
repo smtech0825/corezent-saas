@@ -357,6 +357,8 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage === 1}
+                    title="이전 페이지"
+                    aria-label="이전 페이지"
                     className="p-1.5 rounded text-ink-faint hover:text-ink disabled:opacity-30 transition-colors"
                   >
                     <ChevronLeft size={16} />
@@ -377,6 +379,8 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
+                    title="다음 페이지"
+                    aria-label="다음 페이지"
                     className="p-1.5 rounded text-ink-faint hover:text-ink disabled:opacity-30 transition-colors"
                   >
                     <ChevronRight size={16} />

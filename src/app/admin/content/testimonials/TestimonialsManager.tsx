@@ -104,6 +104,8 @@ function AvatarUpload({
             <button
               type="button"
               onClick={handleRemove}
+              title="아바타 이미지 제거"
+              aria-label="아바타 이미지 제거"
               className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger flex items-center justify-center hover:brightness-95 transition-colors"
             >
               <X size={10} className="text-white" />
@@ -204,6 +206,8 @@ function FormFields({
               key={n}
               type="button"
               onClick={() => setF({ ...f, rating: n })}
+              title={`평점 ${n}점`}
+              aria-label={`평점 ${n}점`}
             >
               <Star
                 size={16}
@@ -364,12 +368,16 @@ export default function TestimonialsManager({
                 </button>
                 <button
                   onClick={() => startEdit(t)}
+                  title="후기 수정"
+                  aria-label="후기 수정"
                   className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"
                 >
                   <Pencil size={13} />
                 </button>
                 <button
                   onClick={() => handleDelete(t.id)}
+                  title="후기 삭제"
+                  aria-label="후기 삭제"
                   className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"
                 >
                   <Trash2 size={13} />

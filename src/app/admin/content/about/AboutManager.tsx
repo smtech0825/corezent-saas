@@ -96,6 +96,8 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
             <button
               type="button"
               onClick={() => removeImage(idx)}
+              title="이미지 삭제"
+              aria-label={`소개 이미지 ${idx + 1} 삭제`}
               className="absolute top-1 right-1 w-5 h-5 rounded-full bg-danger flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X size={10} className="text-white" />
@@ -292,8 +294,8 @@ export default function AboutManager({
                       <span className="text-ink-faint text-xs">{s.label}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => startEditStat(s)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
-                      <button onClick={() => handleDeleteStat(s.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
+                      <button onClick={() => startEditStat(s)} title="통계 수정" aria-label="통계 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
+                      <button onClick={() => handleDeleteStat(s.id)} title="통계 삭제" aria-label="통계 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 )}
@@ -361,8 +363,8 @@ export default function AboutManager({
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => startEditBlock(b)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
-                        <button onClick={() => handleDeleteBlock(b.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
+                        <button onClick={() => startEditBlock(b)} title="블록 수정" aria-label="블록 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => handleDeleteBlock(b.id)} title="블록 삭제" aria-label="블록 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"><Trash2 size={13} /></button>
                       </div>
                     </div>
                   </div>

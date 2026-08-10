@@ -219,6 +219,8 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     <button
                       type="button"
                       onClick={() => openEdit(entry)}
+                      title="버전 수정"
+                      aria-label="버전 수정"
                       className="p-1.5 text-ink-faint hover:text-ink hover:bg-paper-shade rounded-lg transition-colors"
                     >
                       <Pencil size={13} />
@@ -405,6 +407,8 @@ function ContentListEditor({
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, j) => j !== i))}
+                title="항목 삭제"
+                aria-label={`${i + 1}번째 항목 삭제`}
                 className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
               >
                 <X size={13} />

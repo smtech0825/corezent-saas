@@ -244,6 +244,7 @@ export default async function AdminPage() {
             <Link
               href="/admin/support"
               title="고객지원 티켓 보기"
+              aria-label="고객지원 티켓 보기"
               className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center hover:bg-mark/25 hover:scale-105 transition-all cursor-pointer"
             >
               <MessageSquare size={17} className="text-mark" />

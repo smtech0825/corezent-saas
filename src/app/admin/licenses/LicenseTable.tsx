@@ -243,6 +243,8 @@ export default function LicenseTable({ licenses }: Props) {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
+                title="이전 페이지"
+                aria-label="이전 페이지"
                 className="p-1.5 rounded-lg border border-rule text-ink-faint hover:text-ink hover:border-mark/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft size={14} />
@@ -250,6 +252,8 @@ export default function LicenseTable({ licenses }: Props) {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
+                title="다음 페이지"
+                aria-label="다음 페이지"
                 className="p-1.5 rounded-lg border border-rule text-ink-faint hover:text-ink hover:border-mark/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight size={14} />
@@ -276,6 +280,8 @@ export default function LicenseTable({ licenses }: Props) {
               </div>
               <button
                 onClick={closeModal}
+                title="닫기"
+                aria-label="닫기"
                 className="text-ink-faint hover:text-ink transition-colors"
               >
                 <X size={16} />

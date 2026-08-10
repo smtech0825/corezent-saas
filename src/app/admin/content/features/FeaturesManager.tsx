@@ -147,10 +147,10 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                 <button onClick={() => handleToggle(feature.id, feature.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${feature.is_published ? 'text-ok bg-ok-soft border-ok/20' : 'text-ink-soft bg-paper-shade border-rule'}`}>
                   {feature.is_published ? '게시됨' : '초안'}
                 </button>
-                <button onClick={() => startEdit(feature)} className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
+                <button onClick={() => startEdit(feature)} title="특징 수정" aria-label="특징 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => handleDelete(feature.id)} className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
+                <button onClick={() => handleDelete(feature.id)} title="특징 삭제" aria-label="특징 삭제" className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
                   <Trash2 size={13} />
                 </button>
               </div>

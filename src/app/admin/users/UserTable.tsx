@@ -84,6 +84,7 @@ function IconBtn({
       <button
         onClick={onClick}
         disabled={disabled}
+        aria-label={tooltip}
         className={`p-2 rounded-lg transition-colors ${
           disabled
             ? 'text-ink-faint cursor-not-allowed'
@@ -179,6 +180,8 @@ export default function UserTable({ users }: Props) {
           {search && (
             <button
               onClick={() => handleSearch('')}
+              title="검색어 지우기"
+              aria-label="검색어 지우기"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink transition-colors"
             >
               <X size={12} />
@@ -278,6 +281,7 @@ export default function UserTable({ users }: Props) {
                           <Link
                             href={`/admin/users/${u.id}`}
                             title="사용자 상세"
+                            aria-label={`${u.email} 사용자 상세 보기`}
                             className="p-1.5 rounded-lg text-ink-faint hover:text-ink hover:bg-paper-shade transition-colors"
                           >
                             <ExternalLink size={14} />
@@ -382,6 +386,8 @@ export default function UserTable({ users }: Props) {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              title="이전 페이지"
+              aria-label="이전 페이지"
               className="w-9 h-9 flex items-center justify-center text-ink-soft border border-rule rounded-lg disabled:opacity-30 hover:bg-paper-shade transition-colors"
             >
               <ChevronLeft size={14} />
@@ -402,6 +408,8 @@ export default function UserTable({ users }: Props) {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
+              title="다음 페이지"
+              aria-label="다음 페이지"
               className="w-9 h-9 flex items-center justify-center text-ink-soft border border-rule rounded-lg disabled:opacity-30 hover:bg-paper-shade transition-colors"
             >
               <ChevronRight size={14} />

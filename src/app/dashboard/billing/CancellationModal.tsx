@@ -74,7 +74,7 @@ export default function CancellationModal({
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={onKeep} />
 
       <div className="relative z-10 w-full max-w-md bg-paper-raised border border-rule rounded-2xl shadow-2xl p-6">
-        <button onClick={onKeep} className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors" disabled={cancelling}>
+        <button onClick={onKeep} title="닫기" aria-label="닫기" className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors" disabled={cancelling}>
           <X size={16} />
         </button>
 

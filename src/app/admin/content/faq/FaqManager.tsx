@@ -145,12 +145,16 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                   </button>
                   <button
                     onClick={() => startEdit(faq)}
+                    title="FAQ 수정"
+                    aria-label="FAQ 수정"
                     className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors"
                   >
                     <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => handleDelete(faq.id)}
+                    title="FAQ 삭제"
+                    aria-label="FAQ 삭제"
                     className="p-1.5 text-ink-faint hover:text-danger rounded-lg hover:bg-danger-soft transition-colors"
                   >
                     <Trash2 size={13} />

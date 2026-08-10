@@ -30,6 +30,7 @@ export default function DeleteButton({ productId, productName, onDelete }: Props
       disabled={loading}
       className="p-1.5 text-ink-faint hover:text-danger transition-colors rounded disabled:opacity-50"
       title="삭제"
+      aria-label={`${productName} 제품 삭제`}
     >
       <Trash2 size={14} />
     </button>

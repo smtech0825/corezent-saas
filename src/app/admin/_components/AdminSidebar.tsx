@@ -108,7 +108,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           </span>
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-ink-soft hover:text-ink p-1">
+          <button onClick={onClose} title="메뉴 닫기" aria-label="메뉴 닫기" className="lg:hidden text-ink-soft hover:text-ink p-1">
             <X size={18} />
           </button>
         )}

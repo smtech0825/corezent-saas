@@ -423,6 +423,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <button
                   type="button"
                   onClick={() => set('badge_text', '')}
+                  title="뱃지 문구 지우기"
+                  aria-label="뱃지 문구 지우기"
                   className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <X size={15} />
@@ -469,6 +471,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   type="button"
                   onClick={clearLogo}
                   title="초기화"
+                  aria-label="로고 초기화"
                   className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <X size={15} />
@@ -633,6 +636,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                     form.product_features.filter((_, i) => i !== idx),
                   )
                 }
+                title="기능 삭제"
+                aria-label={`${idx + 1}번째 기능 삭제`}
                 className="absolute top-2 right-2 p-1 text-ink-faint hover:text-danger transition-colors"
               >
                 <Trash2 size={12} />
@@ -707,6 +712,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <button
                   type="button"
                   onClick={() => removeScreenshot(i)}
+                  title="스크린샷 삭제"
+                  aria-label={`${i + 1}번째 스크린샷 삭제`}
                   className="shrink-0 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
                 >
                   <Trash2 size={14} />
@@ -784,6 +791,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             <button
               type="button"
               onClick={() => removeFaq(idx)}
+              title="FAQ 삭제"
+              aria-label={`${idx + 1}번째 FAQ 삭제`}
               className="mt-0.5 p-2 text-ink-faint hover:text-danger transition-colors rounded-lg hover:bg-danger-soft"
             >
               <Trash2 size={15} />

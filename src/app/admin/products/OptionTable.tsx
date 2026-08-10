@@ -231,6 +231,8 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                 <button
                   type="button"
                   onClick={() => onRemove(idx)}
+                  title="옵션 삭제"
+                  aria-label={`${idx + 1}번째 옵션 삭제`}
                   className="p-1.5 text-ink-faint hover:text-danger transition-colors rounded-md hover:bg-danger-soft justify-self-center"
                 >
                   <Trash2 size={14} />
