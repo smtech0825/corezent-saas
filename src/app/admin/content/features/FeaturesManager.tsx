@@ -7,6 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 
 interface Feature {
   id: string
@@ -73,7 +74,9 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
 
   async function handleUpdate(id: string) {
     startTransition(async () => {
-      await onUpdate(id, form.icon, form.tag, form.title, form.description)
+      // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
+      const ok = await runAdminAction('특징 수정', () => onUpdate(id, form.icon, form.tag, form.title, form.description))
+      if (!ok) return
       setItems((prev) =>
         prev.map((f) => (f.id === id ? { ...f, ...form } : f))
       )
@@ -84,8 +87,10 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
   async function handleCreate() {
     if (!newForm.title.trim()) return
     startTransition(async () => {
-      const created = await onCreate(newForm.icon, newForm.tag, newForm.title, newForm.description)
-      if (created) setItems((prev) => [...prev, { ...created, icon: created.icon ?? '', tag: created.tag ?? '' }])
+      let created: Awaited<ReturnType<typeof onCreate>> = null
+      const ok = await runAdminAction('특징 추가', async () => { created = await onCreate(newForm.icon, newForm.tag, newForm.title, newForm.description) })
+      if (!ok) return
+      if (created) setItems((prev) => [...prev, { ...created!, icon: created!.icon ?? '', tag: created!.tag ?? '' }])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -95,19 +100,19 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
     if (!confirm(`특징 "${title}"을(를) 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      try {
-        await onDelete(id)
-        setItems((prev) => prev.filter((f) => f.id !== id))
-      } catch (err) {
-        console.error('[특징 삭제 실패]', err)
-        alert('특징 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
-      }
+      const ok = await runAdminAction('특징 삭제', () => onDelete(id))
+      if (!ok) return
+      setItems((prev) => prev.filter((f) => f.id !== id))
     })
   }
 
   async function handleToggle(id: string, current: boolean) {
     setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: !current } : f)))
-    startTransition(() => onTogglePublish(id, !current))
+    startTransition(async () => {
+      // 실패하면 화면 표시를 원래대로 되돌린다.
+      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, !current))
+      if (!ok) setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: current } : f)))
+    })
   }
 
   return (

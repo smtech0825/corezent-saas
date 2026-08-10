@@ -23,8 +23,12 @@ export default function ReplyForm({ onSubmit }: Props) {
     setLoading(true)
     try {
       await onSubmit(message, closing)
+      // 성공했을 때만 입력을 비운다 — 실패했는데 지우면 작성한 답변이 날아간다.
       setMessage('')
       setClosing(false)
+    } catch (err) {
+      console.error('[ReplyForm] 답변 전송 실패:', err)
+      alert('답변 전송에 실패했습니다. 로그인 상태를 확인하고 다시 시도해 주세요.')
     } finally {
       setLoading(false)
     }

@@ -9,6 +9,7 @@ import { useState, useTransition } from 'react'
 import nextDynamic from 'next/dynamic'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { richToPlainText } from '@/lib/rich-html'
+import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 
 // 답변은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
 const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
@@ -56,7 +57,9 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
   async function handleUpdate(id: string) {
     if (!form.question.trim() || !form.answer.trim()) return
     startTransition(async () => {
-      await onUpdate(id, form.question, form.answer)
+      // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
+      const ok = await runAdminAction('FAQ 수정', () => onUpdate(id, form.question, form.answer))
+      if (!ok) return
       setItems((prev) =>
         prev.map((f) => (f.id === id ? { ...f, question: form.question, answer: form.answer } : f))
       )
@@ -67,8 +70,10 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
   async function handleCreate() {
     if (!newForm.question.trim() || !newForm.answer.trim()) return
     startTransition(async () => {
-      const created = await onCreate(newForm.question, newForm.answer)
-      if (created) setItems((prev) => [...prev, created])
+      let created: Faq | null = null
+      const ok = await runAdminAction('FAQ 추가', async () => { created = await onCreate(newForm.question, newForm.answer) })
+      if (!ok) return
+      if (created) setItems((prev) => [...prev, created as Faq])
       setNewForm({ question: '', answer: '' })
       setShowNew(false)
     })
@@ -78,13 +83,9 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
     if (!confirm(`FAQ "${question}"을(를) 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      try {
-        await onDelete(id)
-        setItems((prev) => prev.filter((f) => f.id !== id))
-      } catch (err) {
-        console.error('[FAQ 삭제 실패]', err)
-        alert('FAQ 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
-      }
+      const ok = await runAdminAction('FAQ 삭제', () => onDelete(id))
+      if (!ok) return
+      setItems((prev) => prev.filter((f) => f.id !== id))
     })
   }
 
@@ -92,7 +93,13 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
     setItems((prev) =>
       prev.map((f) => (f.id === id ? { ...f, is_published: !current } : f))
     )
-    startTransition(() => onTogglePublish(id, !current))
+    startTransition(async () => {
+      // 실패하면 화면 표시를 원래대로 되돌린다 — 화면만 바뀌고 실제는 그대로면 안 된다.
+      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, !current))
+      if (!ok) {
+        setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: current } : f)))
+      }
+    })
   }
 
   return (

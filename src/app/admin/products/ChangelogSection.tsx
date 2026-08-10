@@ -118,7 +118,16 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
     }
     setSaving(true)
     setError(null)
-    const result = await upsertChangelog(productId, form, editingId ?? undefined)
+    // 권한 확인에 걸리면 예외가 올라온다. 잡지 않으면 "저장 중…"에 영구히 갇힌다.
+    let result: { error?: string; id?: string }
+    try {
+      result = await upsertChangelog(productId, form, editingId ?? undefined)
+    } catch (err) {
+      console.error('[ChangelogSection] 저장 실패:', err)
+      setError('저장에 실패했습니다. 로그인 상태를 확인하고 다시 시도해 주세요.')
+      setSaving(false)
+      return
+    }
     if (result.error) {
       setError(result.error)
       setSaving(false)
@@ -163,10 +172,17 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
   async function handleDelete(id: string, version: string) {
     if (!confirm(`버전 ${version}의 변경 이력을 삭제할까요?\n\n다운로드 링크까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     setDeletingId(id)
-    const result = await deleteChangelog(id)
-    if (result.error) { alert(result.error); setDeletingId(null); return }
-    setChangelogs((prev) => prev.filter((c) => c.id !== id))
-    setDeletingId(null)
+    try {
+      const result = await deleteChangelog(id)
+      if (result.error) { alert(result.error); return }
+      setChangelogs((prev) => prev.filter((c) => c.id !== id))
+    } catch (err) {
+      // 권한 확인에 걸리면 예외가 올라온다. 잡지 않으면 버튼이 계속 비활성으로 멈춘다.
+      console.error('[ChangelogSection] 삭제 실패:', err)
+      alert('삭제에 실패했습니다. 로그인 상태를 확인하고 다시 시도해 주세요.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   // ─── 렌더 ─────────────────────────────────────────────────────

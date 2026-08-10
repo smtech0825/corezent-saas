@@ -12,6 +12,7 @@ import { Plus, Pencil, Trash2, Check, X, Upload, Loader2, ChevronDown, ChevronUp
 import { createClient } from '@/lib/supabase/client'
 import { richToPlainText } from '@/lib/rich-html'
 import DynamicIcon from '@/components/DynamicIcon'
+import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 
 // 콘텐츠 블록 "설명"은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
 const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
@@ -169,7 +170,8 @@ export default function AboutManager({
 
   function handleHeroSave() {
     startTransition(async () => {
-      await onUpdateHero(heroTitle, heroDesc)
+      // 실패해도 입력값을 지우지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
+      await runAdminAction('소개 히어로 저장', () => onUpdateHero(heroTitle, heroDesc))
     })
   }
 
@@ -183,7 +185,8 @@ export default function AboutManager({
 
   function handleUpdateStat(id: string) {
     startTransition(async () => {
-      await onUpdateStat(id, statForm)
+      const ok = await runAdminAction('통계 수정', () => onUpdateStat(id, statForm))
+      if (!ok) return
       setStats((prev) => prev.map((s) => (s.id === id ? { ...s, ...statForm } : s)))
       setEditStatId(null)
     })
@@ -192,8 +195,10 @@ export default function AboutManager({
   function handleCreateStat() {
     if (!newStatForm.value.trim()) return
     startTransition(async () => {
-      const created = await onCreateStat(newStatForm)
-      if (created) setStats((prev) => [...prev, created])
+      let created: Stat | null = null
+      const ok = await runAdminAction('통계 추가', async () => { created = await onCreateStat(newStatForm) })
+      if (!ok) return
+      if (created) setStats((prev) => [...prev, created as Stat])
       setNewStatForm({ icon: '', value: '', label: '' })
       setShowNewStat(false)
     })
@@ -203,13 +208,9 @@ export default function AboutManager({
     if (!confirm(`통계 "${label}"을(를) 삭제할까요?\n\n소개 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      try {
-        await onDeleteStat(id)
-        setStats((prev) => prev.filter((s) => s.id !== id))
-      } catch (err) {
-        console.error('[통계 삭제 실패]', err)
-        alert('통계 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
-      }
+      const ok = await runAdminAction('통계 삭제', () => onDeleteStat(id))
+      if (!ok) return
+      setStats((prev) => prev.filter((s) => s.id !== id))
     })
   }
 
@@ -223,7 +224,9 @@ export default function AboutManager({
 
   function handleUpdateBlock(id: string) {
     startTransition(async () => {
-      await onUpdateBlock(id, blockForm)
+      // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
+      const ok = await runAdminAction('블록 수정', () => onUpdateBlock(id, blockForm))
+      if (!ok) return
       setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...blockForm } : b)))
       setEditBlockId(null)
     })
@@ -231,8 +234,10 @@ export default function AboutManager({
 
   function handleCreateBlock() {
     startTransition(async () => {
-      const created = await onCreateBlock(newBlockForm)
-      if (created) setBlocks((prev) => [...prev, { ...created, images: (created.images ?? []) as string[] }])
+      let created: Block | null = null
+      const ok = await runAdminAction('블록 추가', async () => { created = await onCreateBlock(newBlockForm) })
+      if (!ok) return
+      if (created) setBlocks((prev) => [...prev, { ...(created as Block), images: ((created as Block).images ?? []) as string[] }])
       setNewBlockForm({ title: '', description: '', images: [] })
       setShowNewBlock(false)
     })
@@ -242,13 +247,9 @@ export default function AboutManager({
     if (!confirm(`블록 "${title}"을(를) 삭제할까요?\n\n안에 담긴 이미지까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      try {
-        await onDeleteBlock(id)
-        setBlocks((prev) => prev.filter((b) => b.id !== id))
-      } catch (err) {
-        console.error('[블록 삭제 실패]', err)
-        alert('블록 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.')
-      }
+      const ok = await runAdminAction('블록 삭제', () => onDeleteBlock(id))
+      if (!ok) return
+      setBlocks((prev) => prev.filter((b) => b.id !== id))
     })
   }
 
