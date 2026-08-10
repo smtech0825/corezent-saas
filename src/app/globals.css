@@ -134,6 +134,8 @@
 @layer base {
   html {
     font-family: var(--font-sans);
+    /* 세로 스크롤바 유무로 본문이 좌우로 밀리는 현상 방지 — 스크롤바 자리를 항상 확보 */
+    scrollbar-gutter: stable;
     /* 로딩 실패·프리징 시 나타나는 폴백 — 라이트 테마에 맞춰 흰 화면(검은 화면 방지) */
     background-color: #FFFFFF;
     color: #111827;
