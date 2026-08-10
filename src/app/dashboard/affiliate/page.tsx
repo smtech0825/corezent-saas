@@ -11,6 +11,7 @@ import { formatKRW } from '@/lib/money'
 import DynamicIcon from '@/components/DynamicIcon'
 import ReferralCopyButton from '../_components/ReferralCopyButton'
 import PayoutAccountCard from './PayoutAccountCard'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,7 +101,7 @@ export default async function AffiliatePage() {
   const referralUrl = code ? buildReferralUrl(siteUrl, code) : ''
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
+    <PageContainer variant="dashboard">
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink font-serif">제휴 프로그램</h1>
@@ -177,7 +178,7 @@ export default async function AffiliatePage() {
           <StatusCard tone="error"   icon="CircleX"     label="반려"      sub="환불·취소"     cents={buckets.reversed.cents} count={buckets.reversed.count} currency={currency} />
         </div>
       </section>
-    </div>
+    </PageContainer>
   )
 }
 

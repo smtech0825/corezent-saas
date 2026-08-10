@@ -11,6 +11,7 @@ import { CreditCard } from 'lucide-react'
 import Pagination from '@/components/common/Pagination'
 import BillingTable, { type BillingRow } from './BillingTable'
 import { formatKRW } from '@/lib/money'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,7 +122,7 @@ export default async function BillingPage({
   })
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-6xl mx-auto">
+    <PageContainer variant="dashboard">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink font-serif">결제</h1>
         <p className="text-ink-soft text-sm mt-1">구독과 결제 내역을 한 곳에서 확인하세요.</p>
@@ -179,6 +180,6 @@ export default async function BillingPage({
           </div>
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }

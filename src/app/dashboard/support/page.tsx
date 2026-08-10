@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import Pagination from '@/components/common/Pagination'
 import TicketList from './TicketList'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,7 +96,7 @@ export default async function SupportPage({
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-3xl">
+    <PageContainer variant="dashboard" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">고객지원</h1>
         <p className="text-sm text-ink-soft mt-1">
@@ -104,7 +105,7 @@ export default async function SupportPage({
       </div>
 
       {/* 티켓 제출 폼 */}
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden max-w-2xl">
         <div className="px-6 py-4 border-b border-rule">
           <h2 className="text-sm font-semibold text-ink">새 문의 작성</h2>
         </div>
@@ -177,6 +178,6 @@ export default async function SupportPage({
           />
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

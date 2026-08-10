@@ -10,6 +10,7 @@ import { Key } from 'lucide-react'
 import LicenseCopyButton from '../_components/LicenseCopyButton'
 import DownloadButton from '../billing/DownloadButton'
 import Pagination from '@/components/common/Pagination'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,7 +122,7 @@ export default async function LicensesPage({
     : 'md:grid-cols-[1fr_130px_90px_130px]'
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
+    <PageContainer variant="dashboard">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink font-serif">내 라이선스</h1>
         <p className="text-ink-soft text-sm mt-1">
@@ -254,7 +255,7 @@ export default async function LicensesPage({
           </a>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

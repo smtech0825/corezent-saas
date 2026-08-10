@@ -11,6 +11,7 @@ import { Loader2, CheckCircle } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import WithdrawSection from './WithdrawSection'
+import PageContainer from '@/components/common/PageContainer'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -157,14 +158,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-2xl mx-auto">
+    <PageContainer variant="dashboard">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink font-serif">설정</h1>
         <p className="text-ink-soft text-sm mt-1">계정 정보와 보안을 관리하세요.</p>
       </div>
 
       {/* 프로필 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6 mb-6">
+      <section className="bg-paper-raised border border-rule rounded-xl p-6 mb-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-5">프로필</h2>
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
           <FormField label="이름">
@@ -212,7 +213,7 @@ export default function SettingsPage() {
       </section>
 
       {/* 비밀번호 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6">
+      <section className="bg-paper-raised border border-rule rounded-xl p-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           <FormField label="현재 비밀번호">
@@ -251,7 +252,7 @@ export default function SettingsPage() {
       </section>
 
       {/* 알림/마케팅 수신 동의 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6 mt-6">
+      <section className="bg-paper-raised border border-rule rounded-xl p-6 mt-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-1.5">알림 수신 설정</h2>
         <p className="text-sm text-ink-soft mb-5">
           제품 업데이트·혜택 등 알림/마케팅 이메일 수신 여부를 선택하세요.
@@ -284,7 +285,7 @@ export default function SettingsPage() {
 
       {/* 회원 탈퇴 섹션 (위험 구역) */}
       <WithdrawSection />
-    </div>
+    </PageContainer>
   )
 }
 

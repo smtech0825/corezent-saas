@@ -9,6 +9,7 @@ import { formatKRW } from '@/lib/money'
 import { deriveSubStatus, isActiveSub } from '@/lib/subscription-status'
 import Link from 'next/link'
 import OnboardingChecklist from './OnboardingChecklist'
+import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,7 +100,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="px-4 py-6 sm:px-6 sm:py-8 max-w-5xl mx-auto">
+    <PageContainer variant="dashboard">
       {/* 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold font-serif text-ink">{name}님, 다시 오신 것을 환영합니다 👋</h1>
@@ -196,7 +197,7 @@ export default async function DashboardPage() {
           )}
         </Section>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 
