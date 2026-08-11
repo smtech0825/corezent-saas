@@ -79,6 +79,13 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
   }
 
   function handleDrop(toIdx: number) {
+    // 처리 중에는 순서도 바꾸지 않는다 — 토글만 막고 드래그를 열어두면, 아직 서버가 받아들이지
+    // 않은 표시/숨김 값이 순서 저장에 그대로 실려 화면과 실제 사이트가 어긋난다.
+    if (isPending) {
+      setDragging(null)
+      setDragOver(null)
+      return
+    }
     if (dragging === null || dragging === toIdx) {
       setDragging(null)
       setDragOver(null)
@@ -134,7 +141,7 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
       {items.map((section, idx) => (
         <div
           key={section.name}
-          draggable
+          draggable={!isPending}
           onDragStart={() => handleDragStart(idx)}
           onDragOver={(e) => handleDragOver(e, idx)}
           onDrop={() => handleDrop(idx)}

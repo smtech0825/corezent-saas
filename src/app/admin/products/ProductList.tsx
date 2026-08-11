@@ -6,6 +6,7 @@
  */
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import DeleteButton from './DeleteButton'
@@ -38,6 +39,7 @@ const categoryColors: Record<string, string> = {
 }
 
 export default function ProductList({ products: initial, onDelete }: Props) {
+  const router = useRouter()
   const [items, setItems] = useState(initial)
   const [isPending, startTransition] = useTransition()
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
@@ -66,8 +68,13 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   }
 
   function swap(fromIdx: number, toIdx: number) {
+    // 처리 중에는 받지 않는다(버튼도 비활성이지만 한 번 더 막는다) — 저장이 끝나기 전에 또 바꾸면
+    // 아직 서버가 받아들이지 않은 순서 위에 다시 쌓여, 실패했을 때 되돌릴 기준이 없어진다.
+    if (isPending) return
     if (toIdx < 0 || toIdx >= items.length) return
 
+    // 되돌릴 기준은 화면을 처음 열었을 때 값(initial)이 아니라 "바로 지금 저장돼 있는 순서"다.
+    const prev = [...items]
     const next = [...items]
     const temp = next[fromIdx]
     next[fromIdx] = next[toIdx]
@@ -76,18 +83,26 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     setSaveMsg(null)
 
     startTransition(async () => {
-      const res = await fetch('/api/admin/products/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ordered: next.map((p) => p.id) }),
-      })
-      if (res.ok) {
-        setSaveMsg('순서 저장됨')
-        setTimeout(() => setSaveMsg(null), 2000)
-      } else {
-        // 롤백
-        setItems(initial)
-        setSaveMsg('순서 변경 실패')
+      try {
+        const res = await fetch('/api/admin/products/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ordered: next.map((p) => p.id) }),
+        })
+        if (res.ok) {
+          setSaveMsg('순서 저장됨')
+          setTimeout(() => setSaveMsg(null), 2000)
+          return
+        }
+        // 제품 순서는 한 번에 하나씩 저장되므로 중간에 실패하면 일부만 바뀌어 있을 수 있다.
+        // 화면을 임의로 맞추지 말고 서버에 저장된 실제 순서를 다시 받아온다.
+        setSaveMsg('순서 변경에 실패했습니다. 실제 저장된 순서를 다시 불러옵니다.')
+        setItems(prev)
+        router.refresh()
+      } catch (err) {
+        console.error('[ProductList] 순서 변경 요청 실패:', err)
+        setItems(prev)
+        setSaveMsg('순서 변경 요청을 보내지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.')
       }
     })
   }

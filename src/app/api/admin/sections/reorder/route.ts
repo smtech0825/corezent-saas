@@ -34,26 +34,22 @@ export async function POST(request: Request) {
     const adminClient = createAdminClient()
 
     // upsert: 행이 없으면 INSERT, 있으면 UPDATE (label·is_visible 포함으로 NOT NULL 제약 충족)
-    const results = await Promise.all(
-      sections.map((s, idx) =>
-        adminClient
-          .from('front_sections')
-          .upsert(
-            {
-              name: s.name,
-              label: s.label || s.name,
-              is_visible: s.is_visible,
-              order_index: idx,
-            },
-            { onConflict: 'name' },
-          ),
-      ),
+    // ★ 한 번의 호출로 전부 보낸다. 예전처럼 섹션 수만큼 따로 보내면 중간에 하나가 실패했을 때
+    //   앞의 것만 저장된 채 남아, 화면은 옛 순서인데 실제 사이트는 뒤섞인 상태가 된다.
+    //   배열 upsert는 단일 문장으로 처리되므로 전부 저장되거나 전부 저장되지 않는다.
+    const { error } = await adminClient.from('front_sections').upsert(
+      sections.map((s, idx) => ({
+        name: s.name,
+        label: s.label || s.name,
+        is_visible: s.is_visible,
+        order_index: idx,
+      })),
+      { onConflict: 'name' },
     )
 
-    const failed = results.filter(({ error }) => error)
-    if (failed.length > 0) {
-      console.error('[sections/reorder] errors:', failed.map((f) => f.error))
-      throw new Error('Some order updates failed')
+    if (error) {
+      console.error('[sections/reorder] error:', error.message)
+      return NextResponse.json({ error: 'Failed to reorder sections' }, { status: 500 })
     }
 
     // 랜딩 페이지 캐시 즉시 무효화
