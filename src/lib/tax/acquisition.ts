@@ -16,7 +16,7 @@ import type {
   RoundingValue,
   TaxEngineFailure,
 } from './engine-types'
-import { engineFail, fetchValidRules, isRegulatedArea, isValidDateString, requireRule } from './rule-store'
+import { engineFail, fetchValidRules, isRegulatedArea, isValidDateString, isValidRegionCode, requireRule } from './rule-store'
 import {
   applyRounding,
   evaluateRateSpec,
@@ -58,7 +58,7 @@ function validateInput(input: AcquisitionInput): TaxEngineFailure | null {
   if (!isValidDateString(input.baseDate)) {
     return engineFail('INVALID_INPUT', '취득일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
   }
-  if (!/^[A-Za-z0-9-]{1,20}$/.test(input.regionCode)) {
+  if (!isValidRegionCode(input.regionCode)) {
     return engineFail('INVALID_INPUT', '소재지 지역 코드가 올바르지 않습니다.')
   }
   if (input.cause !== 'sale' && input.cause !== 'gift') {

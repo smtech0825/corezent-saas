@@ -16,6 +16,15 @@ export function isValidDateString(value: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value
 }
 
+/**
+ * @함수명: isValidRegionCode
+ * @설명: 지역 코드 형식 검사 — regions.ts의 buildRegionCode()가 만드는 '시·도|시·군·구'
+ *        한글 코드를 허용한다. 쿼리에는 .eq()로만 전달되므로 문자 종류·길이만 제한한다.
+ */
+export function isValidRegionCode(value: string): boolean {
+  return value.length >= 1 && value.length <= 40 && /^[가-힣A-Za-z0-9| -]+$/.test(value)
+}
+
 /** 실패 결과 생성 헬퍼 */
 export function engineFail(
   code: TaxEngineFailure['code'],
@@ -137,7 +146,7 @@ export async function isRegulatedArea(
   if (!isValidDateString(baseDate)) {
     return engineFail('INVALID_INPUT', '기준일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
   }
-  if (!/^[A-Za-z0-9-]{1,20}$/.test(regionCode)) {
+  if (!isValidRegionCode(regionCode)) {
     return engineFail('INVALID_INPUT', '지역 코드 형식이 올바르지 않습니다.')
   }
 
