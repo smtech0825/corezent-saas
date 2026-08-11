@@ -231,6 +231,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <DeleteButton
                         productId={p.id}
                         productName={p.name}
+                        disabled={busy}
                         onDelete={handleDelete}
                       />
                     </div>

@@ -23,12 +23,22 @@ type DeleteResult =
  * @함수명: deleteProduct
  * @설명: 제품 삭제. 주문·구독·라이선스 이력이 있어 FK 제약(23503)으로 완전 삭제가 불가하면,
  *        데이터 무결성 보존을 위해 완전 삭제 대신 비활성화(is_active=false)로 대체한다.
+ *        실패를 예외로 던지지 않고 결과값으로 돌려준다 — 예외로 던지면 화면이 그것을 받지 못해
+ *        아무 안내 없이 삭제 버튼만 비활성으로 굳는다.
  * @매개변수: id - 제품 ID
- * @반환값: 처리 결과 — deleted(완전삭제) / deactivated(비활성화) / 실패 메시지
+ * @반환값: 처리 결과 — deleted(완전삭제) / deactivated(비활성화) / 실패 사유(한국어)
  */
 async function deleteProduct(id: string): Promise<DeleteResult> {
   'use server'
-  const actorId = await requireAdminOrThrow()
+  // 권한 확인도 결과값으로 받는다(활동 기록에 관리자 id가 필요해 requireAdminOrThrow를 그대로 쓰되
+  // 예외만 결과값으로 바꾼다). 사유 문구는 다른 관리자 화면(guardAdmin)과 같은 문장으로 맞춘다.
+  let actorId: string
+  try {
+    actorId = await requireAdminOrThrow()
+  } catch (err) {
+    console.error('[products] 권한 확인에 걸림:', err instanceof Error ? err.message : String(err))
+    return { ok: false, message: '관리자 권한이 확인되지 않았습니다. 로그인이 풀렸을 수 있으니 다시 로그인한 뒤 시도해 주세요.' }
+  }
   const client = createAdminClient()
 
   // 1) 완전 삭제 시도 — product_prices·changelogs 등은 ON DELETE CASCADE로 함께 삭제됨
