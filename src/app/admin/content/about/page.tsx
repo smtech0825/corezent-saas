@@ -20,10 +20,12 @@ async function updateHero(title: string, description: string) {
   const c = createAdminClient()
   // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(콘텐츠 블록·제품 설명과 동일 규칙)
   const cleanDescription = sanitizeRichHtml(description)
-  await Promise.all([
+  const results = await Promise.all([
     c.from('front_content').upsert({ key: 'about_title', value: title }),
     c.from('front_content').upsert({ key: 'about_description', value: cleanDescription }),
   ])
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw new Error(`소개 히어로 저장 실패: ${failed.error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }
@@ -39,7 +41,7 @@ async function createStat(data: StatData) {
   const { data: maxRow } = await c.from('front_about_stats').select('order_index').order('order_index', { ascending: false }).limit(1).single()
   const idx = (maxRow?.order_index ?? -1) + 1
   const { data: created, error } = await c.from('front_about_stats').insert({ ...data, order_index: idx, is_published: true }).select('id, icon, value, label, order_index, is_published').single()
-  if (error) console.error('[createStat]', error)
+  if (error) throw new Error(`통계 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
   return created
@@ -49,7 +51,8 @@ async function updateStat(id: string, data: StatData) {
   'use server'
   await requireAdminOrThrow()
   const c = createAdminClient()
-  await c.from('front_about_stats').update(data).eq('id', id)
+  const { error } = await c.from('front_about_stats').update(data).eq('id', id)
+  if (error) throw new Error(`통계 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }
@@ -77,7 +80,7 @@ async function createBlock(data: BlockData) {
   const { data: maxRow } = await c.from('front_about_blocks').select('order_index').order('order_index', { ascending: false }).limit(1).single()
   const idx = (maxRow?.order_index ?? -1) + 1
   const { data: created, error } = await c.from('front_about_blocks').insert({ ...clean, order_index: idx, is_published: true }).select('id, title, description, images, order_index, is_published').single()
-  if (error) console.error('[createBlock]', error)
+  if (error) throw new Error(`블록 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
   return created
@@ -89,7 +92,8 @@ async function updateBlock(id: string, data: BlockData) {
   const c = createAdminClient()
   // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const clean = { ...data, description: sanitizeRichHtml(data.description) }
-  await c.from('front_about_blocks').update(clean).eq('id', id)
+  const { error } = await c.from('front_about_blocks').update(clean).eq('id', id)
+  if (error) throw new Error(`블록 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/about')
   revalidatePath('/about')
 }

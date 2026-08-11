@@ -23,7 +23,7 @@ async function createFeature(icon: string, tag: string, title: string, descripti
     .single()
   const nextIndex = (maxRow?.order_index ?? -1) + 1
   const { data, error } = await adminClient.from('front_features').insert({ icon, tag, title, description, order_index: nextIndex, is_published: true }).select('id, icon, tag, title, description, is_published, order_index').single()
-  if (error) console.error('[createFeature]', error)
+  if (error) throw new Error(`특징 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/features')
   revalidatePath('/')
   return data
@@ -33,7 +33,8 @@ async function updateFeature(id: string, icon: string, tag: string, title: strin
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_features').update({ icon, tag, title, description }).eq('id', id)
+  const { error } = await adminClient.from('front_features').update({ icon, tag, title, description }).eq('id', id)
+  if (error) throw new Error(`특징 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/features')
   revalidatePath('/')
 }
@@ -52,7 +53,8 @@ async function toggleFeaturePublish(id: string, published: boolean) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_features').update({ is_published: published }).eq('id', id)
+  const { error } = await adminClient.from('front_features').update({ is_published: published }).eq('id', id)
+  if (error) throw new Error(`특징 게시 상태 변경 실패: ${error.message}`)
   revalidatePath('/admin/content/features')
   revalidatePath('/')
 }

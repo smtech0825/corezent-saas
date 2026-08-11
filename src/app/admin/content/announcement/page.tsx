@@ -49,9 +49,10 @@ export default async function AnnouncementAdminPage() {
       value,
       updated_at: new Date().toISOString(),
     }))
-    await adminClient
+    const { error } = await adminClient
       .from('front_content')
       .upsert(rows, { onConflict: 'key' })
+    if (error) throw new Error(`배너 저장 실패: ${error.message}`)
     revalidatePath('/admin/content/announcement')
     revalidatePath('/')
   }

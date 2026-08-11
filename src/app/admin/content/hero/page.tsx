@@ -36,9 +36,10 @@ async function saveHero(data: Record<string, string>) {
     value,
     updated_at: new Date().toISOString(),
   }))
-  await adminClient
+  const { error } = await adminClient
     .from('front_content')
     .upsert(rows, { onConflict: 'key' })
+  if (error) throw new Error(`히어로 저장 실패: ${error.message}`)
   revalidatePath('/admin/content/hero')
   revalidatePath('/')
 }

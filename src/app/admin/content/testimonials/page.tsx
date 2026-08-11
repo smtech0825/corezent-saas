@@ -25,7 +25,7 @@ async function createTestimonial(data: TestimonialData) {
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
   const { data: created, error } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
-  if (error) console.error('[createTestimonial]', error)
+  if (error) throw new Error(`고객 후기 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
   return created
@@ -35,7 +35,8 @@ async function updateTestimonial(id: string, data: TestimonialData) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_interviews').update(data).eq('id', id)
+  const { error } = await adminClient.from('front_interviews').update(data).eq('id', id)
+  if (error) throw new Error(`고객 후기 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
 }
@@ -54,7 +55,8 @@ async function toggleTestimonialPublish(id: string, published: boolean) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_interviews').update({ is_published: published }).eq('id', id)
+  const { error } = await adminClient.from('front_interviews').update({ is_published: published }).eq('id', id)
+  if (error) throw new Error(`고객 후기 게시 상태 변경 실패: ${error.message}`)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
 }

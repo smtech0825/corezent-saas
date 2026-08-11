@@ -23,7 +23,8 @@ async function createStep(data: StepData) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  const { data: created } = await adminClient.from('front_steps').insert(data).select('id, icon, title, description, is_published, order_index').single()
+  const { data: created, error } = await adminClient.from('front_steps').insert(data).select('id, icon, title, description, is_published, order_index').single()
+  if (error) throw new Error(`단계 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
   return created
@@ -33,7 +34,8 @@ async function updateStep(id: string, data: StepData) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_steps').update(data).eq('id', id)
+  const { error } = await adminClient.from('front_steps').update(data).eq('id', id)
+  if (error) throw new Error(`단계 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
 }
@@ -52,7 +54,8 @@ async function toggleStepPublish(id: string, published: boolean) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_steps').update({ is_published: published }).eq('id', id)
+  const { error } = await adminClient.from('front_steps').update({ is_published: published }).eq('id', id)
+  if (error) throw new Error(`단계 게시 상태 변경 실패: ${error.message}`)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
 }

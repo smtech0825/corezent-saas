@@ -25,7 +25,7 @@ async function createFaq(question: string, answer: string) {
   const nextIndex = (maxRow?.order_index ?? -1) + 1
   // 답변은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const { data, error } = await adminClient.from('front_faqs').insert({ question, answer: sanitizeRichHtml(answer), order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
-  if (error) console.error('[createFaq]', error)
+  if (error) throw new Error(`FAQ 추가 실패: ${error.message}`)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
@@ -36,7 +36,8 @@ async function updateFaq(id: string, question: string, answer: string) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_faqs').update({ question, answer: sanitizeRichHtml(answer) }).eq('id', id)
+  const { error } = await adminClient.from('front_faqs').update({ question, answer: sanitizeRichHtml(answer) }).eq('id', id)
+  if (error) throw new Error(`FAQ 수정 실패: ${error.message}`)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
@@ -57,7 +58,8 @@ async function toggleFaqPublish(id: string, published: boolean) {
   'use server'
   await requireAdminOrThrow()
   const adminClient = createAdminClient()
-  await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
+  const { error } = await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
+  if (error) throw new Error(`FAQ 게시 상태 변경 실패: ${error.message}`)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
