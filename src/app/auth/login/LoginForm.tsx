@@ -83,12 +83,16 @@ export default function LoginForm() {
     setError(authCallbackMessage(reasonFromHash() ?? code))
 
     // 이동 경로(redirect)는 남기고 오류 표시만 지운다 — 새로고침·링크 공유 시 남지 않게.
-    // router.replace에 # 없는 주소를 주므로 # 뒤 영문 표시도 함께 사라진다.
+    // # 뒤 영문 표시도 함께 사라진다.
+    //
+    // 화면 이동(router.replace)이 아니라 주소창만 고쳐 쓴다. 로그인 상태에서 이 안내를
+    // 보고 있을 때 화면을 다시 이동시키면, 미들웨어가 "로그인했는데 로그인 화면에 있다"고
+    // 보고 대시보드로 보내 버려 안내를 읽을 새가 없다.
     const params = new URLSearchParams(searchParams.toString())
     params.delete('error')
     const query = params.toString()
-    router.replace(query ? `/auth/login?${query}` : '/auth/login')
-  }, [searchParams, router])
+    window.history.replaceState(null, '', query ? `/auth/login?${query}` : '/auth/login')
+  }, [searchParams])
 
   // 이메일+비밀번호 로그인
   async function handleEmailLogin(e: React.FormEvent) {

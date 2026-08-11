@@ -70,9 +70,17 @@ export async function middleware(request: NextRequest) {
   // 관리자 경로: 로그인 여부만 체크 (role 검증은 admin/layout.tsx에서 service role key로 처리)
   // middleware에서 profiles 조회 시 RLS 재귀 문제 발생 가능성으로 제거
 
-  // 이미 로그인된 사용자가 auth 페이지 접근 시 대시보드로 리다이렉트
+  // 이미 로그인된 사용자가 auth 페이지 접근 시 대시보드로 리다이렉트 (기존 동작 유지)
+  //
+  // 단 한 가지 예외: 인증 콜백이 실패 안내를 들고 로그인 화면으로 보낸 경우(?error=)는
+  // 그대로 둔다. 만료된 인증 메일 링크를 로그인 상태에서 누르면 여기서 튕겨나가
+  // "왜 안 됐는지"를 볼 기회가 사라지기 때문이다(같은 링크를 두 번 누르거나 메일 보안
+  // 검사가 링크를 먼저 열어버린 경우에 흔하다).
+  // 예외는 로그인 화면 + error 값이 있을 때로만 좁혔다 — 나머지 이동 규칙은 그대로다.
   const authPaths = ['/auth/login', '/auth/register']
-  if (authPaths.includes(pathname) && user) {
+  const hasCallbackNotice =
+    pathname === '/auth/login' && request.nextUrl.searchParams.has('error')
+  if (authPaths.includes(pathname) && user && !hasCallbackNotice) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
