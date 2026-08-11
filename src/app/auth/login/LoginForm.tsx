@@ -13,6 +13,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
+import { safeInternalPath } from '@/lib/validate'
 
 /** "아이디 저장" 이메일 보관 localStorage 키 */
 const SAVED_EMAIL_KEY = 'corezent_saved_email'
@@ -20,7 +21,9 @@ const SAVED_EMAIL_KEY = 'corezent_saved_email'
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') ?? '/'
+  // 주소로 넘어온 이동 경로는 그대로 믿지 않는다 — 바깥 주소면 조용히 홈으로 보낸다.
+  // (가짜 사이트 주소를 붙인 로그인 링크가 돌면 로그인 직후 그쪽으로 넘어가기 때문)
+  const redirect = safeInternalPath(searchParams.get('redirect'), '/')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -132,7 +135,7 @@ export default function LoginForm() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: oauthProvider,
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=${redirect}`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
       },
     })
 

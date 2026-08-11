@@ -7,19 +7,13 @@
 
 import type { Metadata } from 'next'
 import VerifyForm from './VerifyForm'
+import { safeInternalPath } from '@/lib/validate'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '이메일 인증 · CoreZent',
   description: '이메일로 발송된 6자리 인증코드를 입력해 계정을 인증해 주세요.',
-}
-
-/** next는 내부 경로만 허용(오픈 리다이렉트 방지) */
-function safeNext(raw: string | string[] | undefined): string {
-  const v = Array.isArray(raw) ? raw[0] : raw
-  if (typeof v === 'string' && v.startsWith('/') && !v.startsWith('//')) return v
-  return '/dashboard'
 }
 
 /**
@@ -36,7 +30,8 @@ export default async function VerifyPage({
 }) {
   const sp = await searchParams
   const email = typeof sp.email === 'string' ? sp.email : Array.isArray(sp.email) ? sp.email[0] : ''
-  const next = safeNext(sp.next)
+  // 내부 경로만 허용(오픈 리다이렉트 방지) — 로그인 화면·인증 콜백과 같은 검사를 쓴다.
+  const next = safeInternalPath(sp.next, '/dashboard')
 
   return <VerifyForm email={email} next={next} />
 }

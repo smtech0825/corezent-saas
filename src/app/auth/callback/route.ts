@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
+import { safeInternalPath } from '@/lib/validate'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -28,7 +29,9 @@ export async function GET(request: Request) {
   const cookieStore = await cookies()
   const returnToCookie = cookieStore.get('return_to')?.value
   const redirectParam  = url.searchParams.get('redirect') ?? '/'
-  const redirect = returnToCookie ?? redirectParam
+  // 우리 사이트 안의 경로만 허용한다. 쿠키는 미들웨어가 심은 값이지만 쿼리는 밖에서 붙일 수 있어
+  // 둘 다 같은 검사를 통과시킨다(로그인 화면·인증 화면과 같은 검사).
+  const redirect = safeInternalPath(returnToCookie ?? redirectParam, '/')
 
   // return_to 쿠키 삭제 헬퍼 (리다이렉트 응답에 적용)
   function withCookieCleared(res: NextResponse): NextResponse {

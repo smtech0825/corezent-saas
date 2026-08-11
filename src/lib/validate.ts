@@ -34,6 +34,35 @@ export function isNumericIdString(v: unknown): v is string {
   return typeof v === 'string' && /^\d+$/.test(v)
 }
 
+/**
+ * @함수명: safeInternalPath
+ * @설명: 로그인·인증 후 이동할 주소가 우리 사이트 안의 경로인지 확인한다.
+ *        바깥 주소면 오류를 띄우지 않고 조용히 기본 화면으로 보낸다(오픈 리다이렉트 차단).
+ *        auth/verify/page.tsx가 쓰던 같은 목적의 검사를 한곳으로 모은 것이다 — 화면마다
+ *        따로 두면 한쪽만 막히는 일이 생긴다.
+ *
+ *        막는 것: 전체 주소(https://evil.com) · 프로토콜 생략(//evil.com) · 역슬래시(\\evil.com,
+ *        /\evil.com — 브라우저가 //로 정규화한다) · 앞뒤 공백 · 제어문자 · javascript: 같은 스킴.
+ *        통과시키는 것: '/'로 시작하는 우리 사이트 경로(쿼리·해시 포함).
+ * @매개변수: raw - 주소에서 읽은 값(없거나 배열일 수 있음) / fallback - 안전하지 않을 때 보낼 기본 경로
+ * @반환값: 우리 사이트 안의 경로. 판단이 서지 않으면 fallback
+ */
+export function safeInternalPath(raw: string | string[] | undefined | null, fallback = '/'): string {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (typeof value !== 'string') return fallback
+
+  // 앞뒤 공백·줄바꿈을 먼저 걷어낸다 — "%20//evil.com"처럼 공백으로 검사를 피하려는 시도를 막는다.
+  const path = value.trim()
+
+  if (!path.startsWith('/')) return fallback        // 전체 주소·javascript: 등 스킴이 붙은 값
+  if (path.startsWith('//')) return fallback        // 프로토콜 생략 주소
+  if (path.startsWith('/\\')) return fallback       // 브라우저가 //로 읽는 역슬래시 변형
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001F\u007F]/.test(path)) return fallback
+
+  return path
+}
+
 /** 목록 화면이 허용하는 최대 페이지 번호 — 터무니없이 큰 값으로 조회를 시키지 않기 위한 상한 */
 const MAX_PAGE = 100_000
 
