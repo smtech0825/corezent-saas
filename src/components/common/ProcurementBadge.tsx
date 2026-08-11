@@ -65,9 +65,11 @@ export default function ProcurementBadge({
     : 'gap-x-2 gap-y-1 px-2.5 py-1.5 text-xs border-l-[3px]'
 
   return (
-    // flex-wrap + max-w-full — 좁은 곳에서는 줄이 접히고, 가로 스크롤이 생기지 않는다
+    // flex-wrap + max-w-full — 좁은 곳에서는 줄이 접히고, 가로 스크롤이 생기지 않는다.
+    // flex w-fit(= 블록 레벨 + 내용 폭) — inline-flex는 줄상자를 만들어 아래에 몇 px가 더 붙는데,
+    // 카드 안에서 버튼과의 간격이 자리마다 미세하게 달라지므로 블록으로 고정한다.
     <div
-      className={`inline-flex flex-wrap items-baseline max-w-full rounded border border-rule border-l-pen bg-paper-shade text-ink-faint ${sizeCls} ${className}`}
+      className={`flex w-fit flex-wrap items-baseline max-w-full rounded border border-rule border-l-pen bg-paper-shade text-ink-faint ${sizeCls} ${className}`}
     >
       <span className="whitespace-nowrap">조달청 등록</span>
       {cls && <Entry label="물품분류번호" value={cls} />}

@@ -26,7 +26,8 @@ export default async function PricingPage() {
 
   // 제품·가격 병렬 조회 — /pricing 카드는 상세 페이지로 이동만 하므로 추천인 코드는 상세 구매 바에서 해석한다.
   // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 없이 기존 단독 카드로 정상 동작)
-  const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_axis1_name, option_axis2_name'
+  // 조달청 등록번호(054)도 OPT_COLS에만 넣는다 — 미적용 환경에서는 BASE_COLS 폴백으로 요금 페이지가 계속 열린다
+  const OPT_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index, option_axis1_name, option_axis2_name, procurement_class_number, procurement_item_number'
   const BASE_COLS = 'id, slug, name, category, tagline, badge_text, badge_color, pricing_features, order_index'
   const productsQuery = client
     .from('products')
@@ -128,6 +129,9 @@ export default async function PricingPage() {
       // v2 옵션 — 축 제목(products) + 옵션 행(product_prices). 폴백 시 안전 접근.
       axis1Name:            ((p as { option_axis1_name?: string | null }).option_axis1_name) ?? null,
       axis2Name:            ((p as { option_axis2_name?: string | null }).option_axis2_name) ?? null,
+      // 조달청 등록번호(054) — 폴백 시 키가 없어 undefined → 배지 미표시
+      procurementClassNumber: ((p as { procurement_class_number?: string | null }).procurement_class_number) ?? null,
+      procurementItemNumber:  ((p as { procurement_item_number?: string | null }).procurement_item_number) ?? null,
       optionRows,
     }
   })

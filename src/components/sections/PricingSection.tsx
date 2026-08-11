@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import QuantityStepper from '@/components/common/QuantityStepper'
+import ProcurementBadge from '@/components/common/ProcurementBadge'
 import Button from '@/components/ui/Button'
 import Section, { SectionHeader } from '@/components/ui/Section'
 
@@ -32,6 +33,10 @@ export interface PricingSectionProduct {
   oneTimeCheckoutUrl: string
   /** 옵션 상품 여부 — true면 대표가만 노출하고 상세 페이지에서 조합 선택·구매 */
   hasOptions: boolean
+  /** 조달청 물품분류번호(054) — 비면 배지 미표시 */
+  procurementClassNumber: string | null
+  /** 조달청 물품식별번호(054) — 비면 배지 미표시 */
+  procurementItemNumber: string | null
 }
 
 interface Props {
@@ -119,6 +124,15 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
 
       {/* 수량 선택 — 비옵션 상품만(옵션 상품은 상세 페이지에서 조합·수량 선택) */}
       {!product.hasOptions && <QuantityStepper value={qty} onChange={setQty} />}
+
+      {/* 조달청 등록번호 — CTA 버튼 위(자세히 보기·시작하기 두 경우 모두 공통).
+          값이 없으면 부품이 null이라 자리·여백이 남지 않는다(여백은 배지 자체에 준다) */}
+      <ProcurementBadge
+        classNumber={product.procurementClassNumber}
+        itemNumber={product.procurementItemNumber}
+        size="sm"
+        className="mb-3"
+      />
 
       {/* CTA — 옵션 상품은 상세 페이지로 이동해 조합 선택, 비옵션은 바로 체크아웃 */}
       {product.hasOptions ? (

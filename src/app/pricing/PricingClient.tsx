@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import ProcurementBadge from '@/components/common/ProcurementBadge'
 
 // 전역 분석 도구 타입 선언
 declare global {
@@ -50,6 +51,9 @@ export interface PricingProduct {
   // v2 옵션 — 축 제목(products) + 옵션 행(product_prices). optionRows 2+면 드롭다운 카드.
   axis1Name: string | null
   axis2Name: string | null
+  // 조달청 등록번호(054) — 비면 배지 미표시
+  procurementClassNumber: string | null
+  procurementItemNumber: string | null
   optionRows: OptionRow[]
 }
 
@@ -301,6 +305,14 @@ export default function PricingClient({ products }: Props) {
                     {/* 하단 고정 영역 — CTA를 카드 맨 아래로 정렬(mt-auto).
                         전 상품 공통: 상세 페이지로 이동해 옵션·수량 선택 후 구매(구매 바) */}
                     <div className="mt-auto">
+                      {/* 조달청 등록번호 — "자세히 보기" 버튼 위. 값이 없으면 부품이 null이라 자리·여백이 남지 않는다
+                          (래퍼 div로 감싸면 값 없는 카드에 빈 여백이 생기므로 여백은 배지 자체에 준다) */}
+                      <ProcurementBadge
+                        classNumber={product.procurementClassNumber}
+                        itemNumber={product.procurementItemNumber}
+                        size="sm"
+                        className="mb-3"
+                      />
                       <Link
                         href={`/product/${product.slug}`}
                         onClick={() => track('view_product', { product: product.name, has_options: hasOptions })}

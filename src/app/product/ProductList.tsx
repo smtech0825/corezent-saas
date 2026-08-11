@@ -14,6 +14,7 @@ import Image from 'next/image'
 import { Sparkles, Clock, Eye } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
+import ProcurementBadge from '@/components/common/ProcurementBadge'
 
 const DESC_CHAR_LIMIT = 150
 
@@ -40,6 +41,9 @@ interface Product {
   badgeText: string | null
   badgeColor: string
   is_active: boolean
+  // 조달청 등록번호(054) — 비면 배지 미표시
+  procurementClassNumber: string | null
+  procurementItemNumber: string | null
   monthlyPrice: number | null
   annualPrice: number | null
 }
@@ -211,6 +215,14 @@ export default function ProductList({ products }: Props) {
                         </span>
                       </div>
                     )}
+                    {/* 조달청 등록번호 — "자세히 보기" 버튼 위. 값이 없으면 부품이 null이라 자리·여백이 남지 않는다
+                        (래퍼 div로 감싸면 값 없는 카드에 빈 여백이 생기므로 여백은 배지 자체에 준다) */}
+                    <ProcurementBadge
+                      classNumber={product.procurementClassNumber}
+                      itemNumber={product.procurementItemNumber}
+                      size="sm"
+                      className="mb-3"
+                    />
                     <Link
                       href={`/product/${product.slug}`}
                       className="w-full inline-flex items-center justify-center gap-2 bg-pen text-white font-semibold py-3 rounded-md text-sm hover:bg-pen-dark transition-all duration-200"

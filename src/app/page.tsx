@@ -59,7 +59,7 @@ export default async function HomePage() {
     client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
     client
       .from('products')
-      .select('name, slug, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)')
+      .select('name, slug, badge_text, badge_color, pricing_features, procurement_class_number, procurement_item_number, product_prices(type, interval, price, checkout_url, is_active)')
       .eq('is_active', true)
       .order('order_index'),
     // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
@@ -115,6 +115,9 @@ export default async function HomePage() {
       isOneTime:          !monthly && !annual && !!oneTime,
       oneTimeCheckoutUrl: oneTime?.checkout_url ?? '#',
       hasOptions,
+      // 조달청 등록번호(054) — 비면 카드에 배지를 그리지 않는다
+      procurementClassNumber: ((pricingRaw as { procurement_class_number?: string | null }).procurement_class_number) ?? null,
+      procurementItemNumber:  ((pricingRaw as { procurement_item_number?: string | null }).procurement_item_number) ?? null,
     }
   })
 

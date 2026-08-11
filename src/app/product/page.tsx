@@ -30,7 +30,8 @@ export default async function ProductPage() {
   const BASE_COLS = 'id, name, slug, tagline, list_description, category, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)'
   const withRes = await client
     .from('products')
-    .select('id, name, slug, tagline, list_description, category, category_group, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, product_prices(type, interval, price, is_active)')
+    // 조달청 등록번호(054)도 이쪽에만 넣는다 — 미적용 환경에서는 BASE_COLS 폴백으로 목록이 계속 열린다
+    .select('id, name, slug, tagline, list_description, category, category_group, features, tags, product_features, logo_url, badge_text, badge_color, is_active, order_index, procurement_class_number, procurement_item_number, product_prices(type, interval, price, is_active)')
     .eq('is_active', true)
     .order('order_index', { ascending: true })
 
@@ -62,6 +63,9 @@ export default async function ProductPage() {
       badgeText: (p.badge_text as string) ?? null,
       badgeColor: (p.badge_color as string) ?? 'blue',
       is_active: p.is_active as boolean,
+      // 조달청 등록번호(054) — 폴백 시 키가 없어 undefined → 배지 미표시
+      procurementClassNumber: ((p as { procurement_class_number?: string | null }).procurement_class_number) ?? null,
+      procurementItemNumber: ((p as { procurement_item_number?: string | null }).procurement_item_number) ?? null,
       monthlyPrice: monthly?.price ?? null,
       annualPrice: annual?.price ?? null,
     }
