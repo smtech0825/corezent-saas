@@ -8,7 +8,7 @@
  *        - 저장 성공/실패 인라인 피드백
  */
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 
 type Settings = Record<string, string>
@@ -98,6 +98,9 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
   const [saving, setSaving] = useState<Section | null>(null)
   const [saved,  setSaved]  = useState<Section | null>(null)
   const [error,  setError]  = useState<string | null>(null)
+  // "저장됨" 표시를 되돌리는 예약. 다시 저장하면 이전 예약을 취소하고, 화면을 떠날 때도 정리한다.
+  const savedResetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (savedResetRef.current) clearTimeout(savedResetRef.current) }, [])
 
   function update(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -120,7 +123,8 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       })
       if (!res.ok) throw new Error()
       setSaved(section)
-      setTimeout(() => setSaved(null), 3000)
+      if (savedResetRef.current) clearTimeout(savedResetRef.current)
+      savedResetRef.current = setTimeout(() => setSaved(null), 3000)
     } catch {
       setError('저장에 실패했습니다. 다시 시도해주세요.')
     } finally {

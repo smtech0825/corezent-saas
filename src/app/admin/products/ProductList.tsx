@@ -5,7 +5,7 @@
  * @설명: 관리자 제품 목록 — 위/아래 화살표로 순서 변경 + API 호출
  */
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import DeleteButton from './DeleteButton'
@@ -50,6 +50,11 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   const [delMsg, setDelMsg] = useState<Notice | null>(null)
   // 성공 안내를 잠시 뒤 지우는 예약. 새 안내가 뜨면 반드시 취소한다.
   const autoHideRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 화면을 떠날 때 남은 예약을 정리한다 — 사라진 화면에 대고 안내를 지우려 하지 않도록.
+  useEffect(() => () => {
+    if (autoHideRef.current) clearTimeout(autoHideRef.current)
+  }, [])
 
   // 이 화면의 조작은 순서 변경과 삭제 두 가지다. 하나가 진행 중이면 다른 하나도 막는다
   // — 한쪽만 막으면 순서 저장이 실패하는 사이에 지운 제품이 되돌리기로 되살아난다.

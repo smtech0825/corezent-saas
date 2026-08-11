@@ -9,7 +9,7 @@
  *        - 관리자 데스크톱 전제: 좁으면 가로 스크롤.
  */
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Plus, Trash2, Copy, Check } from 'lucide-react'
 import type { PriceEntry } from './ProductForm'
 
@@ -59,6 +59,9 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
 function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChange: (v: string) => void }) {
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
+  // "복사됨" 표시를 되돌리는 예약. 다시 누르면 이전 예약을 취소하고, 화면을 떠날 때도 정리한다.
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (resetRef.current) clearTimeout(resetRef.current) }, [])
 
   if (editing) {
     return (
@@ -93,7 +96,8 @@ function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChan
           onClick={async () => {
             await navigator.clipboard.writeText(value)
             setCopied(true)
-            setTimeout(() => setCopied(false), 1500)
+            if (resetRef.current) clearTimeout(resetRef.current)
+            resetRef.current = setTimeout(() => setCopied(false), 1500)
           }}
           className="shrink-0 text-ink-faint hover:text-mark transition-colors"
         >
