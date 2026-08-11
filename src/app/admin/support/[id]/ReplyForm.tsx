@@ -12,17 +12,19 @@ import { Send, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 /**
  * @타입: ReplyResult
- * @설명: 답변 전송 결과 네 가지. reason에는 화면에 그대로 보여줄 한국어 문장만 담는다.
+ * @설명: 답변 전송 결과 다섯 가지. reason에는 화면에 그대로 보여줄 한국어 문장만 담는다.
  *        ok = 전부 성공
  *        sent_but_status_failed = 답변은 전송됐고 상태 표시만 실패(재전송 금지)
  *        saved_mail_failed = 답변은 저장됐지만 알림 메일이 나가지 않음(재전송 금지)
  *        save_failed = 답변 저장 자체가 실패(다시 시도해도 안전)
+ *        forbidden = 권한 확인에 걸림. 저장 전에 막히므로 다시 로그인 후 시도하면 안전
  */
 export type ReplyResult =
   | { status: 'ok' }
   | { status: 'sent_but_status_failed'; reason: string }
   | { status: 'saved_mail_failed'; reason: string }
   | { status: 'save_failed'; reason: string }
+  | { status: 'forbidden'; reason: string }
 
 interface Props {
   onSubmit: (message: string, close: boolean) => Promise<ReplyResult>
@@ -71,7 +73,7 @@ export default function ReplyForm({ onSubmit }: Props) {
         return
       }
 
-      // 저장 자체가 실패 — 아직 아무것도 나가지 않았으므로 그대로 다시 시도해도 안전하다.
+      // 권한 실패·저장 실패 — 둘 다 저장 전에 막힌 경우라 그대로 다시 시도해도 안전하다.
       setNotice({
         kind: 'error',
         text: `${result.reason} 작성한 내용은 그대로 두었으니 다시 시도해 주세요.`,

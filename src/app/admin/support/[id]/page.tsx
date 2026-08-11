@@ -9,9 +9,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import ReplyForm, { type ReplyResult } from './ReplyForm'
+import TicketStatusButton from './TicketStatusButton'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,7 +73,9 @@ export default async function TicketDetailPage({
    */
   async function handleReply(message: string, close: boolean): Promise<ReplyResult> {
     'use server'
-    await requireAdminOrThrow()
+    // 권한 확인도 같은 결과값 방식으로 통일한다 — 이 파일에 예외로 알리는 기능을 남기지 않는다.
+    const denied = await guardAdmin()
+    if (denied) return denied
     const client = createAdminClient()
     const serverClient = await createClient()
     const { data: { user: currentUser } } = await serverClient.auth.getUser()
@@ -133,22 +136,37 @@ export default async function TicketDetailPage({
     return { status: 'ok' }
   }
 
-  async function closeTicket() {
+  /**
+   * @함수명: closeTicket
+   * @설명: 티켓을 닫습니다. 실패를 예외로 던지지 않고 결과값으로 돌려줍니다 — 예전에는 예외가
+   *        화면 전체를 오류 화면으로 바꾸면서 DB 오류 원문(영문)을 그대로 보여줬습니다.
+   * @반환값: 성공 / 권한 없음 / 처리 실패 세 가지 중 하나
+   */
+  async function closeTicket(): Promise<AdminActionResult> {
     'use server'
-    await requireAdminOrThrow()
+    const denied = await guardAdmin()
+    if (denied) return denied
     const client = createAdminClient()
     const { error } = await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
-    if (error) throw new Error(`티켓 닫기에 실패했습니다: ${error.message}`)
+    if (error) return dbFailure('티켓 닫기', error)
     revalidatePath(`/admin/support/${id}`)
+    return { status: 'ok' }
   }
 
-  async function reopenTicket() {
+  /**
+   * @함수명: reopenTicket
+   * @설명: 닫힌 티켓을 다시 엽니다. closeTicket과 같은 방식으로 결과값을 돌려줍니다.
+   * @반환값: 성공 / 권한 없음 / 처리 실패 세 가지 중 하나
+   */
+  async function reopenTicket(): Promise<AdminActionResult> {
     'use server'
-    await requireAdminOrThrow()
+    const denied = await guardAdmin()
+    if (denied) return denied
     const client = createAdminClient()
     const { error } = await client.from('support_tickets').update({ status: 'open' }).eq('id', id)
-    if (error) throw new Error(`티켓 다시 열기에 실패했습니다: ${error.message}`)
+    if (error) return dbFailure('티켓 다시 열기', error)
     revalidatePath(`/admin/support/${id}`)
+    return { status: 'ok' }
   }
 
   return (
@@ -178,17 +196,17 @@ export default async function TicketDetailPage({
         {/* 빠른 액션 */}
         <div className="flex items-center gap-2">
           {ticket.status !== 'closed' ? (
-            <form action={closeTicket}>
-              <button type="submit" className="text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/40 px-3 py-2 rounded-lg transition-colors">
-                티켓 닫기
-              </button>
-            </form>
+            <TicketStatusButton
+              label="티켓 닫기"
+              action={closeTicket}
+              className="text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/40 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+            />
           ) : (
-            <form action={reopenTicket}>
-              <button type="submit" className="text-xs text-caution hover:brightness-110 border border-caution/20 px-3 py-2 rounded-lg transition-colors">
-                티켓 다시 열기
-              </button>
-            </form>
+            <TicketStatusButton
+              label="티켓 다시 열기"
+              action={reopenTicket}
+              className="text-xs text-caution hover:brightness-110 border border-caution/20 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+            />
           )}
         </div>
 
