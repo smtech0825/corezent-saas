@@ -10,11 +10,9 @@
 
 import { AlertTriangle, ExternalLink, ScrollText } from 'lucide-react'
 import type { AcquisitionCause, AcquisitionResult } from '@/lib/tax/engine-types'
-import type { TaxRuleMode } from '@/lib/tax/types'
 
 interface Props {
   result: AcquisitionResult
-  ruleMode: TaxRuleMode
   inputCause: AcquisitionCause   // 입력한 취득 원인 — 간주/전환 안내문에 사용
 }
 
@@ -23,7 +21,7 @@ function won(amount: number): string {
   return `${amount.toLocaleString('ko-KR')}원`
 }
 
-export default function ResultPanel({ result, ruleMode, inputCause }: Props) {
+export default function ResultPanel({ result, inputCause }: Props) {
   // ── 계산 불가 — 0원 대신 사유를 명확히 안내 ──────────────────────────────
   if (!result.ok) {
     return (
@@ -48,8 +46,9 @@ export default function ResultPanel({ result, ruleMode, inputCause }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* 개정안 모드 경고 배지 — 작게 처리하거나 접지 않는다 */}
-      {ruleMode === 'proposed' && (
+      {/* 개정안 모드 경고 배지 — 계산 당시 모드(result.ruleMode) 기준. 토글을 나중에
+          바꿔도 이 결과가 어떤 모드로 계산됐는지가 표시되어야 한다 */}
+      {result.ruleMode === 'proposed' && (
         <div className="bg-caution-soft border-2 border-caution rounded-lg p-4" role="alert">
           <p className="flex items-center gap-2 font-serif font-black text-caution text-base">
             <AlertTriangle size={20} />

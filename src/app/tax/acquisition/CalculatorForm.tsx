@@ -101,26 +101,31 @@ export default function CalculatorForm() {
     }
 
     startTransition(async () => {
-      const res = await calculateAcquisition({
-        baseDate,
-        sido,
-        sigungu,
-        cause,
-        price: priceNum,
-        houseCountAfter: houseNum,
-        areaOver85,
-        ruleMode,
-        firstHome,
-        temporaryTwoHome,
-        donorRelation: cause === 'gift' ? donorRelation : undefined,
-        marketValue: cause === 'gift' ? mv : undefined,
-        officialPrice: cause === 'gift' ? op : undefined,
-        donorIsSingleHomeOwner:
-          cause === 'gift' && donorSingleHome !== '' ? donorSingleHome === 'yes' : undefined,
-      })
-      setResult(res)
-      setResultCause(cause)
-      requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      // 서버 액션 예외가 에러 바운더리로 올라가 입력값이 전부 날아가는 것을 막는다
+      try {
+        const res = await calculateAcquisition({
+          baseDate,
+          sido,
+          sigungu,
+          cause,
+          price: priceNum,
+          houseCountAfter: houseNum,
+          areaOver85,
+          ruleMode,
+          firstHome,
+          temporaryTwoHome,
+          donorRelation: cause === 'gift' ? donorRelation : undefined,
+          marketValue: cause === 'gift' ? mv : undefined,
+          officialPrice: cause === 'gift' ? op : undefined,
+          donorIsSingleHomeOwner:
+            cause === 'gift' && donorSingleHome !== '' ? donorSingleHome === 'yes' : undefined,
+        })
+        setResult(res)
+        setResultCause(cause)
+        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      } catch {
+        setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      }
     })
   }
 
@@ -174,7 +179,12 @@ export default function CalculatorForm() {
         <SegmentControl
           label="취득 원인"
           value={cause}
-          onChange={(v) => setCause(v === 'gift' ? 'gift' : 'sale')}
+          onChange={(v) => {
+            const next = v === 'gift' ? 'gift' : 'sale'
+            setCause(next)
+            // 증여 계산에 필요한 시가인정액·공시가격 등이 고급 항목에 있으므로 자동으로 펼친다
+            if (next === 'gift') setAdvancedOpen(true)
+          }}
           options={[
             { value: 'sale', label: '유상매매' },
             { value: 'gift', label: '증여' },
@@ -260,7 +270,7 @@ export default function CalculatorForm() {
       {/* 결과 */}
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
-          <ResultPanel result={result} ruleMode={ruleMode} inputCause={resultCause} />
+          <ResultPanel result={result} inputCause={resultCause} />
         </div>
       )}
     </div>

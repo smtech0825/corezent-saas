@@ -2,12 +2,13 @@
 
 /**
  * @파일: tax/acquisition/actions.ts
- * @설명: 취득세 계산 서버 액션 — 소재지 검증(목록 밖 값 차단) 후 엔진을 호출하고,
- *        성공 시 tax_calculation_logs에 계산 이력을 기록한다.
+ * @설명: 취득세 계산 서버 액션 — BotID 검증(공개 POST 남용 방지) → 소재지 검증(목록 밖
+ *        값 차단) → 엔진 호출, 성공 시 tax_calculation_logs에 계산 이력을 기록한다.
  *        ⚠️ 개인식별정보(IP·이메일·이름)는 어떤 필드에도 기록하지 않는다.
  *        룰 조회는 공개 읽기(anon) 클라이언트, 이력 기록만 service_role 클라이언트를 쓴다.
  */
 
+import { checkBotId } from 'botid/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateAcquisitionTax } from '@/lib/tax/acquisition'
@@ -41,6 +42,18 @@ export interface AcquisitionCalcPayload {
  * @반환값: 엔진 결과 (성공: 세액 분해+근거 / 실패: 코드+안내문)
  */
 export async function calculateAcquisition(payload: AcquisitionCalcPayload): Promise<AcquisitionResult> {
+  // BotID 검증 — 봇으로 판별되면 즉시 차단 (/api/contact와 같은 공개 POST 보호 관례).
+  // 검증 자체가 실패(토큰 부재·네트워크 순단)하면 예외가 서버 액션 밖으로 새어
+  // 페이지 전체가 에러 화면으로 교체되므로, 잡아서 통과시킨다(보호는 최선 노력).
+  try {
+    const botCheck = await checkBotId()
+    if (botCheck.isBot) {
+      return { ok: false, code: 'INVALID_INPUT', message: '접근이 거부되었습니다. 잠시 후 다시 시도해 주세요.' }
+    }
+  } catch (err) {
+    console.error('[tax] BotID 검증 실패(통과 처리):', err instanceof Error ? err.message : String(err))
+  }
+
   // 소재지는 행정구역 목록에 있는 조합만 허용 — 주소 직접 입력(임의 문자열) 차단
   if (!isKnownRegion(payload.sido, payload.sigungu)) {
     return { ok: false, code: 'INVALID_INPUT', message: '소재지는 목록에서 선택해 주세요.' }
