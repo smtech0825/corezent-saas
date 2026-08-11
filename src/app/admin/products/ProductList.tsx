@@ -62,6 +62,14 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     setDelMsg(null)
     try {
       await runDelete(id)
+    } catch (err) {
+      // 요청이 서버에 닿지 못한 경우(연결 끊김 등). 순서 변경과 같은 기준으로 알린다 —
+      // 아무 안내도 없으면 관리자는 지워졌는지 아닌지 알 수 없다.
+      console.error('[products] 삭제 요청 실패:', err)
+      setDelMsg({
+        text: '삭제 요청을 보내지 못했습니다. 지워지지 않았을 가능성이 높지만, 화면을 새로고침해 확인해 주세요.',
+        kind: 'error',
+      })
     } finally {
       setDeleting(false)
     }
