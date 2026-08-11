@@ -156,7 +156,11 @@ export default function LoginForm() {
     if (error) {
       // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
       console.error('[login] 인증 메일 재전송 실패:', error.message)
-      setError('인증 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.')
+      setError(
+        isRateLimited(error.message)
+          ? '잠시 후 다시 시도해 주세요. (재전송 간격 제한)'
+          : '인증 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      )
       return
     }
     router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(redirect)}`)

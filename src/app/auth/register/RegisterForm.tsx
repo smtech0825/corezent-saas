@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { isRateLimited } from '@/lib/auth-error'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
@@ -74,6 +75,10 @@ export default function RegisterForm() {
     if (error) {
       if (error.message.includes('already registered')) {
         setError('이미 가입된 이메일입니다. 로그인해 주세요.')
+      } else if (isRateLimited(error.message)) {
+        // 가입 메일 발송 한도에 걸린 경우 — 입력값 문제가 아니므로 그렇게 안내하지 않는다.
+        console.error('[register] 회원가입 실패(요청 과다):', error.message)
+        setError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
       } else {
         // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
         console.error('[register] 회원가입 실패:', error.message)

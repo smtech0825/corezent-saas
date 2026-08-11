@@ -60,7 +60,11 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
 
     if (verifyError) {
       const msg = verifyError.message.toLowerCase()
-      if (msg.includes('expired') || msg.includes('invalid')) {
+      if (isRateLimited(verifyError.message)) {
+        // 코드가 틀린 것이 아니라 시도가 잦아 막힌 경우 — 코드를 의심하게 만들지 않는다.
+        console.error('[verify] 인증 실패(요청 과다):', verifyError.message)
+        setError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
+      } else if (msg.includes('expired') || msg.includes('invalid')) {
         setError('인증 코드가 올바르지 않거나 만료되었습니다. 코드를 다시 확인하거나 재전송해 주세요.')
       } else {
         // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
