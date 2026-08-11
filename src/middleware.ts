@@ -7,6 +7,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { RETURN_TO_COOKIE } from '@/lib/cookies'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -47,7 +48,7 @@ export async function middleware(request: NextRequest) {
     url.searchParams.set('redirect', pathname)
     // 로그인 후 돌아갈 경로를 쿠키에도 저장 (OAuth 플로우에서 query param이 유실될 때 대비)
     const res = NextResponse.redirect(url)
-    res.cookies.set('return_to', pathname, {
+    res.cookies.set(RETURN_TO_COOKIE, pathname, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -55,6 +56,15 @@ export async function middleware(request: NextRequest) {
       path: '/',
     })
     return res
+  }
+
+  // 로그인한 사용자가 보호 경로에 도착하면 "돌아갈 경로" 흔적을 지운다.
+  // 이 쿠키는 로그인 후 한 번 쓰고 버리는 임시 표시인데, 이메일+비밀번호로 로그인하면
+  // 인증 콜백을 거치지 않아 지워질 기회가 없다. 남으면 10분 동안 다음 로그인의 목적지를
+  // 이겨 엉뚱한 곳으로 보낸다. 인증 콜백은 보호 경로가 아니라 이 정리에 걸리지 않으므로,
+  // 콜백이 값을 읽을 기회를 빼앗지 않는다.
+  if (isProtected && user && request.cookies.has(RETURN_TO_COOKIE)) {
+    supabaseResponse.cookies.delete(RETURN_TO_COOKIE)
   }
 
   // 관리자 경로: 로그인 여부만 체크 (role 검증은 admin/layout.tsx에서 service role key로 처리)

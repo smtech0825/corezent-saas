@@ -12,6 +12,7 @@ import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
 import { safeInternalPath } from '@/lib/validate'
+import { RETURN_TO_COOKIE } from '@/lib/cookies'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
 
   // 돌아갈 경로 결정: return_to 쿠키 → ?redirect 쿼리 → 기본값 '/'
   const cookieStore = await cookies()
-  const returnToCookie = cookieStore.get('return_to')?.value
+  const returnToCookie = cookieStore.get(RETURN_TO_COOKIE)?.value
   const redirectParam  = url.searchParams.get('redirect') ?? '/'
   // 우리 사이트 안의 경로만 허용한다. 쿠키는 미들웨어가 심은 값이지만 쿼리는 밖에서 붙일 수 있어
   // 둘 다 같은 검사를 통과시킨다(로그인 화면·인증 화면과 같은 검사).
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 
   // return_to 쿠키 삭제 헬퍼 (리다이렉트 응답에 적용)
   function withCookieCleared(res: NextResponse): NextResponse {
-    if (returnToCookie) res.cookies.delete('return_to')
+    if (returnToCookie) res.cookies.delete(RETURN_TO_COOKIE)
     return res
   }
 
@@ -95,7 +96,9 @@ export async function GET(request: Request) {
     if (!error) {
       // 비밀번호 재설정 — 전용 페이지로 이동 (세션은 이미 수립됨)
       if (type === 'recovery') {
-        return NextResponse.redirect(`${origin}/auth/update-password`)
+        // 비밀번호 재설정도 "이 인증으로 할 일이 끝난" 경로다. 여기서도 흔적을 지운다
+        // — 안 지우면 10분 동안 그 값이 다음 로그인의 목적지를 이긴다.
+        return withCookieCleared(NextResponse.redirect(`${origin}/auth/update-password`))
       }
 
       // 신규 회원 이메일 인증 완료 처리
