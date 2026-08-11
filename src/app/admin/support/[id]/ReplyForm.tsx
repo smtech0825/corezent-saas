@@ -12,13 +12,16 @@ import { Send, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 /**
  * @타입: ReplyResult
- * @설명: 답변 전송 결과 세 가지.
- *        ok = 전부 성공 / sent_but_status_failed = 답변은 전송됐고 상태 표시만 실패(재전송 금지)
- *        / save_failed = 답변 저장 자체가 실패(다시 시도해도 안전)
+ * @설명: 답변 전송 결과 네 가지. reason에는 화면에 그대로 보여줄 한국어 문장만 담는다.
+ *        ok = 전부 성공
+ *        sent_but_status_failed = 답변은 전송됐고 상태 표시만 실패(재전송 금지)
+ *        saved_mail_failed = 답변은 저장됐지만 알림 메일이 나가지 않음(재전송 금지)
+ *        save_failed = 답변 저장 자체가 실패(다시 시도해도 안전)
  */
 export type ReplyResult =
   | { status: 'ok' }
   | { status: 'sent_but_status_failed'; reason: string }
+  | { status: 'saved_mail_failed'; reason: string }
   | { status: 'save_failed'; reason: string }
 
 interface Props {
@@ -53,7 +56,17 @@ export default function ReplyForm({ onSubmit }: Props) {
         setAlreadySent(true)
         setNotice({
           kind: 'sent',
-          text: `답변은 이미 전송되었습니다. 다시 보내지 마세요 — 다시 보내면 고객에게 같은 답변이 두 번 갑니다. 티켓 상태 표시만 실패했습니다(${result.reason}). 위의 "티켓 닫기" 버튼이나 고객지원 목록에서 상태를 확인해 주세요.`,
+          text: `답변은 이미 전송되었습니다. 다시 보내지 마세요 — 다시 보내면 고객에게 같은 답변이 두 번 갑니다. ${result.reason} 위의 "티켓 닫기" 버튼이나 고객지원 목록에서 상태를 확인해 주세요.`,
+        })
+        return
+      }
+
+      if (result.status === 'saved_mail_failed') {
+        // 답변은 저장됐다. 다시 보내면 답변이 두 번 저장되므로 재전송을 유도하지 않고 폼을 잠근다.
+        setAlreadySent(true)
+        setNotice({
+          kind: 'sent',
+          text: `답변은 저장되었습니다. 고객이 대시보드에서 볼 수 있습니다. 다만 ${result.reason} 다시 보내면 같은 답변이 두 번 저장되니, 급한 건이면 다른 경로로 연락해 주세요. 발송 기록은 관리자 → 모니터링 로그에서 확인할 수 있습니다.`,
         })
         return
       }
@@ -61,7 +74,7 @@ export default function ReplyForm({ onSubmit }: Props) {
       // 저장 자체가 실패 — 아직 아무것도 나가지 않았으므로 그대로 다시 시도해도 안전하다.
       setNotice({
         kind: 'error',
-        text: `답변을 저장하지 못했습니다(${result.reason}). 작성한 내용은 그대로 두었으니 다시 시도해 주세요.`,
+        text: `${result.reason} 작성한 내용은 그대로 두었으니 다시 시도해 주세요.`,
       })
     } catch (err) {
       // 권한 확인 실패·네트워크 오류 등 — 저장 전에 막힌 경우라 재시도해도 안전하다.

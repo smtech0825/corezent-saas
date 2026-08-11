@@ -65,8 +65,10 @@ export default async function TicketDetailPage({
    * @설명: 관리자 답변을 저장하고 티켓 상태를 바꾼 뒤 고객에게 알림 메일을 보냅니다.
    *        실패를 예외로 던지지 않고 결과값으로 돌려줍니다 — 운영 환경에서는 서버 예외 문구가
    *        일반 문구로 바뀌어, 화면이 "저장은 됐다"는 사실을 알 수 없게 되기 때문입니다.
+   *        사유(reason)는 화면에 그대로 보여줄 한국어 문장만 담습니다. DB 오류 원문은 영문이라
+   *        서버 기록에만 남깁니다.
    * @매개변수: message - 답변 내용 / close - 답변 후 티켓을 닫을지 여부
-   * @반환값: 전부 성공 / 답변은 전송됐고 상태만 실패 / 답변 저장 실패 세 가지 중 하나
+   * @반환값: 전부 성공 / 상태 표시만 실패 / 알림 메일만 실패 / 답변 저장 실패 네 가지 중 하나
    */
   async function handleReply(message: string, close: boolean): Promise<ReplyResult> {
     'use server'
@@ -86,7 +88,7 @@ export default async function TicketDetailPage({
     if (replyErr) {
       console.error('[support] 답변 저장 실패:', replyErr.message)
       // 아직 아무것도 나가지 않았으므로 관리자가 그대로 다시 시도해도 안전하다.
-      return { status: 'save_failed', reason: replyErr.message }
+      return { status: 'save_failed', reason: '답변을 저장하지 못했습니다.' }
     }
 
     // ★ 여기서부터 답변은 이미 저장됐다. 무엇이 실패하든 재전송을 유도하면 안 된다 —
@@ -104,7 +106,13 @@ export default async function TicketDetailPage({
     // 메일만 실패한 경우는 답변을 되돌리지 않는다 — 답변은 고객이 대시보드에서 볼 수 있고,
     // 되돌리면 관리자가 작성한 내용이 사라져 더 나쁘다. 실패는 sendEmail이 모니터링 로그에
     // 남기므로 관리자 → 모니터링 로그에서 확인하고 다른 경로로 연락할 수 있다.
-    if (ticket && userEmail !== '—') {
+    // 메일이 실제로 나갔는지 따로 기억한다 — 안 나갔는데 "전송됐다"고 알리면 관리자가
+    // 고객이 답변을 받은 줄 알고 그대로 넘어간다.
+    let mailReason = ''
+    if (!ticket || userEmail === '—') {
+      mailReason = '고객 이메일 주소를 확인할 수 없어 알림 메일을 보내지 못했습니다.'
+      console.error('[support] 답변 알림 메일 미발송 — 고객 이메일 주소 확인 불가(답변은 저장됨)')
+    } else {
       try {
         await sendEmail({
           to: userEmail,
@@ -112,15 +120,17 @@ export default async function TicketDetailPage({
           html: supportReplyEmailHtml(ticket.subject, message, 'CoreZent'),
         })
       } catch (mailErr) {
+        mailReason = '알림 메일이 나가지 않았습니다.'
         console.error('[support] 답변 알림 메일 발송 실패(답변은 저장됨):', mailErr instanceof Error ? mailErr.message : String(mailErr))
       }
     }
 
     revalidatePath(`/admin/support/${id}`)
 
-    return statusErr
-      ? { status: 'sent_but_status_failed', reason: statusErr.message }
-      : { status: 'ok' }
+    // 상태 표시 실패가 먼저다(기존 갈래 유지). 상태는 됐는데 메일만 못 나간 경우가 새 갈래다.
+    if (statusErr) return { status: 'sent_but_status_failed', reason: '티켓 상태 표시를 바꾸지 못했습니다.' }
+    if (mailReason) return { status: 'saved_mail_failed', reason: mailReason }
+    return { status: 'ok' }
   }
 
   async function closeTicket() {
