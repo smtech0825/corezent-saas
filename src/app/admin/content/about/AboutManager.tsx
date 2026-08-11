@@ -176,6 +176,19 @@ export default function AboutManager({
 
   // ─── Hero handlers ──────────────────────────────────────────
 
+  /**
+   * @함수명: changeHero
+   * @설명: 히어로 입력이 바뀌면 "저장되었습니다" 표시를 끕니다. 다른 편집기 3개(히어로·CTA·배너)가
+   *        쓰는 방식과 같습니다 — 저장 뒤 다시 고쳤는데 표시가 남아 있으면 저장한 줄 알고 떠나게 됩니다.
+   * @매개변수: field - 바뀐 항목 / value - 새 값
+   * @반환값: 없음
+   */
+  function changeHero(field: 'title' | 'description', value: string) {
+    if (field === 'title') setHeroTitle(value)
+    else setHeroDesc(value)
+    setHeroSaved(false)
+  }
+
   function handleHeroSave() {
     setHeroSaved(false)
     startTransition(async () => {
@@ -276,12 +289,12 @@ export default function AboutManager({
           <div className="space-y-3 mt-3">
             <div>
               <label className="text-[10px] text-ink-faint mb-1 block">제목</label>
-              <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="About CoreZent" className={inputCls} />
+              <input value={heroTitle} onChange={(e) => changeHero('title', e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
               <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
               {/* 콘텐츠 블록과 동일한 리치 에디터 — 서식·정렬·이미지·유튜브·표. 저장 시 서버에서 sanitize된다 */}
-              <RichTextEditor value={heroDesc} onChange={setHeroDesc} />
+              <RichTextEditor value={heroDesc} onChange={(html) => changeHero('description', html)} />
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
