@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import StepsManager from './StepsManager'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,45 +19,55 @@ type StepData = {
   order_index: number
 }
 
-async function createStep(data: StepData) {
+/** 추가된 단계 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
+type StepRow = StepData & { id: string }
+
+async function createStep(data: StepData): Promise<AdminActionResult<StepRow>> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { data: created, error } = await adminClient.from('front_steps').insert(data).select('id, icon, title, description, is_published, order_index').single()
-  if (error) throw new Error(`단계 추가 실패: ${error.message}`)
+  if (error) return dbFailure('단계 추가', error)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
-  return created
+  return { status: 'ok', created: created as StepRow }
 }
 
-async function updateStep(id: string, data: StepData) {
+async function updateStep(id: string, data: StepData): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_steps').update(data).eq('id', id)
-  if (error) throw new Error(`단계 수정 실패: ${error.message}`)
+  if (error) return dbFailure('단계 수정', error)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function deleteStep(id: string) {
+async function deleteStep(id: string): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_steps').delete().eq('id', id)
-  if (error) throw new Error(`단계 삭제 실패: ${error.message}`)
+  if (error) return dbFailure('단계 삭제', error)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function toggleStepPublish(id: string, published: boolean) {
+async function toggleStepPublish(id: string, published: boolean): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_steps').update({ is_published: published }).eq('id', id)
-  if (error) throw new Error(`단계 게시 상태 변경 실패: ${error.message}`)
+  if (error) return dbFailure('단계 게시 상태 변경', error)
   revalidatePath('/admin/content/how-it-works')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
 export default async function HowItWorksAdminPage() {

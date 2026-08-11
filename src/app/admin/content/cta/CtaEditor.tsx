@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 interface CtaData {
   eyebrow: string
@@ -22,7 +23,7 @@ interface CtaData {
 
 interface Props {
   initial: CtaData
-  onSave: (data: CtaData) => Promise<void>
+  onSave: (data: CtaData) => Promise<AdminActionResult>
 }
 
 export default function CtaEditor({ initial, onSave }: Props) {
@@ -38,8 +39,8 @@ export default function CtaEditor({ initial, onSave }: Props) {
   function handleSave() {
     startTransition(async () => {
       // 실패해도 입력값은 그대로 두고 "저장됨" 표시만 켜지 않는다.
-      const ok = await runAdminAction('CTA 저장', () => onSave(form))
-      if (!ok) return
+      const res = await runAdminAction('CTA 저장', () => onSave(form))
+      if (res.status !== 'ok') return
       setSaved(true)
     })
   }

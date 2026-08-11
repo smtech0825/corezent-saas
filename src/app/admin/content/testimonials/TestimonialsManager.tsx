@@ -9,6 +9,7 @@ import { useState, useTransition, useRef } from 'react'
 import { Plus, Pencil, Trash2, Check, X, Star, Upload, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 const BUCKET = 'testimonial-avatars'
 
@@ -22,14 +23,12 @@ interface Testimonial {
   is_published: boolean
 }
 
-type CreatedTestimonial = { id: string; quote: string; author_name: string; author_title: string; author_avatar: string | null; rating: number; is_published: boolean } | null
-
 interface Props {
   items: Testimonial[]
-  onCreate: (data: Omit<Testimonial, 'id'>) => Promise<CreatedTestimonial>
-  onUpdate: (id: string, data: Omit<Testimonial, 'id'>) => Promise<void>
-  onDelete: (id: string) => Promise<void>
-  onTogglePublish: (id: string, published: boolean) => Promise<void>
+  onCreate: (data: Omit<Testimonial, 'id'>) => Promise<AdminActionResult<Testimonial>>
+  onUpdate: (id: string, data: Omit<Testimonial, 'id'>) => Promise<AdminActionResult>
+  onDelete: (id: string) => Promise<AdminActionResult>
+  onTogglePublish: (id: string, published: boolean) => Promise<AdminActionResult>
 }
 
 const emptyForm = {
@@ -257,8 +256,8 @@ export default function TestimonialsManager({
   async function handleUpdate(id: string) {
     startTransition(async () => {
       // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
-      const ok = await runAdminAction('고객 후기 수정', () => onUpdate(id, { ...form, author_avatar: form.author_avatar || null }))
-      if (!ok) return
+      const res = await runAdminAction('고객 후기 수정', () => onUpdate(id, { ...form, author_avatar: form.author_avatar || null }))
+      if (res.status !== 'ok') return
       setItems((prev) => prev.map((t) => (t.id === id ? { ...t, ...form } : t)))
       setEditingId(null)
     })
@@ -267,10 +266,10 @@ export default function TestimonialsManager({
   async function handleCreate() {
     if (!newForm.quote.trim() || !newForm.author_name.trim()) return
     startTransition(async () => {
-      let created: CreatedTestimonial = null
-      const ok = await runAdminAction('고객 후기 추가', async () => { created = await onCreate({ ...newForm, author_avatar: newForm.author_avatar || null }) })
-      if (!ok) return
-      if (created) setItems((prev) => [...prev, created!])
+      const res = await runAdminAction('고객 후기 추가', () => onCreate({ ...newForm, author_avatar: newForm.author_avatar || null }))
+      if (res.status !== 'ok') return
+      const created = res.created
+      if (created) setItems((prev) => [...prev, created])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -280,8 +279,8 @@ export default function TestimonialsManager({
     if (!confirm(`${authorName}님의 고객 후기를 삭제할까요?\n\n랜딩 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      const ok = await runAdminAction('고객 후기 삭제', () => onDelete(id))
-      if (!ok) return
+      const res = await runAdminAction('고객 후기 삭제', () => onDelete(id))
+      if (res.status !== 'ok') return
       setItems((prev) => prev.filter((t) => t.id !== id))
     })
   }
@@ -297,8 +296,8 @@ export default function TestimonialsManager({
     setItems((prev) => prev.map((t) => (t.id === id ? { ...t, is_published: next } : t)))
     startTransition(async () => {
       // 실패하면 화면 표시를 서버 값으로 되돌린다.
-      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
-      if (!ok) setItems((prev) => prev.map((t) => (t.id === id ? { ...t, is_published: serverValue } : t)))
+      const res = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
+      if (res.status !== 'ok') setItems((prev) => prev.map((t) => (t.id === id ? { ...t, is_published: serverValue } : t)))
     })
   }
 

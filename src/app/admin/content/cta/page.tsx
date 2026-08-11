@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import CtaEditor from './CtaEditor'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,9 +27,10 @@ const defaults: Record<string, string> = {
   cta_footnote:  'No credit card required · Instant activation',
 }
 
-async function saveCta(data: Record<string, string>) {
+async function saveCta(data: Record<string, string>): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const rows = Object.entries(data).map(([key, value]) => ({
     key: `cta_${key}`,
@@ -39,9 +40,10 @@ async function saveCta(data: Record<string, string>) {
   const { error } = await adminClient
     .from('front_content')
     .upsert(rows, { onConflict: 'key' })
-  if (error) throw new Error(`CTA 저장 실패: ${error.message}`)
+  if (error) return dbFailure('CTA 저장', error)
   revalidatePath('/admin/content/cta')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
 export default async function CtaAdminPage() {
@@ -64,10 +66,11 @@ export default async function CtaAdminPage() {
     footnote:  map['cta_footnote']  ?? defaults['cta_footnote'],
   }
 
-  async function handleSave(formData: typeof initial) {
+  async function handleSave(formData: typeof initial): Promise<AdminActionResult> {
     'use server'
-    await requireAdminOrThrow()
-    await saveCta(formData)
+    const denied = await guardAdmin()
+    if (denied) return denied
+    return saveCta(formData)
   }
 
   return (

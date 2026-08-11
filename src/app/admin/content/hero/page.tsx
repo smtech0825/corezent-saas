@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import HeroEditor from './HeroEditor'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,9 +27,10 @@ const defaults: Record<string, string> = {
   hero_cta2_href: '/auth/register',
 }
 
-async function saveHero(data: Record<string, string>) {
+async function saveHero(data: Record<string, string>): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const rows = Object.entries(data).map(([key, value]) => ({
     key: `hero_${key}`,
@@ -39,9 +40,10 @@ async function saveHero(data: Record<string, string>) {
   const { error } = await adminClient
     .from('front_content')
     .upsert(rows, { onConflict: 'key' })
-  if (error) throw new Error(`히어로 저장 실패: ${error.message}`)
+  if (error) return dbFailure('히어로 저장', error)
   revalidatePath('/admin/content/hero')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
 export default async function HeroAdminPage() {
@@ -64,10 +66,11 @@ export default async function HeroAdminPage() {
     cta2_href: map['hero_cta2_href'] ?? defaults['hero_cta2_href'],
   }
 
-  async function handleSave(formData: typeof initial) {
+  async function handleSave(formData: typeof initial): Promise<AdminActionResult> {
     'use server'
-    await requireAdminOrThrow()
-    await saveHero(formData)
+    const denied = await guardAdmin()
+    if (denied) return denied
+    return saveHero(formData)
   }
 
   return (

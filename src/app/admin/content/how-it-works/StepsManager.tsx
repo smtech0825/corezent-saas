@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 interface Step {
   id: string
@@ -18,14 +19,12 @@ interface Step {
   order_index: number
 }
 
-type CreatedStep = { id: string; icon: string; title: string; description: string; is_published: boolean; order_index: number } | null
-
 interface Props {
   items: Step[]
-  onCreate: (data: Omit<Step, 'id'>) => Promise<CreatedStep>
-  onUpdate: (id: string, data: Omit<Step, 'id'>) => Promise<void>
-  onDelete: (id: string) => Promise<void>
-  onTogglePublish: (id: string, published: boolean) => Promise<void>
+  onCreate: (data: Omit<Step, 'id'>) => Promise<AdminActionResult<Step>>
+  onUpdate: (id: string, data: Omit<Step, 'id'>) => Promise<AdminActionResult>
+  onDelete: (id: string) => Promise<AdminActionResult>
+  onTogglePublish: (id: string, published: boolean) => Promise<AdminActionResult>
 }
 
 const emptyForm = { icon: 'Zap', title: '', description: '', is_published: true, order_index: 0 }
@@ -88,8 +87,8 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
   async function handleUpdate(id: string) {
     startTransition(async () => {
       // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
-      const ok = await runAdminAction('단계 수정', () => onUpdate(id, form))
-      if (!ok) return
+      const res = await runAdminAction('단계 수정', () => onUpdate(id, form))
+      if (res.status !== 'ok') return
       setItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...form } : s)))
       setEditingId(null)
     })
@@ -99,10 +98,10 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
     if (!newForm.title.trim()) return
     const next = { ...newForm, order_index: items.length }
     startTransition(async () => {
-      let created: Awaited<ReturnType<typeof onCreate>> = null
-      const ok = await runAdminAction('단계 추가', async () => { created = await onCreate(next) })
-      if (!ok) return
-      if (created) setItems((prev) => [...prev, created!])
+      const res = await runAdminAction('단계 추가', () => onCreate(next))
+      if (res.status !== 'ok') return
+      const created = res.created
+      if (created) setItems((prev) => [...prev, created])
       setNewForm(emptyForm)
       setShowNew(false)
     })
@@ -112,8 +111,8 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
     if (!confirm(`단계 "${title}"을(를) 삭제할까요?\n\n랜딩 페이지의 도입 절차에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      const ok = await runAdminAction('단계 삭제', () => onDelete(id))
-      if (!ok) return
+      const res = await runAdminAction('단계 삭제', () => onDelete(id))
+      if (res.status !== 'ok') return
       setItems((prev) => prev.filter((s) => s.id !== id))
     })
   }
@@ -129,8 +128,8 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
     setItems((prev) => prev.map((s) => (s.id === id ? { ...s, is_published: next } : s)))
     startTransition(async () => {
       // 실패하면 화면 표시를 서버 값으로 되돌린다.
-      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
-      if (!ok) setItems((prev) => prev.map((s) => (s.id === id ? { ...s, is_published: serverValue } : s)))
+      const res = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
+      if (res.status !== 'ok') setItems((prev) => prev.map((s) => (s.id === id ? { ...s, is_published: serverValue } : s)))
     })
   }
 

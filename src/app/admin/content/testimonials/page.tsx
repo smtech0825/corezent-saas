@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import TestimonialsManager from './TestimonialsManager'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,45 +20,55 @@ type TestimonialData = {
   is_published: boolean
 }
 
-async function createTestimonial(data: TestimonialData) {
+/** 추가된 후기 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
+type TestimonialRow = TestimonialData & { id: string }
+
+async function createTestimonial(data: TestimonialData): Promise<AdminActionResult<TestimonialRow>> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { data: created, error } = await adminClient.from('front_interviews').insert(data).select('id, quote, author_name, author_title, author_avatar, rating, is_published').single()
-  if (error) throw new Error(`고객 후기 추가 실패: ${error.message}`)
+  if (error) return dbFailure('고객 후기 추가', error)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
-  return created
+  return { status: 'ok', created: created as TestimonialRow }
 }
 
-async function updateTestimonial(id: string, data: TestimonialData) {
+async function updateTestimonial(id: string, data: TestimonialData): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_interviews').update(data).eq('id', id)
-  if (error) throw new Error(`고객 후기 수정 실패: ${error.message}`)
+  if (error) return dbFailure('고객 후기 수정', error)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function deleteTestimonial(id: string) {
+async function deleteTestimonial(id: string): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_interviews').delete().eq('id', id)
-  if (error) throw new Error(`고객 후기 삭제 실패: ${error.message}`)
+  if (error) return dbFailure('고객 후기 삭제', error)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function toggleTestimonialPublish(id: string, published: boolean) {
+async function toggleTestimonialPublish(id: string, published: boolean): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_interviews').update({ is_published: published }).eq('id', id)
-  if (error) throw new Error(`고객 후기 게시 상태 변경 실패: ${error.message}`)
+  if (error) return dbFailure('고객 후기 게시 상태 변경', error)
   revalidatePath('/admin/content/testimonials')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
 export default async function TestimonialsPage() {

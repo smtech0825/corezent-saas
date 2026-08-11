@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { richToPlainText } from '@/lib/rich-html'
 import DynamicIcon from '@/components/DynamicIcon'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 // 콘텐츠 블록 "설명"은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
 const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
@@ -47,13 +48,13 @@ interface Props {
   heroDescription: string
   stats: Stat[]
   blocks: Block[]
-  onUpdateHero: (title: string, description: string) => Promise<void>
-  onCreateStat: (data: { icon: string; value: string; label: string }) => Promise<Stat | null>
-  onUpdateStat: (id: string, data: { icon: string; value: string; label: string }) => Promise<void>
-  onDeleteStat: (id: string) => Promise<void>
-  onCreateBlock: (data: { title: string; description: string; images: string[] }) => Promise<Block | null>
-  onUpdateBlock: (id: string, data: { title: string; description: string; images: string[] }) => Promise<void>
-  onDeleteBlock: (id: string) => Promise<void>
+  onUpdateHero: (title: string, description: string) => Promise<AdminActionResult>
+  onCreateStat: (data: { icon: string; value: string; label: string }) => Promise<AdminActionResult<Stat>>
+  onUpdateStat: (id: string, data: { icon: string; value: string; label: string }) => Promise<AdminActionResult>
+  onDeleteStat: (id: string) => Promise<AdminActionResult>
+  onCreateBlock: (data: { title: string; description: string; images: string[] }) => Promise<AdminActionResult<Block>>
+  onUpdateBlock: (id: string, data: { title: string; description: string; images: string[] }) => Promise<AdminActionResult>
+  onDeleteBlock: (id: string) => Promise<AdminActionResult>
 }
 
 // ─── 공통 스타일 ──────────────────────────────────────────────
@@ -77,7 +78,13 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
     const ext = file.name.split('.').pop()
     const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
-    if (error) { alert(error.message); setUploading(false); return }
+    if (error) {
+      // 원문은 영문이라 화면에 그대로 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[about] 이미지 업로드 실패:', error.message)
+      alert('이미지 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+      setUploading(false)
+      return
+    }
     const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(path)
     onChange([...images, publicUrl])
     setUploading(false)
@@ -174,8 +181,8 @@ export default function AboutManager({
     startTransition(async () => {
       // 실패해도 입력값을 지우지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
       // 성공했을 때만 "저장되었습니다"를 켠다(다른 저장 화면과 같은 방식).
-      const ok = await runAdminAction('소개 히어로 저장', () => onUpdateHero(heroTitle, heroDesc))
-      if (!ok) return
+      const res = await runAdminAction('소개 히어로 저장', () => onUpdateHero(heroTitle, heroDesc))
+      if (res.status !== 'ok') return
       setHeroSaved(true)
     })
   }
@@ -190,8 +197,8 @@ export default function AboutManager({
 
   function handleUpdateStat(id: string) {
     startTransition(async () => {
-      const ok = await runAdminAction('통계 수정', () => onUpdateStat(id, statForm))
-      if (!ok) return
+      const res = await runAdminAction('통계 수정', () => onUpdateStat(id, statForm))
+      if (res.status !== 'ok') return
       setStats((prev) => prev.map((s) => (s.id === id ? { ...s, ...statForm } : s)))
       setEditStatId(null)
     })
@@ -200,10 +207,10 @@ export default function AboutManager({
   function handleCreateStat() {
     if (!newStatForm.value.trim()) return
     startTransition(async () => {
-      let created: Stat | null = null
-      const ok = await runAdminAction('통계 추가', async () => { created = await onCreateStat(newStatForm) })
-      if (!ok) return
-      if (created) setStats((prev) => [...prev, created as Stat])
+      const res = await runAdminAction('통계 추가', () => onCreateStat(newStatForm))
+      if (res.status !== 'ok') return
+      const created = res.created
+      if (created) setStats((prev) => [...prev, created])
       setNewStatForm({ icon: '', value: '', label: '' })
       setShowNewStat(false)
     })
@@ -213,8 +220,8 @@ export default function AboutManager({
     if (!confirm(`통계 "${label}"을(를) 삭제할까요?\n\n소개 페이지에서 바로 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      const ok = await runAdminAction('통계 삭제', () => onDeleteStat(id))
-      if (!ok) return
+      const res = await runAdminAction('통계 삭제', () => onDeleteStat(id))
+      if (res.status !== 'ok') return
       setStats((prev) => prev.filter((s) => s.id !== id))
     })
   }
@@ -230,8 +237,8 @@ export default function AboutManager({
   function handleUpdateBlock(id: string) {
     startTransition(async () => {
       // 실패하면 편집 상태를 닫지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
-      const ok = await runAdminAction('블록 수정', () => onUpdateBlock(id, blockForm))
-      if (!ok) return
+      const res = await runAdminAction('블록 수정', () => onUpdateBlock(id, blockForm))
+      if (res.status !== 'ok') return
       setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...blockForm } : b)))
       setEditBlockId(null)
     })
@@ -239,10 +246,10 @@ export default function AboutManager({
 
   function handleCreateBlock() {
     startTransition(async () => {
-      let created: Block | null = null
-      const ok = await runAdminAction('블록 추가', async () => { created = await onCreateBlock(newBlockForm) })
-      if (!ok) return
-      if (created) setBlocks((prev) => [...prev, { ...(created as Block), images: ((created as Block).images ?? []) as string[] }])
+      const res = await runAdminAction('블록 추가', () => onCreateBlock(newBlockForm))
+      if (res.status !== 'ok') return
+      const created = res.created
+      if (created) setBlocks((prev) => [...prev, { ...created, images: created.images ?? [] }])
       setNewBlockForm({ title: '', description: '', images: [] })
       setShowNewBlock(false)
     })
@@ -252,8 +259,8 @@ export default function AboutManager({
     if (!confirm(`블록 "${title}"을(를) 삭제할까요?\n\n안에 담긴 이미지까지 함께 사라지며 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       // 서버가 실패하면 목록에서 지우지 않는다 — 지워지면 삭제된 것으로 오해한다.
-      const ok = await runAdminAction('블록 삭제', () => onDeleteBlock(id))
-      if (!ok) return
+      const res = await runAdminAction('블록 삭제', () => onDeleteBlock(id))
+      if (res.status !== 'ok') return
       setBlocks((prev) => prev.filter((b) => b.id !== id))
     })
   }

@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import BannerEditor from './BannerEditor'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,9 +40,10 @@ export default async function AnnouncementAdminPage() {
     visible:     map['banner_visible']     ?? defaults['banner_visible'],
   }
 
-  async function handleSave(formData: typeof initial) {
+  async function handleSave(formData: typeof initial): Promise<AdminActionResult> {
     'use server'
-    await requireAdminOrThrow()
+    const denied = await guardAdmin()
+    if (denied) return denied
     const adminClient = createAdminClient()
     const rows = Object.entries(formData).map(([key, value]) => ({
       key: `banner_${key}`,
@@ -52,9 +53,10 @@ export default async function AnnouncementAdminPage() {
     const { error } = await adminClient
       .from('front_content')
       .upsert(rows, { onConflict: 'key' })
-    if (error) throw new Error(`배너 저장 실패: ${error.message}`)
+    if (error) return dbFailure('배너 저장', error)
     revalidatePath('/admin/content/announcement')
     revalidatePath('/')
+    return { status: 'ok' }
   }
 
   return (

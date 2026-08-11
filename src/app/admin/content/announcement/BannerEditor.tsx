@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 interface BannerData {
   text: string
@@ -19,7 +20,7 @@ interface BannerData {
 
 interface Props {
   initial: BannerData
-  onSave: (data: BannerData) => Promise<void>
+  onSave: (data: BannerData) => Promise<AdminActionResult>
 }
 
 export default function BannerEditor({ initial, onSave }: Props) {
@@ -35,8 +36,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
   function handleSave() {
     startTransition(async () => {
       // 실패해도 입력값은 그대로 두고 "저장됨" 표시만 켜지 않는다.
-      const ok = await runAdminAction('배너 저장', () => onSave(form))
-      if (!ok) return
+      const res = await runAdminAction('배너 저장', () => onSave(form))
+      if (res.status !== 'ok') return
       setSaved(true)
     })
   }

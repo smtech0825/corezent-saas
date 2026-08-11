@@ -8,13 +8,17 @@ import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import FaqManager from './FaqManager'
 import PageContainer from '@/components/common/PageContainer'
-import { requireAdminOrThrow } from '@/lib/require-admin'
+import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
 
-async function createFaq(question: string, answer: string) {
+/** 추가된 FAQ 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
+type FaqRow = { id: string; question: string; answer: string; is_published: boolean; order_index: number }
+
+async function createFaq(question: string, answer: string): Promise<AdminActionResult<FaqRow>> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { data: maxRow } = await adminClient
     .from('front_faqs')
@@ -25,44 +29,50 @@ async function createFaq(question: string, answer: string) {
   const nextIndex = (maxRow?.order_index ?? -1) + 1
   // 답변은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const { data, error } = await adminClient.from('front_faqs').insert({ question, answer: sanitizeRichHtml(answer), order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
-  if (error) throw new Error(`FAQ 추가 실패: ${error.message}`)
+  if (error) return dbFailure('FAQ 추가', error)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
-  return data
+  return { status: 'ok', created: data as FaqRow }
 }
 
-async function updateFaq(id: string, question: string, answer: string) {
+async function updateFaq(id: string, question: string, answer: string): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_faqs').update({ question, answer: sanitizeRichHtml(answer) }).eq('id', id)
-  if (error) throw new Error(`FAQ 수정 실패: ${error.message}`)
+  if (error) return dbFailure('FAQ 수정', error)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function deleteFaq(id: string) {
+async function deleteFaq(id: string): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_faqs').delete().eq('id', id)
-  if (error) throw new Error(`FAQ 삭제 실패: ${error.message}`)
+  if (error) return dbFailure('FAQ 삭제', error)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
-async function toggleFaqPublish(id: string, published: boolean) {
+async function toggleFaqPublish(id: string, published: boolean): Promise<AdminActionResult> {
   'use server'
-  await requireAdminOrThrow()
+  const denied = await guardAdmin()
+  if (denied) return denied
   const adminClient = createAdminClient()
   const { error } = await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
-  if (error) throw new Error(`FAQ 게시 상태 변경 실패: ${error.message}`)
+  if (error) return dbFailure('FAQ 게시 상태 변경', error)
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
+  return { status: 'ok' }
 }
 
 export default async function FaqPage() {

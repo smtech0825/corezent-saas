@@ -3,33 +3,42 @@
 /**
  * @파일: admin/_lib/runAdminAction.ts
  * @설명: 관리자 화면에서 서버 기능을 부를 때 쓰는 공용 실행기.
- *        서버 기능에 권한 확인이 들어가면서 예외가 올라올 수 있게 됐는데, 화면마다
- *        try/catch를 복사해 넣으면 빠뜨리는 곳이 생긴다. 한 곳에서 처리한다.
+ *        서버 기능은 실패를 결과값(AdminActionResult)으로 돌려준다. 이 실행기는 그 값을 받아
+ *        실패면 한국어 사유를 알리고, 값을 그대로 화면에 넘겨준다. 화면은 status === 'ok'일
+ *        때만 상태를 바꾸면 되므로 "실패했는데 성공한 것처럼 보이는" 상황이 생기지 않는다.
  *
- *        성공하면 true, 실패하면 false를 돌려준다. 호출부는 true일 때만 화면 상태를
- *        바꾸면 되므로 "실패했는데 성공한 것처럼 보이는" 상황이 생기지 않는다.
- *        알림은 관리자 화면이 이미 쓰고 있는 방식(alert)을 그대로 쓴다.
+ *        ★ 서버 예외 문구를 화면에 붙이지 않는다 — 운영 배포본에서는 그 문구가 영문 안내문으로
+ *        바뀌어 전달되기 때문이다. 결과값을 못 받은 경우(연결 끊김 등)도 한국어 안내로 바꾼다.
  *
- *        alert를 쓰므로 브라우저에서만 동작한다. 서버에서 부르면 터지기 때문에 'use client'로
- *        표시해 둔다(현재 부르는 곳은 관리자 화면 8개 파일·26곳으로 모두 클라이언트 컴포넌트).
+ *        alert를 쓰므로 브라우저 전용이다(현재 부르는 곳은 관리자 콘텐츠 화면 8개 파일).
  */
+
+import type { AdminActionResult } from './adminActionResult'
 
 /**
  * @함수명: runAdminAction
- * @설명: 서버 기능을 실행하고, 실패하면 관리자에게 알린 뒤 false를 돌려줍니다.
+ * @설명: 서버 기능을 실행하고, 실패하면 한국어 사유를 관리자에게 알린 뒤 결과값을 돌려줍니다.
  *        예외를 밖으로 던지지 않으므로 화면이 "처리 중"에 갇히지 않습니다.
- * @매개변수: label - 실패 알림에 넣을 동작 이름 (예: 'FAQ 수정')
- * @매개변수: fn - 실행할 서버 기능
- * @반환값: 성공하면 true, 실패하면 false
+ * @매개변수: label - 알림에 넣을 동작 이름(예: 'FAQ 수정') / fn - 실행할 서버 기능
+ * @반환값: 서버가 돌려준 결과값. 결과값을 받지 못하면 failed 결과로 바꿔 돌려줍니다.
  */
-export async function runAdminAction(label: string, fn: () => Promise<unknown>): Promise<boolean> {
+export async function runAdminAction<T>(
+  label: string,
+  fn: () => Promise<AdminActionResult<T>>,
+): Promise<AdminActionResult<T>> {
+  let result: AdminActionResult<T>
+
   try {
-    await fn()
-    return true
+    result = await fn()
   } catch (err) {
-    console.error(`[admin] ${label} 실패:`, err)
-    const detail = err instanceof Error && err.message ? `\n${err.message}` : ''
-    alert(`${label}에 실패했습니다. 로그인 상태를 확인하고 다시 시도해 주세요.${detail}`)
-    return false
+    // 결과값 자체를 받지 못한 경우 — 연결 끊김·서버 오류 등. 예외 문구는 붙이지 않는다.
+    console.error(`[admin] ${label} 요청 실패:`, err)
+    result = {
+      status: 'failed',
+      reason: `${label} 요청을 보내지 못했습니다. 인터넷 연결과 로그인 상태를 확인한 뒤 다시 시도해 주세요.`,
+    }
   }
+
+  if (result.status !== 'ok') alert(result.reason)
+  return result
 }
