@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
+import { parsePageParam } from '@/lib/validate'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +36,7 @@ export default async function SupportPage({
   searchParams: Promise<{ status?: string; page?: string }>
 }) {
   const { status, page: pageStr } = await searchParams
-  const page = Math.max(1, parseInt(pageStr ?? '1', 10))
+  const page = parsePageParam(pageStr)
   const offset = (page - 1) * PAGE_SIZE
 
   const adminClient = createAdminClient()

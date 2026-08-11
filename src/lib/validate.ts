@@ -34,6 +34,27 @@ export function isNumericIdString(v: unknown): v is string {
   return typeof v === 'string' && /^\d+$/.test(v)
 }
 
+/** 목록 화면이 허용하는 최대 페이지 번호 — 터무니없이 큰 값으로 조회를 시키지 않기 위한 상한 */
+const MAX_PAGE = 100_000
+
+/**
+ * @함수명: parsePageParam
+ * @설명: 주소창의 page 값을 목록 페이지 번호로 바꾼다. 숫자가 아니거나(?page=abc) 범위를
+ *        벗어난 값(0·음수·소수점·너무 큰 수)이 들어와도 목록이 통째로 안 뜨는 일이 없도록
+ *        1 이상 MAX_PAGE 이하의 정수로 맞춘다. 해석할 수 없으면 첫 페이지로 본다.
+ * @매개변수: raw - 주소에서 읽은 page 값(없거나 배열일 수 있음)
+ * @반환값: 1 이상 MAX_PAGE 이하의 정수
+ */
+export function parsePageParam(raw: string | string[] | undefined): number {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (value === undefined || value === null || String(value).trim() === '') return 1
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return 1
+  const page = Math.floor(parsed)
+  if (page < 1) return 1
+  return Math.min(page, MAX_PAGE)
+}
+
 /**
  * @함수명: isOneOf
  * @설명: 값이 허용 목록에 포함된 문자열인지 검사한다(category·interval·status 등 열거형).
