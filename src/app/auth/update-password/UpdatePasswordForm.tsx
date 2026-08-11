@@ -7,7 +7,7 @@
  *        세션이 이미 수립된 상태에서 auth.updateUser({ password })를 호출함
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react'
@@ -27,6 +27,9 @@ export default function UpdatePasswordForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  // 변경 완료 후 로그인 화면으로 보내는 예약. 화면을 떠나면 정리한다.
+  const moveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (moveTimerRef.current) clearTimeout(moveTimerRef.current) }, [])
 
   // 세션 확인 — recovery 세션 없으면 reset-password로 돌려보냄
   useEffect(() => {
@@ -68,7 +71,10 @@ export default function UpdatePasswordForm() {
       setDone(true)
       // recovery 세션 종료 후 로그인 페이지로 이동
       await supabase.auth.signOut()
-      setTimeout(() => router.push('/auth/login'), 2000)
+      // 손님이 2초 안에 다른 곳으로 옮기면 이 예약을 취소한다 — 스스로 떠난 사람을
+      // 로그인 화면으로 끌고 오면 안 된다.
+      if (moveTimerRef.current) clearTimeout(moveTimerRef.current)
+      moveTimerRef.current = setTimeout(() => router.push('/auth/login'), 2000)
     }
   }
 

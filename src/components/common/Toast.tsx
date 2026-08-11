@@ -5,7 +5,7 @@
  * @설명: 전역 Toast 알림 시스템 — ToastProvider + useToast 훅
  */
 
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { CheckCircle, XCircle, X } from 'lucide-react'
 
 interface Toast {
@@ -22,13 +22,21 @@ const ToastContext = createContext<ToastCtx>({ showToast: () => {} })
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  // 알림마다 걸어 둔 자동 삭제 예약. 이 Provider가 사라질 때 남은 것을 전부 정리한다.
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  useEffect(() => () => {
+    timersRef.current.forEach((t) => clearTimeout(t))
+    timersRef.current.clear()
+  }, [])
 
   const showToast = useCallback((type: 'success' | 'error', message: string) => {
     const id = Math.random().toString(36).slice(2)
     setToasts((prev) => [...prev, { id, type, message }])
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
+      timersRef.current.delete(timer)
     }, 4500)
+    timersRef.current.add(timer)
   }, [])
 
   const remove = useCallback((id: string) => {
