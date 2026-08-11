@@ -64,6 +64,9 @@ export interface ProductFormData {
   badge_color: 'blue' | 'green' | 'yellow'
   logo_url: string
   manual_url: string
+  // 조달청 등록번호(054) — 둘 다 비면 공개 화면에 조달청 배지를 그리지 않는다
+  procurement_class_number: string
+  procurement_item_number: string
   is_active: boolean
   tags: string[]
   pricing_features: string[]
@@ -103,6 +106,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = 'w-full bg-paper border border-rule text-ink text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
 const selectCls = `${inputCls} cursor-pointer`
 
+/**
+ * @함수명: hasNonDigit
+ * @설명: 조달청 등록번호 입력값에 숫자 외 문자가 섞였는지 알려줍니다.
+ *        알려주기만 하고 저장을 막지는 않습니다 — 나중에 하이픈 등 다른 표기가 올 수 있어
+ *        형식을 강제하지 않습니다.
+ * @매개변수: value - 입력칸의 현재 값
+ * @반환값: 값이 있고 숫자 외 문자가 섞였으면 true
+ */
+function hasNonDigit(value: string): boolean {
+  const v = value.trim()
+  return v !== '' && !/^\d+$/.test(v)
+}
+
 export default function ProductForm({ initialData, onSubmit, submitLabel }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +149,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       badge_color: 'blue',
       logo_url: '',
       manual_url: '',
+      procurement_class_number: '',
+      procurement_item_number: '',
       is_active: true,
       tags: [],
       pricing_features: [],
@@ -532,6 +550,38 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             className={inputCls}
           />
         </Field>
+
+        {/* 조달청 등록번호(054) — 조달 등록 상품만 입력. 둘 다 비면 공개 화면에 배지가 그려지지 않는다 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <Field label="물품분류번호">
+            <input
+              value={form.procurement_class_number}
+              onChange={(e) => set('procurement_class_number', e.target.value)}
+              placeholder="예: 43232698"
+              inputMode="numeric"
+              className={inputCls}
+            />
+            {hasNonDigit(form.procurement_class_number) && (
+              <p className="text-xs text-ink-faint mt-1">숫자 외 문자가 있습니다. 저장은 되지만 확인해 주세요.</p>
+            )}
+          </Field>
+
+          <Field label="물품식별번호">
+            <input
+              value={form.procurement_item_number}
+              onChange={(e) => set('procurement_item_number', e.target.value)}
+              placeholder="예: 26391406"
+              inputMode="numeric"
+              className={inputCls}
+            />
+            {hasNonDigit(form.procurement_item_number) && (
+              <p className="text-xs text-ink-faint mt-1">숫자 외 문자가 있습니다. 저장은 되지만 확인해 주세요.</p>
+            )}
+          </Field>
+        </div>
+        <p className="text-xs text-ink-faint">
+          조달청에 등록된 상품만 입력합니다. 두 칸이 모두 비어 있으면 공개 화면에 조달청 배지가 표시되지 않습니다.
+        </p>
       </section>
 
       {/* 태그 (최대 5개) */}

@@ -26,7 +26,8 @@ export default async function EditProductPage({
   const client = createAdminClient()
 
   // 옵션 축 제목 컬럼(040)은 우선 조회 → 미적용 시 폴백(옵션 필드 없이 편집 페이지 정상 동작)
-  const OPT_SEL = 'id, name, slug, tagline, list_description, description, category, category_group, option_axis1_name, option_axis2_name, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
+  // 조달청 등록번호(054)도 OPT_SEL에만 넣는다 — 미적용 환경에서는 BASE_SEL 폴백으로 편집 페이지가 계속 열린다
+  const OPT_SEL = 'id, name, slug, tagline, list_description, description, category, category_group, option_axis1_name, option_axis2_name, badge_text, badge_color, logo_url, manual_url, procurement_class_number, procurement_item_number, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
   const BASE_SEL = 'id, name, slug, tagline, list_description, description, category, category_group, badge_text, badge_color, logo_url, manual_url, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs'
 
   const optRes = await client.from('products').select(OPT_SEL).eq('id', id).single()
@@ -110,6 +111,9 @@ export default async function EditProductPage({
     badge_color: ((product.badge_color as string) ?? 'blue') as 'blue' | 'green' | 'yellow',
     logo_url: product.logo_url ?? '',
     manual_url: product.manual_url ?? '',
+    // 폴백(054 미적용) 시 컬럼이 없으므로 옵셔널로 안전 접근
+    procurement_class_number: ((product as { procurement_class_number?: string | null }).procurement_class_number) ?? '',
+    procurement_item_number: ((product as { procurement_item_number?: string | null }).procurement_item_number) ?? '',
     is_active: product.is_active ?? true,
     tags: (product.tags ?? []) as string[],
     pricing_features: (product.pricing_features ?? []) as string[],
@@ -148,6 +152,9 @@ export default async function EditProductPage({
       badge_color: data.badge_color,
       logo_url: data.logo_url || null,
       manual_url: data.manual_url || null,
+      // 조달청 등록번호(054) — 지웠을 때도 반영되도록 항상 포함(빈 값·공백만이면 null)
+      procurement_class_number: data.procurement_class_number.trim() || null,
+      procurement_item_number: data.procurement_item_number.trim() || null,
       is_active: data.is_active,
       tags: data.tags.filter(Boolean),
       pricing_features: data.pricing_features.filter(Boolean),

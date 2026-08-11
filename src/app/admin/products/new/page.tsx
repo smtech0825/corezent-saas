@@ -41,6 +41,9 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
     badge_color: data.badge_color,
     logo_url: data.logo_url || null,
     manual_url: data.manual_url || null,
+    // 조달청 등록번호(054) — 공백만 입력한 경우도 빈 값으로 취급해 배지가 뜨지 않게 한다
+    procurement_class_number: data.procurement_class_number.trim() || null,
+    procurement_item_number: data.procurement_item_number.trim() || null,
     is_active: data.is_active,
     tags: data.tags.filter(Boolean),
     pricing_features: data.pricing_features.filter(Boolean),
