@@ -163,7 +163,11 @@ export default async function EditProductPage({
 
     const { error } = await c.from('products').update(productUpdate).eq('id', id)
 
-    if (error) return { error: error.message }
+    if (error) {
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
+      console.error('[products/edit] 제품 저장 실패:', error.message)
+      return { error: '제품을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+    }
 
     // 활성/비활성 상태가 실제로 바뀐 경우에만 활동 로그 기록(단순 내용 수정은 로그 대상 아님)
     if (initialData.is_active !== data.is_active) {
@@ -193,7 +197,10 @@ export default async function EditProductPage({
         .from('product_prices')
         .update({ is_active: false })
         .in('id', toDeactivate)
-      if (deactivateError) return { error: deactivateError.message }
+      if (deactivateError) {
+        console.error('[products/edit] 옵션 비활성화 실패:', deactivateError.message)
+        return { error: '삭제한 옵션을 정리하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+      }
     }
 
     // 기존 옵션·가격 업데이트 (ID 있는 항목) — 에러·0행 매칭을 표면화 (돈 경로: 조용히 삼키지 않음)
@@ -224,7 +231,10 @@ export default async function EditProductPage({
         ;({ data: updated, error: updateError } = await c
           .from('product_prices').update(stripped).eq('id', price.id!).select('id'))
       }
-      if (updateError) return { error: updateError.message }
+      if (updateError) {
+        console.error('[products/edit] 가격 수정 실패:', updateError.message)
+        return { error: '가격 항목을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+      }
       if (!updated || updated.length === 0) {
         return { error: `가격 항목(id=${price.id})을 찾지 못해 저장에 실패했습니다.` }
       }
@@ -256,7 +266,10 @@ export default async function EditProductPage({
         const stripped = rows.map((r) => { const cc = { ...r }; delete cc.sort_order; return cc })
         ;({ error: insertError } = await c.from('product_prices').insert(stripped))
       }
-      if (insertError) return { error: insertError.message }
+      if (insertError) {
+        console.error('[products/edit] 가격 추가 실패:', insertError.message)
+        return { error: '새 가격 항목을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+      }
     }
 
     revalidatePath('/admin/products')

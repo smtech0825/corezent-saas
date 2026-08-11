@@ -29,10 +29,11 @@ export default function DashboardError({
         <p className="text-sm text-ink-soft mb-4 leading-relaxed">
           이 페이지를 불러오는 중 예상치 못한 오류가 발생했습니다.
         </p>
-        <pre className="text-xs text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">
-          {error.message}
-          {error.digest && `\nDigest: ${error.digest}`}
-        </pre>
+        {/* 오류 원문은 영문이라 화면에 내보내지 않는다(위 useEffect가 브라우저 기록에 남긴다).
+            문의 시 서버 기록과 대조할 수 있는 식별번호만 남긴다. */}
+        <p className="text-xs text-ink-faint font-mono bg-paper-shade border border-rule rounded-lg px-4 py-3 mb-6 break-all">
+          식별번호 {error.digest ?? '없음'}
+        </p>
         <button
           onClick={reset}
           className="inline-flex items-center gap-2 bg-mark text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-95 transition-colors"

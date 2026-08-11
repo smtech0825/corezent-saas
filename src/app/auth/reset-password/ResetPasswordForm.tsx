@@ -40,7 +40,9 @@ export default function ResetPasswordForm() {
     })
 
     if (err) {
-      setError(err.message)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[reset-password] 재설정 메일 발송 실패:', err.message)
+      setError('재설정 메일을 보내지 못했습니다. 이메일 주소를 확인한 뒤 다시 시도해 주세요.')
     } else {
       setDone(true)
     }

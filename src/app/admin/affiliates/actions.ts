@@ -72,7 +72,11 @@ export async function updateAffiliateConfigAction(
   }
 
   const { error } = await admin.from('affiliate_program_config').update(payload).eq('id', true)
-  if (error) return { ok: false, message: error.message }
+  if (error) {
+    // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
+    console.error('[affiliates] 설정 저장 실패:', error.message)
+    return { ok: false, message: '설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
   revalidatePath('/admin/affiliates')
   return { ok: true, message: '설정이 저장되었습니다.' }
 }

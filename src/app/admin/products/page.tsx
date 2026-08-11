@@ -54,7 +54,10 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
       .from('products')
       .update({ is_active: false })
       .eq('id', id)
-    if (deactErr) return { ok: false, message: `비활성화 실패: ${deactErr.message}` }
+    if (deactErr) {
+      console.error('[products] 비활성화 실패:', deactErr.message)
+      return { ok: false, message: '제품을 비활성화하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+    }
     await logAdminActivity({
       adminUserId: actorId,
       action: 'product.deactivate',
@@ -69,8 +72,9 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
     return { ok: true, mode: 'deactivated' }
   }
 
-  // 3) 그 외 오류
-  return { ok: false, message: error.message }
+  // 3) 그 외 오류 — 원문은 영문이라 화면에 내보내지 않고 서버 기록에만 남긴다.
+  console.error('[products] 삭제 실패:', error.message)
+  return { ok: false, message: '제품을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
 }
 
 export default async function ProductsPage() {

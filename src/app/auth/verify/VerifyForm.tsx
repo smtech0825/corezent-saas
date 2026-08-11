@@ -62,7 +62,9 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
       if (msg.includes('expired') || msg.includes('invalid')) {
         setError('인증 코드가 올바르지 않거나 만료되었습니다. 코드를 다시 확인하거나 재전송해 주세요.')
       } else {
-        setError(verifyError.message)
+        // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+        console.error('[verify] 인증 실패:', verifyError.message)
+        setError('인증에 실패했습니다. 코드를 다시 확인하거나 재전송해 주세요.')
       }
       setLoading(false)
       return

@@ -75,7 +75,9 @@ export default function RegisterForm() {
       if (error.message.includes('already registered')) {
         setError('이미 가입된 이메일입니다. 로그인해 주세요.')
       } else {
-        setError(error.message)
+        // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+        console.error('[register] 회원가입 실패:', error.message)
+        setError('회원가입에 실패했습니다. 입력하신 이메일과 비밀번호를 확인한 뒤 다시 시도해 주세요.')
       }
       setLoading(false)
       return
@@ -115,7 +117,8 @@ export default function RegisterForm() {
     })
 
     if (error) {
-      setError(error.message)
+      console.error('[register] 소셜 가입 시작 실패:', error.message)
+      setError('소셜 가입을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.')
       setOauthLoading(null)
     }
   }

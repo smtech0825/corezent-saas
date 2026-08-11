@@ -60,7 +60,11 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
     .select('id')
     .single()
 
-  if (error) return { error: error.message }
+  if (error) {
+    // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
+    console.error('[products/new] 제품 저장 실패:', error.message)
+    return { error: '제품을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+  }
 
   // 옵션·가격 행 삽입 — 옵션 라벨/tier는 값이 있을 때만 포함(040 미적용 시 미사용 행은 정상)
   if (data.prices.length > 0) {
@@ -92,7 +96,10 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
         const stripped = priceRows.map((r) => { const c = { ...r }; delete c.sort_order; return c })
         ;({ error: priceError } = await client.from('product_prices').insert(stripped))
       }
-      if (priceError) return { error: priceError.message }
+      if (priceError) {
+        console.error('[products/new] 가격 저장 실패:', priceError.message)
+        return { error: '가격 항목을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+      }
     }
   }
 

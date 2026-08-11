@@ -26,10 +26,15 @@ export default function AdminError({
           <AlertTriangle size={24} className="text-caution" />
         </div>
         <h2 className="text-xl font-bold text-ink mb-2">문제가 발생했습니다</h2>
-        <pre className="text-xs text-danger bg-danger-soft border border-danger/10 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">
-          {error.message}
-          {error.digest && `\nDigest: ${error.digest}`}
-        </pre>
+        {/* 오류 원문은 영문이라 화면에 내보내지 않는다(위 useEffect가 브라우저 기록에 남긴다).
+            서버 기록과 대조할 수 있는 식별번호만 남긴다 — 원인을 찾을 유일한 단서다. */}
+        <p className="text-sm text-ink-soft mb-2">
+          화면을 그리는 중 문제가 생겼습니다. 아래 &lsquo;다시 시도&rsquo;를 눌러 주세요.
+          계속 같은 화면이 나오면 이 식별번호와 함께 알려 주세요.
+        </p>
+        <p className="text-xs text-ink-faint font-mono bg-paper-shade border border-rule rounded-lg px-4 py-3 mb-6 break-all">
+          식별번호 {error.digest ?? '없음'}
+        </p>
         <button
           onClick={reset}
           className="inline-flex items-center gap-2 bg-mark text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-95 transition-colors"

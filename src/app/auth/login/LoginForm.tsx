@@ -96,7 +96,9 @@ export default function LoginForm() {
     setResendLoading(false)
 
     if (error) {
-      setError(error.message)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[login] 인증 메일 재전송 실패:', error.message)
+      setError('인증 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.')
       return
     }
     router.push(`/auth/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(redirect)}`)
@@ -124,7 +126,8 @@ export default function LoginForm() {
     })
 
     if (error) {
-      setError(error.message)
+      console.error('[login] 소셜 로그인 시작 실패:', error.message)
+      setError('소셜 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.')
       setOauthLoading(null)
     }
   }

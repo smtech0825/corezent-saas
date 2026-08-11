@@ -102,7 +102,11 @@ export async function upsertChangelog(
 
   if (changelogId) {
     const { error } = await client.from('changelogs').update(payload).eq('id', changelogId)
-    if (error) return { error: error.message }
+    if (error) {
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
+      console.error('[changelog] 수정 실패:', error.message)
+      return { error: '변경 이력을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+    }
     await unsetOtherLatest(client, productId, data.is_latest, changelogId)
   } else {
     const { error, data: inserted } = await client
@@ -110,7 +114,10 @@ export async function upsertChangelog(
       .insert(payload)
       .select('id')
       .single()
-    if (error) return { error: error.message }
+    if (error) {
+      console.error('[changelog] 추가 실패:', error.message)
+      return { error: '변경 이력을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+    }
     await unsetOtherLatest(client, productId, data.is_latest, inserted?.id as string | undefined)
     revalidatePath('/admin/products')
     revalidatePath('/changelog')
@@ -127,7 +134,10 @@ export async function deleteChangelog(changelogId: string): Promise<{ error?: st
   await requireAdminOrThrow()
   const client = createAdminClient()
   const { error } = await client.from('changelogs').delete().eq('id', changelogId)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[changelog] 삭제 실패:', error.message)
+    return { error: '변경 이력을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
 
   revalidatePath('/admin/products')
   revalidatePath('/changelog')

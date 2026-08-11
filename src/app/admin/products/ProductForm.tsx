@@ -196,7 +196,9 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       .upload(filename, file, { upsert: true })
 
     if (uploadErr) {
-      setUploadError(uploadErr.message)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[products] 로고 업로드 실패:', uploadErr.message)
+      setUploadError('이미지 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return

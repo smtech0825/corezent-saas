@@ -44,7 +44,9 @@ export default function ReindexPanel() {
       setCount(data.count ?? null)
       setResults(data.results ?? [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : '색인 재요청에 실패했습니다.')
+      // 원문(외부 서비스 응답·네트워크 오류)은 영문이라 화면에 내보내지 않는다.
+      console.error('[settings] 색인 재요청 실패:', e)
+      setError('색인 재요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
     } finally {
       setLoading(false)
     }

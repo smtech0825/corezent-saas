@@ -30,10 +30,11 @@ export default function GlobalError({
         <p className="text-sm text-[#94A3B8] mb-4 leading-relaxed">
           페이지를 불러오는 중 예상치 못한 오류가 발생했습니다.
         </p>
-        <pre className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3 mb-6 text-left whitespace-pre-wrap break-all max-h-40 overflow-auto">
-          {error.message}
-          {error.digest && `\nDigest: ${error.digest}`}
-        </pre>
+        {/* 오류 원문은 영문이라 화면에 내보내지 않는다(위 useEffect가 브라우저 기록에 남긴다).
+            문의 시 서버 기록과 대조할 수 있는 식별번호만 남긴다. */}
+        <p className="text-xs text-[#94A3B8]/70 font-mono bg-white/5 border border-white/10 rounded-lg px-4 py-3 mb-6 break-all">
+          식별번호 {error.digest ?? '없음'}
+        </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={reset}

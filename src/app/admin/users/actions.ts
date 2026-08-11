@@ -37,7 +37,7 @@ export async function changeRole(userId: string, newRole: string) {
 /** 탈퇴 처리 — 소프트 삭제 (데이터 보존 + 로그인 차단) */
 export async function withdrawUser(userId: string): Promise<{ error?: string }> {
   const actorId = await requireAdminOrThrow()
-  if (!userId) return { error: 'Invalid user ID' }
+  if (!userId) return { error: '대상 회원을 찾을 수 없습니다. 목록을 새로고침한 뒤 다시 시도해 주세요.' }
   const adminClient = createAdminClient()
 
   // 1. profiles.status = 'inactive' 업데이트
@@ -46,14 +46,21 @@ export async function withdrawUser(userId: string): Promise<{ error?: string }> 
     .update({ status: 'inactive' })
     .eq('id', userId)
 
-  if (profileError) return { error: profileError.message }
+  if (profileError) {
+    // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
+    console.error('[users] 탈퇴 처리 실패(회원 상태):', profileError.message)
+    return { error: '회원 상태를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
 
   // 2. Supabase Auth 차원 로그인 차단 (100년 ban)
   const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
     ban_duration: '876000h',
   })
 
-  if (authError) return { error: authError.message }
+  if (authError) {
+    console.error('[users] 탈퇴 처리 실패(로그인 차단):', authError.message)
+    return { error: '회원 상태는 바뀌었지만 로그인 차단에 실패했습니다. 목록을 확인한 뒤 다시 시도해 주세요.' }
+  }
 
   await logAdminActivity({
     adminUserId: actorId,
