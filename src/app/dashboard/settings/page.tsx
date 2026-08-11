@@ -119,7 +119,19 @@ export default function SettingsPage() {
     })
 
     if (authError) {
-      setPasswordError('현재 비밀번호가 올바르지 않습니다.')
+      // 원인을 단정하지 않는다. 비밀번호가 틀린 경우와 그 외(요청 과다·연결 끊김)를 구분한다.
+      // 판정 근거는 로그인 화면이 이미 쓰는 것과 같다 — Supabase가 비밀번호 불일치에만
+      // 'Invalid login credentials'를 돌려준다(LoginForm.tsx 참조).
+      const raw = authError.message.toLowerCase()
+      if (authError.message === 'Invalid login credentials') {
+        setPasswordError('현재 비밀번호가 올바르지 않습니다.')
+      } else if (raw.includes('rate limit') || raw.includes('after')) {
+        setPasswordError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
+      } else {
+        // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+        console.error('[settings] 현재 비밀번호 확인 실패:', authError.message)
+        setPasswordError('현재 비밀번호를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+      }
       setPasswordLoading(false)
       return
     }
