@@ -13,7 +13,11 @@ import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
 import { safeInternalPath } from '@/lib/validate'
 import { RETURN_TO_COOKIE } from '@/lib/cookies'
-import { isExpiredLinkCode, type AuthCallbackReason } from '@/lib/auth-callback-error'
+import {
+  isExpiredLinkCode,
+  readProviderErrorCode,
+  type AuthCallbackReason,
+} from '@/lib/auth-callback-error'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -128,7 +132,8 @@ export async function GET(request: Request) {
   // 코드도 토큰도 없이 돌아온 경우 — 가장 흔한 것이 "인증 메일 링크 만료"다. 판정 규칙은
   // lib/auth-callback-error.ts 한 곳에 있고, 주소의 # 뒤로 오는 경우는 서버가 읽을 수 없어
   // 로그인 화면이 같은 규칙으로 한 번 더 본다.
-  const providerErrorCode = url.searchParams.get('error_code') ?? ''
+  // 읽는 키와 순서도 화면과 같은 것을 쓴다(lib/auth-callback-error.ts).
+  const providerErrorCode = readProviderErrorCode(url.searchParams)
   console.log('[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)')
   return backToLogin(isExpiredLinkCode(providerErrorCode) ? 'verify' : 'missing')
 }

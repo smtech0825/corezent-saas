@@ -10,6 +10,20 @@
 export type AuthCallbackReason = 'oauth' | 'verify' | 'missing'
 
 /**
+ * @함수명: readProviderErrorCode
+ * @설명: 인증 제공자가 주소에 실어 보낸 오류 코드를 꺼냅니다.
+ *
+ *        ★ 판정 함수를 한 곳에 모아도 "무엇을 넣는지"가 갈리면 서버와 화면의 결론이 달라집니다.
+ *        실제로 서버는 error_code만, 화면은 error_code와 error를 함께 보고 있어서 같은 상황에
+ *        다른 안내가 나갔습니다. 읽는 키와 순서도 여기 한 곳에 둡니다.
+ * @매개변수: params - 주소의 쿼리 또는 # 뒤를 담은 URLSearchParams
+ * @반환값: 오류 코드. 없으면 빈 문자열
+ */
+export function readProviderErrorCode(params: URLSearchParams): string {
+  return params.get('error_code') ?? params.get('error') ?? ''
+}
+
+/**
  * @함수명: isExpiredLinkCode
  * @설명: 인증 제공자가 돌려준 오류 코드가 "메일 링크가 만료됐거나 이미 쓰였다"에 해당하는지
  *        판정합니다.

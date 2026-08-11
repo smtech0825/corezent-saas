@@ -17,6 +17,7 @@ import { safeInternalPath } from '@/lib/validate'
 import {
   authCallbackMessage,
   isExpiredLinkCode,
+  readProviderErrorCode,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
 import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
@@ -36,8 +37,8 @@ function reasonFromHash(): AuthCallbackReason | null {
   if (typeof window === 'undefined') return null
   const raw = window.location.hash.replace(/^#/, '')
   if (!raw) return null
-  const hashParams = new URLSearchParams(raw)
-  const code = hashParams.get('error_code') ?? hashParams.get('error')
+  // 읽는 키와 순서도 서버와 같은 것을 쓴다(lib/auth-callback-error.ts).
+  const code = readProviderErrorCode(new URLSearchParams(raw))
   return isExpiredLinkCode(code) ? 'verify' : null
 }
 
