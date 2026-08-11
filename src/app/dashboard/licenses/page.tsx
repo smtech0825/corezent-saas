@@ -7,7 +7,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Key } from 'lucide-react'
-import LicenseCopyButton from '../_components/LicenseCopyButton'
+import CopyButton from '@/components/common/CopyButton'
 import DownloadButton from '../billing/DownloadButton'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
@@ -171,7 +171,13 @@ export default async function LicensesPage({
                         ? `${lic.serial_key.slice(0, 8)}…`
                         : lic.serial_key}
                     </span>
-                    <LicenseCopyButton serialKey={lic.serial_key} />
+                    <CopyButton
+                      value={lic.serial_key as string}
+                      title="라이선스 키 복사"
+                      iconSize={13}
+                      copiedIconClassName="text-ok"
+                      className="p-1 text-ink-faint hover:text-mark transition-colors shrink-0"
+                    />
                   </div>
 
                   {/* 제품명 + 선택 옵션 — 모바일에선 라벨:값 (md 이상은 그리드 컬럼) */}

@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { buildReferralUrl, getAffiliateConfig } from '@/lib/affiliate'
 import { formatKRW } from '@/lib/money'
 import DynamicIcon from '@/components/DynamicIcon'
-import ReferralCopyButton from '../_components/ReferralCopyButton'
+import CopyButton from '@/components/common/CopyButton'
 import PayoutAccountCard from './PayoutAccountCard'
 import PageContainer from '@/components/common/PageContainer'
 
@@ -136,7 +136,13 @@ export default async function AffiliatePage() {
               <div className="flex-1 min-w-0 bg-paper border border-rule rounded-lg px-4 py-3 flex items-center">
                 <span className="font-mono text-sm text-ink truncate">{referralUrl}</span>
               </div>
-              <ReferralCopyButton value={referralUrl} />
+              <CopyButton
+                value={referralUrl}
+                title="추천 링크 복사"
+                iconSize={15}
+                labels={{ idle: '복사', copied: '복사됨' }}
+                className="shrink-0 inline-flex items-center gap-1.5 bg-mark text-white font-semibold px-4 rounded-lg text-sm hover:brightness-95 transition-colors"
+              />
             </div>
           </>
         ) : (

@@ -9,8 +9,9 @@
  *        - 관리자 데스크톱 전제: 좁으면 가로 스크롤.
  */
 
-import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Copy, Check } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
+import CopyButton from '@/components/common/CopyButton'
 import type { PriceEntry } from './ProductForm'
 
 interface Props {
@@ -58,10 +59,6 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
  */
 function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChange: (v: string) => void }) {
   const [editing, setEditing] = useState(false)
-  const [copied, setCopied] = useState(false)
-  // "복사됨" 표시를 되돌리는 예약. 다시 누르면 이전 예약을 취소하고, 화면을 떠날 때도 정리한다.
-  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => { if (resetRef.current) clearTimeout(resetRef.current) }, [])
 
   if (editing) {
     return (
@@ -90,19 +87,14 @@ function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChan
         {tail || <span className="text-ink-faint">클릭해 입력</span>}
       </button>
       {trimmed && (
-        <button
-          type="button"
+        <CopyButton
+          value={value}
           title="URL 복사"
-          onClick={async () => {
-            await navigator.clipboard.writeText(value)
-            setCopied(true)
-            if (resetRef.current) clearTimeout(resetRef.current)
-            resetRef.current = setTimeout(() => setCopied(false), 1500)
-          }}
+          iconSize={12}
+          resetMs={1500}
+          copiedIconClassName="text-ok"
           className="shrink-0 text-ink-faint hover:text-mark transition-colors"
-        >
-          {copied ? <Check size={12} className="text-ok" /> : <Copy size={12} />}
-        </button>
+        />
       )}
     </div>
   )
