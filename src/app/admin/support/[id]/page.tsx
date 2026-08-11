@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import ReplyForm from './ReplyForm'
+import ReplyForm, { type ReplyResult } from './ReplyForm'
 import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
 import { requireAdminOrThrow } from '@/lib/require-admin'
@@ -60,7 +60,15 @@ export default async function TicketDetailPage({
     userEmail = authUser?.email ?? '—'
   } catch { /* 무시 */ }
 
-  async function handleReply(message: string, close: boolean) {
+  /**
+   * @함수명: handleReply
+   * @설명: 관리자 답변을 저장하고 티켓 상태를 바꾼 뒤 고객에게 알림 메일을 보냅니다.
+   *        실패를 예외로 던지지 않고 결과값으로 돌려줍니다 — 운영 환경에서는 서버 예외 문구가
+   *        일반 문구로 바뀌어, 화면이 "저장은 됐다"는 사실을 알 수 없게 되기 때문입니다.
+   * @매개변수: message - 답변 내용 / close - 답변 후 티켓을 닫을지 여부
+   * @반환값: 전부 성공 / 답변은 전송됐고 상태만 실패 / 답변 저장 실패 세 가지 중 하나
+   */
+  async function handleReply(message: string, close: boolean): Promise<ReplyResult> {
     'use server'
     await requireAdminOrThrow()
     const client = createAdminClient()
@@ -77,17 +85,19 @@ export default async function TicketDetailPage({
     })
     if (replyErr) {
       console.error('[support] 답변 저장 실패:', replyErr.message)
-      throw new Error(`답변 저장에 실패했습니다: ${replyErr.message}`)
+      // 아직 아무것도 나가지 않았으므로 관리자가 그대로 다시 시도해도 안전하다.
+      return { status: 'save_failed', reason: replyErr.message }
     }
 
+    // ★ 여기서부터 답변은 이미 저장됐다. 무엇이 실패하든 재전송을 유도하면 안 된다 —
+    //   다시 보내면 답변이 두 번 저장되고 고객에게 메일도 두 번 간다.
     const { error: statusErr } = await client
       .from('support_tickets')
       .update({ status: close ? 'closed' : 'answered' })
       .eq('id', id)
     if (statusErr) {
       console.error('[support] 티켓 상태 변경 실패:', statusErr.message)
-      // 답변은 이미 저장됐다는 것을 문구에 담아, 관리자가 같은 답변을 다시 보내지 않게 한다.
-      throw new Error(`답변은 저장되었지만 티켓 상태 변경에 실패했습니다: ${statusErr.message}`)
+      // 여기서 중단하지 않는다. 상태 표시가 틀린 것보다, 답변이 고객에게 안 가는 것이 더 나쁘다.
     }
 
     // 사용자에게 답변 알림 이메일 발송.
@@ -107,6 +117,10 @@ export default async function TicketDetailPage({
     }
 
     revalidatePath(`/admin/support/${id}`)
+
+    return statusErr
+      ? { status: 'sent_but_status_failed', reason: statusErr.message }
+      : { status: 'ok' }
   }
 
   async function closeTicket() {
