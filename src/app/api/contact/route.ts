@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, inquiryEmailHtml } from '@/lib/email'
+import { logNotification } from '@/lib/notification-log'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const RATE_LIMIT_WINDOW_MS = 60_000    // 1분 고정 윈도우
@@ -132,15 +133,21 @@ export async function POST(request: NextRequest) {
   // ─── DB 저장 ───────────────────────────────────────────────────
   // 저장이 실패하면 문의가 어디에도 남지 않는다. 그때는 성공이라고 답하지 않는다
   // — "접수되었습니다"를 보고 안심했는데 실제로는 사라지는 것이 가장 나쁜 결과다.
+  // 저장된 문의의 id — 알림이 못 나갔을 때 "어느 문의인지"를 기록으로 남기는 데 쓴다.
+  let inquiryId = ''
   try {
-    const { error: dbError } = await admin.from('inquiries').insert({
-      email,
-      subject,
-      message,
-      attachment_name: attachmentName ?? null,
-      attachment_size: attachmentSize ?? null,
-      ip_address: ip,
-    })
+    const { data: inserted, error: dbError } = await admin
+      .from('inquiries')
+      .insert({
+        email,
+        subject,
+        message,
+        attachment_name: attachmentName ?? null,
+        attachment_size: attachmentSize ?? null,
+        ip_address: ip,
+      })
+      .select('id')
+      .single()
 
     if (dbError) {
       console.error('[Contact API] DB insert error:', dbError)
@@ -149,6 +156,8 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       )
     }
+
+    inquiryId = (inserted as { id: string } | null)?.id ?? ''
   } catch (err) {
     console.error('[Contact API] DB exception:', err)
     return NextResponse.json(
@@ -158,9 +167,26 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── 알림 메일 발송 ───────────────────────────────────────────
-  // 알림이 나가지 않으면 "접수됐다"고 답하지 않는다. 손님이 접수된 줄 알고 기다리는데
-  // 아무도 못 보는 상황이 가장 나쁘다. 저장은 됐으므로 관리자 문의 목록에는 남는다.
-  const FAIL_BODY = { error: '접수 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' }
+  // 저장이 이미 끝났으므로 손님에게는 접수 성공으로 답한다. 메일이 못 나갔다고 실패를 알리면
+  // 손님이 같은 문의를 다시 넣어 중복만 쌓인다 — 관리자 문의 목록(/admin/inquiries)에는
+  // 이미 남아 있어 묻히지 않는다. 대신 못 나간 사실은 아래에서 기록으로 남긴다.
+
+  /**
+   * @함수명: logInquiryNotifyFailure
+   * @설명: 문의 알림 메일이 나가지 못한 사실을 모니터링 로그(notification_logs)에 남깁니다.
+   *        관리자 화면 /admin/logs 에서 확인할 수 있습니다. 어느 문의인지는 inquiries.id 로만
+   *        남기고 보낸사람 주소·제목·본문 같은 개인정보는 기록하지 않습니다.
+   * @매개변수: reason - 실패 사유(사람이 읽는 짧은 문장)
+   * @반환값: 없음(기록 실패는 무시됩니다)
+   */
+  const logInquiryNotifyFailure = (reason: string): Promise<void> =>
+    logNotification({
+      kind: 'email',
+      status: 'failure',
+      event: '문의 알림 미발송',
+      target: inquiryId ? `inquiry:${inquiryId}` : 'inquiry:(id 확인 불가)',
+      error: reason,
+    })
 
   // 수신 주소는 설정에서만 읽는다(웹훅 실패 알림과 같은 정책 — 코드에 주소를 박지 않는다).
   let adminEmail = ''
@@ -178,7 +204,8 @@ export async function POST(request: NextRequest) {
 
   if (!adminEmail) {
     console.error('[Contact API] 알림 미발송 — front_settings.support_email 미설정 (문의는 저장됨)')
-    return NextResponse.json(FAIL_BODY, { status: 500 })
+    await logInquiryNotifyFailure('수신 주소 없음 — 관리자 설정의 지원 이메일(support_email)이 비어 있습니다.')
+    return NextResponse.json({ success: true })
   }
 
   try {
@@ -192,8 +219,10 @@ export async function POST(request: NextRequest) {
         : undefined,
     })
   } catch (err) {
-    console.error('[Contact API] 알림 메일 발송 실패:', err instanceof Error ? err.message : String(err))
-    return NextResponse.json(FAIL_BODY, { status: 500 })
+    const reason = err instanceof Error ? err.message : String(err)
+    console.error('[Contact API] 알림 메일 발송 실패:', reason)
+    await logInquiryNotifyFailure(`발송 실패 — ${reason}`)
+    return NextResponse.json({ success: true })
   }
 
   return NextResponse.json({ success: true })
