@@ -559,6 +559,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               onChange={(e) => set('procurement_class_number', e.target.value)}
               placeholder="예: 43232698"
               inputMode="numeric"
+              // 형식은 막지 않되 길이만 제한 — 공백 없는 긴 값은 배지가 카드 밖으로 넘칠 수 있다
+              maxLength={32}
               className={inputCls}
             />
             {hasNonDigit(form.procurement_class_number) && (
@@ -572,6 +574,8 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               onChange={(e) => set('procurement_item_number', e.target.value)}
               placeholder="예: 26391406"
               inputMode="numeric"
+              // 형식은 막지 않되 길이만 제한 — 공백 없는 긴 값은 배지가 카드 밖으로 넘칠 수 있다
+              maxLength={32}
               className={inputCls}
             />
             {hasNonDigit(form.procurement_item_number) && (

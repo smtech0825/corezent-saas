@@ -46,6 +46,13 @@ const defaultSections = [
   { name: 'cta',          is_visible: true, order_index: 7 },
 ]
 
+// 홈 요금 섹션 상품 조회 컬럼 — 조달청 등록번호(054)는 우선 조회하고, 미적용이면 BASE로 폴백한다.
+// 폴백이 없으면 054 미적용 시 조회가 실패해 요금 섹션이 오류 없이 통째로 사라진다(다른 페이지와 동일 방식).
+const PRICING_OPT_COLS =
+  'name, slug, badge_text, badge_color, pricing_features, procurement_class_number, procurement_item_number, product_prices(type, interval, price, checkout_url, is_active)'
+const PRICING_BASE_COLS =
+  'name, slug, badge_text, badge_color, pricing_features, product_prices(type, interval, price, checkout_url, is_active)'
+
 export default async function HomePage() {
   const client = createAdminClient()
 
@@ -59,7 +66,7 @@ export default async function HomePage() {
     client.from('front_steps').select('id, icon, title, description').eq('is_published', true).order('order_index'),
     client
       .from('products')
-      .select('name, slug, badge_text, badge_color, pricing_features, procurement_class_number, procurement_item_number, product_prices(type, interval, price, checkout_url, is_active)')
+      .select(PRICING_OPT_COLS)
       .eq('is_active', true)
       .order('order_index'),
     // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
@@ -84,7 +91,11 @@ export default async function HomePage() {
 
   // 전체 활성 상품 기반 랜딩 Pricing 섹션 데이터 빌드
   type PriceRow = { type: string; interval: string | null; price: number; checkout_url: string | null; is_active: boolean }
-  const featuredProducts: PricingSectionProduct[] = ((pricingRes.data ?? []) as Record<string, unknown>[]).map((pricingRaw) => {
+  // 054 미적용이면 조달번호 없이 다시 조회 — 요금 섹션이 통째로 사라지는 것을 막는다
+  const pricingRows = pricingRes.error
+    ? (await client.from('products').select(PRICING_BASE_COLS).eq('is_active', true).order('order_index')).data
+    : pricingRes.data
+  const featuredProducts: PricingSectionProduct[] = ((pricingRows ?? []) as Record<string, unknown>[]).map((pricingRaw) => {
     const prices = ((pricingRaw.product_prices ?? []) as PriceRow[]).filter((pr) => pr.is_active)
     // 대표가는 '첫 행'이 아니라 '최저가 행'으로 선택(고가 티어가 대표가로 노출되던 문제 방지)
     const monthly  = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')

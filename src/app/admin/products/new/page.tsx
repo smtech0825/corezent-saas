@@ -15,6 +15,18 @@ import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * @함수명: isMissingColumnError
+ * @설명: 조달청 등록번호 컬럼(054)이 아직 적용되지 않은 DB에서 나는 오류인지 판별합니다.
+ *        select는 42703(undefined column), insert/update 페이로드는 PGRST204(스키마 캐시에 없음)로 온다.
+ * @매개변수: err - Supabase가 돌려준 오류 객체
+ * @반환값: 컬럼이 없어서 난 오류면 true
+ */
+function isMissingColumnError(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code
+  return code === '42703' || code === 'PGRST204'
+}
+
 async function createProduct(data: ProductFormData): Promise<{ error?: string }> {
   'use server'
   // 서버 액션도 관리자만 — 레이아웃 role 체크를 거치지 않으므로 진입부에서 직접 가드
@@ -41,9 +53,10 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
     badge_color: data.badge_color,
     logo_url: data.logo_url || null,
     manual_url: data.manual_url || null,
-    // 조달청 등록번호(054) — 공백만 입력한 경우도 빈 값으로 취급해 배지가 뜨지 않게 한다
-    procurement_class_number: data.procurement_class_number.trim() || null,
-    procurement_item_number: data.procurement_item_number.trim() || null,
+    // 조달청 등록번호(054) — 공백만 입력한 경우도 빈 값으로 취급해 배지가 뜨지 않게 한다.
+    // ?? '' 방어: 배포 직후 구버전 화면이 열려 있던 탭에서 이 필드가 빠진 채로 호출될 수 있다
+    procurement_class_number: (data.procurement_class_number ?? '').trim() || null,
+    procurement_item_number: (data.procurement_item_number ?? '').trim() || null,
     is_active: data.is_active,
     tags: data.tags.filter(Boolean),
     pricing_features: data.pricing_features.filter(Boolean),
@@ -57,15 +70,28 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
   if (data.option_axis1_name) productInsert.option_axis1_name = data.option_axis1_name
   if (data.option_axis2_name) productInsert.option_axis2_name = data.option_axis2_name
 
-  const { data: product, error } = await client
+  let { data: product, error } = await client
     .from('products')
     .insert(productInsert)
     .select('id')
     .single()
 
+  // 054 미적용이면 조달번호 두 키만 빼고 재시도 — 조달번호와 무관한 나머지 항목 저장까지 막히면 안 된다
+  if (error && isMissingColumnError(error)) {
+    const stripped = { ...productInsert }
+    delete stripped.procurement_class_number
+    delete stripped.procurement_item_number
+    ;({ data: product, error } = await client.from('products').insert(stripped).select('id').single())
+  }
+
   if (error) {
     // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
     console.error('[products/new] 제품 저장 실패:', error.message)
+    return { error: '제품을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
+  }
+  // 재시도 분기 때문에 오류 없이도 타입상 null일 수 있다 — 아래에서 product.id를 쓰므로 여기서 막는다
+  if (!product) {
+    console.error('[products/new] 제품 저장 후 id를 받지 못했습니다.')
     return { error: '제품을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
   }
 

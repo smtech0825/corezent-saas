@@ -9,8 +9,11 @@
  *           → 바깥 여백이 필요하면 래퍼 div가 아니라 이 부품의 className으로 준다.
  *             (래퍼로 감싸면 값이 없을 때 그 여백만 남아 화면이 달라진다)
  *
- *        색은 기존 페이퍼 토큰만 사용한다: 배경 paper-shade · 테두리 rule · 라벨 ink-faint
+ *        색은 기존 페이퍼 토큰만 사용한다: 배경 paper-shade · 테두리 rule · 라벨 ink-soft
  *        · 번호 ink · 왼쪽 세로선 pen. 새 색상값을 만들지 않는다.
+ *        ⚠️ 라벨은 ink-faint(#8B8F98)가 아니라 ink-soft(#565C66)를 쓴다 — paper-shade(#F1EFE7) 위에서
+ *           ink-faint는 대비 약 2.8:1로 WCAG AA(4.5:1) 미달이고, ink-soft는 약 5.9:1로 통과한다.
+ *           공공기관 담당자가 보는 화면이라 접근성 기준을 지킨다(둘 다 기존 토큰이라 새 색은 없다).
  */
 
 interface Props {
@@ -69,7 +72,7 @@ export default function ProcurementBadge({
     // flex w-fit(= 블록 레벨 + 내용 폭) — inline-flex는 줄상자를 만들어 아래에 몇 px가 더 붙는데,
     // 카드 안에서 버튼과의 간격이 자리마다 미세하게 달라지므로 블록으로 고정한다.
     <div
-      className={`flex w-fit flex-wrap items-baseline max-w-full rounded border border-rule border-l-pen bg-paper-shade text-ink-faint ${sizeCls} ${className}`}
+      className={`flex w-fit flex-wrap items-baseline max-w-full rounded border border-rule border-l-pen bg-paper-shade text-ink-soft ${sizeCls} ${className}`}
     >
       <span className="whitespace-nowrap">조달청 등록</span>
       {cls && <Entry label="물품분류번호" value={cls} />}
