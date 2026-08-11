@@ -217,7 +217,8 @@ async function notifyWebhookFailure(
     console.log(`[LS Webhook] 실패 알림 메일 발송: ${subject}`)
   } catch (notifyErr) {
     // 알림 실패는 삼킨다 — 웹훅 본 흐름(응답 코드·재전송 판단)에 영향을 주지 않는다.
-    console.error('[LS Webhook] 실패 알림 발송 중 오류(무시):', notifyErr)
+    // 객체째 찍으면 알림 본문(=원래 오류 메시지)까지 딸려 들어오므로 같은 기준으로 가린다.
+    console.error('[LS Webhook] 실패 알림 발송 중 오류(무시):', maskSecretsInText(String(notifyErr)))
   }
 }
 
@@ -958,7 +959,8 @@ async function deactivateExternalLicensesByLsOrder(lsOrderId: string) {
         console.log(`[LS Webhook] 환불 → Supabase(${found.db}) 비활성화(주문 미발견 경로): ${maskSecret(key, 8)}`)
       } catch (keyErr) {
         // 키 하나가 실패해도 나머지는 계속 처리한다.
-        console.error(`[LS Webhook] 환불 — 키 비활성화 실패(계속 진행): ${maskSecret(key, 8)}`, keyErr)
+        // 키 자체는 앞에서 가렸지만 오류 객체 안에도 키가 실릴 수 있다(중복키 오류·시트 요청 본문).
+        console.error(`[LS Webhook] 환불 — 키 비활성화 실패(계속 진행): ${maskSecret(key, 8)}`, maskSecretsInText(String(keyErr)))
       }
     }
   } catch (err) {
