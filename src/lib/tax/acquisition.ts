@@ -1,0 +1,268 @@
+/**
+ * @파일: lib/tax/acquisition.ts
+ * @설명: 취득세 계산기 — 주택 유상취득(매매) + 주택 증여(무상취득).
+ *        엔진은 세율을 모른다: 세율·공제·구간·기준액은 전부 DB(tax_rules)에서 읽고,
+ *        규제지역 여부는 tax_regulated_areas 이력으로 판정한다.
+ *        룰이 없으면 0원으로 계산하지 않고 RULE_NOT_REGISTERED를 반환한다.
+ */
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json, TaxRule, TaxRuleMode } from './types'
+import type {
+  AcquisitionInput,
+  AcquisitionResult,
+  AppliedRuleInfo,
+  RateTableRow,
+  RoundingValue,
+  TaxEngineFailure,
+} from './engine-types'
+import { engineFail, fetchValidRules, isRegulatedArea, isValidDateString, requireRule } from './rule-store'
+import {
+  applyRounding,
+  evaluateRateSpec,
+  isDeemedGift,
+  parseDeemedGiftThreshold,
+  parseGiftHeavy,
+  parseGiftTaxBase,
+  parseRateTable,
+  parseRounding,
+  selectRateRow,
+} from './rule-value'
+
+/** 취득세 룰 키 — 식별자일 뿐이며 값은 관리자가 DB에 등록한다 */
+export const ACQUISITION_RULE_KEYS = {
+  onerousRates: 'acquisition.onerous.rates',            // 유상취득 세율표
+  giftTaxBase: 'acquisition.gift.tax_base',             // 증여 과세표준 기준
+  giftRates: 'acquisition.gift.rates',                  // 증여 기본 세율표
+  giftHeavy: 'acquisition.gift.heavy',                  // 증여 중과 (공시가격 기준 + 중과 세율표)
+  deemedGiftThreshold: 'acquisition.gift.deemed_gift_threshold', // 무상취득 간주 기준
+  rounding: 'acquisition.rounding',                     // 단수 처리 (선택)
+} as const
+
+/** 룰 행을 결과 화면용 근거 정보로 변환 */
+function toAppliedInfo(rule: TaxRule): AppliedRuleInfo {
+  return {
+    id: rule.id,
+    ruleKey: rule.rule_key,
+    lawName: rule.law_name,
+    lawArticle: rule.law_article,
+    lawUrl: rule.law_url,
+    effectiveFrom: rule.effective_from,
+    effectiveTo: rule.effective_to,
+    status: rule.status,
+  }
+}
+
+/** 입력 검증 — 실패하면 한국어 안내가 담긴 실패 결과, 통과하면 null */
+function validateInput(input: AcquisitionInput): TaxEngineFailure | null {
+  if (!isValidDateString(input.baseDate)) {
+    return engineFail('INVALID_INPUT', '취득일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+  }
+  if (!/^[A-Za-z0-9-]{1,20}$/.test(input.regionCode)) {
+    return engineFail('INVALID_INPUT', '소재지 지역 코드가 올바르지 않습니다.')
+  }
+  if (input.cause !== 'sale' && input.cause !== 'gift') {
+    return engineFail('INVALID_INPUT', '취득 원인은 유상매매 또는 증여만 지원합니다.')
+  }
+  if (!Number.isFinite(input.price) || input.price < 0) {
+    return engineFail('INVALID_INPUT', '취득가액은 0 이상의 숫자여야 합니다.')
+  }
+  if (!Number.isInteger(input.houseCountAfter) || input.houseCountAfter < 1) {
+    return engineFail('INVALID_INPUT', '취득 후 주택 수는 1 이상의 정수여야 합니다.')
+  }
+  for (const [label, v] of [['시가인정액', input.marketValue], ['공시가격', input.officialPrice]] as const) {
+    if (v !== undefined && (!Number.isFinite(v) || v < 0)) {
+      return engineFail('INVALID_INPUT', `${label}은 0 이상의 숫자여야 합니다.`)
+    }
+  }
+  return null
+}
+
+/** 선택된 세율 행으로 3개 세목을 각각 계산(감면 반영, 절사 전) */
+function computeItems(row: RateTableRow, taxBase: number): Record<'acquisition' | 'local_education' | 'rural_special', number> {
+  const items = {
+    acquisition: evaluateRateSpec(row.rates.acquisition, taxBase),
+    local_education: evaluateRateSpec(row.rates.local_education, taxBase),
+    rural_special: evaluateRateSpec(row.rates.rural_special, taxBase),
+  }
+  if (row.credit) {
+    items[row.credit.target] = Math.max(items[row.credit.target] - row.credit.amount, 0)
+  }
+  return items
+}
+
+/**
+ * @함수명: calculateAcquisitionTax
+ * @설명: 취득세를 계산합니다. 취득 원인에 따라 유상취득/무상취득(증여)으로 갈라지고,
+ *        배우자·직계존비속 간 대가 지급 거래는 룰 기준(차액 금액·비율)에 따라
+ *        무상취득으로 간주될 수 있습니다. 세액은 취득세 본세·지방교육세·농어촌특별세로
+ *        분해해 반환하고, 적용된 룰의 법령 근거 목록을 함께 반환합니다.
+ * @매개변수: supabase - Supabase 클라이언트(서버) / input - 계산 입력 / mode - 룰 모드
+ * @반환값: 성공(세액 분해 + 근거) 또는 실패(한국어 안내)
+ */
+export async function calculateAcquisitionTax(
+  supabase: SupabaseClient,
+  input: AcquisitionInput,
+  mode: TaxRuleMode,
+): Promise<AcquisitionResult> {
+  const inputError = validateInput(input)
+  if (inputError) return inputError
+
+  // 기준일에 유효한 룰 세트 로드 (모드 우선순위·충돌 검출 포함)
+  const fetched = await fetchValidRules(supabase, 'acquisition', input.baseDate, mode)
+  if (!fetched.ok) return fetched
+  const rules = fetched.rules
+
+  // 조정대상지역 판정 (취득세 세목 기준)
+  const reg = await isRegulatedArea(supabase, input.regionCode, input.baseDate, 'acquisition', 'adjustment')
+  if (!reg.ok) return reg
+  const regulated = reg.regulated
+
+  // 계산에 실제 사용된 룰의 근거를 모은다 (중복 없이)
+  const applied = new Map<string, AppliedRuleInfo>()
+  const use = (rule: TaxRule) => applied.set(rule.id, toAppliedInfo(rule))
+
+  // ── 취득 유형 결정 — 증여인데 대가가 있으면 간주 기준(룰)으로 판정 ──────────
+  let causeApplied: 'onerous' | 'gift' = input.cause === 'sale' ? 'onerous' : 'gift'
+  let deemedGift = false
+  const related = input.donorRelation === 'spouse' || input.donorRelation === 'lineal'
+
+  if (input.cause === 'gift' && related && input.price > 0) {
+    const thresholdRule = requireRule(rules, ACQUISITION_RULE_KEYS.deemedGiftThreshold, input.baseDate)
+    if (!thresholdRule.ok) return thresholdRule
+    const threshold = parseDeemedGiftThreshold(thresholdRule.rule.rule_value, thresholdRule.rule.rule_key)
+    if (!threshold.ok) return threshold
+    if (input.marketValue === undefined) {
+      return engineFail('INVALID_INPUT', '배우자·직계존비속 간 거래의 무상취득 간주 판정에는 시가인정액 입력이 필요합니다.')
+    }
+    use(thresholdRule.rule)
+    deemedGift = isDeemedGift(threshold.value, input.marketValue, input.price)
+    // 차액이 기준을 넘으면 무상취득으로 간주, 넘지 않으면 대가를 인정해 유상취득으로 계산
+    causeApplied = deemedGift ? 'gift' : 'onerous'
+  }
+
+  // ── 과세표준·세율 행 결정 ───────────────────────────────────────────────────
+  let taxBase: number
+  let selectedRow: RateTableRow
+
+  if (causeApplied === 'onerous') {
+    taxBase = input.price
+    const ratesRule = requireRule(rules, ACQUISITION_RULE_KEYS.onerousRates, input.baseDate)
+    if (!ratesRule.ok) return ratesRule
+    const table = parseRateTable(ratesRule.rule.rule_value, ratesRule.rule.rule_key)
+    if (!table.ok) return table
+
+    // 판정 컨텍스트 — 세율표 행의 when 조건은 이 필드들만 쓸 수 있다
+    const context: Record<string, Json> = {
+      price: input.price,
+      house_count: input.houseCountAfter,
+      is_regulated: regulated,
+      area_over_85: input.areaOver85,
+      first_home: input.firstHome ?? false,
+      temporary_two_home: input.temporaryTwoHome ?? false,
+    }
+    const picked = selectRateRow(table.rows, context, ratesRule.rule.rule_key)
+    if (!picked.ok) return picked
+    use(ratesRule.rule)
+    selectedRow = picked.row
+  } else {
+    // 증여 과세표준 기준(시가인정액/공시가격)은 시점에 따라 다르므로 룰에서 읽는다
+    const baseRule = requireRule(rules, ACQUISITION_RULE_KEYS.giftTaxBase, input.baseDate)
+    if (!baseRule.ok) return baseRule
+    const baseSpec = parseGiftTaxBase(baseRule.rule.rule_value, baseRule.rule.rule_key)
+    if (!baseSpec.ok) return baseSpec
+    if (baseSpec.value.base === 'market_value') {
+      if (input.marketValue === undefined) {
+        return engineFail('INVALID_INPUT', '증여 취득세 계산에는 시가인정액 입력이 필요합니다.')
+      }
+      taxBase = input.marketValue
+    } else {
+      if (input.officialPrice === undefined) {
+        return engineFail('INVALID_INPUT', '증여 취득세 계산에는 공시가격 입력이 필요합니다.')
+      }
+      taxBase = input.officialPrice
+    }
+    use(baseRule.rule)
+
+    // 규제지역이면 중과 룰로 판정 — 공시가격 기준액과 중과 세율표는 룰에서 온다.
+    // 단 증여자가 1주택자면 중과에서 제외한다.
+    let heavyRows: RateTableRow[] | null = null
+    let heavyRuleKey = ''
+    if (regulated) {
+      const heavyRule = requireRule(rules, ACQUISITION_RULE_KEYS.giftHeavy, input.baseDate)
+      if (!heavyRule.ok) return heavyRule
+      const heavy = parseGiftHeavy(heavyRule.rule.rule_value, heavyRule.rule.rule_key)
+      if (!heavy.ok) return heavy
+      if (input.officialPrice === undefined) {
+        return engineFail('INVALID_INPUT', '규제지역 증여의 중과 판정에는 공시가격 입력이 필요합니다.')
+      }
+      use(heavyRule.rule) // 중과 여부 판정 자체의 근거이므로 미적용이어도 근거에 포함
+      if (input.officialPrice >= heavy.value.officialPriceMin) {
+        if (input.donorIsSingleHomeOwner === undefined) {
+          return engineFail('INVALID_INPUT', '규제지역 증여의 중과 판정에는 증여자 1주택자 여부 입력이 필요합니다.')
+        }
+        if (!input.donorIsSingleHomeOwner) {
+          heavyRows = heavy.value.rows
+          heavyRuleKey = heavyRule.rule.rule_key
+        }
+      }
+    }
+
+    const context: Record<string, Json> = {
+      tax_base: taxBase,
+      house_count: input.houseCountAfter,
+      is_regulated: regulated,
+      area_over_85: input.areaOver85,
+      donor_relation: input.donorRelation ?? 'other',
+    }
+
+    if (heavyRows) {
+      const picked = selectRateRow(heavyRows, context, heavyRuleKey)
+      if (!picked.ok) return picked
+      selectedRow = picked.row
+    } else {
+      const ratesRule = requireRule(rules, ACQUISITION_RULE_KEYS.giftRates, input.baseDate)
+      if (!ratesRule.ok) return ratesRule
+      const table = parseRateTable(ratesRule.rule.rule_value, ratesRule.rule.rule_key)
+      if (!table.ok) return table
+      const picked = selectRateRow(table.rows, context, ratesRule.rule.rule_key)
+      if (!picked.ok) return picked
+      use(ratesRule.rule)
+      selectedRow = picked.row
+    }
+  }
+
+  // ── 세액 계산 + 단수 처리 ───────────────────────────────────────────────────
+  const raw = computeItems(selectedRow, taxBase)
+
+  let rounding: RoundingValue | null = null
+  const roundingRule = rules.get(ACQUISITION_RULE_KEYS.rounding)
+  if (roundingRule) {
+    const parsed = parseRounding(roundingRule.rule_value, roundingRule.rule_key)
+    if (!parsed.ok) return parsed
+    rounding = parsed.value
+    use(roundingRule)
+  }
+
+  const acquisitionTax = applyRounding(raw.acquisition, rounding)
+  const localEducationTax = applyRounding(raw.local_education, rounding)
+  const ruralSpecialTax = applyRounding(raw.rural_special, rounding)
+
+  const appliedRules = Array.from(applied.values())
+  return {
+    ok: true,
+    causeApplied,
+    deemedGift,
+    taxBase,
+    isRegulatedArea: regulated,
+    breakdown: {
+      acquisitionTax,
+      localEducationTax,
+      ruralSpecialTax,
+      total: acquisitionTax + localEducationTax + ruralSpecialTax,
+    },
+    appliedRules,
+    ruleMode: mode,
+    containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),
+  }
+}
