@@ -25,13 +25,15 @@ import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductBuyBar from './ProductBuyBar'
 import ScrollTopButton from './ScrollTopButton'
 import RichContent from '@/components/common/RichContent'
+import ProcurementBadge from '@/components/common/ProcurementBadge'
 import { richToPlainText } from '@/lib/rich-html'
 
 export const dynamic = 'force-dynamic'
 
 // 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백). checkout_url은 항상 존재하는 기본 컬럼.
+// 조달청 등록번호(054)도 FULL_COLS에만 넣는다 — 미적용 환경에서는 BASE_COLS 폴백으로 상세가 계속 열린다
 const FULL_COLS =
-  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, product_prices(id, type, interval, price, is_active, checkout_url)'
+  'id, name, slug, tagline, description, category, category_group, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, hero_image_url, screenshots, system_requirements, version_info_url, faqs, procurement_class_number, procurement_item_number, product_prices(id, type, interval, price, is_active, checkout_url)'
 const BASE_COLS =
   'id, name, slug, tagline, description, category, logo_url, badge_text, badge_color, is_active, tags, pricing_features, product_features, product_prices(id, type, interval, price, is_active, checkout_url)'
 
@@ -115,6 +117,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const screenshots = (product.screenshots ?? []) as string[]
   const systemRequirements = (product.system_requirements as string | null) ?? null
   const versionInfoUrl = (product.version_info_url as string | null) ?? null
+  // 조달청 등록번호(054) — BASE_COLS 폴백 시에는 키가 없어 undefined → 배지 미표시
+  const procurementClassNumber = (product.procurement_class_number as string | null | undefined) ?? null
+  const procurementItemNumber = (product.procurement_item_number as string | null | undefined) ?? null
 
   const prices = ((product.product_prices ?? []) as PriceRow[]).filter((p) => p.is_active)
   const monthly = prices.find((p) => p.type === 'subscription' && p.interval === 'monthly')
@@ -210,6 +215,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <Image src={heroImage} alt={`${name} 대표 이미지`} fill className="object-cover" />
                 </div>
               )}
+
+              {/* 조달청 등록번호 — 설명 박스 위. 값이 없으면 부품이 null을 반환해 자리·여백도 남지 않는다.
+                  ⚠️ 래퍼 div로 감싸면 값이 없는 상품에 빈 여백이 남으므로, 아래 여백은 배지 자체에 준다 */}
+              <ProcurementBadge
+                classNumber={procurementClassNumber}
+                itemNumber={procurementItemNumber}
+                className="mb-6"
+              />
 
               {/* 섹션 컨테이너 스택 — 각 섹션을 보더 카드로 묶는다(빈 데이터는 박스째 미렌더) */}
               <div className="space-y-6">
