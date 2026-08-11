@@ -28,17 +28,49 @@ export function readProviderErrorCode(params: URLSearchParams): string {
  * @설명: 인증 제공자가 돌려준 오류 코드가 "메일 링크가 만료됐거나 이미 쓰였다"에 해당하는지
  *        판정합니다.
  *
- *        ★ 판정 범위를 일부러 넓게 둡니다. 실제 운영 로그에서 어떤 코드가 오는지 아직
- *        확인하지 못했기 때문입니다(콜백 호출 자체가 최근 기록에 없었습니다). 좁게 잡으면
- *        진짜 만료된 손님이 "메일을 다시 받으세요" 안내를 못 받습니다. 반대로 넓게 잡으면
- *        소셜 로그인 실패에 만료 안내가 나갈 수 있는데, 둘 다 "다시 시도"로 이어지므로
- *        손해가 더 작습니다. 로그가 쌓이면 실제 값을 보고 좁히는 것이 맞습니다.
+ *        ★ 판정 범위는 여전히 넓게 둡니다(otp·expired가 들어가면 만료로 봅니다). 운영 로그에서
+ *        실제로 어떤 코드가 오는지 아직 확인하지 못했고, 좁게 잡으면 진짜 만료된 손님이
+ *        "메일을 다시 받으세요" 안내를 못 받기 때문입니다.
+ *
+ *        다만 access_denied는 뺐습니다. 이건 "링크 만료"가 아니라 손님이 소셜 로그인
+ *        동의창에서 취소를 눌렀을 때 나오는 표준 코드입니다. 넓게 두는 것과, 뜻이 다른
+ *        코드를 잘못 넣어 둔 것은 다른 문제입니다 — 그대로 두면 로그인을 취소했을 뿐인
+ *        손님에게 "인증 메일을 다시 받아 주세요"라고 안내하게 됩니다.
  * @매개변수: errorCode - 주소에 실려 온 오류 코드(없을 수 있음)
  * @반환값: 만료·무효 링크로 볼 수 있으면 true
  */
 export function isExpiredLinkCode(errorCode: string | null | undefined): boolean {
   if (!errorCode) return false
-  return /otp|expired|access_denied/i.test(errorCode)
+  return /otp|expired/i.test(errorCode)
+}
+
+/**
+ * @함수명: isUserCancelledOAuth
+ * @설명: 손님이 소셜 로그인 동의창에서 취소를 눌렀는지 판정합니다. OAuth 표준에서 이 경우
+ *        access_denied를 돌려줍니다. 실패가 아니라 손님의 선택이므로, 만료 안내가 아니라
+ *        소셜 로그인 안내로 보냅니다.
+ * @매개변수: errorCode - 주소에 실려 온 오류 코드(없을 수 있음)
+ * @반환값: 손님이 취소한 것으로 볼 수 있으면 true
+ */
+export function isUserCancelledOAuth(errorCode: string | null | undefined): boolean {
+  if (!errorCode) return false
+  return /access_denied/i.test(errorCode)
+}
+
+/**
+ * @함수명: classifyProviderError
+ * @설명: 제공자가 준 오류 코드를 실패 종류로 바꿉니다. 판정 순서까지 여기 한 곳에 둡니다
+ *        — 서버와 화면이 각자 if 순서를 들고 있으면 같은 코드에 다른 결론을 냅니다.
+ * @매개변수: errorCode - 주소에 실려 온 오류 코드(없을 수 있음)
+ * @반환값: 만료 링크면 'verify', 손님이 소셜 로그인을 취소했으면 'oauth',
+ *          판단할 수 없으면 null(부르는 쪽이 기본값을 정한다)
+ */
+export function classifyProviderError(
+  errorCode: string | null | undefined,
+): AuthCallbackReason | null {
+  if (isExpiredLinkCode(errorCode)) return 'verify'
+  if (isUserCancelledOAuth(errorCode)) return 'oauth'
+  return null
 }
 
 /**

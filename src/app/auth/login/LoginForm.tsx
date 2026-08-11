@@ -16,7 +16,7 @@ import AuthBrand from '../_components/AuthBrand'
 import { safeInternalPath } from '@/lib/validate'
 import {
   authCallbackMessage,
-  isExpiredLinkCode,
+  classifyProviderError,
   readProviderErrorCode,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
@@ -31,15 +31,14 @@ const SAVED_EMAIL_KEY = 'corezent_saved_email'
  *        인증 제공자가 오류를 # 뒤에 붙여 보내는 경우가 있는데, 그 부분은 서버로 전달되지
  *        않아 콜백이 볼 수 없습니다. 그래서 브라우저에서 한 번 더 본다.
  *        판정 규칙은 서버와 같은 것(lib/auth-callback-error.ts)을 쓴다.
- * @반환값: 만료·무효 링크로 보이면 'verify', 아니면 null(서버 판정을 그대로 둔다)
+ * @반환값: 판정된 실패 종류. 판단할 수 없으면 null(서버 판정을 그대로 둔다)
  */
 function reasonFromHash(): AuthCallbackReason | null {
   if (typeof window === 'undefined') return null
   const raw = window.location.hash.replace(/^#/, '')
   if (!raw) return null
-  // 읽는 키와 순서도 서버와 같은 것을 쓴다(lib/auth-callback-error.ts).
-  const code = readProviderErrorCode(new URLSearchParams(raw))
-  return isExpiredLinkCode(code) ? 'verify' : null
+  // 읽는 키·판정 순서 모두 서버와 같은 것을 쓴다(lib/auth-callback-error.ts).
+  return classifyProviderError(readProviderErrorCode(new URLSearchParams(raw)))
 }
 
 export default function LoginForm() {

@@ -14,7 +14,7 @@ import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
 import { safeInternalPath } from '@/lib/validate'
 import { RETURN_TO_COOKIE } from '@/lib/cookies'
 import {
-  isExpiredLinkCode,
+  classifyProviderError,
   readProviderErrorCode,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
@@ -129,11 +129,10 @@ export async function GET(request: Request) {
     return backToLogin('verify')
   }
 
-  // 코드도 토큰도 없이 돌아온 경우 — 가장 흔한 것이 "인증 메일 링크 만료"다. 판정 규칙은
-  // lib/auth-callback-error.ts 한 곳에 있고, 주소의 # 뒤로 오는 경우는 서버가 읽을 수 없어
-  // 로그인 화면이 같은 규칙으로 한 번 더 본다.
-  // 읽는 키와 순서도 화면과 같은 것을 쓴다(lib/auth-callback-error.ts).
+  // 코드도 토큰도 없이 돌아온 경우 — 만료된 인증 메일 링크이거나, 손님이 소셜 로그인
+  // 동의창에서 취소한 경우다. 읽는 키·판정 순서 모두 lib/auth-callback-error.ts 한 곳에 있고,
+  // 주소의 # 뒤로 오는 경우는 서버가 읽을 수 없어 로그인 화면이 같은 규칙으로 한 번 더 본다.
   const providerErrorCode = readProviderErrorCode(url.searchParams)
   console.log('[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)')
-  return backToLogin(isExpiredLinkCode(providerErrorCode) ? 'verify' : 'missing')
+  return backToLogin(classifyProviderError(providerErrorCode) ?? 'missing')
 }
