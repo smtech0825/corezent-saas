@@ -13,6 +13,7 @@ import { attributeReferralOnSignup, REF_COOKIE } from '@/lib/affiliate'
 import { syncProviderPhoneIfMissing } from '@/lib/provider-phone'
 import { safeInternalPath } from '@/lib/validate'
 import { RETURN_TO_COOKIE } from '@/lib/cookies'
+import { isExpiredLinkCode, type AuthCallbackReason } from '@/lib/auth-callback-error'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
    * @매개변수: reason - 실패 종류(oauth · verify · missing)
    * @반환값: 로그인 화면으로 보내는 응답
    */
-  function backToLogin(reason: 'oauth' | 'verify' | 'missing'): NextResponse {
+  function backToLogin(reason: AuthCallbackReason): NextResponse {
     const params = new URLSearchParams({ error: reason })
     if (redirect !== '/') params.set('redirect', redirect)
     return withCookieCleared(NextResponse.redirect(`${origin}/auth/login?${params.toString()}`))
@@ -124,11 +125,10 @@ export async function GET(request: Request) {
     return backToLogin('verify')
   }
 
-  // 코드도 토큰도 없이 돌아온 경우 — 가장 흔한 것이 "인증 메일 링크 만료"다. 이때 Supabase가
-  // 주소에 error_code(예: otp_expired)를 붙여 보내므로, 그 값이 있으면 인증 실패로 분류해
-  // 전용 안내("인증 메일을 다시 받아 주세요")가 나가게 한다. 없으면 일반 안내로 보낸다.
+  // 코드도 토큰도 없이 돌아온 경우 — 가장 흔한 것이 "인증 메일 링크 만료"다. 판정 규칙은
+  // lib/auth-callback-error.ts 한 곳에 있고, 주소의 # 뒤로 오는 경우는 서버가 읽을 수 없어
+  // 로그인 화면이 같은 규칙으로 한 번 더 본다.
   const providerErrorCode = url.searchParams.get('error_code') ?? ''
-  const isExpiredLink = /otp|expired|access_denied/i.test(providerErrorCode)
   console.log('[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)')
-  return backToLogin(isExpiredLink ? 'verify' : 'missing')
+  return backToLogin(isExpiredLinkCode(providerErrorCode) ? 'verify' : 'missing')
 }

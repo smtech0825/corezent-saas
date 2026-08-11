@@ -14,25 +14,30 @@ import { createClient } from '@/lib/supabase/client'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import AuthBrand from '../_components/AuthBrand'
 import { safeInternalPath } from '@/lib/validate'
+import {
+  authCallbackMessage,
+  isExpiredLinkCode,
+  type AuthCallbackReason,
+} from '@/lib/auth-callback-error'
 
 /** "아이디 저장" 이메일 보관 localStorage 키 */
 const SAVED_EMAIL_KEY = 'corezent_saved_email'
 
 /**
- * @함수명: authCallbackMessage
- * @설명: 인증 콜백이 실패하며 넘긴 종류 표시를 손님이 읽을 한국어 안내로 바꿉니다.
- *        오류 원문(영문)은 서버 기록에만 남고 여기로 넘어오지 않습니다.
- * @매개변수: code - 콜백이 넘긴 실패 종류(oauth · verify · missing)
- * @반환값: 화면에 그대로 보여줄 한국어 안내 문장
+ * @함수명: reasonFromHash
+ * @설명: 주소의 # 뒤에 실려 온 오류를 읽어 실패 종류를 다시 판정합니다.
+ *        인증 제공자가 오류를 # 뒤에 붙여 보내는 경우가 있는데, 그 부분은 서버로 전달되지
+ *        않아 콜백이 볼 수 없습니다. 그래서 브라우저에서 한 번 더 본다.
+ *        판정 규칙은 서버와 같은 것(lib/auth-callback-error.ts)을 쓴다.
+ * @반환값: 만료·무효 링크로 보이면 'verify', 아니면 null(서버 판정을 그대로 둔다)
  */
-function authCallbackMessage(code: string): string {
-  if (code === 'oauth') {
-    return '소셜 로그인을 마치지 못했습니다. 잠시 후 다시 시도하시거나 이메일로 로그인해 주세요.'
-  }
-  if (code === 'verify') {
-    return '이메일 인증을 마치지 못했습니다. 링크가 만료되었을 수 있으니 인증 메일을 다시 받아 주세요.'
-  }
-  return '로그인 처리를 마치지 못했습니다. 다시 시도해 주세요.'
+function reasonFromHash(): AuthCallbackReason | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.location.hash.replace(/^#/, '')
+  if (!raw) return null
+  const hashParams = new URLSearchParams(raw)
+  const code = hashParams.get('error_code') ?? hashParams.get('error')
+  return isExpiredLinkCode(code) ? 'verify' : null
 }
 
 export default function LoginForm() {
@@ -72,9 +77,13 @@ export default function LoginForm() {
   useEffect(() => {
     const code = searchParams.get('error')
     if (!code) return
-    setError(authCallbackMessage(code))
+
+    // 서버가 정한 종류를 기본으로 쓰되, # 뒤에 만료 표시가 실려 왔으면 그쪽을 따른다.
+    // 서버는 # 뒤를 볼 수 없어 일반 안내로 떨어지기 때문이다.
+    setError(authCallbackMessage(reasonFromHash() ?? code))
 
     // 이동 경로(redirect)는 남기고 오류 표시만 지운다 — 새로고침·링크 공유 시 남지 않게.
+    // router.replace에 # 없는 주소를 주므로 # 뒤 영문 표시도 함께 사라진다.
     const params = new URLSearchParams(searchParams.toString())
     params.delete('error')
     const query = params.toString()
