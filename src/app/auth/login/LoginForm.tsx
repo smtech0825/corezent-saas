@@ -18,6 +18,23 @@ import { safeInternalPath } from '@/lib/validate'
 /** "아이디 저장" 이메일 보관 localStorage 키 */
 const SAVED_EMAIL_KEY = 'corezent_saved_email'
 
+/**
+ * @함수명: authCallbackMessage
+ * @설명: 인증 콜백이 실패하며 넘긴 종류 표시를 손님이 읽을 한국어 안내로 바꿉니다.
+ *        오류 원문(영문)은 서버 기록에만 남고 여기로 넘어오지 않습니다.
+ * @매개변수: code - 콜백이 넘긴 실패 종류(oauth · verify · missing)
+ * @반환값: 화면에 그대로 보여줄 한국어 안내 문장
+ */
+function authCallbackMessage(code: string): string {
+  if (code === 'oauth') {
+    return '소셜 로그인을 마치지 못했습니다. 잠시 후 다시 시도하시거나 이메일로 로그인해 주세요.'
+  }
+  if (code === 'verify') {
+    return '이메일 인증을 마치지 못했습니다. 링크가 만료되었을 수 있으니 인증 메일을 다시 받아 주세요.'
+  }
+  return '로그인 처리를 마치지 못했습니다. 다시 시도해 주세요.'
+}
+
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -49,6 +66,20 @@ export default function LoginForm() {
       }
     } catch { /* localStorage 접근 불가 시 무시 */ }
   }, [])
+
+  // 인증 콜백이 실패해 돌아온 경우 — 한국어로 알리고 주소창에서 표시를 지운다.
+  // (예전에는 주소에 영문 원문만 남고 화면에는 아무 설명이 없어, 손님이 같은 버튼만 계속 눌렀다)
+  useEffect(() => {
+    const code = searchParams.get('error')
+    if (!code) return
+    setError(authCallbackMessage(code))
+
+    // 이동 경로(redirect)는 남기고 오류 표시만 지운다 — 새로고침·링크 공유 시 남지 않게.
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('error')
+    const query = params.toString()
+    router.replace(query ? `/auth/login?${query}` : '/auth/login')
+  }, [searchParams, router])
 
   // 이메일+비밀번호 로그인
   async function handleEmailLogin(e: React.FormEvent) {

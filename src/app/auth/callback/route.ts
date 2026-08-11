@@ -67,7 +67,9 @@ export async function GET(request: Request) {
       }
       return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
-    return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
+    // 원문(영문)은 서버 기록에만 남기고, 주소에는 종류만 넘긴다. 화면 문구는 로그인 화면이 고른다.
+    console.error('[callback] 소셜 로그인 실패:', error.message)
+    return NextResponse.redirect(`${origin}/auth/login?error=oauth`)
   }
 
   // 이메일 인증 (token_hash 방식)
@@ -99,9 +101,10 @@ export async function GET(request: Request) {
       }
       return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
-    return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
+    console.error('[callback] 이메일 인증 실패:', error.message)
+    return NextResponse.redirect(`${origin}/auth/login?error=verify`)
   }
 
   console.log('[callback] no code or token_hash. params:', Object.fromEntries(url.searchParams))
-  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/auth/login?error=missing`)
 }
