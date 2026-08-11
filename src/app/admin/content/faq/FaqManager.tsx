@@ -89,15 +89,20 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
     })
   }
 
-  async function handleToggle(id: string, current: boolean) {
-    setItems((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, is_published: !current } : f))
-    )
+  async function handleToggle(id: string) {
+    // 연타 방지 — 처리 중에는 아무것도 받지 않는다(버튼도 비활성이지만 한 번 더 막는다).
+    if (isPending) return
+    // 되돌릴 기준은 "직전에 눌렀을 때의 값"이 아니라 지금 서버에 남아 있는 값이다.
+    const serverValue = items.find((f) => f.id === id)?.is_published
+    if (serverValue === undefined) return
+    const next = !serverValue
+
+    setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: next } : f)))
     startTransition(async () => {
-      // 실패하면 화면 표시를 원래대로 되돌린다 — 화면만 바뀌고 실제는 그대로면 안 된다.
-      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, !current))
+      // 실패하면 화면 표시를 서버 값으로 되돌린다 — 화면만 바뀌고 실제는 그대로면 안 된다.
+      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
       if (!ok) {
-        setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: current } : f)))
+        setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: serverValue } : f)))
       }
     })
   }
@@ -147,8 +152,9 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => handleToggle(faq.id, faq.is_published)}
-                    className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${
+                    onClick={() => handleToggle(faq.id)}
+                    disabled={isPending}
+                    className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors disabled:opacity-50 ${
                       faq.is_published
                         ? 'text-ok bg-ok-soft border-ok/20'
                         : 'text-ink-soft bg-paper-shade border-rule'

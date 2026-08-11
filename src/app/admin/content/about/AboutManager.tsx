@@ -149,6 +149,7 @@ export default function AboutManager({
   const [heroTitle, setHeroTitle] = useState(initTitle)
   const [heroDesc, setHeroDesc] = useState(initDesc)
   const [heroOpen, setHeroOpen] = useState(true)
+  const [heroSaved, setHeroSaved] = useState(false)
 
   // ─ Stats state
   const [stats, setStats] = useState<Stat[]>(initStats)
@@ -169,9 +170,13 @@ export default function AboutManager({
   // ─── Hero handlers ──────────────────────────────────────────
 
   function handleHeroSave() {
+    setHeroSaved(false)
     startTransition(async () => {
       // 실패해도 입력값을 지우지 않는다 — 작성 중이던 내용이 날아가면 안 된다.
-      await runAdminAction('소개 히어로 저장', () => onUpdateHero(heroTitle, heroDesc))
+      // 성공했을 때만 "저장되었습니다"를 켠다(다른 저장 화면과 같은 방식).
+      const ok = await runAdminAction('소개 히어로 저장', () => onUpdateHero(heroTitle, heroDesc))
+      if (!ok) return
+      setHeroSaved(true)
     })
   }
 
@@ -271,9 +276,12 @@ export default function AboutManager({
               {/* 콘텐츠 블록과 동일한 리치 에디터 — 서식·정렬·이미지·유튜브·표. 저장 시 서버에서 sanitize된다 */}
               <RichTextEditor value={heroDesc} onChange={setHeroDesc} />
             </div>
-            <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
-              <Check size={12} /> 히어로 저장
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
+                <Check size={12} /> 히어로 저장
+              </button>
+              {heroSaved && !isPending && <span className="text-xs text-ok">저장되었습니다.</span>}
+            </div>
           </div>
         )}
       </div>

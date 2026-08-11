@@ -7,7 +7,8 @@
  * @함수명: maskSecret
  * @설명: 문자열 앞 visible자만 남기고 나머지를 '*'로 마스킹합니다.
  * @매개변수: value - 마스킹할 원본 문자열 / visible - 앞에 남길 글자 수(기본 4)
- * @반환값: 마스킹된 문자열 (원본 길이 유지)
+ * @반환값: 마스킹된 문자열. 가리는 부분은 최소 4자('*')라, 원본이 짧으면 결과가 원본보다
+ *          길어질 수 있다(원본 길이를 그대로 유지하지는 않는다 — 길이로 값을 추측하지 못하게 함).
  */
 export function maskSecret(value: string, visible = 4): string {
   if (!value) return value

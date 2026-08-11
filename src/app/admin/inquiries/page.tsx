@@ -15,6 +15,8 @@ import { parsePageParam } from '@/lib/validate'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '문의' }
+
 const PAGE_SIZE = 20
 
 interface InquiryRow {

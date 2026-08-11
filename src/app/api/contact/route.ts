@@ -2,7 +2,9 @@
  * @파일: api/contact/route.ts
  * @설명: 비회원 문의 API — 이메일 발송 + DB 저장
  *        보안: Rate limiting (IP 기반), Honeypot, 이메일 형식 검증, 5MB 첨부 제한
- *        DB 저장 성공 시 이메일 실패해도 성공 반환 (이메일은 백그라운드 시도)
+ *        DB 저장에 성공하면 알림 메일이 실패해도 손님에게는 성공으로 응답한다
+ *        (저장은 이미 끝났으므로 다시 넣게 하면 같은 문의가 두 번 쌓인다).
+ *        메일이 못 나간 사실은 notification_logs에 남겨 /admin/logs 에서 확인한다.
  */
 
 import { NextRequest, NextResponse } from 'next/server'

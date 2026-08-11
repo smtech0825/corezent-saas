@@ -106,12 +106,19 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
     })
   }
 
-  async function handleToggle(id: string, current: boolean) {
-    setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: !current } : f)))
+  async function handleToggle(id: string) {
+    // 연타 방지 — 처리 중에는 아무것도 받지 않는다(버튼도 비활성이지만 한 번 더 막는다).
+    if (isPending) return
+    // 되돌릴 기준은 "직전에 눌렀을 때의 값"이 아니라 지금 서버에 남아 있는 값이다.
+    const serverValue = items.find((f) => f.id === id)?.is_published
+    if (serverValue === undefined) return
+    const next = !serverValue
+
+    setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: next } : f)))
     startTransition(async () => {
-      // 실패하면 화면 표시를 원래대로 되돌린다.
-      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, !current))
-      if (!ok) setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: current } : f)))
+      // 실패하면 화면 표시를 서버 값으로 되돌린다.
+      const ok = await runAdminAction('게시 상태 변경', () => onTogglePublish(id, next))
+      if (!ok) setItems((prev) => prev.map((f) => (f.id === id ? { ...f, is_published: serverValue } : f)))
     })
   }
 
@@ -155,7 +162,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => handleToggle(feature.id, feature.is_published)} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors ${feature.is_published ? 'text-ok bg-ok-soft border-ok/20' : 'text-ink-soft bg-paper-shade border-rule'}`}>
+                <button onClick={() => handleToggle(feature.id)} disabled={isPending} className={`text-[10px] font-semibold px-2 py-1 rounded-full border transition-colors disabled:opacity-50 ${feature.is_published ? 'text-ok bg-ok-soft border-ok/20' : 'text-ink-soft bg-paper-shade border-rule'}`}>
                   {feature.is_published ? '게시됨' : '초안'}
                 </button>
                 <button onClick={() => startEdit(feature)} title="특징 수정" aria-label="특징 수정" className="p-1.5 text-ink-faint hover:text-ink rounded-lg hover:bg-paper-shade transition-colors">
