@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pickMetadataPhone } from './phone'
+import { safeInternalPath } from './validate'
 
 /** 온보딩 전화번호 입력 페이지 경로 */
 export const ONBOARDING_PHONE_PATH = '/onboarding/phone'
@@ -58,6 +59,7 @@ export async function ensureOnboardedPhone(
  * @반환값: 게이트 경로(+redirect 쿼리)
  */
 export function buildPhoneGateRedirect(returnTo: string = '/dashboard'): string {
-  const safe = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/dashboard'
+  // 자체 검사 사본을 두지 않고 공용 검사를 쓴다(로그인·인증·온보딩이 모두 같은 규칙).
+  const safe = safeInternalPath(returnTo, '/dashboard')
   return `${ONBOARDING_PHONE_PATH}?redirect=${encodeURIComponent(safe)}`
 }

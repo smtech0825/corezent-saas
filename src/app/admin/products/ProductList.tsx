@@ -5,10 +5,13 @@
  * @설명: 관리자 제품 목록 — 위/아래 화살표로 순서 변경 + API 호출
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
 import { Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import DeleteButton from './DeleteButton'
+
+/** 화면 아래에 뜨는 안내 한 줄 — 문구와 종류(색 판정 기준)를 함께 담는다 */
+type Notice = { text: string; kind: 'ok' | 'warn' | 'error' }
 
 export interface ProductRow {
   id: string
@@ -41,14 +44,42 @@ export default function ProductList({ products: initial, onDelete }: Props) {
   const [items, setItems] = useState(initial)
   const [isPending, startTransition] = useTransition()
   const [deleting, setDeleting] = useState(false)
-  // 안내는 삭제 쪽(delMsg)과 같은 모양으로 종류를 함께 담는다 — 문구에 '실패'라는 글자가
-  // 있는지로 색을 고르면, 문구를 바꿀 때마다 실패가 성공 색으로 뜨는 일이 생긴다.
-  const [saveMsg, setSaveMsg] = useState<{ text: string; kind: 'ok' | 'error' } | null>(null)
-  const [delMsg, setDelMsg] = useState<{ text: string; kind: 'ok' | 'warn' | 'error' } | null>(null)
+  // 안내는 문구와 종류를 함께 담는다 — 문구에 '실패'라는 글자가 있는지로 색을 고르면,
+  // 문구를 바꿀 때마다 실패가 성공 색으로 뜨는 일이 생긴다.
+  const [saveMsg, setSaveMsg] = useState<Notice | null>(null)
+  const [delMsg, setDelMsg] = useState<Notice | null>(null)
+  // 성공 안내를 잠시 뒤 지우는 예약. 새 안내가 뜨면 반드시 취소한다.
+  const autoHideRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 이 화면의 조작은 순서 변경과 삭제 두 가지다. 하나가 진행 중이면 다른 하나도 막는다
   // — 한쪽만 막으면 순서 저장이 실패하는 사이에 지운 제품이 되돌리기로 되살아난다.
   const busy = isPending || deleting
+
+  /**
+   * @함수명: showNotice
+   * @설명: 이 화면의 안내를 한 곳에서 띄웁니다. 새 안내가 뜨면 (1) 예약된 자동 삭제를 취소하고
+   *        (2) 다른 조작의 안내를 지웁니다. 취소하지 않으면 성공 안내를 2초 뒤 지우는 예약이
+   *        그 사이에 뜬 실패 안내까지 지워버리고, 지우지 않으면 초록·빨강이 같이 남습니다.
+   * @매개변수: target - 어느 조작의 안내인가('order' 순서 변경 / 'delete' 삭제)
+   *            notice - 보여줄 문구와 종류(null이면 지우기만)
+   *            autoHideMs - 지정하면 그 시간 뒤 자동으로 지움(성공 안내에만 사용)
+   * @반환값: 없음
+   */
+  function showNotice(target: 'order' | 'delete', notice: Notice | null, autoHideMs?: number) {
+    if (autoHideRef.current) {
+      clearTimeout(autoHideRef.current)
+      autoHideRef.current = null
+    }
+    setSaveMsg(target === 'order' ? notice : null)
+    setDelMsg(target === 'delete' ? notice : null)
+    if (notice && autoHideMs) {
+      autoHideRef.current = setTimeout(() => {
+        if (target === 'order') setSaveMsg(null)
+        else setDelMsg(null)
+        autoHideRef.current = null
+      }, autoHideMs)
+    }
+  }
 
   /**
    * @함수명: handleDelete
@@ -59,14 +90,14 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     // 순서 변경이 진행 중이면 받지 않는다(그 반대도 마찬가지).
     if (busy) return
     setDeleting(true)
-    setDelMsg(null)
+    showNotice('delete', null)
     try {
       await runDelete(id)
     } catch (err) {
       // 요청이 서버에 닿지 못한 경우(연결 끊김 등). 순서 변경과 같은 기준으로 알린다 —
       // 아무 안내도 없으면 관리자는 지워졌는지 아닌지 알 수 없다.
       console.error('[products] 삭제 요청 실패:', err)
-      setDelMsg({
+      showNotice('delete', {
         text: '삭제 요청을 보내지 못했습니다. 지워지지 않았을 가능성이 높지만, 화면을 새로고침해 확인해 주세요.',
         kind: 'error',
       })
@@ -85,15 +116,15 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     const res = await onDelete(id)
     if (res.ok && res.mode === 'deleted') {
       setItems((prev) => prev.filter((p) => p.id !== id))
-      setDelMsg({ text: '제품이 삭제되었습니다.', kind: 'ok' })
+      showNotice('delete', { text: '제품이 삭제되었습니다.', kind: 'ok' })
     } else if (res.ok && res.mode === 'deactivated') {
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: false } : p)))
-      setDelMsg({
+      showNotice('delete', {
         text: '주문·라이선스 이력이 있어 완전 삭제 대신 비활성화했습니다. 데이터는 보존되며 공개 스토어에서는 숨겨집니다.',
         kind: 'warn',
       })
     } else {
-      setDelMsg({ text: res.ok ? '삭제 실패' : `삭제 실패: ${res.message}`, kind: 'error' })
+      showNotice('delete', { text: res.ok ? '삭제 실패' : `삭제 실패: ${res.message}`, kind: 'error' })
     }
   }
 
@@ -123,7 +154,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     next[fromIdx] = next[toIdx]
     next[toIdx] = temp
     setItems(next)
-    setSaveMsg(null)
+    showNotice('order', null)
 
     startTransition(async () => {
       try {
@@ -133,8 +164,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
           body: JSON.stringify({ ordered: next.map((p) => p.id) }),
         })
         if (res.ok) {
-          setSaveMsg({ text: '순서 저장됨', kind: 'ok' })
-          setTimeout(() => setSaveMsg(null), 2000)
+          showNotice('order', { text: '순서 저장됨', kind: 'ok' }, 2000)
           return
         }
         // 제품 순서는 한 건씩 따로 저장되므로 중간에 실패하면 일부만 바뀌어 있을 수 있다.
@@ -142,11 +172,11 @@ export default function ProductList({ products: initial, onDelete }: Props) {
         // 다시 받아올 방법이 없다(목록 구조 개선은 별도 작업). 그래서 "다시 불러온다"고
         // 말하지 않고, 새로고침해서 직접 확인해 달라고 사실대로 안내한다.
         rollbackOrder(prevOrder)
-        setSaveMsg({ text: '순서 변경에 실패했습니다. 일부만 저장됐을 수 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.', kind: 'error' })
+        showNotice('order', { text: '순서 변경에 실패했습니다. 일부만 저장됐을 수 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.', kind: 'error' })
       } catch (err) {
         console.error('[ProductList] 순서 변경 요청 실패:', err)
         rollbackOrder(prevOrder)
-        setSaveMsg({ text: '순서 변경 요청을 보내지 못했습니다. 저장됐을 수도 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.', kind: 'error' })
+        showNotice('order', { text: '순서 변경 요청을 보내지 못했습니다. 저장됐을 수도 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.', kind: 'error' })
       }
     })
   }

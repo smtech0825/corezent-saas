@@ -9,6 +9,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ONBOARDING_PHONE_PATH } from '@/lib/onboarding'
+import { safeInternalPath } from '@/lib/validate'
 import PhoneOnboardingForm from './PhoneOnboardingForm'
 
 export const dynamic = 'force-dynamic'
@@ -16,13 +17,6 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: '전화번호 등록 · CoreZent',
   description: '서비스 이용을 위해 연락 가능한 휴대폰 번호를 등록해 주세요.',
-}
-
-/** 저장 후 복귀할 경로를 안전하게 확정(내부 경로만 허용, 오픈 리다이렉트 방지) */
-function safeRedirect(raw: string | string[] | undefined): string {
-  const v = Array.isArray(raw) ? raw[0] : raw
-  if (typeof v === 'string' && v.startsWith('/') && !v.startsWith('//')) return v
-  return '/dashboard'
 }
 
 /**
@@ -39,7 +33,9 @@ export default async function PhoneOnboardingPage({
   searchParams: Promise<{ redirect?: string | string[] }>
 }) {
   const sp = await searchParams
-  const redirectTo = safeRedirect(sp.redirect)
+  // 로그인 화면·인증 화면과 같은 공용 검사를 쓴다. 화면마다 따로 두면 한쪽만 막힌다
+  // — 실제로 이 화면의 자체 검사는 역슬래시(/\바깥주소)를 걸러내지 못했다.
+  const redirectTo = safeInternalPath(sp.redirect, '/dashboard')
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

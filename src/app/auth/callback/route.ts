@@ -39,6 +39,22 @@ export async function GET(request: Request) {
     return res
   }
 
+  /**
+   * @함수명: backToLogin
+   * @설명: 인증에 실패했을 때 로그인 화면으로 되돌립니다.
+   *        - 가려던 곳(redirect)을 함께 넘겨, 다시 로그인하면 원래 목적지로 갈 수 있게 한다
+   *        - 실패했을 때도 return_to 쿠키를 지운다. 남겨두면 10분 동안 그 값이 항상 이겨
+   *          다음 로그인이 엉뚱한 곳으로 간다
+   *        - 오류 원문(영문)은 넘기지 않는다. 종류만 넘기고 문구는 로그인 화면이 고른다
+   * @매개변수: reason - 실패 종류(oauth · verify · missing)
+   * @반환값: 로그인 화면으로 보내는 응답
+   */
+  function backToLogin(reason: 'oauth' | 'verify' | 'missing'): NextResponse {
+    const params = new URLSearchParams({ error: reason })
+    if (redirect !== '/') params.set('redirect', redirect)
+    return withCookieCleared(NextResponse.redirect(`${origin}/auth/login?${params.toString()}`))
+  }
+
   const supabase = await createClient()
 
   // Google/GitHub OAuth 코드 교환
@@ -67,9 +83,9 @@ export async function GET(request: Request) {
       }
       return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
-    // 원문(영문)은 서버 기록에만 남기고, 주소에는 종류만 넘긴다. 화면 문구는 로그인 화면이 고른다.
+    // 원문(영문)은 서버 기록에만 남긴다.
     console.error('[callback] 소셜 로그인 실패:', error.message)
-    return NextResponse.redirect(`${origin}/auth/login?error=oauth`)
+    return backToLogin('oauth')
   }
 
   // 이메일 인증 (token_hash 방식)
@@ -102,9 +118,14 @@ export async function GET(request: Request) {
       return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
     }
     console.error('[callback] 이메일 인증 실패:', error.message)
-    return NextResponse.redirect(`${origin}/auth/login?error=verify`)
+    return backToLogin('verify')
   }
 
-  console.log('[callback] no code or token_hash. params:', Object.fromEntries(url.searchParams))
-  return NextResponse.redirect(`${origin}/auth/login?error=missing`)
+  // 코드도 토큰도 없이 돌아온 경우 — 가장 흔한 것이 "인증 메일 링크 만료"다. 이때 Supabase가
+  // 주소에 error_code(예: otp_expired)를 붙여 보내므로, 그 값이 있으면 인증 실패로 분류해
+  // 전용 안내("인증 메일을 다시 받아 주세요")가 나가게 한다. 없으면 일반 안내로 보낸다.
+  const providerErrorCode = url.searchParams.get('error_code') ?? ''
+  const isExpiredLink = /otp|expired|access_denied/i.test(providerErrorCode)
+  console.log('[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)')
+  return backToLogin(isExpiredLink ? 'verify' : 'missing')
 }
