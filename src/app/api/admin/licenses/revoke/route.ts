@@ -14,7 +14,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { isNonEmptyString } from '@/lib/validate'
 import { updateLicenseStatus } from '@/lib/sheets'
-import { maskSecret } from '@/lib/mask'
+// 예외를 객체째 찍으면 그 안에 실린 값(시트 요청 본문·결제사 응답 등)까지 로그에 남는다.
+// 사유는 남기되 값은 가리도록 문자열로 바꿔 기록한다.
+import { maskSecret, maskSecretsInText } from '@/lib/mask'
 import { logAdminActivity } from '@/lib/adminActivityLog'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
       .eq('id', id)
 
     if (updateErr) {
-      console.error('[Revoke] DB update error:', updateErr)
+      console.error('[Revoke] DB update error:', maskSecretsInText(String(updateErr?.message ?? updateErr)))
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
     }
 
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
       const found = await supaFindLicenseInAnyDb(serialKey)
       if (found) supaDbProduct = found.db === 'geniework' ? 'geniework' : 'geniestock'
     } catch (lookupErr) {
-      console.error('[Revoke] Supabase license lookup failed:', lookupErr)
+      console.error('[Revoke] Supabase license lookup failed:', maskSecretsInText(String(lookupErr)))
       // 조회 실패 시 안전하게 GeniePost(시트) 경로로 폴백
     }
 
@@ -86,21 +88,21 @@ export async function POST(req: NextRequest) {
         await supaSetLicenseActive(serialKey, false, supaDbProduct)
         console.log(`[Revoke] Supabase(${supaDbProduct}) 비활성화 완료: ${maskSecret(serialKey, 8)}`)
       } catch (supaErr) {
-        console.error('[Revoke] Supabase setLicenseActive 실패:', supaErr)
+        console.error('[Revoke] Supabase setLicenseActive 실패:', maskSecretsInText(String(supaErr)))
       }
 
       try {
         await supaResetHwidsForKey(serialKey, supaDbProduct)
         console.log(`[Revoke] Supabase(${supaDbProduct}) HWID 매핑 청소 완료: ${maskSecret(serialKey, 8)}`)
       } catch (hwidErr) {
-        console.error('[Revoke] Supabase HWID 청소 실패:', hwidErr)
+        console.error('[Revoke] Supabase HWID 청소 실패:', maskSecretsInText(String(hwidErr)))
       }
     } else {
       // GeniePost — Google Sheets E열 '중지' (실패해도 계속 진행)
       try {
         await updateLicenseStatus({ serialKey, status: '중지' })
       } catch (sheetsErr) {
-        console.error('[Revoke] Sheets update failed:', sheetsErr)
+        console.error('[Revoke] Sheets update failed:', maskSecretsInText(String(sheetsErr)))
       }
     }
 
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
       try {
         await disableLSLicenseKey(lsKey)
       } catch (lsErr) {
-        console.error('[Revoke] LS disable failed:', lsErr)
+        console.error('[Revoke] LS disable failed:', maskSecretsInText(String(lsErr)))
       }
     } else if (license.order_id) {
       // lemon_squeezy_license_key가 없는 경우 order_id로 LS 주문번호를 찾아 처리
@@ -125,13 +127,13 @@ export async function POST(req: NextRequest) {
           await disableLSLicenseByOrderId(order.lemon_squeezy_order_id as string)
         }
       } catch (lsErr) {
-        console.error('[Revoke] LS order lookup failed:', lsErr)
+        console.error('[Revoke] LS order lookup failed:', maskSecretsInText(String(lsErr)))
       }
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[Revoke API] Unexpected error:', err)
+    console.error('[Revoke API] Unexpected error:', maskSecretsInText(String(err)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

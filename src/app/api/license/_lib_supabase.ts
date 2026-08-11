@@ -14,7 +14,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { maskSecret, maskPgUniqueViolation } from '@/lib/mask'
+// 잡아낸 예외를 객체째 찍으면 그 안에 실린 값(요청 본문·응답 본문 등)까지 로그에 남는다.
+// 무엇이 잘못됐는지는 남기되 값은 남기지 않도록, 사람이 읽는 한 줄로 바꿔 가린 뒤 기록한다.
+import { maskSecret, maskSecretsInText, maskPgUniqueViolation } from '@/lib/mask'
 
 // 라이선스 데이터(license_keys / hwid_mapping)는 별도 Supabase 프로젝트에 보관.
 // CoreZent 본체용 createAdminClient(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)와
@@ -157,7 +159,7 @@ export async function findLicenseByKey(
       product:     productResolved,
     }
   } catch (err) {
-    console.error('[supabase-license] findLicenseByKey exception:', err)
+    console.error('[supabase-license] findLicenseByKey exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -184,7 +186,7 @@ export async function findLicenseInAnyDb(
     if (gw) return { license: gw, db: 'geniework' }
   } catch (err) {
     // GW env 미설정 등으로 GW DB 조회가 실패해도 조용히 폴백(공유/Sheets 경로 보존).
-    console.error('[supabase-license] findLicenseInAnyDb: GW DB 조회 실패(무시):', err)
+    console.error('[supabase-license] findLicenseInAnyDb: GW DB 조회 실패(무시):', maskSecretsInText(String(err)))
   }
   return null
 }
@@ -217,7 +219,7 @@ export async function getHwidsForKey(
       deviceName:   (r.device_name as string) ?? null,
     }))
   } catch (err) {
-    console.error('[supabase-license] getHwidsForKey exception:', err)
+    console.error('[supabase-license] getHwidsForKey exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -296,7 +298,7 @@ export async function registerHwid(
 
     return { ok: true }
   } catch (err) {
-    console.error('[supabase-license] registerHwid exception:', err)
+    console.error('[supabase-license] registerHwid exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -314,7 +316,7 @@ export async function resetHwidsForKey(key: string, product?: SupabaseProduct): 
       throw new Error(`HWID 초기화 실패: ${error.message}`)
     }
   } catch (err) {
-    console.error('[supabase-license] resetHwidsForKey exception:', err)
+    console.error('[supabase-license] resetHwidsForKey exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -353,7 +355,7 @@ export async function resetHwidsForKeyGenieWork(
       nextAllowedAt: res.next_allowed_at ?? undefined,
     }
   } catch (err) {
-    console.error('[supabase-license] resetHwidsForKeyGenieWork exception:', err)
+    console.error('[supabase-license] resetHwidsForKeyGenieWork exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -400,7 +402,7 @@ export async function insertLicense(input: {
       throw new Error(`라이선스 등록 실패: ${error.message}`)
     }
   } catch (err) {
-    console.error('[supabase-license] insertLicense exception:', err)
+    console.error('[supabase-license] insertLicense exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -545,7 +547,7 @@ export async function updateLicenseExpiry(
       throw new Error(`만료일 갱신 실패: ${error.message}`)
     }
   } catch (err) {
-    console.error('[supabase-license] updateLicenseExpiry exception:', err)
+    console.error('[supabase-license] updateLicenseExpiry exception:', maskSecretsInText(String(err)))
     throw err
   }
 }
@@ -570,7 +572,7 @@ export async function setLicenseActive(
       throw new Error(`활성 상태 변경 실패: ${error.message}`)
     }
   } catch (err) {
-    console.error('[supabase-license] setLicenseActive exception:', err)
+    console.error('[supabase-license] setLicenseActive exception:', maskSecretsInText(String(err)))
     throw err
   }
 }

@@ -19,6 +19,7 @@ import {
   resetHwidsForKeyGenieWork as supaResetHwidsForKeyGenieWork,
 } from '../_lib_supabase'
 import { logLicenseReset, type LicenseResetProduct } from '@/lib/licenseResetLog'
+import { maskSecretsInText } from '@/lib/mask'
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[License/reset]', err)
+    console.error('[License/reset]', maskSecretsInText(String(err)))
     return NextResponse.json(
       { success: false, error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.' },
       { status: 500 },

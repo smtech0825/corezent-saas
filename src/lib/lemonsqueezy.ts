@@ -4,6 +4,8 @@
  */
 
 import crypto from 'crypto'
+// 결제사 응답에는 라이선스 키가 들어 있다. 오류를 객체째 찍지 않고 사유만 남긴다.
+import { maskSecretsInText } from '@/lib/mask'
 
 /**
  * @함수명: verifyLSWebhook
@@ -158,7 +160,7 @@ export async function fetchLsLicenseKeys(lsOrderId: string): Promise<string[]> {
     const keys = json.data as Array<{ attributes: { key: string } }> | undefined
     return (keys ?? []).map((k) => k.attributes?.key).filter((k): k is string => Boolean(k))
   } catch (err) {
-    console.error('[LS API] 라이선스 키 조회 오류:', err)
+    console.error('[LS API] 라이선스 키 조회 오류:', maskSecretsInText(String(err)))
     return []
   }
 }
@@ -207,7 +209,7 @@ export async function fetchLsLicenseKeysForOrder(
       }))
       .filter((r) => Boolean(r.key))
   } catch (err) {
-    console.error('[LS API] 라이선스 키 조회 오류:', err)
+    console.error('[LS API] 라이선스 키 조회 오류:', maskSecretsInText(String(err)))
     return []
   }
 }

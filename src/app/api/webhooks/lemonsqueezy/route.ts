@@ -280,7 +280,8 @@ export async function POST(req: NextRequest) {
         console.log(`[LS Webhook] 처리하지 않는 이벤트: ${eventName}`)
     }
   } catch (err) {
-    console.error(`[LS Webhook] 이벤트 처리 중 오류 (event=${eventName}, data_id=${payload.data?.id ?? 'N/A'}):`, err)
+    // 예외를 객체째 찍으면 그 안에 실린 값(요청·응답 본문 등)까지 남는다. 사유만 남기고 값은 가린다.
+    console.error(`[LS Webhook] 이벤트 처리 중 오류 (event=${eventName}, data_id=${payload.data?.id ?? 'N/A'}):`, maskSecretsInText(String(err)))
     // 실패 기록(best-effort — 기록 실패해도 웹훅 응답/흐름 불변)
     await logNotification({
       kind:   'webhook',
@@ -961,7 +962,7 @@ async function deactivateExternalLicensesByLsOrder(lsOrderId: string) {
       }
     }
   } catch (err) {
-    console.error(`[LS Webhook] 환불 — 외부 DB 비활성화 시도 중 오류(무시) (order_id=${lsOrderId}):`, err)
+    console.error(`[LS Webhook] 환불 — 외부 DB 비활성화 시도 중 오류(무시) (order_id=${lsOrderId}):`, maskSecretsInText(String(err)))
   }
 }
 
@@ -1169,7 +1170,7 @@ async function createLicense(
           console.log(`[LS Webhook] ${supaSlug} Supabase 등록 완료 (tier=${tier}, ${i + 1}/${keys.length})`)
         }
       } catch (supaErr) {
-        console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, supaErr)
+        console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, maskSecretsInText(String(supaErr)))
       }
 
       const row: Record<string, unknown> = {
@@ -1188,7 +1189,7 @@ async function createLicense(
     // CoreZent 내부 licenses 테이블에도 INSERT (대시보드 표시용) — N행 단일 문장(원자적)
     const { error: gsLicErr } = await admin.from('licenses').insert(coreRows)
     if (gsLicErr) {
-      console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패 — 대시보드 미표시 (order_id=${lsOrderId ?? 'N/A'}): ${gsLicErr.message}`)
+      console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패 — 대시보드 미표시 (order_id=${lsOrderId ?? 'N/A'}): ${maskSecretsInText(gsLicErr.message)}`)
     }
 
     // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy
@@ -1299,7 +1300,7 @@ async function createLicense(
     })
     console.log(`[LS Webhook] 주문 확인 이메일 발송: ${userEmail}`)
   } catch (mailErr) {
-    console.error('[LS Webhook] 이메일 발송 실패:', mailErr)
+    console.error('[LS Webhook] 이메일 발송 실패:', maskSecretsInText(String(mailErr)))
   }
 
   // Google Sheets 라이선스 행 추가 — 키별 1행 (상태 '활성', Pro면 G열 TRUE)
@@ -1314,7 +1315,8 @@ async function createLicense(
       })
       console.log(`[LS Webhook] Sheets 라이선스 기입 완료: ${maskSecret(key, 8)} (isPro: ${isPro})`)
     } catch (sheetsErr) {
-      console.error('[LS Webhook] Sheets 기입 실패:', sheetsErr)
+      // 시트 기입 오류 객체에는 보낸 행(=라이선스 키)이 그대로 실려 있을 수 있다. 사유만 남긴다.
+      console.error('[LS Webhook] Sheets 기입 실패:', maskSecretsInText(String(sheetsErr)))
     }
   }
 }

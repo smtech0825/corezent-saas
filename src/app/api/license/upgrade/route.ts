@@ -22,6 +22,7 @@ import {
   isExpired as supaIsExpired,
   calcRemainingDays as supaCalcRemainingDays,
 } from '../_lib_supabase'
+import { maskSecretsInText } from '@/lib/mask'
 
 export async function POST(req: NextRequest) {
   try {
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
       remainingDays: calcRemainingDays(row.expiresAt),
     })
   } catch (err) {
-    console.error('[License/upgrade]', err)
+    console.error('[License/upgrade]', maskSecretsInText(String(err)))
     return NextResponse.json(
       { success: false, error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.' },
       { status: 500 },
