@@ -85,7 +85,9 @@ export default function SettingsPage() {
       .eq('id', user.id)
 
     if (error) {
-      showToast('error', error.message)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[settings] 프로필 저장 실패:', error.message)
+      showToast('error', '프로필을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
     } else {
       showToast('success', '프로필이 업데이트되었습니다.')
       // 저장된 정규화 값을 표시용 하이픈 표기로 반영
@@ -126,7 +128,9 @@ export default function SettingsPage() {
     const { error } = await supabase.auth.updateUser({ password: newPassword })
 
     if (error) {
-      showToast('error', error.message)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[settings] 비밀번호 변경 실패:', error.message)
+      showToast('error', '비밀번호를 변경하지 못했습니다. 새 비밀번호를 확인한 뒤 다시 시도해 주세요.')
     } else {
       showToast('success', '비밀번호가 변경되었습니다.')
       setCurrentPassword('')

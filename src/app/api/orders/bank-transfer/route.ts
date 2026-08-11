@@ -25,18 +25,19 @@ export async function POST(request: Request) {
     }
 
     if (!productPriceId || typeof productPriceId !== 'string') {
-      return NextResponse.json({ error: 'Invalid payload', code: 'INVALID' }, { status: 400 })
+      // error 값은 결제창에 그대로 표시된다 — 손님이 읽는 문구이므로 한국어로 둔다(code는 그대로).
+      return NextResponse.json({ error: '주문 정보가 올바르지 않습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.', code: 'INVALID' }, { status: 400 })
     }
     const qty = Math.trunc(Number(quantity ?? 1))
     if (!Number.isInteger(qty) || qty < 1 || qty > 100) {
-      return NextResponse.json({ error: 'Invalid quantity', code: 'INVALID_QTY' }, { status: 400 })
+      return NextResponse.json({ error: '수량은 1개 이상 100개 이하로 입력해 주세요.', code: 'INVALID_QTY' }, { status: 400 })
     }
 
     // 1. 로그인 사용자 확인
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
+      return NextResponse.json({ error: '로그인이 풀렸습니다. 다시 로그인한 뒤 시도해 주세요.', code: 'UNAUTHORIZED' }, { status: 401 })
     }
 
     // 2. 입금자 이메일 = 세션 이메일 재검증(대소문자 무시·trim) — 본인 확인

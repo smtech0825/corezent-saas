@@ -90,11 +90,13 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
     setResendLoading(false)
 
     if (resendError) {
-      // 서버가 최소 간격을 강제하면 여기서 에러가 온다(그대로 안내)
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[verify] 인증 코드 재전송 실패:', resendError.message)
+      // 서버가 최소 간격을 강제하면 여기서 에러가 온다
       setError(
         resendError.message.toLowerCase().includes('after')
           ? '잠시 후 다시 시도해 주세요. (재전송 간격 제한)'
-          : resendError.message,
+          : '인증 코드를 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.',
       )
       return
     }

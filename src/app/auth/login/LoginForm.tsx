@@ -65,9 +65,20 @@ export default function LoginForm() {
         setNeedsConfirm(true)
         setError('이메일 인증이 완료되지 않았습니다. 가입 시 받은 6자리 코드로 인증해 주세요.')
       } else {
-        setError(error.message === 'Invalid login credentials'
-          ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-          : error.message)
+        // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+        console.error('[login] 로그인 실패:', error.message)
+        const raw = error.message.toLowerCase()
+        if (error.message === 'Invalid login credentials') {
+          setError('이메일 또는 비밀번호가 올바르지 않습니다.')
+        } else if (raw.includes('banned')) {
+          // 탈퇴 계정은 같은 이메일로 재가입도 막혀 있다(api/auth/check-email).
+          // 회원가입 화면과 같은 안내로 맞춘다.
+          setError('이 계정은 비활성화되었습니다. 고객센터에 문의해 주세요.')
+        } else if (raw.includes('rate limit') || raw.includes('after')) {
+          setError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
+        } else {
+          setError('로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+        }
       }
       setLoading(false)
       return
