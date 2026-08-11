@@ -6,7 +6,6 @@
  */
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import DeleteButton from './DeleteButton'
@@ -39,11 +38,15 @@ const categoryColors: Record<string, string> = {
 }
 
 export default function ProductList({ products: initial, onDelete }: Props) {
-  const router = useRouter()
   const [items, setItems] = useState(initial)
   const [isPending, startTransition] = useTransition()
+  const [deleting, setDeleting] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [delMsg, setDelMsg] = useState<{ text: string; kind: 'ok' | 'warn' | 'error' } | null>(null)
+
+  // 이 화면의 조작은 순서 변경과 삭제 두 가지다. 하나가 진행 중이면 다른 하나도 막는다
+  // — 한쪽만 막으면 순서 저장이 실패하는 사이에 지운 제품이 되돌리기로 되살아난다.
+  const busy = isPending || deleting
 
   /**
    * @함수명: handleDelete
@@ -51,7 +54,24 @@ export default function ProductList({ products: initial, onDelete }: Props) {
    * @매개변수: id - 제품 ID
    */
   async function handleDelete(id: string) {
+    // 순서 변경이 진행 중이면 받지 않는다(그 반대도 마찬가지).
+    if (busy) return
+    setDeleting(true)
     setDelMsg(null)
+    try {
+      await runDelete(id)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  /**
+   * @함수명: runDelete
+   * @설명: 삭제 서버 기능을 부르고 결과에 따라 목록과 안내 문구를 갱신합니다.
+   * @매개변수: id - 제품 ID
+   * @반환값: 없음
+   */
+  async function runDelete(id: string) {
     const res = await onDelete(id)
     if (res.ok && res.mode === 'deleted') {
       setItems((prev) => prev.filter((p) => p.id !== id))
@@ -67,14 +87,27 @@ export default function ProductList({ products: initial, onDelete }: Props) {
     }
   }
 
+  /**
+   * @함수명: rollbackOrder
+   * @설명: 순서 저장이 실패했을 때 화면 순서를 이전 순서로 되돌립니다. 그 사이에 목록에서
+   *        사라진 제품은 되살리지 않습니다 — 지운 제품이 되돌리기로 다시 나타나면 안 됩니다.
+   * @매개변수: order - 되돌릴 기준이 되는 제품 id 나열
+   * @반환값: 없음
+   */
+  function rollbackOrder(order: string[]) {
+    setItems((cur) => [...cur].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)))
+  }
+
   function swap(fromIdx: number, toIdx: number) {
     // 처리 중에는 받지 않는다(버튼도 비활성이지만 한 번 더 막는다) — 저장이 끝나기 전에 또 바꾸면
     // 아직 서버가 받아들이지 않은 순서 위에 다시 쌓여, 실패했을 때 되돌릴 기준이 없어진다.
-    if (isPending) return
+    if (busy) return
     if (toIdx < 0 || toIdx >= items.length) return
 
-    // 되돌릴 기준은 화면을 처음 열었을 때 값(initial)이 아니라 "바로 지금 저장돼 있는 순서"다.
-    const prev = [...items]
+    // 되돌릴 기준은 "바로 지금 저장돼 있는 순서"의 id 나열이다. 목록을 통째로 복사해 두면
+    // 그 사이에 지워진 제품까지 함께 되살아나므로, 순서만 기억하고 되돌릴 때 현재 목록에
+    // 남아 있는 제품에만 적용한다.
+    const prevOrder = items.map((p) => p.id)
     const next = [...items]
     const temp = next[fromIdx]
     next[fromIdx] = next[toIdx]
@@ -94,15 +127,16 @@ export default function ProductList({ products: initial, onDelete }: Props) {
           setTimeout(() => setSaveMsg(null), 2000)
           return
         }
-        // 제품 순서는 한 번에 하나씩 저장되므로 중간에 실패하면 일부만 바뀌어 있을 수 있다.
-        // 화면을 임의로 맞추지 말고 서버에 저장된 실제 순서를 다시 받아온다.
-        setSaveMsg('순서 변경에 실패했습니다. 실제 저장된 순서를 다시 불러옵니다.')
-        setItems(prev)
-        router.refresh()
+        // 제품 순서는 한 건씩 따로 저장되므로 중간에 실패하면 일부만 바뀌어 있을 수 있다.
+        // 이 목록은 화면을 열 때 받은 값을 그대로 들고 있어서, 여기서 서버의 실제 순서를
+        // 다시 받아올 방법이 없다(목록 구조 개선은 별도 작업). 그래서 "다시 불러온다"고
+        // 말하지 않고, 새로고침해서 직접 확인해 달라고 사실대로 안내한다.
+        rollbackOrder(prevOrder)
+        setSaveMsg('순서 변경에 실패했습니다. 일부만 저장됐을 수 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.')
       } catch (err) {
         console.error('[ProductList] 순서 변경 요청 실패:', err)
-        setItems(prev)
-        setSaveMsg('순서 변경 요청을 보내지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.')
+        rollbackOrder(prevOrder)
+        setSaveMsg('순서 변경 요청을 보내지 못했습니다. 저장됐을 수도 있으니 화면을 새로고침해 실제 순서를 확인해 주세요.')
       }
     })
   }
@@ -146,7 +180,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={() => swap(idx, idx - 1)}
-                        disabled={idx === 0 || isPending}
+                        disabled={idx === 0 || busy}
                         className="p-1.5 text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         title="위로 이동"
                         aria-label="순서 위로 이동"
@@ -156,7 +190,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
                       <span className="text-[10px] text-ink-faint tabular-nums font-mono">{idx + 1}</span>
                       <button
                         onClick={() => swap(idx, idx + 1)}
-                        disabled={idx === items.length - 1 || isPending}
+                        disabled={idx === items.length - 1 || busy}
                         className="p-1.5 text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         title="아래로 이동"
                         aria-label="순서 아래로 이동"
