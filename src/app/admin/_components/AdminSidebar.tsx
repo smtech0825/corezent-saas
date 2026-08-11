@@ -33,6 +33,7 @@ import {
   Info,
   TrendingUp,
   Activity,
+  Scale,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -43,6 +44,7 @@ const mainNav = [
   { label: '주문',       href: '/admin/orders',    icon: ShoppingBag },
   { label: '매출',       href: '/admin/revenue',   icon: TrendingUp },
   { label: '라이선스',   href: '/admin/licenses',  icon: Key },
+  { label: '세금 룰',    href: '/admin/tax',       icon: Scale },
   { label: '제휴',       href: '/admin/affiliates', icon: Gift },
   { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
   { label: '문의',       href: '/admin/inquiries', icon: Inbox },
