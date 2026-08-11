@@ -29,27 +29,41 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
 
   // ── 가시성 토글 ─────────────────────────────────────────────────────────────
   function handleToggle(idx: number) {
+    // 연타 방지 — 처리 중에는 아무것도 받지 않는다(버튼도 비활성이지만 한 번 더 막는다).
+    if (isPending) return
     const section = items[idx]
-    const next = !section.is_visible
+    if (!section) return
+    // 되돌릴 기준은 "직전에 눌렀을 때의 값"이 아니라 지금 서버에 남아 있는 값이다.
+    const serverValue = section.is_visible
+    const next = !serverValue
+
     // 낙관적 업데이트
     setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: next } : s)))
     setSaveError(null)
 
     startTransition(async () => {
-      const res = await fetch('/api/admin/sections/toggle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: section.name,
-          is_visible: next,
-          label: section.label,
-          order_index: section.order_index,
-        }),
-      })
-      if (!res.ok) {
-        // 실패 시 원래 값으로 롤백
-        setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: section.is_visible } : s)))
-        setSaveError('표시 여부 변경에 실패했습니다. 다시 시도해 주세요.')
+      // 되돌리기와 오류 표시를 한 곳에 모은다 — 연결이 끊겨 fetch가 예외를 던지면
+      // 예전에는 아무 표시 없이 화면만 바뀐 채 남아, 실제 랜딩과 어긋났다.
+      const rollback = (message: string) => {
+        setItems((prev) => prev.map((s, i) => (i === idx ? { ...s, is_visible: serverValue } : s)))
+        setSaveError(message)
+      }
+
+      try {
+        const res = await fetch('/api/admin/sections/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: section.name,
+            is_visible: next,
+            label: section.label,
+            order_index: section.order_index,
+          }),
+        })
+        if (!res.ok) rollback('표시 여부 변경에 실패했습니다. 다시 시도해 주세요.')
+      } catch (err) {
+        console.error('[SectionsManager] 표시 여부 변경 요청 실패:', err)
+        rollback('표시 여부 변경 요청을 보내지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.')
       }
     })
   }
@@ -83,21 +97,28 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
     setSaveError(null)
 
     startTransition(async () => {
-      const res = await fetch('/api/admin/sections/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sections: updated.map((s) => ({
-            name: s.name,
-            label: s.label,
-            is_visible: s.is_visible,
-          })),
-        }),
-      })
-      if (!res.ok) {
-        // 실패 시 원래 순서로 롤백
+      // 토글과 같은 처리 — 연결이 끊겨도 되돌리고 오류를 알린다.
+      const rollback = (message: string) => {
         setItems(prev)
-        setSaveError('순서 변경에 실패했습니다. 다시 시도해 주세요.')
+        setSaveError(message)
+      }
+
+      try {
+        const res = await fetch('/api/admin/sections/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sections: updated.map((s) => ({
+              name: s.name,
+              label: s.label,
+              is_visible: s.is_visible,
+            })),
+          }),
+        })
+        if (!res.ok) rollback('순서 변경에 실패했습니다. 다시 시도해 주세요.')
+      } catch (err) {
+        console.error('[SectionsManager] 순서 변경 요청 실패:', err)
+        rollback('순서 변경 요청을 보내지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.')
       }
     })
   }
