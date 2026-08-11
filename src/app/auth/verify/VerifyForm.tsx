@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, MailCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { isRateLimited } from '@/lib/auth-error'
 
 const RESEND_COOLDOWN = 60 // 초 — Supabase 서버측 최소 재전송 간격과 정합
 
@@ -93,8 +94,9 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
       // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
       console.error('[verify] 인증 코드 재전송 실패:', resendError.message)
       // 서버가 최소 간격을 강제하면 여기서 에러가 온다
+      // 판정은 lib/auth-error.ts 한 곳에 있다. 로그인·설정 화면도 같은 것을 쓴다.
       setError(
-        resendError.message.toLowerCase().includes('after')
+        isRateLimited(resendError.message)
           ? '잠시 후 다시 시도해 주세요. (재전송 간격 제한)'
           : '인증 코드를 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.',
       )

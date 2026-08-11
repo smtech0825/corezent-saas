@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
+import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
 import WithdrawSection from './WithdrawSection'
 import PageContainer from '@/components/common/PageContainer'
 
@@ -120,12 +121,10 @@ export default function SettingsPage() {
 
     if (authError) {
       // 원인을 단정하지 않는다. 비밀번호가 틀린 경우와 그 외(요청 과다·연결 끊김)를 구분한다.
-      // 판정 근거는 로그인 화면이 이미 쓰는 것과 같다 — Supabase가 비밀번호 불일치에만
-      // 'Invalid login credentials'를 돌려준다(LoginForm.tsx 참조).
-      const raw = authError.message.toLowerCase()
-      if (authError.message === 'Invalid login credentials') {
+      // 판정은 lib/auth-error.ts 한 곳에 있고 로그인 화면도 같은 것을 쓴다.
+      if (isWrongPassword(authError.message)) {
         setPasswordError('현재 비밀번호가 올바르지 않습니다.')
-      } else if (raw.includes('rate limit') || raw.includes('after')) {
+      } else if (isRateLimited(authError.message)) {
         setPasswordError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
       } else {
         // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.

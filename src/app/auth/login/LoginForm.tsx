@@ -19,6 +19,7 @@ import {
   isExpiredLinkCode,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
+import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
 
 /** "아이디 저장" 이메일 보관 localStorage 키 */
 const SAVED_EMAIL_KEY = 'corezent_saved_email'
@@ -114,14 +115,13 @@ export default function LoginForm() {
       } else {
         // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
         console.error('[login] 로그인 실패:', error.message)
-        const raw = error.message.toLowerCase()
-        if (error.message === 'Invalid login credentials') {
+        if (isWrongPassword(error.message)) {
           setError('이메일 또는 비밀번호가 올바르지 않습니다.')
-        } else if (raw.includes('banned')) {
+        } else if (error.message.toLowerCase().includes('banned')) {
           // 탈퇴 계정은 같은 이메일로 재가입도 막혀 있다(api/auth/check-email).
-          // 회원가입 화면과 같은 안내로 맞춘다.
+          // 회원가입 화면과 같은 안내로 맞춘다. (이 판정은 이 화면에만 있어 사본이 없다)
           setError('이 계정은 비활성화되었습니다. 고객센터에 문의해 주세요.')
-        } else if (raw.includes('rate limit') || raw.includes('after')) {
+        } else if (isRateLimited(error.message)) {
           setError('요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.')
         } else {
           setError('로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
