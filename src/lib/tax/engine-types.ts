@@ -15,6 +15,9 @@ export type AcquisitionCause = 'sale' | 'gift'
 /** 증여자와의 관계 — spouse(배우자) / lineal(직계존비속) / other(그 외) */
 export type DonorRelation = 'spouse' | 'lineal' | 'other'
 
+/** 증여 과세표준 기준 값 — market_value(시가인정액) / official_price(공시가격=시가표준액) */
+export type GiftTaxBasis = 'market_value' | 'official_price'
+
 /**
  * @타입: AcquisitionInput
  * @설명: 취득세 계산 입력. 개인식별정보(이름·이메일·IP)는 포함하지 않는다.
@@ -35,6 +38,7 @@ export interface AcquisitionInput {
   marketValue?: number           // 증여 시 — 시가인정액 (원)
   officialPrice?: number         // 공시가격(시가표준액) (원) — 증여 과세표준·중과 판정, 유상 저가주택 판정에 사용
   donorIsSingleHomeOwner?: boolean // 증여 시 — 증여자 1주택자 여부 (중과 배제 판단)
+  giftTaxBaseChoice?: GiftTaxBasis // 증여 시 — 선택 가능 구간에서 납세자가 고른 과세표준 기준 (엔진이 가능하다고 알려준 경우에만)
 }
 
 // ─── 계산 결과 ────────────────────────────────────────────────────────────────
@@ -82,6 +86,14 @@ export interface AcquisitionSuccess {
    * 화면이 이 사실을 근거 표시와 같은 비중으로 보여준다. 조용히 0·false로 대체하지 않는다.
    */
   unresolvedFields: string[]
+  /** 증여 계산에 실제 사용된 과세표준 기준 — 유상취득 결과에는 없다 */
+  giftTaxBaseUsed?: GiftTaxBasis
+  /**
+   * 과세표준 기준을 납세자가 고를 수 있었던 경우에만 존재.
+   * selected가 null이면 선택 없이 기본 기준으로 계산된 것 — 화면이 이 정보로
+   * 선택지를 띄우고 다시 계산하도록 안내한다(선택 가능 여부는 화면이 판단하지 않는다).
+   */
+  giftTaxBaseChoice?: { options: GiftTaxBasis[]; selected: GiftTaxBasis | null }
 }
 
 // ─── 오류 ─────────────────────────────────────────────────────────────────────
@@ -178,9 +190,21 @@ export interface RateTableValue {
   rows: RateTableRow[]
 }
 
-/** rule_value: 증여 과세표준 기준 (acquisition.gift.tax_base) */
+/**
+ * rule_value: 증여 과세표준 기준 (acquisition.gift.tax_base)
+ * base 하나만 있으면 기존처럼 그 기준으로 고정 계산한다.
+ * choice가 정의돼 있으면 — basis로 지정한 값이 maxAmount 이하일 때 —
+ * 납세자가 options 중에서 과세표준 기준을 고를 수 있다.
+ * 기준 금액(maxAmount)·비교 대상(basis)·선택지(options)는 전부 관리자가
+ * 룰에 입력하며, 코드에는 어떤 기준 금액도 넣지 않는다.
+ */
 export interface GiftTaxBaseValue {
-  base: 'market_value' | 'official_price'  // 시가인정액 / 공시가격
+  base: GiftTaxBasis                 // 기본 기준 — 시가인정액 / 공시가격(시가표준액)
+  choice?: {
+    basis: 'price' | GiftTaxBasis    // 구간 판정에 비교할 값 (price = 실제 지급대가)
+    maxAmount: number                // 이 금액 이하이면 선택 가능 (원) — 관리자 입력
+    options: GiftTaxBasis[]          // 고를 수 있는 기준 목록
+  }
 }
 
 /** rule_value: 증여 중과 (acquisition.gift.heavy) — 공시가격 기준액 + 중과 세율표 */

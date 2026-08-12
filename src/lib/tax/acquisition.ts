@@ -12,6 +12,7 @@ import type {
   AcquisitionInput,
   AcquisitionResult,
   AppliedRuleInfo,
+  GiftTaxBasis,
   RateTableRow,
   RoundingValue,
   TaxEngineFailure,
@@ -78,6 +79,13 @@ function validateInput(input: AcquisitionInput): TaxEngineFailure | null {
     if (v !== undefined && (!Number.isFinite(v) || v < 0)) {
       return engineFail('INVALID_INPUT', `${label}은 0 이상의 숫자여야 합니다.`)
     }
+  }
+  if (
+    input.giftTaxBaseChoice !== undefined &&
+    input.giftTaxBaseChoice !== 'market_value' &&
+    input.giftTaxBaseChoice !== 'official_price'
+  ) {
+    return engineFail('INVALID_INPUT', '과세표준 기준 선택값이 올바르지 않습니다.')
   }
   return null
 }
@@ -169,6 +177,8 @@ export async function calculateAcquisitionTax(
   // ── 과세표준·세율 행 결정 ───────────────────────────────────────────────────
   let taxBase: number
   let selectedRow: RateTableRow
+  let giftTaxBaseUsed: GiftTaxBasis | undefined
+  let giftTaxBaseChoice: { options: GiftTaxBasis[]; selected: GiftTaxBasis | null } | undefined
 
   if (causeApplied === 'onerous') {
     taxBase = input.price
@@ -200,17 +210,51 @@ export async function calculateAcquisitionTax(
     if (!baseRule.ok) return baseRule
     const baseSpec = parseGiftTaxBase(baseRule.rule.rule_value, baseRule.rule.rule_key)
     if (!baseSpec.ok) return baseSpec
-    if (baseSpec.value.base === 'market_value') {
+
+    // ── 납세자 선택 가능 구간 판정 — 기준 금액·비교 대상·선택지는 전부 룰에서 온다 ──
+    let usedBasis: GiftTaxBasis = baseSpec.value.base
+    const choice = baseSpec.value.choice
+    if (choice) {
+      const basisValue =
+        choice.basis === 'price' ? input.price
+        : choice.basis === 'market_value' ? input.marketValue
+        : input.officialPrice
+      if (basisValue === undefined) {
+        // 비교할 값이 미입력 — 선택 가능 여부를 판정하지 못했다.
+        // 기본 기준으로 계산하되 판정 생략 사실을 결과에 남긴다 (조용히 넘어가지 않는다)
+        unresolvedFields.add(choice.basis)
+      } else if (basisValue <= choice.maxAmount) {
+        const selected = input.giftTaxBaseChoice
+        if (selected !== undefined) {
+          if (!choice.options.includes(selected)) {
+            return engineFail('INVALID_INPUT', '선택한 과세표준 기준은 이 구간에서 고를 수 있는 값이 아닙니다.')
+          }
+          usedBasis = selected
+          giftTaxBaseChoice = { options: choice.options, selected }
+        } else {
+          // 선택값 없음 — 기본 기준으로 계산하고, 선택이 가능했다는 사실을 결과에 담는다
+          giftTaxBaseChoice = { options: choice.options, selected: null }
+        }
+      }
+      // 구간 밖이면 기본 기준 그대로
+    }
+    // 선택값을 보냈는데 선택 가능 구간이 아니면(룰에 구간 없음·판정 불가·구간 밖) 무시하지 않고 알린다
+    if (input.giftTaxBaseChoice !== undefined && giftTaxBaseChoice?.selected == null) {
+      return engineFail('INVALID_INPUT', '현재 조건에서는 과세표준 기준을 선택할 수 없습니다. 선택 없이 다시 계산해 주세요.')
+    }
+
+    if (usedBasis === 'market_value') {
       if (input.marketValue === undefined) {
         return engineFail('INVALID_INPUT', '증여 취득세 계산에는 시가인정액 입력이 필요합니다.')
       }
       taxBase = input.marketValue
     } else {
       if (input.officialPrice === undefined) {
-        return engineFail('INVALID_INPUT', '증여 취득세 계산에는 공시가격 입력이 필요합니다.')
+        return engineFail('INVALID_INPUT', '증여 취득세 계산에는 공시가격(시가표준액) 입력이 필요합니다.')
       }
       taxBase = input.officialPrice
     }
+    giftTaxBaseUsed = usedBasis
     use(baseRule.rule)
 
     // 규제지역이면 중과 룰로 판정 — 공시가격 기준액과 중과 세율표는 룰에서 온다.
@@ -302,5 +346,7 @@ export async function calculateAcquisitionTax(
     ruleMode: mode,
     containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),
     unresolvedFields: Array.from(unresolvedFields),
+    giftTaxBaseUsed,
+    giftTaxBaseChoice,
   }
 }

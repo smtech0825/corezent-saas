@@ -12,6 +12,7 @@ import type {
   Conditions,
   DeemedGiftThresholdValue,
   GiftHeavyValue,
+  GiftTaxBasis,
   GiftTaxBaseValue,
   MetroScopeValue,
   RateSpec,
@@ -243,7 +244,11 @@ export function selectRateRow(
 
 // ─── 개별 rule_value 파서 ────────────────────────────────────────────────────
 
-/** 증여 과세표준 기준 rule_value 검증 */
+/**
+ * 증여 과세표준 기준 rule_value 검증.
+ * base만 있으면 고정 기준, choice가 있으면 납세자 선택 가능 구간까지 검증한다.
+ * 기준 금액(maxAmount)은 룰에서만 온다 — 코드는 금액을 모른다.
+ */
 export function parseGiftTaxBase(
   value: Json,
   ruleKey: string,
@@ -251,7 +256,27 @@ export function parseGiftTaxBase(
   if (!isObj(value) || (value.base !== 'market_value' && value.base !== 'official_price')) {
     return invalid(ruleKey, "base는 'market_value' 또는 'official_price'여야 합니다.")
   }
-  return { ok: true, value: { base: value.base } }
+  let choice: GiftTaxBaseValue['choice']
+  if (value.choice !== undefined) {
+    const c = value.choice
+    if (!isObj(c)) return invalid(ruleKey, 'choice가 객체가 아닙니다.')
+    if (c.basis !== 'price' && c.basis !== 'market_value' && c.basis !== 'official_price') {
+      return invalid(ruleKey, "choice.basis는 'price'·'market_value'·'official_price' 중 하나여야 합니다.")
+    }
+    if (!isNum(c.maxAmount) || c.maxAmount < 0) {
+      return invalid(ruleKey, 'choice.maxAmount가 0 이상 숫자가 아닙니다.')
+    }
+    if (!Array.isArray(c.options) || c.options.length === 0) {
+      return invalid(ruleKey, 'choice.options가 비어 있지 않은 배열이 아닙니다.')
+    }
+    for (let i = 0; i < c.options.length; i++) {
+      if (c.options[i] !== 'market_value' && c.options[i] !== 'official_price') {
+        return invalid(ruleKey, `choice.options[${i}]는 'market_value' 또는 'official_price'여야 합니다.`)
+      }
+    }
+    choice = { basis: c.basis, maxAmount: c.maxAmount, options: c.options as GiftTaxBasis[] }
+  }
+  return { ok: true, value: { base: value.base, choice } }
 }
 
 /** 증여 중과 rule_value 검증 */

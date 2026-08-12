@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateAcquisitionTax } from '@/lib/tax/acquisition'
 import { buildRegionCode, isKnownRegion } from '@/lib/tax/regions'
-import type { AcquisitionCause, AcquisitionInput, AcquisitionResult, DonorRelation } from '@/lib/tax/engine-types'
+import type { AcquisitionCause, AcquisitionInput, AcquisitionResult, DonorRelation, GiftTaxBasis } from '@/lib/tax/engine-types'
 import type { TaxRuleMode } from '@/lib/tax/types'
 
 /** 계산기 화면이 보내는 요청 — 소재지는 코드가 아니라 이름(시·도/시·군·구)으로 받아 서버가 검증·조립 */
@@ -33,6 +33,7 @@ export interface AcquisitionCalcPayload {
   marketValue?: number
   officialPrice?: number
   donorIsSingleHomeOwner?: boolean
+  giftTaxBaseChoice?: GiftTaxBasis  // 증여 시 — 엔진이 선택 가능하다고 알려준 경우 납세자가 고른 과세표준 기준
 }
 
 /**
@@ -76,6 +77,7 @@ export async function calculateAcquisition(payload: AcquisitionCalcPayload): Pro
     marketValue: payload.marketValue,
     officialPrice: payload.officialPrice,
     donorIsSingleHomeOwner: payload.donorIsSingleHomeOwner,
+    giftTaxBaseChoice: payload.giftTaxBaseChoice,
   }
 
   const supabase = await createClient()
@@ -98,6 +100,8 @@ export async function calculateAcquisition(payload: AcquisitionCalcPayload): Pro
           breakdown: result.breakdown,
           containsProposedRule: result.containsProposedRule,
           unresolvedFields: result.unresolvedFields,
+          giftTaxBaseUsed: result.giftTaxBaseUsed ?? null,
+          giftTaxBaseChoice: result.giftTaxBaseChoice ?? null,
         },
         applied_rule_ids: result.appliedRules.map((r) => r.id),
       })
