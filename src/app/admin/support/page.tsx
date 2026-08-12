@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 import { parsePageParam } from '@/lib/validate'
 
 export const dynamic = 'force-dynamic'
@@ -108,7 +109,7 @@ export default async function SupportPage({
 
       <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         {list.length === 0 ? (
-          <div className="py-16 text-center text-sm text-ink-faint">티켓이 없습니다.</div>
+          <EmptyState message="티켓이 없습니다." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

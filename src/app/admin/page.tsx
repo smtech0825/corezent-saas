@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import ChurnAnalysis, { type CancelEntry } from './ChurnAnalysis'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -267,7 +268,7 @@ export default async function AdminPage() {
             <a href="/admin/orders" className="text-xs text-mark hover:underline">전체 보기</a>
           </div>
           {recentOrders.length === 0 ? (
-            <div className="py-12 text-center text-sm text-ink-faint">아직 주문이 없습니다.</div>
+            <EmptyState message="아직 주문이 없습니다." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -314,7 +315,7 @@ export default async function AdminPage() {
             <a href="/admin/users" className="text-xs text-mark hover:underline">전체 보기</a>
           </div>
           {(!recentUsers || recentUsers.length === 0) ? (
-            <div className="py-12 text-center text-sm text-ink-faint">아직 사용자가 없습니다.</div>
+            <EmptyState message="아직 사용자가 없습니다." />
           ) : (
             <div className="divide-y divide-rule/50">
               {recentUsers.map((u) => (

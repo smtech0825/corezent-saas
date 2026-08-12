@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 import { parsePageParam } from '@/lib/validate'
 
 export const dynamic = 'force-dynamic'
@@ -82,9 +83,7 @@ export default async function InquiriesPage({
           문의 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
         </div>
       ) : rows.length === 0 ? (
-        <div className="border border-rule bg-paper-raised rounded-2xl py-16 text-center text-sm text-ink-faint">
-          접수된 문의가 없습니다.
-        </div>
+        <EmptyState boxed message="접수된 문의가 없습니다." />
       ) : (
         <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
           {rows.map((r) => (

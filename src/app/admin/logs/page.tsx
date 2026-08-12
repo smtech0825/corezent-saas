@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,9 +49,7 @@ export default async function LogsPage() {
           <span className="font-mono text-ink">034_notification_logs.sql</span> 을 Supabase에 적용해 주세요.
         </div>
       ) : logs.length === 0 ? (
-        <div className="border border-rule bg-paper-raised rounded-2xl py-16 text-center text-sm text-ink-faint">
-          기록된 로그가 없습니다.
-        </div>
+        <EmptyState boxed message="기록된 로그가 없습니다." />
       ) : (
         <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">

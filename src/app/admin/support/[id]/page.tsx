@@ -13,6 +13,7 @@ import TicketStatusButton from './TicketStatusButton'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -213,9 +214,7 @@ export default async function TicketDetailPage({
         {/* 메시지 스레드 */}
         <div className="space-y-3">
           {(!replies || replies.length === 0) ? (
-            <div className="border border-rule bg-paper-raised rounded-2xl py-12 text-center text-sm text-ink-faint">
-              아직 메시지가 없습니다.
-            </div>
+            <EmptyState boxed message="아직 메시지가 없습니다." />
           ) : (
             replies.map((reply) => (
               <div

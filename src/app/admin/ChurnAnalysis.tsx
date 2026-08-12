@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react'
 import { BarChart3, MessageSquare } from 'lucide-react'
+import EmptyState from '@/components/common/EmptyState'
 
 export interface CancelEntry {
   reason: string
@@ -124,9 +125,7 @@ export default function ChurnAnalysis({ entries }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border border-rule bg-paper-raised rounded-2xl py-12 text-center text-sm text-ink-faint">
-          취소 데이터가 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
-        </div>
+        <EmptyState boxed message={`취소 데이터가 ${period === 'month' ? '이번 달에' : '아직'} 없습니다.`} />
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* ── 왼쪽: 가로 막대 차트 ── */}

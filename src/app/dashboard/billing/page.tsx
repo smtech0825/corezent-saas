@@ -12,6 +12,7 @@ import Pagination from '@/components/common/Pagination'
 import BillingTable, { type BillingRow } from './BillingTable'
 import { formatKRW } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -172,12 +173,11 @@ export default async function BillingPage({
             <Pagination page={page} total={ordTotal ?? 0} pageSize={PAGE_SIZE} buildHref={(p) => `/dashboard/billing?page=${p}`} />
           </>
         ) : (
-          <div className="bg-paper-raised border border-rule rounded-xl py-12 text-center">
-            <div className="w-10 h-10 rounded-full bg-paper-shade flex items-center justify-center mx-auto mb-3">
-              <CreditCard size={20} className="text-ink-faint" />
-            </div>
-            <p className="text-sm text-ink-faint">아직 결제 내역이 없습니다.</p>
-          </div>
+          <EmptyState
+            boxed
+            icon={<CreditCard size={20} className="text-ink-faint" />}
+            message="아직 결제 내역이 없습니다."
+          />
         )}
       </section>
     </PageContainer>

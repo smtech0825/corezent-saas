@@ -11,6 +11,7 @@ import CopyButton from '@/components/common/CopyButton'
 import DownloadButton from '../billing/DownloadButton'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -257,16 +258,13 @@ export default async function LicensesPage({
           />
         </>
       ) : (
-        <div className="bg-paper-raised border border-rule rounded-xl py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-paper-shade flex items-center justify-center mx-auto mb-4">
-            <Key size={22} className="text-ink-faint" />
-          </div>
-          <p className="text-ink font-medium mb-1">아직 라이선스가 없습니다</p>
-          <p className="text-sm text-ink-faint mb-4">제품을 구매하면 라이선스 키를 받을 수 있습니다.</p>
-          <a href="/pricing" className="inline-flex items-center gap-1.5 text-sm text-mark hover:underline">
-            제품 둘러보기 →
-          </a>
-        </div>
+        <EmptyState
+          boxed
+          icon={<Key size={22} className="text-ink-faint" />}
+          message="아직 라이선스가 없습니다"
+          description="제품을 구매하면 라이선스 키를 받을 수 있습니다."
+          cta={{ label: '제품 둘러보기', href: '/pricing' }}
+        />
       )}
     </PageContainer>
   )

@@ -10,6 +10,7 @@ import { deriveSubStatus, isActiveSub } from '@/lib/subscription-status'
 import Link from 'next/link'
 import OnboardingChecklist from './OnboardingChecklist'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -245,7 +246,7 @@ export default async function DashboardPage() {
               })}
             </div>
           ) : (
-            <EmptyState message="활성 구독이 없습니다." cta="제품 둘러보기" href="/pricing" />
+            <EmptyState fill message="활성 구독이 없습니다." cta={{ label: '제품 둘러보기', href: '/pricing' }} />
           )}
         </Section>
 
@@ -269,7 +270,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState message="아직 주문이 없습니다." cta="제품 둘러보기" href="/pricing" />
+            <EmptyState fill message="아직 주문이 없습니다." cta={{ label: '제품 둘러보기', href: '/pricing' }} />
           )}
         </Section>
       </div>
@@ -306,22 +307,15 @@ function Section({ title, href, children }: {
   href: string
   children: React.ReactNode
 }) {
+  // flex-col: 빈 상태(EmptyState fill)가 옆 카드와 묶인 높이를 채우며 세로 가운데에 오도록.
+  // 내용이 있을 때는 세로 쌓임 그대로라 영향이 없다.
   return (
-    <div className="bg-paper-raised border border-rule rounded-xl p-5">
+    <div className="bg-paper-raised border border-rule rounded-xl p-5 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-ink">{title}</h2>
         <Link href={href} className="text-xs text-mark hover:underline">전체 보기</Link>
       </div>
       {children}
-    </div>
-  )
-}
-
-function EmptyState({ message, cta, href }: { message: string; cta: string; href: string }) {
-  return (
-    <div className="py-8 text-center">
-      <p className="text-sm text-ink-soft mb-3">{message}</p>
-      <Link href={href} className="text-xs text-mark hover:underline">{cta} →</Link>
     </div>
   )
 }

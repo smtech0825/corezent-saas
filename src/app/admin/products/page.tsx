@@ -12,6 +12,7 @@ import ProductList, { type ProductRow } from './ProductList'
 import { formatPrice } from '@/lib/price'
 import { logAdminActivity } from '@/lib/adminActivityLog'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -131,12 +132,11 @@ export default async function ProductsPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="border border-rule bg-paper-raised rounded-2xl py-16 text-center space-y-3">
-          <p className="text-sm text-ink-faint">아직 제품이 없습니다.</p>
-          <Link href="/admin/products/new" className="text-xs text-mark hover:brightness-95 transition-colors">
-            + 첫 제품 추가하기
-          </Link>
-        </div>
+        <EmptyState
+          boxed
+          message="아직 제품이 없습니다."
+          cta={{ label: '첫 제품 추가하기', href: '/admin/products/new' }}
+        />
       ) : (
         <ProductList products={list} onDelete={deleteProduct} />
       )}

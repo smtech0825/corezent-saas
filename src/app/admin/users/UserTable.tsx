@@ -13,6 +13,7 @@ import RoleSelect from './RoleSelect'
 import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 const PAGE_SIZE = 20
 
@@ -205,9 +206,7 @@ export default function UserTable({ users }: Props) {
       {/* ── 테이블 ────────────────────────────────────────────── */}
       <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         {paginated.length === 0 ? (
-          <div className="py-16 text-center text-sm text-ink-faint">
-            {search ? '검색 결과가 없습니다.' : '사용자가 없습니다.'}
-          </div>
+          <EmptyState message={search ? '검색 결과가 없습니다.' : '사용자가 없습니다.'} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

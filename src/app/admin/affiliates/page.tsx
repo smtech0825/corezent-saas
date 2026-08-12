@@ -10,6 +10,7 @@ import { formatKRW } from '@/lib/money'
 import ConfigEditor from './ConfigEditor'
 import { ConvertButton, IssueDiscountForm, ResolveButton } from './AffiliateActions'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -131,7 +132,7 @@ export default async function AdminAffiliatesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-ink-faint bg-paper-raised border border-rule rounded-2xl px-5 py-6 text-center">검토할 항목이 없습니다.</p>
+          <EmptyState boxed message="검토할 항목이 없습니다." />
         )}
       </section>
 
@@ -167,7 +168,7 @@ export default async function AdminAffiliatesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-ink-faint bg-paper-raised border border-rule rounded-2xl px-5 py-6 text-center">아직 제휴 커미션이 없습니다.</p>
+          <EmptyState boxed message="아직 제휴 커미션이 없습니다." />
         )}
       </section>
     </PageContainer>

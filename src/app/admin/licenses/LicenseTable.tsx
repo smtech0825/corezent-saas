@@ -8,6 +8,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Search, ChevronLeft, ChevronRight, Ban, X } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 export interface License {
   id: string
@@ -163,7 +164,7 @@ export default function LicenseTable({ licenses }: Props) {
       {/* 테이블 */}
       <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-ink-faint">라이선스가 없습니다.</div>
+          <EmptyState message="라이선스가 없습니다." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">

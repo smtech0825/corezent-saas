@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, Download, Check, Loader2 } from 'lucide-react'
 import { formatKRW } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
+import EmptyState from '@/components/common/EmptyState'
 
 const PAGE_SIZE = 15
 
@@ -245,9 +246,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       {/* 테이블 카드 */}
       <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-ink-faint">
-            {(search || statusFilter || dateFrom || dateTo) ? '조건에 맞는 주문이 없습니다.' : '주문이 없습니다.'}
-          </div>
+          <EmptyState message={(search || statusFilter || dateFrom || dateTo) ? '조건에 맞는 주문이 없습니다.' : '주문이 없습니다.'} />
         ) : (
           <>
             <div className="overflow-x-auto">
