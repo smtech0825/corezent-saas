@@ -107,7 +107,7 @@ export default async function SupportPage({
 
       {/* 티켓 제출 폼 — 폭은 아래 문의 내역 목록과 동일하게 컨테이너 폭을 그대로 사용 */}
       <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
-        <div className="px-6 py-4 border-b border-rule">
+        <div className="px-6 py-4">
           <h2 className="text-sm font-semibold text-ink">새 문의 작성</h2>
         </div>
         <form action={submitTicket} className="px-6 py-6 space-y-4">

@@ -147,7 +147,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
 
   return (
     <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-rule">
+      <div className="px-6 py-4">
         <h2 className="text-sm font-semibold text-ink">내 문의 내역</h2>
       </div>
 

@@ -189,7 +189,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
   return (
     <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-ink">변경 이력</h2>
           <p className="text-xs text-ink-faint mt-0.5">버전 이력과 다운로드 링크를 관리합니다</p>

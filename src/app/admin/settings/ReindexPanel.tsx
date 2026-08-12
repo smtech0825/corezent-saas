@@ -54,7 +54,7 @@ export default function ReindexPanel() {
 
   return (
     <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-rule">
+      <div className="px-6 py-4">
         <h2 className="text-sm font-semibold text-ink">검색엔진 색인 재요청</h2>
         <p className="text-xs text-ink-faint mt-0.5">
           sitemap의 모든 공개 URL을 IndexNow·Google Indexing에 즉시 제출합니다. 상품을 추가·수정한 뒤 사용하세요.
