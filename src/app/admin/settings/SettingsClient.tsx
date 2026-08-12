@@ -28,6 +28,18 @@ const SECTION_KEYS: Record<Section, string[]> = {
 const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
 const TEXTAREA_CLS = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-mark placeholder:text-ink-faint resize-y'
 
+/**
+ * @함수명: sectionDirty
+ * @설명: 카드의 현재 입력값이 마지막으로 저장된 값과 다른지 판정합니다.
+ *        저장 안 한 변경이 있는 카드에 "저장 안 됨" 표시를 띄우는 유일한 기준이며,
+ *        값을 넣어 검증할 수 있게 컴포넌트 밖의 순수 함수로 둡니다.
+ * @매개변수: keys - 카드가 저장하는 키 목록 / values - 현재 입력값 / saved - 마지막 저장값
+ * @반환값: 하나라도 다르면 true
+ */
+function sectionDirty(keys: string[], values: Settings, saved: Settings): boolean {
+  return keys.some((key) => (values[key] ?? '') !== (saved[key] ?? ''))
+}
+
 // ─── 저장 버튼 (섹션별 로딩·성공 상태 표시) ──────────────────────────────────
 
 function SaveButton({
@@ -74,17 +86,27 @@ function SectionCard({
   description,
   children,
   footer,
+  dirty,
 }: {
   title: string
   description: string
   children: React.ReactNode
   footer: React.ReactNode
+  /** 저장 안 한 변경이 있으면 헤더에 "저장 안 됨" 표시 */
+  dirty?: boolean
 }) {
   return (
     <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-rule">
-        <h2 className="text-sm font-semibold text-ink">{title}</h2>
-        <p className="text-xs text-ink-faint mt-0.5">{description}</p>
+      <div className="px-6 py-4 border-b border-rule flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <p className="text-xs text-ink-faint mt-0.5">{description}</p>
+        </div>
+        {dirty && (
+          <span className="shrink-0 text-[10px] font-semibold text-caution bg-caution-soft border border-caution/20 px-2 py-0.5 rounded-full">
+            저장 안 됨
+          </span>
+        )}
       </div>
       <div className="p-6 space-y-4">{children}</div>
       <div className="px-6 pb-5">{footer}</div>
@@ -96,6 +118,8 @@ function SectionCard({
 
 export default function SettingsClient({ initial }: { initial: Settings }) {
   const [values, setValues] = useState<Settings>(initial)
+  // 마지막으로 저장된 값 — "저장 안 됨" 판정의 비교 기준. 저장 성공 시 갱신된다.
+  const [savedValues, setSavedValues] = useState<Settings>(initial)
   const [saving, setSaving] = useState<Section | null>(null)
   const [saved,  setSaved]  = useState<Section | null>(null)
   const [error,  setError]  = useState<string | null>(null)
@@ -124,6 +148,8 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       })
       if (!res.ok) throw new Error()
       setSaved(section)
+      // 저장 성공 → 이 카드의 비교 기준을 방금 저장한 값으로 갱신("저장 안 됨" 표시 해제)
+      setSavedValues((prev) => ({ ...prev, ...body }))
       if (savedResetRef.current) clearTimeout(savedResetRef.current)
       savedResetRef.current = setTimeout(() => setSaved(null), 3000)
     } catch {
@@ -153,6 +179,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       {/* ── General Settings ─────────────────────────────────────────────── */}
       <SectionCard
         title="일반 설정"
+        dirty={sectionDirty(SECTION_KEYS['general'], values, savedValues)}
         description="기본 사이트 구성"
         footer={<SaveButton section="general" {...btnProps} />}
       >
@@ -173,6 +200,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       {/* ── Footer Information ───────────────────────────────────────────── */}
       <SectionCard
         title="푸터 정보"
+        dirty={sectionDirty(SECTION_KEYS['footer'], values, savedValues)}
         description="사이트 하단에 표시되는 사업자 정보. 줄바꿈(Enter)과 여백이 그대로 반영됩니다."
         footer={<SaveButton section="footer" {...btnProps} />}
       >
@@ -211,6 +239,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       {/* ── SEO Settings ─────────────────────────────────────────────────── */}
       <SectionCard
         title="SEO 설정"
+        dirty={sectionDirty(SECTION_KEYS['seo'], values, savedValues)}
         description="검색 엔진 최적화 및 분석 설정"
         footer={<SaveButton section="seo" {...btnProps} />}
       >
@@ -247,6 +276,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       {/* ── 계좌이체(무통장 입금) 설정 ──────────────────────────────────── */}
       <SectionCard
         title="계좌이체(무통장 입금)"
+        dirty={sectionDirty(SECTION_KEYS['bank'], values, savedValues)}
         description="상품 상세 페이지 결제방법에 '계좌이체'를 노출합니다. 활성화하려면 계좌번호까지 입력하세요."
         footer={<SaveButton section="bank" {...btnProps} />}
       >
@@ -277,6 +307,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       {/* ── SMTP Settings ────────────────────────────────────────────────── */}
       <SectionCard
         title="SMTP 설정"
+        dirty={sectionDirty(SECTION_KEYS['smtp'], values, savedValues)}
         description="이메일 발송 설정"
         footer={<SaveButton section="smtp" {...btnProps} />}
       >
