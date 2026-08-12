@@ -105,12 +105,13 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
           </div>
         </div>
 
-        {/* 관리자 전용: Go to Admin 버튼 — 인주 빨강으로 관리자 영역임을 힌트 */}
+        {/* 관리자 전용: 관리자 페이지 이동 — 위험한 동작이 아니라 보통 색(ink-soft, 대비 5.85:1).
+            빨강 계열은 아래 로그아웃만 쓴다(위험 동작 구분) */}
         {isAdmin && (
           <Link
             href="/admin"
             onClick={onClose}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-seal hover:bg-seal/8 transition-colors mb-0.5"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:text-ink hover:bg-ink/5 transition-colors mb-0.5"
           >
             <ExternalLink size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
             관리자 페이지로 이동

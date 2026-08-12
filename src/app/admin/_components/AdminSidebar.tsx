@@ -263,9 +263,11 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
 
       {/* 대시보드 링크 */}
       <div className="px-3 pt-2 border-t border-rule">
+        {/* 같은 구조의 형제(다른 영역 이동 링크) — ink-faint는 대비 2.81:1로 낮아
+            ink-soft(5.85:1)로 맞춘다. 대시보드 쪽 관리자 이동 링크와 같은 색 */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-ink-faint hover:text-ink transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-ink-soft hover:text-ink transition-colors"
         >
           ← 사용자 대시보드
         </Link>
