@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 import { Landmark, Loader2, Pencil } from 'lucide-react'
+import SelectField from '@/components/common/SelectField'
 import { PAYOUT_BANKS, maskAccountNumber, normalizeAccountNumber } from '@/lib/banks'
 import { savePayoutAccount } from './payout-actions'
 
@@ -78,12 +79,12 @@ export default function PayoutAccountCard({ initial }: { initial: Account }) {
         <div className="space-y-3">
           <p className="text-xs text-ink-faint">정산이 필요할 때 사용할 본인 명의 계좌를 등록하세요.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <select value={bank} onChange={(e) => setBank(e.target.value)} className={INPUT_CLS}>
+            <SelectField size="sm" value={bank} onChange={(e) => setBank(e.target.value)}>
               <option value="">은행 선택</option>
               {PAYOUT_BANKS.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
-            </select>
+            </SelectField>
             <input
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value.replace(/[^0-9-]/g, ''))}

@@ -9,6 +9,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { Search, ChevronLeft, ChevronRight, Ban, X } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import SelectField from '@/components/common/SelectField'
 
 export interface License {
   id: string
@@ -137,16 +138,17 @@ export default function LicenseTable({ licenses }: Props) {
       {/* 검색 + 필터 */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* 상태 필터 드롭다운 */}
-        <select
+        <SelectField
+          size="md"
+          wrapperClassName="sm:w-40 shrink-0"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-          className="bg-paper border border-rule text-ink-soft text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-mark sm:w-40 shrink-0 cursor-pointer"
         >
           <option value="all">전체 상태</option>
           <option value="active">활성</option>
           <option value="canceled">취소됨</option>
           <option value="expired">만료됨</option>
-        </select>
+        </SelectField>
 
         {/* 이메일 검색바 */}
         <div className="relative flex-1">

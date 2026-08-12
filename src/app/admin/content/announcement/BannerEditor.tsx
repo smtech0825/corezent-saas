@@ -7,6 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
+import SelectField from '@/components/common/SelectField'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 interface BannerData {
@@ -53,14 +54,14 @@ export default function BannerEditor({ initial, onSave }: Props) {
       {/* 표시 여부 */}
       <div className="space-y-1.5">
         <label className={labelCls}>배너 표시</label>
-        <select
+        <SelectField
+          size="md"
           value={form.visible}
           onChange={(e) => set('visible', e.target.value)}
-          className={`${inputCls} cursor-pointer`}
         >
           <option value="true">표시</option>
           <option value="false">숨김</option>
-        </select>
+        </SelectField>
       </div>
 
       {/* 데스크톱 텍스트 */}

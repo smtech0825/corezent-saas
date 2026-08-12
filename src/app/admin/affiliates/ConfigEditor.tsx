@@ -9,6 +9,7 @@
 
 import { useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
+import SelectField from '@/components/common/SelectField'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
 
@@ -57,10 +58,10 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="커미션 유형">
-            <select value={v.commission_type} onChange={(e) => set('commission_type', e.target.value)} className={INPUT_CLS}>
+            <SelectField size="md" value={v.commission_type} onChange={(e) => set('commission_type', e.target.value)}>
               <option value="percent">percent (%)</option>
               <option value="flat">flat (고정 cents)</option>
-            </select>
+            </SelectField>
           </Field>
           <Field label={v.commission_type === 'flat' ? '커미션 값 (cents)' : '커미션 값 (%)'}>
             <input type="number" value={v.commission_value} onChange={(e) => set('commission_value', Number(e.target.value))} className={INPUT_CLS} />

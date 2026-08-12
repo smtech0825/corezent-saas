@@ -10,6 +10,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
+import SelectField from '@/components/common/SelectField'
 
 type Settings = Record<string, string>
 type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank'
@@ -250,14 +251,14 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         footer={<SaveButton section="bank" {...btnProps} />}
       >
         <Field label="계좌이체 결제 사용">
-          <select
+          <SelectField
+            size="md"
             value={values.bank_transfer_enabled === 'true' ? 'true' : 'false'}
             onChange={(e) => update('bank_transfer_enabled', e.target.value)}
-            className={INPUT_CLS}
           >
             <option value="false">비활성</option>
             <option value="true">활성</option>
-          </select>
+          </SelectField>
         </Field>
         <Field label="은행">
           <input value={values.bank_transfer_bank ?? ''} onChange={(e) => update('bank_transfer_bank', e.target.value)} placeholder="예: 국민은행" className={INPUT_CLS} />

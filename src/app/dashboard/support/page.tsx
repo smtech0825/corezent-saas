@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import SelectField from '@/components/common/SelectField'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import Pagination from '@/components/common/Pagination'
@@ -128,16 +129,16 @@ export default async function SupportPage({
           {/* 우선순위 */}
           <div className="space-y-1.5">
             <label htmlFor="priority" className="text-xs font-medium text-ink-soft">우선순위</label>
-            <select
+            <SelectField
+              size="md"
               id="priority"
               name="priority"
               defaultValue="normal"
-              className="w-full bg-paper border border-rule rounded-xl px-4 py-2.5 text-sm text-ink focus:outline-none focus:border-mark/50 focus:ring-1 focus:ring-mark/20 transition-colors"
             >
               {priorityOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
 
           {/* 메시지 */}

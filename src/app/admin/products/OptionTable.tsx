@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import CopyButton from '@/components/common/CopyButton'
+import SelectField from '@/components/common/SelectField'
 import type { PriceEntry } from './ProductForm'
 
 interface Props {
@@ -182,24 +183,24 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   className={cellInput}
                 />
                 {/* 유형 */}
-                <select
+                <SelectField
+                  size="xs"
                   value={price.type}
                   onChange={(e) => onUpdate(idx, 'type', e.target.value)}
-                  className={`${cellInput} cursor-pointer`}
                 >
                   <option value="subscription">구독</option>
                   <option value="one_time">단일</option>
-                </select>
-                {/* 주기 */}
-                <select
+                </SelectField>
+                {/* 주기 — 단일 구매면 비활성(흐림 처리는 공용 부품의 disabled 스타일) */}
+                <SelectField
+                  size="xs"
                   value={price.interval}
                   onChange={(e) => onUpdate(idx, 'interval', e.target.value)}
                   disabled={price.type === 'one_time'}
-                  className={`${cellInput} cursor-pointer ${price.type === 'one_time' ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <option value="monthly">월간</option>
                   <option value="annual">연간</option>
-                </select>
+                </SelectField>
                 {/* 가격 */}
                 <PriceInput value={price.price} onChange={(v) => onUpdate(idx, 'price', v)} />
                 {/* tier */}

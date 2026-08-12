@@ -15,6 +15,7 @@ import { Search, ChevronLeft, ChevronRight, Download, Check, Loader2 } from 'luc
 import { formatKRW } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import SelectField from '@/components/common/SelectField'
 
 const PAGE_SIZE = 15
 
@@ -205,10 +206,11 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
 
       {/* 필터 · 내보내기 */}
       <div className="flex flex-wrap items-center gap-2">
-        <select
+        <SelectField
+          size="sm"
+          wrapperClassName="w-32"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark cursor-pointer"
         >
           <option value="">전체 상태</option>
           <option value="paid">결제됨</option>
@@ -216,13 +218,13 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
           <option value="pending">대기 중</option>
           <option value="refunded">환불됨</option>
           <option value="cancelled">취소됨</option>
-        </select>
+        </SelectField>
         <input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           aria-label="시작일"
-          className="bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark"
+          className="bg-paper border border-rule rounded-lg px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-mark"
         />
         <span className="text-ink-faint text-sm">~</span>
         <input
@@ -230,7 +232,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
           aria-label="종료일"
-          className="bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark"
+          className="bg-paper border border-rule rounded-lg px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-mark"
         />
         <button
           type="button"

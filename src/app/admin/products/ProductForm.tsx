@@ -12,6 +12,7 @@ import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon,
 import { createClient } from '@/lib/supabase/client'
 import { validateOptionRows } from '@/lib/product-validation'
 import OptionTable from './OptionTable'
+import SelectField from '@/components/common/SelectField'
 import FeatureImageUpload from './FeatureImageUpload'
 import nextDynamic from 'next/dynamic'
 
@@ -104,7 +105,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls = 'w-full bg-paper border border-rule text-ink text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
-const selectCls = `${inputCls} cursor-pointer`
 
 /**
  * @함수명: hasNonDigit
@@ -373,27 +373,27 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="플랫폼 유형 *">
-            <select
+            <SelectField
+              size="sm"
               required
               value={form.category}
               onChange={(e) => set('category', e.target.value)}
-              className={selectCls}
             >
               <option value="desktop">데스크톱</option>
               <option value="web">웹</option>
               <option value="chrome-extension">크롬 익스텐션</option>
-            </select>
+            </SelectField>
           </Field>
 
           <Field label="상태">
-            <select
+            <SelectField
+              size="sm"
               value={form.is_active ? 'true' : 'false'}
               onChange={(e) => set('is_active', e.target.value === 'true')}
-              className={selectCls}
             >
               <option value="true">활성</option>
               <option value="false">비활성</option>
-            </select>
+            </SelectField>
           </Field>
         </div>
 

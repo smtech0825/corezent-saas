@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react'
+import SelectField from '@/components/common/SelectField'
 
 interface Props {
   userId: string
@@ -59,16 +60,18 @@ export default function RoleSelect({ userId, userEmail, currentRole, onChange }:
     }
   }
 
+  // 모양은 공용 SelectField가 그린다. 재확인·되돌림·실패 처리(위 handleChange)는 그대로다.
   return (
-    <select
+    <SelectField
+      size="xs"
+      wrapperClassName="w-24"
       value={role}
       onChange={handleChange}
       disabled={saving}
       aria-label={userEmail?.trim() ? `${userEmail.trim()} 권한 변경` : '사용자 권한 변경'}
-      className="bg-paper border border-rule text-ink-soft text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-mark cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <option value="user">사용자</option>
       <option value="admin">관리자</option>
-    </select>
+    </SelectField>
   )
 }
