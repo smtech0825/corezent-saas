@@ -38,8 +38,10 @@ export default function CookieConsentBanner() {
     <div
       // 상품 상세의 하단 고정 구매 바(z-60)가 배너 버튼 줄을 덮지 않게, 바 높이(--buy-bar-h)만큼 위로.
       // 바가 없는 화면에서는 변수가 비어 기존과 같은 16px 여백이 된다.
+      // z는 '맨 위로' 버튼(z-55)·구매 바(z-60)보다 위, 드롭업 메뉴(z-70)보다 아래 —
+      // 좁은 화면에서 버튼과 자리가 겹쳐도 동의 버튼 클릭을 배너가 가져간다(동의가 우선).
       style={{ bottom: 'calc(var(--buy-bar-h, 0px) + 1rem)' }}
-      className="fixed left-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]"
+      className="fixed left-4 z-[65] w-[320px] max-w-[calc(100vw-2rem)]"
     >
       <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl p-4 shadow-2xl shadow-black/50 backdrop-blur-sm">
 

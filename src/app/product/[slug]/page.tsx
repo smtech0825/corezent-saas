@@ -370,7 +370,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         />
       )}
 
-      {/* 플로팅 '맨 위로' 버튼 — 일정 스크롤 후 구매 바 바로 위 가운데 노출 */}
+      {/* 플로팅 '맨 위로' 버튼 — 일정 스크롤 후 구매 바 바로 위 오른쪽 아래 노출 */}
       <ScrollTopButton />
     </>
   )

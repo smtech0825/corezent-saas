@@ -132,14 +132,15 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
               <span className="w-4 h-4 rounded-full bg-pen/10 flex items-center justify-center shrink-0 mt-0.5">
                 <Check size={10} className="text-pen" />
               </span>
-              <span className="line-clamp-3 min-w-0">{f}</span>
+              <span className="line-clamp-3 min-w-0" title={f}>{f}</span>
             </li>
           ))}
         </ul>
       )}
 
       {/* 하단 그룹 — mt-auto로 카드 맨 아래 고정(pt-6은 위 내용과의 최소 간격).
-          수량칸이 없는 카드도 이 그룹 높이가 같아 옆 카드와 버튼 줄이 맞는다 */}
+          그룹 높이는 수량칸·조달 배지 유무로 카드마다 다르다 — 버튼 줄이 맞는 이유는
+          '높이가 같아서'가 아니라 그룹의 마지막 자식(버튼)이 카드 바닥에 붙기 때문 */}
       <div className="mt-auto pt-6">
         {/* 수량 선택 — 비옵션 상품만(옵션 상품은 상세 페이지에서 조합·수량 선택) */}
         {!product.hasOptions && <QuantityStepper value={qty} onChange={setQty} />}
@@ -206,7 +207,7 @@ export default function PricingSection({ products, affiliateRef }: Props) {
           <button
             onClick={() => setAnnual(!annual)}
             className="relative w-12 h-6 rounded-full transition-colors"
-            style={{ backgroundColor: annual ? '#1D3FB0' : '#D8D4C8' }}
+            style={{ backgroundColor: annual ? 'var(--color-pen)' : 'var(--color-rule)' }}
             aria-label="연간 결제 전환"
             aria-pressed={annual}
           >

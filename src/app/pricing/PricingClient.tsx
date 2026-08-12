@@ -291,7 +291,7 @@ export default function PricingClient({ products }: Props) {
                           return (
                             <li key={feature} className="flex items-start gap-3">
                               <Check size={15} className="text-pen mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-ink-soft leading-relaxed line-clamp-3 min-w-0">
+                              <span className="text-sm text-ink-soft leading-relaxed line-clamp-3 min-w-0" title={feature}>
                                 {desc ? (
                                   <><strong className="text-ink">{title}:</strong> {desc}</>
                                 ) : title}

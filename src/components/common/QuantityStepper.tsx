@@ -73,6 +73,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
   }
 
   // 기본: 라벨 좌측 + 하단 여백(카드형 구매 박스용)
+  // ⚠️ 이 라벨에 BUY_BAR_CONTROL_LABEL을 적용하지 말 것 — 상수의 block이 justify-between 가로 배치를 깨뜨린다
   return (
     <div className="flex items-center justify-between gap-3 mb-3">
       <span className="text-xs text-ink-soft">수량</span>
