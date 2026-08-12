@@ -15,6 +15,7 @@ import ChurnAnalysis, { type CancelEntry } from './ChurnAnalysis'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import StatCard from '@/components/common/StatCard'
+import InitialAvatar from '@/components/common/InitialAvatar'
 
 export const dynamic = 'force-dynamic'
 
@@ -291,9 +292,7 @@ export default async function AdminPage() {
             <div className="divide-y divide-rule/50">
               {recentUsers.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 px-6 py-3 hover:bg-paper-shade transition-colors">
-                  <span className="w-8 h-8 rounded-full bg-mark/10 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
-                    {(u.name ?? '?')[0].toUpperCase()}
-                  </span>
+                  <InitialAvatar name={u.name} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-ink font-medium truncate">{u.name || '알 수 없음'}</p>
                     <p className="text-xs text-ink-faint">{fmtDate(u.created_at)}</p>

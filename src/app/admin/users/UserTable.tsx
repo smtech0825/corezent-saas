@@ -14,6 +14,7 @@ import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import InitialAvatar from '@/components/common/InitialAvatar'
 
 const PAGE_SIZE = 20
 
@@ -229,13 +230,8 @@ export default function UserTable({ users }: Props) {
                       {/* 아바타 + 이름 */}
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${
-                            u.status === 'inactive'
-                              ? 'bg-danger-soft border-danger/20 text-danger'
-                              : 'bg-mark/10 border-mark/30 text-mark'
-                          }`}>
-                            {((u.name || u.email)[0] ?? '?').toUpperCase()}
-                          </span>
+                          {/* 이름 기반 자동 색(공용 InitialAvatar). 탈퇴 회원은 상태 정보라 위험색 유지 */}
+                          <InitialAvatar name={u.name} fallbackText={u.email} inactive={u.status === 'inactive'} />
                           <span className="text-ink font-medium truncate max-w-[100px]">
                             {u.name || '—'}
                           </span>
