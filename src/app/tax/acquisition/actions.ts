@@ -24,7 +24,7 @@ export interface AcquisitionCalcPayload {
   cause: AcquisitionCause
   price: number
   houseCountAfter: number
-  areaOver85: boolean
+  areaOver85?: boolean      // (호환용) 이전 화면의 boolean 입력 — areaSqm이 있으면 무시된다
   areaSqm?: number          // 전용면적(㎡) — 있으면 엔진이 area_sqm 조건과 area_over_85를 함께 만든다
   ruleMode: TaxRuleMode
   firstHome?: boolean
@@ -69,7 +69,7 @@ export async function calculateAcquisition(payload: AcquisitionCalcPayload): Pro
     cause: payload.cause === 'gift' ? 'gift' : 'sale',
     price: payload.price,
     houseCountAfter: payload.houseCountAfter,
-    areaOver85: payload.areaOver85 === true,
+    areaOver85: typeof payload.areaOver85 === 'boolean' ? payload.areaOver85 : undefined,
     areaSqm: payload.areaSqm,
     firstHome: payload.firstHome === true,
     temporaryTwoHome: payload.temporaryTwoHome === true,

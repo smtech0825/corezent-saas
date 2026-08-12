@@ -13,10 +13,16 @@ import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
-import type { AcquisitionCause, AcquisitionResult, DonorRelation } from '@/lib/tax/engine-types'
+import type { AcquisitionCause, AcquisitionResult, DonorRelation, GiftTaxBasis } from '@/lib/tax/engine-types'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import { calculateAcquisition } from './actions'
 import ResultPanel from './ResultPanel'
+
+/** 과세표준 기준의 한국어 라벨 — 선택지 버튼과 안내에 사용 */
+const BASIS_LABELS: Record<GiftTaxBasis, string> = {
+  market_value: '시가인정액',
+  official_price: '공시가격(시가표준액)',
+}
 
 /** Input과 톤을 맞춘 select 클래스 */
 const SELECT_CLS =
@@ -56,7 +62,7 @@ export default function CalculatorForm() {
   const [cause, setCause] = useState<AcquisitionCause>('sale')
   const [price, setPrice] = useState('')
   const [houseCount, setHouseCount] = useState('1')
-  const [areaOver85, setAreaOver85] = useState(false)
+  const [areaSqm, setAreaSqm] = useState('')
   // ── 고급 입력 (기본 접힘) ──────────────────────────────────────────────────
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [firstHome, setFirstHome] = useState(false)
@@ -81,12 +87,18 @@ export default function CalculatorForm() {
     return Number(v)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  /**
+   * @함수명: runCalculation
+   * @설명: 입력을 검증하고 서버 액션을 호출합니다. giftBaseChoice는 결과 패널의
+   *        과세표준 기준 선택 버튼에서만 넘어옵니다(엔진이 선택 가능하다고 알려준 경우).
+   *        일반 계산 버튼은 선택 없이 호출해 엔진이 가능 여부를 새로 판정하게 합니다.
+   */
+  function runCalculation(giftBaseChoice?: GiftTaxBasis) {
     setFormError(null)
 
     const priceNum = toNum(price)
     const houseNum = toNum(houseCount)
+    const areaNum = toNum(areaSqm)
     if (!sido || !sigungu) { setFormError('소재지를 목록에서 선택해 주세요.'); return }
     if (priceNum === undefined || Number.isNaN(priceNum) || priceNum < 0) {
       setFormError('취득가액을 0 이상 숫자로 입력해 주세요. (순수 증여는 0)'); return
@@ -94,10 +106,13 @@ export default function CalculatorForm() {
     if (houseNum === undefined || Number.isNaN(houseNum) || houseNum < 1) {
       setFormError('취득 후 주택 수를 1 이상으로 입력해 주세요.'); return
     }
+    if (areaNum === undefined || Number.isNaN(areaNum) || areaNum <= 0) {
+      setFormError('전용면적을 0보다 큰 숫자(㎡)로 입력해 주세요.'); return
+    }
     const mv = toNum(marketValue)
     const op = toNum(officialPrice)
     if ((mv !== undefined && Number.isNaN(mv)) || (op !== undefined && Number.isNaN(op))) {
-      setFormError('시가인정액·공시가격은 숫자로 입력해 주세요.'); return
+      setFormError('시가인정액·공시가격(시가표준액)은 숫자로 입력해 주세요.'); return
     }
 
     startTransition(async () => {
@@ -110,15 +125,16 @@ export default function CalculatorForm() {
           cause,
           price: priceNum,
           houseCountAfter: houseNum,
-          areaOver85,
+          areaSqm: areaNum,
           ruleMode,
           firstHome,
           temporaryTwoHome,
           donorRelation: cause === 'gift' ? donorRelation : undefined,
           marketValue: cause === 'gift' ? mv : undefined,
-          officialPrice: cause === 'gift' ? op : undefined,
+          officialPrice: op,
           donorIsSingleHomeOwner:
             cause === 'gift' && donorSingleHome !== '' ? donorSingleHome === 'yes' : undefined,
+          giftTaxBaseChoice: cause === 'gift' ? giftBaseChoice : undefined,
         })
         setResult(res)
         setResultCause(cause)
@@ -127,6 +143,11 @@ export default function CalculatorForm() {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }
     })
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    runCalculation()
   }
 
   return (
@@ -203,14 +224,16 @@ export default function CalculatorForm() {
           )}
         </Field>
 
-        <div className="grid grid-cols-2 gap-3 items-end">
+        <div className="grid grid-cols-2 gap-3">
           <Field label="취득 후 1세대 주택 수" htmlFor="tax-house-count" required>
             <Input id="tax-house-count" type="number" min={1} step={1} value={houseCount}
               onChange={(e) => setHouseCount(e.target.value)} required />
           </Field>
-          <div className="pb-2">
-            <CheckRow label="전용면적 85㎡ 초과" checked={areaOver85} onChange={setAreaOver85} />
-          </div>
+          <Field label="전용면적 (㎡)" htmlFor="tax-area-sqm" required
+            hint="건축물대장·등기부의 전용면적을 소수점까지 입력하세요.">
+            <Input id="tax-area-sqm" type="number" min={0} step="any" value={areaSqm}
+              onChange={(e) => setAreaSqm(e.target.value)} required />
+          </Field>
         </div>
 
         {/* 고급 항목 — 기본 접힘 */}
@@ -224,6 +247,11 @@ export default function CalculatorForm() {
             <div className="mt-4 space-y-4">
               <CheckRow label="생애최초 취득" hint="감면 룰이 등록된 경우에만 반영됩니다." checked={firstHome} onChange={setFirstHome} />
               <CheckRow label="일시적 2주택" hint="종전 주택 처분 예정인 일시적 2주택이라면 체크하세요." checked={temporaryTwoHome} onChange={setTemporaryTwoHome} />
+              <Field label="공시가격(시가표준액) (원)" htmlFor="tax-official-price"
+                hint="모르면 비워두셔도 됩니다 — 이 경우 일부 중과 제외 판정이 생략됩니다. 증여 계산에서는 과세표준·중과 판정에도 사용됩니다.">
+                <Input id="tax-official-price" type="number" min={0} step={1} value={officialPrice}
+                  onChange={(e) => setOfficialPrice(e.target.value)} placeholder="예: 600000000" />
+              </Field>
               {cause === 'gift' && (
                 <>
                   <Field label="증여자와의 관계" htmlFor="tax-donor-relation">
@@ -238,11 +266,6 @@ export default function CalculatorForm() {
                     hint="매매사례가액·감정가액 등. 과세표준과 무상취득 간주 판정에 사용됩니다.">
                     <Input id="tax-market-value" type="number" min={0} step={1} value={marketValue}
                       onChange={(e) => setMarketValue(e.target.value)} placeholder="예: 800000000" />
-                  </Field>
-                  <Field label="공시가격 (원)" htmlFor="tax-official-price"
-                    hint="규제지역 증여의 중과 판정에 사용됩니다.">
-                    <Input id="tax-official-price" type="number" min={0} step={1} value={officialPrice}
-                      onChange={(e) => setOfficialPrice(e.target.value)} placeholder="예: 600000000" />
                   </Field>
                   <Field label="증여자가 1주택자인지" htmlFor="tax-donor-single"
                     hint="소재지가 규제지역일 때 중과 제외 여부를 가르는 항목입니다. 모르면 '선택 안 함'으로 두세요.">
@@ -269,7 +292,31 @@ export default function CalculatorForm() {
 
       {/* 결과 */}
       {result && (
-        <div ref={resultRef} className="scroll-mt-24">
+        <div ref={resultRef} className="scroll-mt-24 space-y-4">
+          {/* 과세표준 기준 선택 — 엔진이 선택 가능(giftTaxBaseChoice)이라고 알려준 경우에만
+              표시한다. 언제 가능한지(금액 기준)는 화면이 판단하지 않는다 — 전부 룰·엔진 몫 */}
+          {result.ok && result.giftTaxBaseChoice && (
+            <div className="bg-info-soft border-2 border-info/40 rounded-lg p-5">
+              <p className="font-serif font-bold text-info mb-1">과세표준 기준을 선택할 수 있습니다</p>
+              <p className="text-sm text-ink leading-relaxed mb-3">
+                등록된 룰 기준으로 이 거래는 과세표준 기준을 납세자가 직접 고를 수 있습니다.
+                {result.giftTaxBaseChoice.selected === null
+                  ? ' 아직 선택하지 않아 기본 기준으로 계산되었습니다. 아래에서 기준을 고르면 다시 계산합니다.'
+                  : ' 선택한 기준으로 계산되었습니다. 다른 기준으로 바꿔 다시 계산할 수 있습니다.'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {result.giftTaxBaseChoice.options.map((opt) => {
+                  const selected = result.giftTaxBaseChoice?.selected === opt
+                  return (
+                    <Button key={opt} type="button" size="sm" variant={selected ? undefined : 'ghost'}
+                      disabled={isPending} onClick={() => runCalculation(opt)}>
+                      {selected ? '✓ ' : ''}{BASIS_LABELS[opt]}
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <ResultPanel result={result} inputCause={resultCause} />
         </div>
       )}

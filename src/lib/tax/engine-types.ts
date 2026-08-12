@@ -29,7 +29,7 @@ export interface AcquisitionInput {
   cause: AcquisitionCause
   price: number              // 취득가액 (원). 증여면 실제 지급대가 — 순수 증여는 0
   houseCountAfter: number    // 취득 후 1세대 주택 수
-  areaOver85: boolean        // 전용면적 85제곱미터 초과 여부
+  areaOver85?: boolean       // (호환용) 전용면적 85㎡ 초과 여부 — areaSqm이 있으면 무시된다. 둘 다 없으면 미확정
   areaSqm?: number           // 전용면적(㎡, 원본 숫자). 있으면 area_sqm 조건에 쓰이고 area_over_85도 이 값에서 계산
   // 고급 입력 (기본 접힘)
   firstHome?: boolean            // 생애최초 취득 여부

@@ -8,7 +8,7 @@
  *        개정안 포함 모드에서는 눈에 띄는 경고 배지를 최상단에 띄운다.
  */
 
-import { AlertTriangle, ExternalLink, ScrollText } from 'lucide-react'
+import { AlertTriangle, CircleHelp, ExternalLink, ScrollText } from 'lucide-react'
 import type { AcquisitionCause, AcquisitionResult } from '@/lib/tax/engine-types'
 
 interface Props {
@@ -19,6 +19,16 @@ interface Props {
 /** 원화 표기 */
 function won(amount: number): string {
   return `${amount.toLocaleString('ko-KR')}원`
+}
+
+/** 판정하지 못한 조건 필드의 한국어 라벨 — 모르는 필드는 원문 그대로 표시 */
+const UNRESOLVED_FIELD_LABELS: Record<string, string> = {
+  area_sqm: '전용면적',
+  area_over_85: '전용면적',
+  official_price: '공시가격(시가표준액)',
+  is_metro: '수도권 여부',
+  market_value: '시가인정액',
+  price: '취득가액',
 }
 
 export default function ResultPanel({ result, inputCause }: Props) {
@@ -94,6 +104,11 @@ export default function ResultPanel({ result, inputCause }: Props) {
           <span className="px-2 py-1 rounded bg-paper-shade text-ink-soft">
             {result.causeApplied === 'gift' ? '무상취득(증여)으로 계산' : '유상취득으로 계산'}
           </span>
+          {result.giftTaxBaseUsed && (
+            <span className="px-2 py-1 rounded bg-paper-shade text-ink-soft">
+              과세표준 기준: {result.giftTaxBaseUsed === 'market_value' ? '시가인정액' : '공시가격(시가표준액)'}
+            </span>
+          )}
         </div>
         {result.deemedGift && (
           <p className="mt-2 text-xs text-caution leading-relaxed">
@@ -106,6 +121,25 @@ export default function ResultPanel({ result, inputCause }: Props) {
           </p>
         )}
       </div>
+
+      {/* 판정하지 못한 조건 — 근거 표시와 같은 비중으로 눈에 띄게. 조용히 숨기지 않는다 */}
+      {result.unresolvedFields.length > 0 && (
+        <div className="bg-caution-soft border-2 border-caution/60 rounded-lg p-6" role="alert">
+          <h2 className="flex items-center gap-2 font-serif font-bold text-caution mb-1">
+            <CircleHelp size={18} />
+            판정하지 못한 조건이 있습니다
+          </h2>
+          <p className="text-sm text-ink leading-relaxed">
+            다음 조건은 판정에 필요한 값이 없어 건너뛰었고, 그 조건이 붙은 세율 행은 적용 후보에서
+            제외되었습니다:{' '}
+            <b>{result.unresolvedFields.map((f) => UNRESOLVED_FIELD_LABELS[f] ?? f).join(', ')}</b>.
+          </p>
+          <p className="text-xs text-ink-soft mt-2 leading-relaxed">
+            해당 값을 입력하고 다시 계산하면(수도권 여부는 수도권 범위 룰 등록이 필요합니다) 결과가
+            달라질 수 있습니다. 이 금액을 최종 세액으로 단정하지 마세요.
+          </p>
+        </div>
+      )}
 
       {/* 근거 영역 — 결과 바로 아래 크게. 이 계산기의 존재 이유 */}
       <div className="bg-paper-raised border-2 border-pen/25 rounded-lg p-6">
