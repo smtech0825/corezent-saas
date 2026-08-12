@@ -73,7 +73,8 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
   const checkoutUrl = buildCheckoutUrl(rawUrl, userId, { affiliate_ref: affiliateRef }, qty)
 
   return (
-    <div className={`relative rounded-lg bg-paper-raised p-7 ${
+    // flex-col + 하단 그룹 mt-auto — 수량칸 유무·설명 길이가 달라도 CTA 버튼 줄이 카드 맨 아래로 정렬된다
+    <div className={`relative flex flex-col rounded-lg bg-paper-raised p-7 ${
       highlighted
         ? 'border-[1.5px] border-pen shadow-[0_4px_20px_rgba(29,63,176,0.10)]'
         : 'border border-rule shadow-[0_1px_2px_rgba(35,39,46,0.05)]'
@@ -122,29 +123,6 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         {' · VAT 포함'}
       </p>
 
-      {/* 수량 선택 — 비옵션 상품만(옵션 상품은 상세 페이지에서 조합·수량 선택) */}
-      {!product.hasOptions && <QuantityStepper value={qty} onChange={setQty} />}
-
-      {/* 조달청 등록번호 — CTA 버튼 위(자세히 보기·시작하기 두 경우 모두 공통).
-          값이 없으면 부품이 null이라 자리·여백이 남지 않는다(여백은 배지 자체에 준다) */}
-      <ProcurementBadge
-        classNumber={product.procurementClassNumber}
-        itemNumber={product.procurementItemNumber}
-        size="sm"
-        className="mb-3"
-      />
-
-      {/* CTA — 옵션 상품은 상세 페이지로 이동해 조합 선택, 비옵션은 바로 체크아웃 */}
-      {product.hasOptions ? (
-        <Button href={`/product/${product.slug}`} size="md" className="w-full mb-6">
-          자세히 보기
-        </Button>
-      ) : (
-        <Button href={checkoutUrl} size="md" className="w-full mb-6">
-          시작하기
-        </Button>
-      )}
-
       {/* 기능 목록 — 최대 4개, 각 3줄까지(전체 설명은 상세 페이지). 카드 높이는 그리드 stretch로 통일 */}
       {product.pricingFeatures.length > 0 && (
         <ul className="flex flex-col gap-3 border-t border-rule pt-5">
@@ -159,6 +137,33 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
           ))}
         </ul>
       )}
+
+      {/* 하단 그룹 — mt-auto로 카드 맨 아래 고정(pt-6은 위 내용과의 최소 간격).
+          수량칸이 없는 카드도 이 그룹 높이가 같아 옆 카드와 버튼 줄이 맞는다 */}
+      <div className="mt-auto pt-6">
+        {/* 수량 선택 — 비옵션 상품만(옵션 상품은 상세 페이지에서 조합·수량 선택) */}
+        {!product.hasOptions && <QuantityStepper value={qty} onChange={setQty} />}
+
+        {/* 조달청 등록번호 — CTA 버튼 위(자세히 보기·시작하기 두 경우 모두 공통).
+            값이 없으면 부품이 null이라 자리·여백이 남지 않는다(여백은 배지 자체에 준다) */}
+        <ProcurementBadge
+          classNumber={product.procurementClassNumber}
+          itemNumber={product.procurementItemNumber}
+          size="sm"
+          className="mb-3"
+        />
+
+        {/* CTA — 옵션 상품은 상세 페이지로 이동해 조합 선택, 비옵션은 바로 체크아웃 */}
+        {product.hasOptions ? (
+          <Button href={`/product/${product.slug}`} size="md" className="w-full">
+            자세히 보기
+          </Button>
+        ) : (
+          <Button href={checkoutUrl} size="md" className="w-full">
+            시작하기
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
