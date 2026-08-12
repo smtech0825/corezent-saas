@@ -13,6 +13,33 @@ import { LayoutDashboard, Key, CreditCard, Gift, Settings, LogOut, X, HelpCircle
 import { createClient } from '@/lib/supabase/client'
 import { NAV_ICON_SIZE, NAV_ICON_STROKE } from '@/components/common/nav-icon'
 
+/** 대시보드 메뉴 정의 — 단일 출처. 상단 헤더의 현재 페이지 이름도 여기서 가져간다
+ *  (따로 목록을 만들면 사본이 되어 한쪽만 고쳐진다) */
+export const DASHBOARD_NAV = [
+  { label: '개요',        href: '/dashboard',          icon: LayoutDashboard, exact: true  },
+  { label: '라이선스',    href: '/dashboard/licenses', icon: Key,             exact: false },
+  { label: '결제',        href: '/dashboard/billing',  icon: CreditCard,      exact: false },
+  { label: '제휴',        href: '/dashboard/affiliate', icon: Gift,            exact: false },
+  { label: '업데이트 내역', href: '/changelog',         icon: History,         exact: false },
+  { label: '설정',        href: '/dashboard/settings', icon: Settings,        exact: false },
+  { label: '고객지원',    href: '/dashboard/support',  icon: HelpCircle,      exact: false },
+]
+
+/**
+ * @함수명: dashboardPageLabel
+ * @설명: 현재 경로가 어느 메뉴 화면인지 찾아 그 메뉴 이름을 돌려줍니다. 사이드바의
+ *        활성 판정과 같은 규칙(개요=정확 일치, 나머지=시작 일치)을 씁니다.
+ *        메뉴에 없는 화면이면 null — 부르는 쪽은 빈 채로 둔다(이름을 지어내지 않는다).
+ * @매개변수: pathname - 현재 경로
+ * @반환값: 메뉴 이름 또는 null
+ */
+export function dashboardPageLabel(pathname: string): string | null {
+  const hit = DASHBOARD_NAV.find((item) =>
+    item.exact ? pathname === item.href : pathname.startsWith(item.href),
+  )
+  return hit?.label ?? null
+}
+
 interface Props {
   user: { email: string; name: string; initials: string }
   supportBadge?: number
@@ -25,23 +52,13 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
   const router   = useRouter()
   const supabase = createClient()
 
-  const navItems = [
-    { label: '개요',        href: '/dashboard',          icon: LayoutDashboard, exact: true,  badge: 0 },
-    { label: '라이선스',    href: '/dashboard/licenses', icon: Key,             exact: false, badge: 0 },
-    { label: '결제',        href: '/dashboard/billing',  icon: CreditCard,      exact: false, badge: 0 },
-    { label: '제휴',        href: '/dashboard/affiliate', icon: Gift,            exact: false, badge: 0 },
-    { label: '업데이트 내역', href: '/changelog',         icon: History,         exact: false, badge: 0 },
-    { label: '설정',        href: '/dashboard/settings', icon: Settings,        exact: false, badge: 0 },
-    { label: '고객지원',    href: '/dashboard/support',  icon: HelpCircle,      exact: false, badge: supportBadge },
-  ]
-
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
   }
 
-  function isActive(item: typeof navItems[0]) {
+  function isActive(item: (typeof DASHBOARD_NAV)[number]) {
     if (item.exact) return pathname === item.href
     return pathname.startsWith(item.href)
   }
@@ -65,9 +82,10 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
 
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {DASHBOARD_NAV.map((item) => {
           const Icon   = item.icon
           const active = isActive(item)
+          const badge  = item.href === '/dashboard/support' ? supportBadge : 0
           return (
             <Link
               key={item.href}
@@ -82,7 +100,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
               <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} className={active ? 'text-mark' : ''} />
               <span className="flex-1">{item.label}</span>
               {/* 알림 뱃지 */}
-              {item.badge > 0 && (
+              {badge > 0 && (
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-danger" />

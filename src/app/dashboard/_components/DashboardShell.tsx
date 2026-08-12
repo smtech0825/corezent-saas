@@ -7,8 +7,9 @@
  */
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
-import DashboardSidebar from './DashboardSidebar'
+import DashboardSidebar, { dashboardPageLabel } from './DashboardSidebar'
 import { ToastProvider } from '@/components/common/Toast'
 
 interface Props {
@@ -20,6 +21,10 @@ interface Props {
 
 export default function DashboardShell({ user, supportBadge = 0, isAdmin = false, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname = usePathname()
+  // 현재 페이지 이름 — 사이드바 메뉴 정의(단일 출처)에서 가져온다. 메뉴에 없는 화면이면
+  // null이라 빈 채로 남는다(이름을 새로 짓지 않고, 화면도 깨지지 않는다).
+  const pageLabel = dashboardPageLabel(pathname)
 
   return (
     <ToastProvider>
@@ -68,8 +73,8 @@ export default function DashboardShell({ user, supportBadge = 0, isAdmin = false
               <span className="text-ink font-semibold text-sm">대시보드</span>
             </div>
 
-            {/* 데스크톱: 빈 공간 */}
-            <div className="hidden lg:block" />
+            {/* 데스크톱: 현재 페이지 이름 — 관리자 화면처럼 헤더가 비어 보이지 않게 */}
+            <div className="hidden lg:block text-sm font-semibold text-ink">{pageLabel}</div>
 
             {/* 우측: 예비 공간 */}
             <div />
