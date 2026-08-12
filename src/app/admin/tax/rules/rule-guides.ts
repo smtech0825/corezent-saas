@@ -8,6 +8,7 @@
  */
 
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
+import { COMMON_RULE_KEYS } from '@/lib/tax/rule-store'
 
 /** 룰 키 하나의 안내 */
 export interface RuleGuide {
@@ -24,7 +25,9 @@ const TABLE_NOTES = [
   '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다.',
   '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류). 구체적인 행일수록 priority를 크게 두세요.',
   "세율 유형: fixed = { \"type\": \"fixed\", \"ratePercent\": «세율%» } / 사잇값 공식 = { \"type\": \"linear_by_base\", \"per\": «나눔단위(원)», \"slopePercent\": «기울기», \"interceptPercent\": «절편», \"minPercent\": «하한%», \"maxPercent\": «상한%» } — 세율% = slope×(과세표준÷per)+intercept",
+  '사잇값 공식의 소수점 처리를 법령이 명시하면 linear_by_base 안에 "rounding": { "decimals": «소수점 자릿수», "method": "round" }를 추가하세요(method: "round" 반올림·"floor" 버림·"ceil" 올림). 지정하지 않으면 반올림하지 않습니다.',
   '감면이 있으면 행에 "credit": { "target": "acquisition", "amount": «감면액(원)» }을 추가합니다.',
+  '값이 비어 있을 수 있는 조건(area_sqm·official_price·is_metro)을 쓴 행은, 사용자가 그 값을 입력하지 않으면 매칭되지 않고 결과에 "판정하지 못한 조건"으로 표시됩니다. 0이나 false로 간주하지 않습니다.',
 ]
 
 /** 룰 키 → 안내 매핑 */
@@ -32,7 +35,7 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
   [ACQUISITION_RULE_KEYS.onerousRates]: {
     title: '유상취득(매매) 세율표 — 조건에 맞는 행 하나가 선택되어 3개 세목을 계산합니다.',
     notes: [
-      '쓸 수 있는 조건 필드: price(취득가액·원), house_count(취득 후 주택 수), is_regulated(조정대상지역 여부 true/false), area_over_85(85㎡ 초과 true/false), first_home(생애최초 true/false), temporary_two_home(일시적 2주택 true/false)',
+      '쓸 수 있는 조건 필드: price(취득가액·원), house_count(취득 후 주택 수), is_regulated(조정대상지역 여부 true/false), area_sqm(전용면적 ㎡·숫자 — 면적 기준은 min/max로 표현), official_price(공시가격=시가표준액·원 — 저가주택 중과 제외 판정용), is_metro(수도권 여부 true/false — 공통 세목의 region.metro_scope 룰이 등록돼 있어야 판정됩니다), first_home(생애최초 true/false), temporary_two_home(일시적 2주택 true/false), area_over_85(85㎡ 초과 true/false — 이전 형식 호환용, 새 룰은 area_sqm 사용 권장)',
       ...TABLE_NOTES,
     ],
     skeleton: `{
@@ -54,17 +57,26 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
 }`,
   },
   [ACQUISITION_RULE_KEYS.giftTaxBase]: {
-    title: '증여 과세표준 기준 — 시가인정액과 공시가격 중 무엇을 과세표준으로 쓸지 정합니다.',
+    title: '증여 과세표준 기준 — 기본 기준 하나와, 필요하면 납세자 선택 가능 구간을 정합니다.',
     notes: [
-      '"market_value"(시가인정액) 또는 "official_price"(공시가격) 중 하나만 넣습니다.',
+      'base(기본 기준): "market_value"(시가인정액) 또는 "official_price"(공시가격=시가표준액).',
+      '납세자가 기준을 고를 수 있는 규정이 있으면 choice를 추가하세요 — basis("price" 실제 지급대가·"market_value"·"official_price")로 지정한 값이 maxAmount(원) 이하일 때, options에 적은 기준 중에서 계산기 사용자가 직접 고를 수 있습니다.',
+      '선택 규정이 없으면 choice 블록을 통째로 빼세요 — base 하나로 고정 계산합니다.',
       '기준이 바뀐 시점이 있으면 시행일을 달리해 룰을 나눠 등록하세요.',
     ],
-    skeleton: `{ "base": "market_value" }`,
+    skeleton: `{
+  "base": "market_value",
+  "choice": {
+    "basis": "official_price",
+    "maxAmount": «금액(원)»,
+    "options": ["market_value", "official_price"]
+  }
+}`,
   },
   [ACQUISITION_RULE_KEYS.giftRates]: {
     title: '증여 기본 세율표 — 중과가 아닐 때 적용됩니다.',
     notes: [
-      '쓸 수 있는 조건 필드: tax_base(과세표준·원), house_count, is_regulated, area_over_85, donor_relation("spouse"/"lineal"/"other")',
+      '쓸 수 있는 조건 필드: tax_base(과세표준·원), house_count, is_regulated, donor_relation("spouse"/"lineal"/"other"), area_sqm(전용면적 ㎡·숫자), official_price(공시가격=시가표준액·원), is_metro(수도권 여부 true/false — region.metro_scope 룰 필요), area_over_85(이전 형식 호환용 — 새 룰은 area_sqm 사용 권장)',
       ...TABLE_NOTES,
     ],
     skeleton: `{
@@ -120,7 +132,32 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
     notes: ['unit: 절사 단위(원, 정수) / method: "floor"(버림)·"round"(반올림)·"ceil"(올림)'],
     skeleton: `{ "unit": «단위(원)», "method": "floor" }`,
   },
+  [COMMON_RULE_KEYS.metroScope]: {
+    title: '수도권 범위 — 수도권으로 취급할 시·도 이름 목록. 세율표의 is_metro 조건이 이 목록으로 판정됩니다.',
+    notes: [
+      '세목을 반드시 "공통 (전 세목)"으로 두고 등록하세요. 특정 세목에 넣으면 다른 세목 계산에서 조회되지 않습니다.',
+      '시·도 이름은 계산기 소재지 드롭다운의 시·도 표기와 글자까지 똑같이 적어야 합니다(띄어쓰기·"특별시/광역시/도" 포함).',
+      '이 룰이 없으면 is_metro 조건을 쓴 세율 행은 매칭되지 않고 결과에 "판정하지 못한 조건: 수도권 여부"로 표시됩니다. 임의로 비수도권 처리하지 않습니다.',
+      '수도권 범위를 정의한 법령을 근거(법령명·조문·원문 링크)로 입력하세요.',
+    ],
+    skeleton: `{
+  "sidoNames": [«"시·도 이름", "시·도 이름", ...»]
+}`,
+  },
 }
 
 /** 취득세에서 선택할 수 있는 룰 키 목록 (안내 존재 순서) */
-export const KNOWN_ACQUISITION_KEYS = Object.keys(RULE_GUIDES)
+export const KNOWN_ACQUISITION_KEYS: string[] = Object.values(ACQUISITION_RULE_KEYS)
+
+/** 공통(전 세목)에서 선택할 수 있는 룰 키 목록 */
+export const KNOWN_COMMON_KEYS: string[] = Object.values(COMMON_RULE_KEYS)
+
+/**
+ * @함수명: knownKeysForTaxType
+ * @설명: 세목별로 안내가 준비된 룰 키 목록을 돌려줍니다. 빈 배열이면 직접 입력만 가능합니다.
+ */
+export function knownKeysForTaxType(taxType: string): string[] {
+  if (taxType === 'acquisition') return KNOWN_ACQUISITION_KEYS
+  if (taxType === 'common') return KNOWN_COMMON_KEYS
+  return []
+}

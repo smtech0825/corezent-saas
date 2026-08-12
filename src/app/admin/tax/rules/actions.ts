@@ -76,6 +76,10 @@ export async function saveTaxRule(payload: TaxRulePayload): Promise<AdminActionR
   const lawUrl = payload.law_url.trim()
   if (!RULE_TAX_TYPES.includes(payload.tax_type)) return failed('세목이 올바르지 않습니다.')
   if (!ruleKey) return failed('룰 키를 입력해 주세요.')
+  // 공통 룰을 특정 세목에 저장하면 다른 세목 계산에서 조회되지 않는다 — 저장 단계에서 차단
+  if (ruleKey === COMMON_RULE_KEYS.metroScope && payload.tax_type !== 'common') {
+    return failed("'region.metro_scope' 룰은 세목을 '공통 (전 세목)'으로 등록해야 합니다.")
+  }
   if (!RULE_STATUSES.includes(payload.status)) return failed('상태(확정/개정안/폐지)를 선택해 주세요.')
   if (!isValidDateString(payload.effective_from)) return failed('시행일을 입력해 주세요. (YYYY-MM-DD)')
   if (payload.effective_to !== null) {

@@ -15,7 +15,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { RULE_STATUSES, RULE_STATUS_LABELS, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { TaxRule, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 import { saveTaxRule } from './actions'
-import { KNOWN_ACQUISITION_KEYS, RULE_GUIDES } from './rule-guides'
+import { RULE_GUIDES, knownKeysForTaxType } from './rule-guides'
 
 const SELECT_CLS =
   'w-full rounded-md border border-rule bg-paper-raised px-4 py-2.5 text-sm text-ink transition-colors focus:border-pen focus:ring-2 focus:ring-pen/15 focus:outline-none disabled:opacity-50'
@@ -36,9 +36,10 @@ function periodsOverlap(fromA: string, toA: string | null, fromB: string, toB: s
 
 export default function RuleForm({ initial, allRules, onDone }: Props) {
   const [taxType, setTaxType] = useState<TaxRuleTaxType>(initial?.tax_type ?? 'acquisition')
-  const initialKnown = initial ? KNOWN_ACQUISITION_KEYS.includes(initial.rule_key) : true
+  const initialKnownKeys = knownKeysForTaxType(initial?.tax_type ?? 'acquisition')
+  const initialKnown = initial ? initialKnownKeys.includes(initial.rule_key) : true
   const [keyChoice, setKeyChoice] = useState<string>(
-    initial ? (initialKnown ? initial.rule_key : '__custom') : KNOWN_ACQUISITION_KEYS[0],
+    initial ? (initialKnown ? initial.rule_key : '__custom') : initialKnownKeys[0] ?? '__custom',
   )
   const [customKey, setCustomKey] = useState(initial && !initialKnown ? initial.rule_key : '')
   const [status, setStatus] = useState<TaxRuleStatus>(initial?.status ?? 'confirmed')
@@ -57,8 +58,9 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // 취득세가 아니면 알려진 키 안내가 없으므로 직접 입력만 허용
-  const usingCustom = taxType !== 'acquisition' || keyChoice === '__custom'
+  // 안내가 준비된 세목(취득세·공통)만 키 선택을 제공 — 그 외 세목은 직접 입력만 허용
+  const knownKeys = knownKeysForTaxType(taxType)
+  const usingCustom = knownKeys.length === 0 || keyChoice === '__custom'
   const ruleKey = usingCustom ? customKey.trim() : keyChoice
   const guide = !usingCustom ? RULE_GUIDES[keyChoice] : undefined
 
@@ -127,7 +129,12 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="세목" htmlFor="rule-tax-type" required>
           <select id="rule-tax-type" className={SELECT_CLS} value={taxType}
-            onChange={(e) => { setTaxType(e.target.value as TaxRuleTaxType); setKeyChoice('__custom') }}>
+            onChange={(e) => {
+              const t = e.target.value as TaxRuleTaxType
+              setTaxType(t)
+              // 새 세목에 안내가 있으면 첫 키를 기본 선택, 없으면 직접 입력으로
+              setKeyChoice(knownKeysForTaxType(t)[0] ?? '__custom')
+            }}>
             {RULE_TAX_TYPES.map((t) => <option key={t} value={t}>{RULE_TAX_TYPE_LABELS[t]}</option>)}
           </select>
         </Field>
@@ -141,17 +148,17 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
       </div>
 
       <Field label="룰 키" htmlFor="rule-key" required>
-        {taxType === 'acquisition' ? (
+        {knownKeys.length > 0 ? (
           <select id="rule-key" className={SELECT_CLS} value={keyChoice}
             onChange={(e) => setKeyChoice(e.target.value)}>
-            {KNOWN_ACQUISITION_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+            {knownKeys.map((k) => <option key={k} value={k}>{k}</option>)}
             <option value="__custom">직접 입력</option>
           </select>
         ) : (
           <Input id="rule-key" value={customKey} onChange={(e) => setCustomKey(e.target.value)}
             placeholder="예: transfer.basic_rates" />
         )}
-        {taxType === 'acquisition' && keyChoice === '__custom' && (
+        {knownKeys.length > 0 && keyChoice === '__custom' && (
           <Input className="mt-2" value={customKey} onChange={(e) => setCustomKey(e.target.value)}
             placeholder="룰 키 직접 입력" />
         )}
