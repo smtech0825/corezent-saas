@@ -94,9 +94,9 @@ export function welcomeEmailHtml(siteName = 'CoreZent'): string {
           <!-- 본문 -->
           <tr>
             <td style="padding:32px 40px;">
-              <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#ffffff;">가입을 환영합니다!</h1>
+              <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#ffffff;">가입을 환영합니다</h1>
               <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#94A3B8;">
-                계정 인증이 완료되었습니다. 이제 ${siteName}의 모든 기능을 이용하실 수 있습니다 — 정성껏 만든 강력한 소프트웨어입니다.
+                계정 인증이 완료되었습니다. 이제 코어젠트를 이용하실 수 있습니다.
               </p>
               <a href="https://corezent.com/dashboard"
                  style="display:inline-block;background:#F59E0B;color:#0B1120;font-size:14px;font-weight:700;padding:12px 28px;border-radius:10px;text-decoration:none;">
