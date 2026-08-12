@@ -8,7 +8,7 @@
 
 import { useState, useMemo, Fragment } from 'react'
 import Link from 'next/link'
-import { Shield, User, Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react'
+import { Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react'
 import RoleSelect from './RoleSelect'
 import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
@@ -216,7 +216,6 @@ export default function UserTable({ users }: Props) {
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">이메일 / 상태</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">역할</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium hidden lg:table-cell">가입일</th>
-                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">역할 변경</th>
                   <th className="text-right px-4 py-3 text-xs text-ink-faint font-medium">작업</th>
                 </tr>
               </thead>
@@ -263,26 +262,15 @@ export default function UserTable({ users }: Props) {
                         </div>
                       </td>
 
-                      {/* 역할 배지 */}
+                      {/* 역할 — 배지와 변경 드롭다운이 같은 값을 두 번 보여주던 것을
+                          드롭다운 한 칸으로 합침. 재확인·되돌림·실패 처리는 RoleSelect 안에 그대로 */}
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full capitalize ${
-                          u.role === 'admin'
-                            ? 'bg-mark/10 text-mark'
-                            : 'bg-paper-shade text-ink-soft'
-                        }`}>
-                          {u.role === 'admin' ? <Shield size={11} /> : <User size={11} />}
-                          {u.role === 'admin' ? '관리자' : '사용자'}
-                        </span>
+                        <RoleSelect userId={u.id} userEmail={u.email} currentRole={u.role} onChange={changeRole} />
                       </td>
 
                       {/* 가입일 */}
                       <td className="px-4 py-3 text-ink-faint whitespace-nowrap hidden lg:table-cell">
                         {fmtDate(u.created_at)}
-                      </td>
-
-                      {/* 역할 변경 드롭다운 */}
-                      <td className="px-4 py-3">
-                        <RoleSelect userId={u.id} userEmail={u.email} currentRole={u.role} onChange={changeRole} />
                       </td>
 
                       {/* 액션 버튼 */}
@@ -325,7 +313,7 @@ export default function UserTable({ users }: Props) {
                     {/* ── 아코디언 — 구매 내역 ── */}
                     {expandedId === u.id && (
                       <tr className="border-b border-rule/50">
-                        <td colSpan={6} className="px-5 py-4 bg-paper-shade">
+                        <td colSpan={5} className="px-5 py-4 bg-paper-shade">
                           <p className="text-xs font-semibold text-ink-faint uppercase tracking-widest mb-3">
                             구매 내역 — {u.name || u.email}
                           </p>
