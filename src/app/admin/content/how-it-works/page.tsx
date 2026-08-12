@@ -87,7 +87,6 @@ export default async function HowItWorksAdminPage() {
           <p className="text-sm text-ink-soft mt-1">
             &ldquo;이용 방법&rdquo; 섹션에 표시되는 단계를 관리합니다. 아이콘: Lucide (Zap), Tabler (tb:Cpu), Radix (ri:Star), 또는 원본 &lt;svg&gt;.
           </p>
-
         </div>
         {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
         <SaveAndViewButton url="/#how-it-works" />

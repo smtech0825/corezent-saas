@@ -52,7 +52,6 @@ export default async function SectionsPage() {
           <p className="text-sm text-ink-soft mt-1">
             랜딩 페이지 섹션의 표시 여부를 토글하고 드래그하여 순서를 변경합니다.
           </p>
-
         </div>
         {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
         <SaveAndViewButton url="/" />

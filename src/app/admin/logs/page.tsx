@@ -10,6 +10,8 @@
 
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminOrThrow } from '@/lib/require-admin'
+import { parsePageParam } from '@/lib/validate'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import Pagination from '@/components/common/Pagination'
@@ -107,18 +109,33 @@ function FilterPills({
   )
 }
 
+/** 같은 파라미터가 두 번 온 주소(?q=a&q=b)에서도 죽지 않게 첫 값만 취한다 */
+function first(v: string | string[] | undefined): string {
+  return (Array.isArray(v) ? v[0] : v) ?? ''
+}
+
 export default async function LogsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; kind?: string; status?: string; days?: string; q?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // 페이지 본문도 스스로 관리자 여부를 확인한다(레이아웃 통과에만 기대지 않는다 — 자매 화면과 동일)
+  await requireAdminOrThrow()
+
   const sp = await searchParams
-  const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
-  const kind = KIND_OPTIONS.some((o) => o.value === (sp.kind ?? '')) ? (sp.kind ?? '') : ''
-  const status = STATUS_OPTIONS.some((o) => o.value === (sp.status ?? '')) ? (sp.status ?? '') : ''
-  const days = DAYS_OPTIONS.some((o) => o.value === (sp.days ?? '')) ? (sp.days ?? '') : ''
-  // 검색어 — PostgREST or() 문법 구분자(콤마·괄호)는 공백으로 바꿔 쿼리가 깨지지 않게 한다
-  const q = (sp.q ?? '').trim().slice(0, 80).replace(/[,()]/g, ' ').trim()
+  // 페이지 번호는 공용 파서(상한 포함) — inquiries와 동일
+  const page = parsePageParam(sp.page)
+  const kind = KIND_OPTIONS.some((o) => o.value === first(sp.kind)) ? first(sp.kind) : ''
+  const status = STATUS_OPTIONS.some((o) => o.value === first(sp.status)) ? first(sp.status) : ''
+  const days = DAYS_OPTIONS.some((o) => o.value === first(sp.days)) ? first(sp.days) : ''
+  // 검색어 — PostgREST or() 구분자(콤마·괄호)는 공백 치환, LIKE 와일드카드(%·_·\)는 이스케이프,
+  // *(PostgREST가 %로 해석)는 공백 치환 → 입력 글자를 '문자 그대로' 찾는다
+  const q = first(sp.q)
+    .trim()
+    .slice(0, 80)
+    .replace(/[,()*]/g, ' ')
+    .replace(/[\\%_]/g, (m) => `\\${m}`)
+    .trim()
   const params = { kind, status, days, q, page: String(page) }
 
   const admin = createAdminClient()
@@ -146,6 +163,9 @@ export default async function LogsPage({
       .from('notification_logs')
       .select('id, kind, event, target, error, created_at')
       .not('error', 'is', null)
+      // 방어: "error가 있으면 전부 failure"라는 현재 계약이 코드로 강제되진 않으므로,
+      // 성공 행이 오류 요약에 섞이지 않게 이중으로 거른다(표의 상태 필터와 어긋남 방지)
+      .neq('status', 'success')
       .order('created_at', { ascending: false })
       .limit(SUMMARY_LIMIT)
     if (kind) sq = sq.eq('kind', kind)
@@ -162,14 +182,9 @@ export default async function LogsPage({
         <p className="text-sm text-ink-soft mt-1">이메일 발송·웹훅 처리 결과.</p>
       </div>
 
-      {error ? (
-        <div className="border border-caution/20 bg-caution-soft rounded-card p-5 text-sm text-caution">
-          로그 테이블이 아직 준비되지 않았습니다. 마이그레이션{' '}
-          <span className="font-mono text-ink">034_notification_logs.sql</span> 을 Supabase에 적용해 주세요.
-        </div>
-      ) : (
-        <>
-          {/* 필터 — 기본값은 전부 '전체'(실패 로그가 기본 화면에서 가려지지 않게) */}
+      <>
+          {/* 필터 — 기본값은 전부 '전체'(실패 로그가 기본 화면에서 가려지지 않게).
+              조회가 실패해도 항상 렌더 — 문제를 일으킨 검색어·페이지에서 화면만으로 빠져나올 수 있게 */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
             <FilterPills label="종류" options={KIND_OPTIONS} current={kind} paramKey="kind" params={params} />
             <FilterPills label="상태" options={STATUS_OPTIONS} current={status} paramKey="status" params={params} />
@@ -196,13 +211,33 @@ export default async function LogsPage({
             </form>
           </div>
 
+          {/* 조회 실패는 두 갈래로 안내 — 테이블 없음(42P01)만 마이그레이션 안내, 그 외는 일반 안내 */}
+          {error ? (
+            error.code === '42P01' ? (
+              <div className="border border-caution/20 bg-caution-soft rounded-card p-5 text-sm text-caution">
+                로그 테이블이 아직 준비되지 않았습니다. 마이그레이션{' '}
+                <span className="font-mono text-ink">034_notification_logs.sql</span> 을 Supabase에 적용해 주세요.
+              </div>
+            ) : (
+              <div className="border border-caution/20 bg-caution-soft rounded-card p-5 text-sm text-caution">
+                로그를 불러오지 못했습니다. 잠시 후 다시 시도하거나 필터를 &ldquo;전체&rdquo;로 되돌려 보세요.
+              </div>
+            )
+          ) : (
+            <>
           {/* 같은 오류 묶음 — 접힌 요약, 펼치면 한글 설명·원문 전문·개별 건 전부 */}
           <ErrorSummary rows={summaryRows} limit={SUMMARY_LIMIT} fmt={fmtDateTime} />
 
           {logs.length === 0 ? (
             <EmptyState
               boxed
-              message={hasFilter ? '조건에 맞는 로그가 없습니다. 필터를 "전체"로 되돌려 보세요.' : '기록된 로그가 없습니다.'}
+              message={
+                total > 0
+                  ? '이 페이지 번호에는 기록이 없습니다. 아래 버튼으로 처음 페이지로 이동해 보세요.'
+                  : hasFilter
+                    ? '조건에 맞는 로그가 없습니다. 필터를 "전체"로 되돌려 보세요.'
+                    : '기록된 로그가 없습니다.'
+              }
             />
           ) : (
             <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
@@ -253,8 +288,9 @@ export default async function LogsPage({
             pageSize={PAGE_SIZE}
             buildHref={(p) => makeHref(params, { page: String(p) })}
           />
-        </>
-      )}
+            </>
+          )}
+      </>
     </PageContainer>
   )
 }

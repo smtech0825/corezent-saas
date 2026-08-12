@@ -92,7 +92,6 @@ export default async function FaqPage() {
           <p className="text-sm text-ink-soft mt-1">
             랜딩 페이지에 표시되는 자주 묻는 질문을 관리합니다.
           </p>
-
         </div>
         {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
         <SaveAndViewButton url="/faq" />

@@ -146,10 +146,12 @@ export default async function AboutAdminPage() {
           <p className="text-sm text-ink-soft mt-1">
             소개 페이지를 관리합니다 — 히어로 텍스트, 통계 카드, 이미지 슬라이더가 포함된 콘텐츠 블록.
           </p>
-
         </div>
-        {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
-        <SaveAndViewButton url="/about" />
+        {/* 통계·블록은 항목별 즉시 저장이지만 히어로 폼은 저장 버튼이 따로 있다 — 안내 문구로 착각 방지 */}
+        <div className="flex flex-col items-stretch sm:items-end gap-1">
+          <SaveAndViewButton url="/about" />
+          <p className="text-xs text-ink-faint">히어로 수정은 먼저 &ldquo;히어로 저장&rdquo;을 누른 뒤 확인하세요.</p>
+        </div>
       </div>
 
       <AboutManager

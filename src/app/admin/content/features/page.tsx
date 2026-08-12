@@ -86,7 +86,6 @@ export default async function FeaturesPage() {
           <p className="text-sm text-ink-soft mt-1">
             랜딩 페이지의 &apos;CoreZent 특징&apos; 섹션에 표시되는 특징 카드를 관리합니다. (Lucide: Zap / Tabler: tb:Cpu / Radix: ri:Star / SVG)
           </p>
-
         </div>
         {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
         <SaveAndViewButton url="/#features" />

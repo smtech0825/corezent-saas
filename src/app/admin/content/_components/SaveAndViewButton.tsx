@@ -23,13 +23,17 @@ interface Props {
   onSave?: () => Promise<AdminActionResult>
   /** 저장 동작 이름(실패 알림용, 예: '히어로 저장'). onSave가 있을 때만 쓰인다 */
   label?: string
+  /** 기존 저장 버튼이 저장 중일 때 함께 잠그기 위한 외부 비활성(이중 저장 방지) */
+  disabled?: boolean
+  /** 이 버튼의 저장 진행 상태를 에디터에 알림 — 에디터가 기존 저장 버튼을 함께 잠글 수 있게 */
+  onPendingChange?: (pending: boolean) => void
 }
 
 // 기존 저장 버튼과 같은 규격(w-full sm:w-auto·px-5 py-3 sm:py-2.5·rounded-xl)의 아웃라인 변형
 const BTN_CLS =
   'w-full sm:w-auto flex items-center justify-center gap-2 border border-rule hover:border-mark/40 text-ink-soft hover:text-ink font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50'
 
-export default function SaveAndViewButton({ url, onSave, label = '저장' }: Props) {
+export default function SaveAndViewButton({ url, onSave, label = '저장', disabled, onPendingChange }: Props) {
   const [isPending, startTransition] = useTransition()
 
   // 목록 관리형 — 저장할 폼이 없어 바로 연다
@@ -44,16 +48,27 @@ export default function SaveAndViewButton({ url, onSave, label = '저장' }: Pro
 
   function handleClick() {
     startTransition(async () => {
-      const res = await runAdminAction(label, onSave!)
-      if (res.status !== 'ok') return // ★ 저장 실패 — 새 탭을 열지 않는다
-      const opened = window.open(url, '_blank', 'noopener')
-      // 저장에 시간이 걸려 브라우저가 새 탭을 막은 경우 — 저장 자체는 끝났음을 알린다
-      if (!opened) alert('저장은 완료됐지만 브라우저가 새 탭을 막았습니다. 팝업을 허용하거나 버튼을 다시 눌러 주세요.')
+      onPendingChange?.(true)
+      try {
+        const res = await runAdminAction(label, onSave!)
+        if (res.status !== 'ok') return // ★ 저장 실패 — 새 탭을 열지 않는다
+        // ⚠️ windowFeatures에 'noopener'를 넣으면 사양상 항상 null이 반환돼 차단 감지가 불가능하다.
+        //    창 참조를 받아 opener만 끊는다 — 차단 감지와 opener 차단을 둘 다 지킨다.
+        const opened = window.open(url, '_blank')
+        if (opened) {
+          opened.opener = null
+        } else {
+          // 저장에 시간이 걸려 브라우저가 새 탭을 막은 경우 — 저장 자체는 끝났음을 알린다
+          alert('저장은 완료됐지만 브라우저가 새 탭을 막았습니다. 팝업을 허용하거나 버튼을 다시 눌러 주세요.')
+        }
+      } finally {
+        onPendingChange?.(false)
+      }
     })
   }
 
   return (
-    <button type="button" onClick={handleClick} disabled={isPending} className={BTN_CLS}>
+    <button type="button" onClick={handleClick} disabled={isPending || disabled} className={BTN_CLS}>
       <ExternalLink size={14} />
       {isPending ? '저장 중…' : '저장 후 새 탭에서 보기'}
     </button>

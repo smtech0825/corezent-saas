@@ -28,6 +28,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
   const [form, setForm] = useState<BannerData>(initial)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  // '저장 후 보기' 버튼이 저장 중인 동안 기존 저장 버튼도 잠근다(이중 저장 방지)
+  const [viewSaving, setViewSaving] = useState(false)
 
   function set(key: keyof BannerData, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -114,6 +116,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
         <SaveAndViewButton
           url="/"
           label="배너 저장"
+          disabled={isPending}
+          onPendingChange={setViewSaving}
           onSave={async () => {
             const res = await onSave(form)
             if (res.status === 'ok') setSaved(true)
@@ -122,7 +126,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
         />
         <button
           onClick={handleSave}
-          disabled={isPending}
+          disabled={isPending || viewSaving}
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           배너 저장
