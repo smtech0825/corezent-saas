@@ -86,7 +86,12 @@ export async function middleware(request: NextRequest) {
   const hasCallbackNotice =
     pathname === '/auth/login' && request.nextUrl.searchParams.has('error')
   if (authPaths.includes(pathname) && user && !hasCallbackNotice) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const res = NextResponse.redirect(new URL('/dashboard', request.url))
+    // 새 응답을 만들면 supabaseResponse에 예약해 둔 응답 쿠키(위의 return_to 삭제,
+    // getUser()가 갱신한 세션 쿠키)가 통째로 버려진다 — 이 출구만 정리가 빠지는
+    // "한쪽만"이 되지 않도록 예약분을 그대로 옮겨 싣는다. 이동 조건·목적지는 그대로다.
+    supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie))
+    return res
   }
 
   return supabaseResponse
