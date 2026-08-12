@@ -10,8 +10,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, Pencil, Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { RULE_STATUS_LABELS, TAX_TYPES, TAX_TYPE_LABELS } from '@/lib/tax/labels'
-import type { TaxRule, TaxType } from '@/lib/tax/types'
+import { RULE_STATUS_LABELS, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
+import type { TaxRule, TaxRuleTaxType } from '@/lib/tax/types'
 import RuleForm from './RuleForm'
 
 /** 상태 뱃지 색상 클래스 */
@@ -23,7 +23,7 @@ const STATUS_BADGE: Record<TaxRule['status'], string> = {
 
 export default function RulesManager({ rules }: { rules: TaxRule[] }) {
   const router = useRouter()
-  const [taxType, setTaxType] = useState<TaxType>('acquisition')
+  const [taxType, setTaxType] = useState<TaxRuleTaxType>('acquisition')
   const [editing, setEditing] = useState<TaxRule | 'new' | null>(null)
   const [savedNotice, setSavedNotice] = useState(false)
 
@@ -42,7 +42,7 @@ export default function RulesManager({ rules }: { rules: TaxRule[] }) {
       {/* 세목 필터 + 새 룰 */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-1.5 flex-wrap">
-          {TAX_TYPES.map((t) => (
+          {RULE_TAX_TYPES.map((t) => (
             <button
               key={t}
               onClick={() => { setTaxType(t); setEditing(null) }}
@@ -50,7 +50,7 @@ export default function RulesManager({ rules }: { rules: TaxRule[] }) {
                 taxType === t ? 'bg-mark text-white' : 'bg-paper-shade text-ink-soft hover:text-ink'
               }`}
             >
-              {TAX_TYPE_LABELS[t]}
+              {RULE_TAX_TYPE_LABELS[t]}
             </button>
           ))}
         </div>
@@ -70,6 +70,9 @@ export default function RulesManager({ rules }: { rules: TaxRule[] }) {
 
       {editing && (
         <RuleForm
+          // key가 없으면 폼이 열린 채 다른 룰의 '수정'을 눌러도 입력값이 이전 룰
+          // 그대로 남아, 저장 시 다른 룰을 이전 값으로 덮어쓴다 — key로 강제 리마운트
+          key={editing === 'new' ? 'new' : editing.id}
           initial={editing === 'new' ? null : editing}
           allRules={rules}
           onDone={handleDone}
@@ -79,8 +82,10 @@ export default function RulesManager({ rules }: { rules: TaxRule[] }) {
       {/* 목록 — 시행일 순 */}
       {filtered.length === 0 ? (
         <div className="bg-paper-raised border border-rule rounded-lg p-8 text-center text-sm text-ink-soft">
-          {TAX_TYPE_LABELS[taxType]} 룰이 아직 없습니다. 룰이 등록될 때까지 이 세목의 계산은
-          제공되지 않습니다(0원으로 계산되지 않습니다).
+          {RULE_TAX_TYPE_LABELS[taxType]} 룰이 아직 없습니다.{' '}
+          {taxType === 'common'
+            ? '공통 룰(수도권 범위 등)이 없으면 그 조건을 쓰는 세율 행은 판정되지 않습니다.'
+            : '룰이 등록될 때까지 이 세목의 계산은 제공되지 않습니다(0원으로 계산되지 않습니다).'}
         </div>
       ) : (
         <ul className="space-y-2">
