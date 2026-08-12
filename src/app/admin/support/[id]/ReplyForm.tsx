@@ -91,7 +91,7 @@ export default function ReplyForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-rule bg-paper-raised rounded-2xl p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="border border-rule bg-paper-raised rounded-card p-5 space-y-4">
       <h3 className="text-sm font-semibold text-ink">답변</h3>
 
       {notice && (

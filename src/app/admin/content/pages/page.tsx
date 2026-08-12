@@ -16,7 +16,7 @@ export default function PagesPage() {
           정적 페이지 편집: 개인정보 처리방침, 이용약관, 소개.
         </p>
       </div>
-      <div className="border border-dashed border-rule rounded-2xl py-20 text-center">
+      <div className="border border-dashed border-rule rounded-card py-20 text-center">
         <p className="text-ink-faint text-sm">페이지 편집기는 Phase 2에서 제공될 예정입니다.</p>
       </div>
     </PageContainer>

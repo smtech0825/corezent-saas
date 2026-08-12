@@ -304,7 +304,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* 기본 정보 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-5">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-5">
         <h2 className="text-sm font-semibold text-ink">기본 정보</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -589,7 +589,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 태그 (최대 5개) */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Tag size={14} className="text-mark" />
           <h2 className="text-sm font-semibold text-ink">태그</h2>
@@ -629,7 +629,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* Pricing 전용 기능 (최대 4개) */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-mark" />
           <h2 className="text-sm font-semibold text-ink">특징 (Pricing 전용)</h2>
@@ -653,7 +653,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* Product 전용 기능 (최대 12개, /product 확장 박스에 표시) */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <LayoutGrid size={14} className="text-mark" />
@@ -747,7 +747,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 상세 페이지 콘텐츠 (/product/[slug]에 표시) */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-5">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-5">
         <div className="flex items-center gap-2">
           <ImageIcon size={14} className="text-mark" />
           <h2 className="text-sm font-semibold text-ink">상세 페이지 콘텐츠</h2>
@@ -807,7 +807,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 상품 FAQ */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HelpCircle size={14} className="text-mark" />
@@ -858,7 +858,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
       </section>
 
       {/* 옵션 · 가격 — 옵션 관련 설정을 한 곳에: ① 드롭다운 제목 + ② 옵션 목록(행별 가격·tier) */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-6 space-y-4">
+      <section className="border border-rule bg-paper-raised rounded-card p-6 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-ink">옵션 · 가격</h2>
           <p className="text-xs text-ink-faint mt-0.5">

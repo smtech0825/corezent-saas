@@ -82,7 +82,7 @@ export default async function CtaAdminPage() {
         </p>
       </div>
 
-      <div className="border border-rule bg-paper-raised rounded-2xl p-6">
+      <div className="border border-rule bg-paper-raised rounded-card p-6">
         <CtaEditor initial={initial} onSave={handleSave} />
       </div>
     </PageContainer>

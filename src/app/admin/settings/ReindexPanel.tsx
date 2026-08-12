@@ -53,7 +53,7 @@ export default function ReindexPanel() {
   }
 
   return (
-    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       <div className="px-6 py-4 border-b border-rule">
         <h2 className="text-sm font-semibold text-ink">검색엔진 색인 재요청</h2>
         <p className="text-xs text-ink-faint mt-0.5">

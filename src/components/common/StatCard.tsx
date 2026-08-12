@@ -96,7 +96,7 @@ export default function StatCard({
     </>
   )
 
-  const cardCls = 'flex flex-col items-start bg-paper-raised border border-rule rounded-2xl p-5'
+  const cardCls = 'flex flex-col items-start bg-paper-raised border border-rule rounded-card p-5'
   if (href) {
     return (
       <Link href={href} className={`${cardCls} hover:border-mark/40 transition-colors`}>

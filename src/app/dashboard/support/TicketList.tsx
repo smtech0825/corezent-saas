@@ -146,7 +146,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
   if (tickets.length === 0) return null
 
   return (
-    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       <div className="px-6 py-4 border-b border-rule">
         <h2 className="text-sm font-semibold text-ink">내 문의 내역</h2>
       </div>

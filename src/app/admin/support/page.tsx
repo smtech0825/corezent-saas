@@ -107,7 +107,7 @@ export default async function SupportPage({
       </div>
       </div>
 
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         {list.length === 0 ? (
           <EmptyState message="티켓이 없습니다." />
         ) : (

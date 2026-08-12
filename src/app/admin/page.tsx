@@ -230,7 +230,7 @@ export default async function AdminPage() {
       {/* 두 컬럼 테이블 */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         {/* 최근 주문 (3/5) */}
-        <div className="xl:col-span-3 border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="xl:col-span-3 border border-rule bg-paper-raised rounded-card overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-rule">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-ink-soft" />
@@ -277,7 +277,7 @@ export default async function AdminPage() {
         </div>
 
         {/* 최근 가입자 (2/5) */}
-        <div className="xl:col-span-2 border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="xl:col-span-2 border border-rule bg-paper-raised rounded-card overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-rule">
             <div className="flex items-center gap-2">
               <UserPlus size={16} className="text-ink-soft" />

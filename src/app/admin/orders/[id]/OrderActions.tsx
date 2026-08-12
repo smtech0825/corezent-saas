@@ -64,7 +64,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
   const refundConfirmDisabled = loading || confirmText.trim() !== REFUND_WORD
 
   return (
-    <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+    <section className="border border-rule bg-paper-raised rounded-card p-5">
       <h2 className="text-sm font-semibold text-ink mb-1.5">주문 처리</h2>
       <p className="text-xs text-ink-faint mb-4">환불·구독 취소는 실제 결제/구독에 반영됩니다. 신중히 진행하세요.</p>
 

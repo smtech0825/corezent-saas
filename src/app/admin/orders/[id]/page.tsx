@@ -124,14 +124,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* 주문자 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">주문자</h2>
           <Row label="이름">{name}</Row>
           <Row label="이메일">{email}</Row>
         </section>
 
         {/* 주문 정보 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">주문 정보</h2>
           <Row label="상품">
             {productName}
@@ -162,7 +162,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         />
 
         {/* 발급 라이선스 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">발급 라이선스</h2>
           {licenses.length === 0 ? (
             <p className="text-sm text-ink-faint py-2">발급된 라이선스가 없습니다.</p>
@@ -184,7 +184,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         {/* 구독 (있을 때만) */}
         {subscription && (
-          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
             <h2 className="text-sm font-semibold text-ink mb-2">구독</h2>
             <Row label="구독 상태">
               {SUB_STATUS[subscription.status] ?? subscription.status}

@@ -44,14 +44,14 @@ export default async function LogsPage() {
       </div>
 
       {error ? (
-        <div className="border border-caution/20 bg-caution-soft rounded-2xl p-5 text-sm text-caution">
+        <div className="border border-caution/20 bg-caution-soft rounded-card p-5 text-sm text-caution">
           로그 테이블이 아직 준비되지 않았습니다. 마이그레이션{' '}
           <span className="font-mono text-ink">034_notification_logs.sql</span> 을 Supabase에 적용해 주세요.
         </div>
       ) : logs.length === 0 ? (
         <EmptyState boxed message="기록된 로그가 없습니다." />
       ) : (
-        <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

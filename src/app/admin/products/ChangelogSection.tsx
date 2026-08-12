@@ -187,7 +187,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
 
   // ─── 렌더 ─────────────────────────────────────────────────────
   return (
-    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       {/* 헤더 */}
       <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
         <div>

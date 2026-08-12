@@ -89,7 +89,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* 계정 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">계정</h2>
           <Row label="이메일">{email}</Row>
           <Row label="이름">{profile.name || '—'}</Row>
@@ -99,7 +99,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </section>
 
         {/* 구매 이력 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">구매 이력 ({orders.length})</h2>
           {orders.length === 0 ? (
             <p className="text-sm text-ink-faint py-2">구매 내역이 없습니다.</p>
@@ -119,7 +119,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </section>
 
         {/* 보유 라이선스 */}
-        <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+        <section className="border border-rule bg-paper-raised rounded-card p-5">
           <h2 className="text-sm font-semibold text-ink mb-2">보유 라이선스 ({licenses.length})</h2>
           {licenses.length === 0 ? (
             <p className="text-sm text-ink-faint py-2">라이선스가 없습니다.</p>
@@ -139,7 +139,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
         {/* 구독 */}
         {subs.length > 0 && (
-          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
             <h2 className="text-sm font-semibold text-ink mb-2">구독 ({subs.length})</h2>
             {subs.map((s) => (
               <Row key={s.id} label={SUB_STATUS[s.status] ?? s.status}>
@@ -152,7 +152,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
         {/* 문의 */}
         {tickets.length > 0 && (
-          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
             <h2 className="text-sm font-semibold text-ink mb-2">문의 ({tickets.length})</h2>
             {tickets.map((t) => (
               <div key={t.id} className="grid grid-cols-[1fr_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0">
@@ -165,7 +165,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
         {/* 제휴 (참여자만) */}
         {profile.affiliate_code && (
-          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
             <h2 className="text-sm font-semibold text-ink mb-2">제휴</h2>
             <Row label="추천 코드"><span className="font-mono">{profile.affiliate_code as string}</span></Row>
             <Row label="크레딧 잔액">{fmtCredit(creditCents, creditCurrency)}</Row>
@@ -174,7 +174,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
         {/* 정산 계좌 (등록 시) — 지급 대조용 전체 표시 */}
         {profile.payout_account_number && (
-          <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
             <h2 className="text-sm font-semibold text-ink mb-2">정산 계좌</h2>
             <Row label="은행">{(profile.payout_bank as string) || '—'}</Row>
             <Row label="계좌번호"><span className="font-mono">{profile.payout_account_number as string}</span></Row>

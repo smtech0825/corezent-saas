@@ -219,7 +219,7 @@ export default async function TicketDetailPage({
             replies.map((reply) => (
               <div
                 key={reply.id}
-                className={`border rounded-2xl p-5 ${
+                className={`border rounded-card p-5 ${
                   reply.is_admin
                     ? 'border-mark/20 bg-mark/5 ml-8'
                     : 'border-rule bg-paper-raised'

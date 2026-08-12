@@ -120,7 +120,7 @@ export default async function AdminAffiliatesPage() {
           검토 필요{flagged.length > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">({flagged.length}건)</span>}
         </h2>
         {flagged.length > 0 ? (
-          <div className="bg-paper-raised border border-rule rounded-2xl divide-y divide-rule">
+          <div className="bg-paper-raised border border-rule rounded-card divide-y divide-rule">
             {flagged.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div className="min-w-0">
@@ -142,7 +142,7 @@ export default async function AdminAffiliatesPage() {
           제휴자{affiliates.length > 0 && <span className="ml-2 normal-case text-ink-faint font-normal">({affiliates.length}명)</span>}
         </h2>
         {affiliates.length > 0 ? (
-          <div className="bg-paper-raised border border-rule rounded-2xl overflow-hidden divide-y divide-rule">
+          <div className="bg-paper-raised border border-rule rounded-card overflow-hidden divide-y divide-rule">
             {affiliates.map((a) => (
               <div key={a.referrerId} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
                 <div className="min-w-0 lg:w-48">

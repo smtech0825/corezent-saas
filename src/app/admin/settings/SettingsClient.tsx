@@ -112,7 +112,7 @@ function SectionCard({
   dirty?: boolean
 }) {
   return (
-    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       <div className="px-6 py-4 border-b border-rule flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-ink">{title}</h2>
@@ -353,7 +353,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
       </SectionCard>
 
       {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         <div className="px-6 py-4 border-b border-rule">
           <h2 className="text-sm font-semibold text-ink">할인코드 (Lemon Squeezy)</h2>
           <p className="text-xs text-ink-faint mt-0.5">결제는 LS가 처리하므로 할인코드도 LS 대시보드에서 생성·관리합니다.</p>

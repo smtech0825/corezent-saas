@@ -82,7 +82,7 @@ export default async function HeroAdminPage() {
         </p>
       </div>
 
-      <div className="border border-rule bg-paper-raised rounded-2xl p-6">
+      <div className="border border-rule bg-paper-raised rounded-card p-6">
         <HeroEditor initial={initial} onSave={handleSave} />
       </div>
     </PageContainer>

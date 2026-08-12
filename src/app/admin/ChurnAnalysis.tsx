@@ -129,7 +129,7 @@ export default function ChurnAnalysis({ entries }: Props) {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* ── 왼쪽: 가로 막대 차트 ── */}
-          <div className="border border-rule bg-paper-raised rounded-2xl p-5">
+          <div className="border border-rule bg-paper-raised rounded-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 size={15} className="text-ink-soft" />
               <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
@@ -161,7 +161,7 @@ export default function ChurnAnalysis({ entries }: Props) {
           </div>
 
           {/* ── 오른쪽: Other 코멘트 리스트 ── */}
-          <div className="border border-rule bg-paper-raised rounded-2xl p-5 flex flex-col">
+          <div className="border border-rule bg-paper-raised rounded-card p-5 flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquare size={15} className="text-ink-soft" />
               <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">

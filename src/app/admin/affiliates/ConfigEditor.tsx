@@ -42,7 +42,7 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
   }
 
   return (
-    <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+    <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
       <div className="px-6 py-4 border-b border-rule">
         <h2 className="text-sm font-semibold text-ink">프로그램 설정</h2>
         <p className="text-xs text-ink-faint mt-0.5">모든 적립 규칙의 단일 출처입니다. 변경은 이후 결제부터 적용됩니다.</p>

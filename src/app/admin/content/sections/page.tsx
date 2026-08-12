@@ -52,7 +52,7 @@ export default async function SectionsPage() {
         </p>
       </div>
 
-      <div className="border border-rule bg-paper rounded-2xl p-4">
+      <div className="border border-rule bg-paper rounded-card p-4">
         <p className="text-xs text-ink-faint mb-4 px-1">
           섹션을 드래그하여 랜딩 페이지에서의 순서를 변경하세요. 변경사항은 즉시 적용됩니다.
         </p>

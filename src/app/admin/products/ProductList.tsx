@@ -203,7 +203,7 @@ export default function ProductList({ products: initial, onDelete }: Props) {
         </p>
       )}
 
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

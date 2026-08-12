@@ -44,7 +44,7 @@ export default function EmptyState({ message, icon, description, cta, boxed, fil
 
   if (!boxed) return inner
   return (
-    <div className={`bg-paper-raised border border-rule rounded-2xl ${fill ? 'flex flex-col h-full' : ''}`}>
+    <div className={`bg-paper-raised border border-rule rounded-card ${fill ? 'flex flex-col h-full' : ''}`}>
       {inner}
     </div>
   )

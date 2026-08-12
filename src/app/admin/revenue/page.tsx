@@ -136,7 +136,7 @@ export default async function RevenuePage() {
       {/* 월별 매출 추이 — 데이터가 없으면 차트를 그리지 않는다.
           예전에는 0원인 달에도 최소 높이 막대(바닥 선분 12개)가 그려져
           값이 있는 것처럼 보였다. 이제 0원인 달은 막대가 아예 없다. */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+      <section className="border border-rule bg-paper-raised rounded-card p-5">
         <h2 className="text-sm font-semibold text-ink mb-4">월별 매출 추이 (최근 12개월)</h2>
         {months.every((m) => m.cents === 0) ? (
           <EmptyState message="아직 매출 데이터가 없습니다" />
@@ -184,7 +184,7 @@ export default async function RevenuePage() {
       </section>
 
       {/* 상품별 매출 */}
-      <section className="border border-rule bg-paper-raised rounded-2xl p-5">
+      <section className="border border-rule bg-paper-raised rounded-card p-5">
         <h2 className="text-sm font-semibold text-ink mb-4">상품별 매출</h2>
         {products.length === 0 ? (
           <EmptyState message="매출 데이터가 없습니다." />

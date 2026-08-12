@@ -68,7 +68,7 @@ export default async function AnnouncementAdminPage() {
         </p>
       </div>
 
-      <div className="border border-rule bg-paper-raised rounded-2xl p-6">
+      <div className="border border-rule bg-paper-raised rounded-card p-6">
         <BannerEditor initial={initial} onSave={handleSave} />
       </div>
     </PageContainer>

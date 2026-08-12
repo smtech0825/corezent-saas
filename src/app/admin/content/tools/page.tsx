@@ -17,7 +17,7 @@ export default function ToolsPage() {
         </p>
       </div>
 
-      <div className="border border-dashed border-rule rounded-2xl py-20 text-center">
+      <div className="border border-dashed border-rule rounded-card py-20 text-center">
         <p className="text-ink-faint text-sm">도구 관리는 Phase 2에서 제공될 예정입니다.</p>
         <p className="text-xs text-ink-faint mt-1">
           제품은 <a href="/admin/products" className="text-mark hover:underline">제품</a> 페이지에서 관리됩니다.

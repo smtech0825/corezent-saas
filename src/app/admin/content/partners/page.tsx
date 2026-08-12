@@ -16,7 +16,7 @@ export default function PartnersPage() {
           랜딩 페이지에 표시되는 파트너 로고를 관리합니다.
         </p>
       </div>
-      <div className="border border-dashed border-rule rounded-2xl py-20 text-center">
+      <div className="border border-dashed border-rule rounded-card py-20 text-center">
         <p className="text-ink-faint text-sm">파트너 관리는 Phase 2에서 제공될 예정입니다.</p>
       </div>
     </PageContainer>

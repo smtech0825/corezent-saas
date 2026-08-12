@@ -204,7 +204,7 @@ export default function UserTable({ users }: Props) {
       </div>
 
       {/* ── 테이블 ────────────────────────────────────────────── */}
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         {paginated.length === 0 ? (
           <EmptyState message={search ? '검색 결과가 없습니다.' : '사용자가 없습니다.'} />
         ) : (

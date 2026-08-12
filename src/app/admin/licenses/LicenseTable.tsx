@@ -165,7 +165,7 @@ export default function LicenseTable({ licenses }: Props) {
       </div>
 
       {/* 테이블 */}
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         {filtered.length === 0 ? (
           <EmptyState message="라이선스가 없습니다." />
         ) : (

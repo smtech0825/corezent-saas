@@ -243,7 +243,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       </div>
 
       {/* 테이블 카드 */}
-      <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+      <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
         {filtered.length === 0 ? (
           <EmptyState message={(search || statusFilter || dateFrom || dateTo) ? '조건에 맞는 주문이 없습니다.' : '주문이 없습니다.'} />
         ) : (

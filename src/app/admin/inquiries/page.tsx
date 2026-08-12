@@ -79,13 +79,13 @@ export default async function InquiriesPage({
       </div>
 
       {error ? (
-        <div className="border border-caution/20 bg-caution-soft rounded-2xl p-5 text-sm text-caution">
+        <div className="border border-caution/20 bg-caution-soft rounded-card p-5 text-sm text-caution">
           문의 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
         </div>
       ) : rows.length === 0 ? (
         <EmptyState boxed message="접수된 문의가 없습니다." />
       ) : (
-        <div className="border border-rule bg-paper-raised rounded-2xl overflow-hidden">
+        <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
           {rows.map((r) => (
             <details key={r.id} className="border-b border-rule last:border-0 group">
               <summary className="px-5 py-4 cursor-pointer hover:bg-paper-shade transition-colors list-none">
