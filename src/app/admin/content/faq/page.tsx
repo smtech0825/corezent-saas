@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import FaqManager from './FaqManager'
 import PageContainer from '@/components/common/PageContainer'
+import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
@@ -85,11 +86,16 @@ export default async function FaqPage() {
 
   return (
     <PageContainer variant="admin-form" className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-serif text-ink">FAQ</h1>
-        <p className="text-sm text-ink-soft mt-1">
-          랜딩 페이지에 표시되는 자주 묻는 질문을 관리합니다.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-serif text-ink">FAQ</h1>
+          <p className="text-sm text-ink-soft mt-1">
+            랜딩 페이지에 표시되는 자주 묻는 질문을 관리합니다.
+          </p>
+
+        </div>
+        {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
+        <SaveAndViewButton url="/faq" />
       </div>
 
       <FaqManager

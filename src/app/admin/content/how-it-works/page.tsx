@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import StepsManager from './StepsManager'
 import PageContainer from '@/components/common/PageContainer'
+import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
@@ -80,11 +81,16 @@ export default async function HowItWorksAdminPage() {
 
   return (
     <PageContainer variant="admin-form" className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-serif text-ink">이용 방법</h1>
-        <p className="text-sm text-ink-soft mt-1">
-          &ldquo;이용 방법&rdquo; 섹션에 표시되는 단계를 관리합니다. 아이콘: Lucide (Zap), Tabler (tb:Cpu), Radix (ri:Star), 또는 원본 &lt;svg&gt;.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-serif text-ink">이용 방법</h1>
+          <p className="text-sm text-ink-soft mt-1">
+            &ldquo;이용 방법&rdquo; 섹션에 표시되는 단계를 관리합니다. 아이콘: Lucide (Zap), Tabler (tb:Cpu), Radix (ri:Star), 또는 원본 &lt;svg&gt;.
+          </p>
+
+        </div>
+        {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
+        <SaveAndViewButton url="/#how-it-works" />
       </div>
 
       <StepsManager

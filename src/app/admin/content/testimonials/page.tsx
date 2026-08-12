@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import TestimonialsManager from './TestimonialsManager'
 import PageContainer from '@/components/common/PageContainer'
+import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
 export const dynamic = 'force-dynamic'
@@ -81,11 +82,16 @@ export default async function TestimonialsPage() {
 
   return (
     <PageContainer variant="admin-form" className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-serif text-ink">고객 후기</h1>
-        <p className="text-sm text-ink-soft mt-1">
-          고객 후기 섹션에 표시되는 고객 후기를 관리합니다.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-serif text-ink">고객 후기</h1>
+          <p className="text-sm text-ink-soft mt-1">
+            고객 후기 섹션에 표시되는 고객 후기를 관리합니다.
+          </p>
+
+        </div>
+        {/* 항목별 저장이 즉시 반영되는 화면 — 저장할 폼이 없어 바로 새 탭으로 연다 */}
+        <SaveAndViewButton url="/#testimonials" />
       </div>
 
       <TestimonialsManager

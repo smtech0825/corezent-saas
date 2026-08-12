@@ -6,6 +6,7 @@
  */
 
 import { useState, useTransition } from 'react'
+import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import SelectField from '@/components/common/SelectField'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
@@ -108,7 +109,17 @@ export default function BannerEditor({ initial, onSave }: Props) {
         </div>
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex flex-col sm:flex-row sm:justify-end gap-2.5 pt-2">
+        {/* 저장 성공 시에만 홈(/)을 새 탭으로 — 기존 저장 버튼 동작은 그대로(버튼 추가일 뿐) */}
+        <SaveAndViewButton
+          url="/"
+          label="배너 저장"
+          onSave={async () => {
+            const res = await onSave(form)
+            if (res.status === 'ok') setSaved(true)
+            return res
+          }}
+        />
         <button
           onClick={handleSave}
           disabled={isPending}
