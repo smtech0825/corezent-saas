@@ -187,7 +187,7 @@ export default function SettingsPage() {
       </div>
 
       {/* 프로필 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6 mb-6 max-w-2xl">
+      <section className="bg-paper-raised border border-rule rounded-card p-6 mb-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-5">프로필</h2>
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
           <FormField label="이름">
@@ -235,7 +235,7 @@ export default function SettingsPage() {
       </section>
 
       {/* 비밀번호 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6 max-w-2xl">
+      <section className="bg-paper-raised border border-rule rounded-card p-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           <FormField label="현재 비밀번호">
@@ -274,7 +274,7 @@ export default function SettingsPage() {
       </section>
 
       {/* 알림/마케팅 수신 동의 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-xl p-6 mt-6 max-w-2xl">
+      <section className="bg-paper-raised border border-rule rounded-card p-6 mt-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-1.5">알림 수신 설정</h2>
         <p className="text-sm text-ink-soft mb-5">
           제품 업데이트·혜택 등 알림/마케팅 이메일 수신 여부를 선택하세요.
@@ -329,7 +329,7 @@ function SubmitButton({ loading, label }: { loading: boolean; label: string }) {
     <button
       type="submit"
       disabled={loading}
-      className="w-full sm:w-auto bg-mark text-white font-semibold py-3 sm:py-2 px-6 rounded-lg text-sm hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className="w-full sm:w-auto bg-mark text-white font-semibold py-3 sm:py-2.5 px-5 rounded-lg text-sm hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
       {loading && <Loader2 size={14} className="animate-spin" />}
       {label}

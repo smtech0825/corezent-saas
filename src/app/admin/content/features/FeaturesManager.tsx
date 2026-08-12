@@ -129,7 +129,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
       {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((feature) => (
-        <div key={feature.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
+        <div key={feature.id} className="border border-rule bg-paper-raised rounded-card overflow-hidden">
           {editingId === feature.id ? (
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -61,7 +61,7 @@ export default function WithdrawSection() {
   }
 
   return (
-    <section className="bg-paper-raised border border-danger/20 rounded-xl p-6 mt-6 max-w-2xl">
+    <section className="bg-paper-raised border border-danger/20 rounded-card p-6 mt-6 max-w-2xl">
       <h2 className="text-base font-semibold text-danger mb-1.5">회원 탈퇴</h2>
       <p className="text-sm text-ink-soft mb-5">
         탈퇴하면 계정에 다시 로그인할 수 없습니다. 주문·라이선스 이력은 보관 목적상 보존되며,

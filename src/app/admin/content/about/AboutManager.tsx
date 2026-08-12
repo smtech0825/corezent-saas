@@ -283,7 +283,7 @@ export default function AboutManager({
       {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {/* ────── 1. Hero ────── */}
-      <div className="border border-rule bg-paper-raised rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-card p-4">
         <SectionHeader title="히어로 — 제목 및 설명" open={heroOpen} onToggle={() => setHeroOpen(!heroOpen)} />
         {heroOpen && (
           <div className="space-y-3 mt-3">
@@ -307,7 +307,7 @@ export default function AboutManager({
       </div>
 
       {/* ────── 2. Stats Cards ────── */}
-      <div className="border border-rule bg-paper-raised rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-card p-4">
         <SectionHeader title="통계 카드" open={statsOpen} onToggle={() => setStatsOpen(!statsOpen)} />
         {statsOpen && (
           <div className="space-y-3 mt-3">
@@ -365,7 +365,7 @@ export default function AboutManager({
       </div>
 
       {/* ────── 3. Content Blocks (max 3) ────── */}
-      <div className="border border-rule bg-paper-raised rounded-xl p-4">
+      <div className="border border-rule bg-paper-raised rounded-card p-4">
         <SectionHeader title="콘텐츠 블록 (텍스트 + 이미지)" open={blocksOpen} onToggle={() => setBlocksOpen(!blocksOpen)} />
         {blocksOpen && (
           <div className="space-y-3 mt-3">

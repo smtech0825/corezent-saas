@@ -137,11 +137,11 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
       </div>
 
       {prices.length === 0 ? (
-        <p className="text-xs text-ink-faint py-4 text-center border border-rule rounded-xl bg-paper">
+        <p className="text-xs text-ink-faint py-4 text-center border border-rule rounded-card bg-paper">
           아직 추가된 옵션이 없습니다. &quot;옵션 추가&quot;를 누르세요.
         </p>
       ) : (
-        <div className="overflow-x-auto border border-rule rounded-xl bg-paper">
+        <div className="overflow-x-auto border border-rule rounded-card bg-paper">
           <div className="min-w-[1000px]">
             {/* 헤더 행 */}
             <div className={`grid ${GRID} gap-2 px-3 py-2 border-b border-rule text-[11px] text-ink-faint font-medium items-center`}>

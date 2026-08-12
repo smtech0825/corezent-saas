@@ -65,7 +65,7 @@ export default function ReindexPanel() {
         <button
           onClick={runReindex}
           disabled={loading}
-          className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {loading ? '제출 중…' : '전체 재색인 요청'}

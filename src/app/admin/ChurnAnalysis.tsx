@@ -177,7 +177,7 @@ export default function ChurnAnalysis({ entries }: Props) {
                 {otherComments.map((c, i) => (
                   <div
                     key={i}
-                    className="bg-paper border border-rule rounded-xl px-4 py-3"
+                    className="bg-paper border border-rule rounded-card px-4 py-3"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs text-ink-soft truncate max-w-[60%]">{c.email}</span>

@@ -138,7 +138,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
       {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((s, idx) => (
-        <div key={s.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
+        <div key={s.id} className="border border-rule bg-paper-raised rounded-card overflow-hidden">
           {editingId === s.id ? (
             <div className="p-4 space-y-3">
               <FormFields f={form} setF={setForm} />

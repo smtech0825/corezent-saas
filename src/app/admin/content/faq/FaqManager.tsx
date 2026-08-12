@@ -111,7 +111,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
       {isPending && <p className="text-xs text-mark">저장 중…</p>}
 
       {items.map((faq) => (
-        <div key={faq.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
+        <div key={faq.id} className="border border-rule bg-paper-raised rounded-card overflow-hidden">
           {editingId === faq.id ? (
             <div className="p-4 space-y-3">
               <input

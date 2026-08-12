@@ -166,7 +166,7 @@ export default function BillingTable({ rows }: Props) {
   return (
     <>
       {/* 데스크톱(md+): 통합 표 — 좁으면 가로 스크롤 */}
-      <div className="hidden md:block bg-paper-raised border border-rule rounded-xl overflow-x-auto">
+      <div className="hidden md:block bg-paper-raised border border-rule rounded-card overflow-x-auto">
         <div className="min-w-[860px]">
           <div className={`grid ${gridCols} gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium`}>
             <span>제품</span>
@@ -236,7 +236,7 @@ export default function BillingTable({ rows }: Props) {
             ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd }) === 'active'
             : false
           return (
-            <div key={row.orderId} className="bg-paper-raised border border-rule rounded-xl p-4">
+            <div key={row.orderId} className="bg-paper-raised border border-rule rounded-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

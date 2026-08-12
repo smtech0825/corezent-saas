@@ -292,7 +292,7 @@ export default async function AdminPage() {
             <div className="divide-y divide-rule/50">
               {recentUsers.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 px-6 py-3 hover:bg-paper-shade transition-colors">
-                  <InitialAvatar name={u.name} />
+                  <InitialAvatar name={u.name} fallbackText={emailMap.get(u.id)} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-ink font-medium truncate">{u.name || '알 수 없음'}</p>
                     <p className="text-xs text-ink-faint">{fmtDate(u.created_at)}</p>

@@ -137,7 +137,7 @@ export default async function LicensesPage({
 
       {licenses && licenses.length > 0 ? (
         <>
-          <div className="bg-paper-raised border border-rule rounded-xl overflow-hidden">
+          <div className="bg-paper-raised border border-rule rounded-card overflow-hidden">
             {/* 테이블 헤더 */}
             <div className={`hidden md:grid ${headerCols} gap-4 px-5 py-3 border-b border-rule text-xs text-ink-faint font-medium`}>
               <span>라이선스 키</span>

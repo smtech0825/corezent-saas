@@ -13,7 +13,7 @@ const AVATAR_TONES = [
   { bg: 'bg-ok-soft',      text: 'text-ok',      border: 'border-ok/20' },      // 4.63:1
   { bg: 'bg-caution-soft', text: 'text-caution', border: 'border-caution/20' }, // 5.09:1
   { bg: 'bg-info-soft',    text: 'text-info',    border: 'border-info/20' },    // 4.58:1
-  { bg: 'bg-danger-soft',  text: 'text-danger',  border: 'border-danger/20' },  // 5.09:1
+  // danger는 뺀다 — 탈퇴 표시(INACTIVE_TONE)와 픽셀까지 같아져 상태 구분이 사라진다(검증에서 발견)
 ]
 
 /** 이름 없음·상태 표시용 고정 색 */

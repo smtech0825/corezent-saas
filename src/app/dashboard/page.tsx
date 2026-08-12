@@ -292,7 +292,7 @@ function Section({ title, href, children }: {
   // flex-col: 빈 상태(EmptyState fill)가 옆 카드와 묶인 높이를 채우며 세로 가운데에 오도록.
   // 내용이 있을 때는 세로 쌓임 그대로라 영향이 없다.
   return (
-    <div className="bg-paper-raised border border-rule rounded-xl p-5 flex flex-col">
+    <div className="bg-paper-raised border border-rule rounded-card p-5 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-ink">{title}</h2>
         <Link href={href} className="text-xs text-mark hover:underline">전체 보기</Link>

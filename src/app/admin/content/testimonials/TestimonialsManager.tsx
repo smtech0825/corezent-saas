@@ -310,7 +310,7 @@ export default function TestimonialsManager({
       {items.map((t) => (
         <div
           key={t.id}
-          className="border border-rule bg-paper-raised rounded-xl overflow-hidden"
+          className="border border-rule bg-paper-raised rounded-card overflow-hidden"
         >
           {editingId === t.id ? (
             <div className="p-4 space-y-3">
