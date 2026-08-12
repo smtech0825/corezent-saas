@@ -46,11 +46,15 @@ export default function StatCard({
 }: Props) {
   const badgeCls = `w-9 h-9 rounded-lg ${iconBadgeClassName ?? 'bg-mark/10'} flex items-center justify-center mb-3`
 
+  // 카드 전체가 링크(href)면 배지 링크(iconHref)는 무시한다 — 링크 안에 링크가 들어가면
+  // HTML이 깨진다(중첩 <a>). 지금 동시 사용처는 없지만 방어로 막아 둔다.
+  const iconLinkHref = href ? undefined : iconHref
+
   const body = (
     <>
-      {iconHref ? (
+      {iconLinkHref ? (
         <Link
-          href={iconHref}
+          href={iconLinkHref}
           title={iconTitle}
           aria-label={iconTitle}
           className={`${badgeCls} hover:bg-mark/25 hover:scale-105 transition-all`}
@@ -60,7 +64,8 @@ export default function StatCard({
       ) : (
         <span className={badgeCls}>{icon}</span>
       )}
-      <p className="text-2xl font-bold text-ink tabular-nums">{value}</p>
+      {/* 좁은 열에서 긴 금액이 옆 카드를 침범하지 않게 — 잘리면 마우스 올려 전체 확인 */}
+      <p className="text-2xl font-bold text-ink tabular-nums max-w-full truncate" title={value}>{value}</p>
       <p className="text-xs text-ink-soft mt-1">{label}</p>
       {subline && <p className="text-xs text-ink-faint mt-0.5 leading-snug">{subline}</p>}
       {subMetrics && subMetrics.length > 0 && (

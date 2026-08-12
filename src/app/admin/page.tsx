@@ -5,7 +5,6 @@
  *        Open Tickets 아이콘 → /admin/support 링크
  */
 
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import {
