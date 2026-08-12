@@ -6,7 +6,7 @@
  */
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
@@ -36,7 +36,7 @@ const inputCls = 'w-full bg-paper border border-rule rounded-lg px-3 py-2 text-s
 function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyForm) => void }) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-[10px] text-ink-faint mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
           <input
@@ -144,7 +144,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
               <FormFields f={form} setF={setForm} />
               <div className="flex gap-2">
                 <button onClick={() => handleUpdate(s.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
-                  <Check size={12} /> 저장
+                  저장
                 </button>
                 <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
                   <X size={12} /> 취소
@@ -184,7 +184,7 @@ export default function StepsManager({ items: initItems, onCreate, onUpdate, onD
           <FormFields f={newForm} setF={setNewForm} />
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
-              <Check size={12} /> 단계 추가
+              단계 추가
             </button>
             <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
               <X size={12} /> 취소

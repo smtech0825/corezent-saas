@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Check, Loader2, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Loader2, X } from 'lucide-react'
 import { upsertChangelog, deleteChangelog, type ChangelogContent, type ChangelogFormData } from './changelog-actions'
 
 interface ChangelogEntry {
@@ -364,7 +364,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               disabled={saving}
               className="inline-flex items-center gap-2 text-sm font-semibold bg-mark hover:brightness-95 text-white px-5 py-2 rounded-xl transition-colors disabled:opacity-50"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {saving && <Loader2 size={14} className="animate-spin" />}
               {mode === 'add' ? '버전 추가' : '변경사항 저장'}
             </button>
           </div>

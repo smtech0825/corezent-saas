@@ -7,7 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import nextDynamic from 'next/dynamic'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { richToPlainText } from '@/lib/rich-html'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
@@ -130,7 +130,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                   disabled={isPending}
                   className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
                 >
-                  <Check size={12} /> 저장
+                  저장
                 </button>
                 <button
                   onClick={cancelEdit}
@@ -204,7 +204,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
               disabled={isPending || !newForm.question.trim() || !newForm.answer.trim()}
               className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
             >
-              <Check size={12} /> FAQ 추가
+              FAQ 추가
             </button>
             <button
               onClick={() => { setShowNew(false); setNewForm({ question: '', answer: '' }) }}

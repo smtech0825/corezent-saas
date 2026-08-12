@@ -6,7 +6,7 @@
  */
 
 import { useState, useTransition, useRef } from 'react'
-import { Plus, Pencil, Trash2, Check, X, Star, Upload, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Star, Upload, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
@@ -174,7 +174,7 @@ function FormFields({
         placeholder="고객 후기 내용"
         className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark resize-none"
       />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           value={f.author_name}
           onChange={(e) => setF({ ...f, author_name: e.target.value })}
@@ -321,7 +321,7 @@ export default function TestimonialsManager({
                   disabled={isPending}
                   className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
                 >
-                  <Check size={12} /> 저장
+                  저장
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
@@ -417,7 +417,7 @@ export default function TestimonialsManager({
               }
               className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors"
             >
-              <Check size={12} /> 고객 후기 추가
+              고객 후기 추가
             </button>
             <button
               onClick={() => {

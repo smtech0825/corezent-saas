@@ -6,7 +6,7 @@
  */
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
@@ -132,7 +132,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
         <div key={feature.id} className="border border-rule bg-paper-raised rounded-xl overflow-hidden">
           {editingId === feature.id ? (
             <div className="p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InputField label="아이콘 (lu: / tb: / ri: / svg)" value={form.icon} onChange={(v) => setForm({ ...form, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
                 <InputField label="태그 (대문자 라벨)" value={form.tag} onChange={(v) => setForm({ ...form, tag: v })} placeholder="자체 개발 · 즉시 · 문서" />
               </div>
@@ -140,7 +140,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
               <InputField label="설명" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="특징 설명" multiline />
               <div className="flex gap-2">
                 <button onClick={() => handleUpdate(feature.id)} disabled={isPending} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
-                  <Check size={12} /> 저장
+                  저장
                 </button>
                 <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
                   <X size={12} /> 취소
@@ -181,7 +181,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
 
       {showNew ? (
         <div className="border border-mark/30 bg-mark/5 rounded-xl p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InputField label="아이콘 (lu: / tb: / ri: / svg)" value={newForm.icon} onChange={(v) => setNewForm({ ...newForm, icon: v })} placeholder="Zap · tb:Cpu · ri:Star · <svg>..." />
             <InputField label="태그 (대문자 라벨)" value={newForm.tag} onChange={(v) => setNewForm({ ...newForm, tag: v })} placeholder="자체 개발 · 즉시 · 문서" />
           </div>
@@ -189,7 +189,7 @@ export default function FeaturesManager({ features, onCreate, onUpdate, onDelete
           <InputField label="설명" value={newForm.description} onChange={(v) => setNewForm({ ...newForm, description: v })} placeholder="특징 설명" multiline />
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={isPending || !newForm.title.trim()} className="flex items-center gap-1.5 text-xs bg-mark text-white font-semibold px-3 py-1.5 rounded-lg hover:brightness-95 disabled:opacity-50 transition-colors">
-              <Check size={12} /> 특징 추가
+              특징 추가
             </button>
             <button onClick={() => { setShowNew(false); setNewForm(emptyForm) }} className="flex items-center gap-1.5 text-xs text-ink-soft border border-rule px-3 py-1.5 rounded-lg hover:text-ink transition-colors">
               <X size={12} /> 취소

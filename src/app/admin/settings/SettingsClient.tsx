@@ -243,37 +243,6 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         </Field>
       </SectionCard>
 
-      {/* ── SMTP Settings ────────────────────────────────────────────────── */}
-      <SectionCard
-        title="SMTP 설정"
-        description="이메일 발송 설정"
-        footer={<SaveButton section="smtp" {...btnProps} />}
-      >
-        <Field label="SMTP 호스트">
-          <input value={values.smtp_host ?? ''} onChange={(e) => update('smtp_host', e.target.value)} placeholder="smtp.example.com" className={INPUT_CLS} />
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="SMTP 포트">
-            <input type="number" value={values.smtp_port ?? ''} onChange={(e) => update('smtp_port', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="암호화">
-            <input value={values.smtp_encryption ?? ''} onChange={(e) => update('smtp_encryption', e.target.value)} placeholder="tls / ssl" className={INPUT_CLS} />
-          </Field>
-        </div>
-        <Field label="SMTP 사용자 이름">
-          <input value={values.smtp_username ?? ''} onChange={(e) => update('smtp_username', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="SMTP 비밀번호">
-          <input type="password" value={values.smtp_password ?? ''} onChange={(e) => update('smtp_password', e.target.value)} placeholder="••••••••" className={INPUT_CLS} />
-        </Field>
-        <Field label="발신 이메일">
-          <input value={values.smtp_from_email ?? ''} onChange={(e) => update('smtp_from_email', e.target.value)} placeholder="no-reply@corezent.com" className={INPUT_CLS} />
-        </Field>
-        <Field label="발신자 이름">
-          <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
-        </Field>
-      </SectionCard>
-
       {/* ── 계좌이체(무통장 입금) 설정 ──────────────────────────────────── */}
       <SectionCard
         title="계좌이체(무통장 입금)"
@@ -302,6 +271,37 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         <p className="text-xs text-ink-faint">
           계좌이체는 자동 갱신이 없어 <b className="text-ink-soft">1회 결제</b>로 기록됩니다. 입금 확인은 <b className="text-ink-soft">주문</b> 화면에서 [결제 확인]으로 처리하며, 라이선스는 수동 발송해야 합니다.
         </p>
+      </SectionCard>
+
+      {/* ── SMTP Settings ────────────────────────────────────────────────── */}
+      <SectionCard
+        title="SMTP 설정"
+        description="이메일 발송 설정"
+        footer={<SaveButton section="smtp" {...btnProps} />}
+      >
+        <Field label="SMTP 호스트">
+          <input value={values.smtp_host ?? ''} onChange={(e) => update('smtp_host', e.target.value)} placeholder="smtp.example.com" className={INPUT_CLS} />
+        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="SMTP 포트">
+            <input type="number" value={values.smtp_port ?? ''} onChange={(e) => update('smtp_port', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="암호화">
+            <input value={values.smtp_encryption ?? ''} onChange={(e) => update('smtp_encryption', e.target.value)} placeholder="tls / ssl" className={INPUT_CLS} />
+          </Field>
+        </div>
+        <Field label="SMTP 사용자 이름">
+          <input value={values.smtp_username ?? ''} onChange={(e) => update('smtp_username', e.target.value)} className={INPUT_CLS} />
+        </Field>
+        <Field label="SMTP 비밀번호">
+          <input type="password" value={values.smtp_password ?? ''} onChange={(e) => update('smtp_password', e.target.value)} placeholder="••••••••" className={INPUT_CLS} />
+        </Field>
+        <Field label="발신 이메일">
+          <input value={values.smtp_from_email ?? ''} onChange={(e) => update('smtp_from_email', e.target.value)} placeholder="no-reply@corezent.com" className={INPUT_CLS} />
+        </Field>
+        <Field label="발신자 이름">
+          <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
+        </Field>
       </SectionCard>
 
       {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}

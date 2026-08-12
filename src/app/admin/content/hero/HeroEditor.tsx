@@ -6,7 +6,6 @@
  */
 
 import { useState, useTransition } from 'react'
-import { Check } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 
@@ -108,7 +107,6 @@ export default function HeroEditor({ initial, onSave }: Props) {
           disabled={isPending}
           className="flex items-center gap-2 bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
-          <Check size={14} />
           히어로 저장
         </button>
       </div>

@@ -8,7 +8,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import nextDynamic from 'next/dynamic'
-import { Plus, Pencil, Trash2, Check, X, Upload, Loader2, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Upload, Loader2, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { richToPlainText } from '@/lib/rich-html'
 import DynamicIcon from '@/components/DynamicIcon'
@@ -298,7 +298,7 @@ export default function AboutManager({
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
-                <Check size={12} /> 히어로 저장
+                히어로 저장
               </button>
               {heroSaved && !isPending && <span className="text-xs text-ok">저장되었습니다.</span>}
             </div>
@@ -321,7 +321,7 @@ export default function AboutManager({
                       <input value={statForm.label} onChange={(e) => setStatForm({ ...statForm, label: e.target.value })} placeholder="customers" className={inputCls} />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleUpdateStat(s.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> 저장</button>
+                      <button onClick={() => handleUpdateStat(s.id)} disabled={isPending} className={btnPrimary}>저장</button>
                       <button onClick={() => setEditStatId(null)} className={btnCancel}><X size={12} /> 취소</button>
                     </div>
                   </div>
@@ -351,7 +351,7 @@ export default function AboutManager({
                   <input value={newStatForm.label} onChange={(e) => setNewStatForm({ ...newStatForm, label: e.target.value })} placeholder="customers" className={inputCls} />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreateStat} disabled={isPending || !newStatForm.value.trim()} className={btnPrimary}><Check size={12} /> 통계 추가</button>
+                  <button onClick={handleCreateStat} disabled={isPending || !newStatForm.value.trim()} className={btnPrimary}>통계 추가</button>
                   <button onClick={() => { setShowNewStat(false); setNewStatForm({ icon: '', value: '', label: '' }) }} className={btnCancel}><X size={12} /> 취소</button>
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function AboutManager({
                       <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleUpdateBlock(b.id)} disabled={isPending} className={btnPrimary}><Check size={12} /> 저장</button>
+                      <button onClick={() => handleUpdateBlock(b.id)} disabled={isPending} className={btnPrimary}>저장</button>
                       <button onClick={() => setEditBlockId(null)} className={btnCancel}><X size={12} /> 취소</button>
                     </div>
                   </div>
@@ -426,7 +426,7 @@ export default function AboutManager({
                     <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleCreateBlock} disabled={isPending} className={btnPrimary}><Check size={12} /> 블록 추가</button>
+                    <button onClick={handleCreateBlock} disabled={isPending} className={btnPrimary}>블록 추가</button>
                     <button onClick={() => { setShowNewBlock(false); setNewBlockForm({ title: '', description: '', images: [] }) }} className={btnCancel}><X size={12} /> 취소</button>
                   </div>
                 </div>
