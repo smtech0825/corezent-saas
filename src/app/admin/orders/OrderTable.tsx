@@ -179,33 +179,29 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
 
   return (
     <PageContainer variant="admin" className="space-y-6">
-      {/* 헤더 — Total Revenue를 왼쪽 하단으로 이동 */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink font-serif">주문</h1>
-          <p className="text-sm text-ink-soft mt-1">총 {orders.length}건의 주문</p>
-          <p className="text-3xl font-bold text-ok mt-2 tabular-nums">
-            {formatKRW(totalRevenue)}
-          </p>
-          <p className="text-xs text-ink-faint mt-0.5">총 매출 (결제 완료)</p>
-        </div>
-
-        {/* 검색 바 — 테이블 우측 상단 */}
-        <div className="sm:self-end">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
-            <input
-              value={rawSearch}
-              onChange={(e) => setRawSearch(e.target.value)}
-              placeholder="주문 ID 또는 이메일로 검색…"
-              className="w-64 bg-paper border border-rule rounded-lg pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
-            />
-          </div>
-        </div>
+      {/* 헤더 */}
+      <div>
+        <h1 className="text-2xl font-bold text-ink font-serif">주문</h1>
+        <p className="text-sm text-ink-soft mt-1">총 {orders.length}건의 주문</p>
+        <p className="text-3xl font-bold text-ok mt-2 tabular-nums">
+          {formatKRW(totalRevenue)}
+        </p>
+        <p className="text-xs text-ink-faint mt-0.5">총 매출 (결제 완료)</p>
       </div>
 
-      {/* 필터 · 내보내기 */}
+      {/* 검색 · 필터 · 내보내기 — 한 블록. 윗줄 검색/아랫줄 필터로 흩어져 있던 것을
+          모았다. 좁은 화면에서는 flex-wrap으로 줄바꿈되고 가로 스크롤은 생기지 않는다.
+          검색·필터·내보내기가 하는 일은 그대로다(배치만 이동). */}
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+          <input
+            value={rawSearch}
+            onChange={(e) => setRawSearch(e.target.value)}
+            placeholder="주문 ID 또는 이메일로 검색…"
+            className="w-64 bg-paper border border-rule rounded-lg pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
+          />
+        </div>
         <SelectField
           size="sm"
           wrapperClassName="w-32"
