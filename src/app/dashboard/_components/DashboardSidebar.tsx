@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Key, CreditCard, Gift, Settings, LogOut, X, HelpCircle, History, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { NAV_ICON_SIZE, NAV_ICON_STROKE } from '@/components/common/nav-icon'
 
 interface Props {
   user: { email: string; name: string; initials: string }
@@ -78,7 +79,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
                   : 'text-ink-soft hover:text-ink hover:bg-ink/5'
               }`}
             >
-              <Icon size={16} className={active ? 'text-mark' : ''} />
+              <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} className={active ? 'text-mark' : ''} />
               <span className="flex-1">{item.label}</span>
               {/* 알림 뱃지 */}
               {item.badge > 0 && (
@@ -111,7 +112,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
             onClick={onClose}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-seal hover:bg-seal/8 transition-colors mb-0.5"
           >
-            <ExternalLink size={16} />
+            <ExternalLink size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
             관리자 페이지로 이동
           </Link>
         )}
@@ -120,7 +121,7 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
         >
-          <LogOut size={16} />
+          <LogOut size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
           로그아웃
         </button>
       </div>

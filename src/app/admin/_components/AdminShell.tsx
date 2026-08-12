@@ -58,11 +58,9 @@ export default function AdminShell({ user, supportBadge = 0, children }: Props) 
             </button>
             <span className="text-ink font-semibold text-sm">관리자 패널</span>
           </div>
-          <div className="hidden lg:flex items-center gap-2">
-            <span className="text-xs font-semibold bg-mark/10 text-mark border border-mark/25 rounded px-2 py-1 uppercase tracking-wider">
-              관리자 패널
-            </span>
-          </div>
+          {/* "관리자 패널" 문구는 사이드바 로고 아래에 이미 있어 상단 배지는 제거했다.
+              자리는 남긴다 — 헤더 줄과 우측 계정 표시의 배치를 유지하기 위함 */}
+          <div className="hidden lg:flex items-center gap-2" />
           <div className="hidden sm:block text-xs text-ink-faint truncate max-w-[200px] lg:max-w-none">
             로그인 계정 <span className="text-ink-soft">{user.email}</span>
           </div>
