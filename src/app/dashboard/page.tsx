@@ -247,7 +247,8 @@ export default async function DashboardPage() {
               })}
             </div>
           ) : (
-            <EmptyState fill message="활성 구독이 없습니다." cta={{ label: '제품 둘러보기', href: '/pricing' }} />
+            // "제품 둘러보기" 링크는 위 상태 배너에만 둔다(같은 유도가 3중으로 겹치던 것 정리)
+            <EmptyState fill message="활성 구독이 없습니다." />
           )}
         </Section>
 
@@ -271,7 +272,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState fill message="아직 주문이 없습니다." cta={{ label: '제품 둘러보기', href: '/pricing' }} />
+            <EmptyState fill message="아직 주문이 없습니다." />
           )}
         </Section>
       </div>
