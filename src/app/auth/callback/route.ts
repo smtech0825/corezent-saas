@@ -16,6 +16,7 @@ import { RETURN_TO_COOKIE } from '@/lib/cookies'
 import {
   classifyProviderError,
   readProviderErrorCode,
+  readProviderErrorDescription,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
 
@@ -130,9 +131,14 @@ export async function GET(request: Request) {
   }
 
   // 코드도 토큰도 없이 돌아온 경우 — 만료된 인증 메일 링크이거나, 손님이 소셜 로그인
-  // 동의창에서 취소한 경우다. 읽는 키·판정 순서 모두 lib/auth-callback-error.ts 한 곳에 있고,
+  // 동의창에서 취소한 경우다. 같은 access_denied 코드로 둘 다 올 수 있어 오류 설명까지
+  // 함께 본다. 읽는 키·판정 순서 모두 lib/auth-callback-error.ts 한 곳에 있고,
   // 주소의 # 뒤로 오는 경우는 서버가 읽을 수 없어 로그인 화면이 같은 규칙으로 한 번 더 본다.
   const providerErrorCode = readProviderErrorCode(url.searchParams)
-  console.log('[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)')
-  return backToLogin(classifyProviderError(providerErrorCode) ?? 'missing')
+  const providerErrorDescription = readProviderErrorDescription(url.searchParams)
+  console.log(
+    '[callback] no code or token_hash. error_code:', providerErrorCode || '(없음)',
+    '/ error_description:', providerErrorDescription || '(없음)',
+  )
+  return backToLogin(classifyProviderError(providerErrorCode, providerErrorDescription) ?? 'missing')
 }

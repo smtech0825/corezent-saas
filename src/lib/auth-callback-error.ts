@@ -20,7 +20,23 @@ export type AuthCallbackReason = 'oauth' | 'verify' | 'missing'
  * @반환값: 오류 코드. 없으면 빈 문자열
  */
 export function readProviderErrorCode(params: URLSearchParams): string {
-  return params.get('error_code') ?? params.get('error') ?? ''
+  // ??는 빈 문자열('')을 값으로 통과시킨다 — ?error_code=&error=access_denied처럼
+  // 키만 있고 값이 빈 경우 다음 키를 봐야 하므로, 비어 있지 않은 첫 값을 고른다.
+  const code = params.get('error_code')?.trim()
+  if (code) return code
+  return params.get('error')?.trim() ?? ''
+}
+
+/**
+ * @함수명: readProviderErrorDescription
+ * @설명: 인증 제공자가 오류 코드와 함께 실어 보낸 설명 문장을 꺼냅니다. 코드만으로는 뜻이
+ *        갈리는 경우가 있어(만료된 메일 링크와 소셜 취소가 같은 access_denied로 올 수 있다)
+ *        판정에 함께 씁니다. 읽는 키를 여기 한 곳에 둬 서버와 화면이 같은 것을 읽게 합니다.
+ * @매개변수: params - 주소의 쿼리 또는 # 뒤를 담은 URLSearchParams
+ * @반환값: 오류 설명. 없으면 빈 문자열
+ */
+export function readProviderErrorDescription(params: URLSearchParams): string {
+  return params.get('error_description')?.trim() ?? ''
 }
 
 /**
@@ -36,6 +52,8 @@ export function readProviderErrorCode(params: URLSearchParams): string {
  *        동의창에서 취소를 눌렀을 때 나오는 표준 코드입니다. 넓게 두는 것과, 뜻이 다른
  *        코드를 잘못 넣어 둔 것은 다른 문제입니다 — 그대로 두면 로그인을 취소했을 뿐인
  *        손님에게 "인증 메일을 다시 받아 주세요"라고 안내하게 됩니다.
+ *        만료된 링크가 access_denied 코드로 오는 경우는 isExpiredLinkDescription(오류
+ *        설명 판정)이 잡습니다 — classifyProviderError가 코드 → 설명 순서로 봅니다.
  * @매개변수: errorCode - 주소에 실려 온 오류 코드(없을 수 있음)
  * @반환값: 만료·무효 링크로 볼 수 있으면 true
  */
@@ -58,17 +76,38 @@ export function isUserCancelledOAuth(errorCode: string | null | undefined): bool
 }
 
 /**
+ * @함수명: isExpiredLinkDescription
+ * @설명: 오류 설명 문장이 "링크가 만료됐거나 무효"를 말하는지 판정합니다. GoTrue는 만료된
+ *        메일 링크를 error=access_denied에 "Email link is invalid or has expired" 설명을
+ *        붙여 보내는 경우가 있어, 코드만 보면 소셜 취소와 구분할 수 없습니다.
+ * @매개변수: description - 주소에 실려 온 오류 설명(없을 수 있음)
+ * @반환값: 만료·무효 링크를 말하는 설명이면 true
+ */
+export function isExpiredLinkDescription(description: string | null | undefined): boolean {
+  if (!description) return false
+  return /expired|invalid/i.test(description)
+}
+
+/**
  * @함수명: classifyProviderError
- * @설명: 제공자가 준 오류 코드를 실패 종류로 바꿉니다. 판정 순서까지 여기 한 곳에 둡니다
- *        — 서버와 화면이 각자 if 순서를 들고 있으면 같은 코드에 다른 결론을 냅니다.
+ * @설명: 제공자가 준 오류 코드(와 설명)를 실패 종류로 바꿉니다. 판정 순서까지 여기 한 곳에
+ *        둡니다 — 서버와 화면이 각자 if 순서를 들고 있으면 같은 코드에 다른 결론을 냅니다.
+ *
+ *        ★ 순서가 안전장치다: 만료 판정(코드 → 설명)을 소셜 취소 판정보다 먼저 둔다.
+ *        만료 링크가 access_denied 코드로 와도 설명이 만료를 말하면 만료로 확정되고,
+ *        설명까지 만료가 아닌 access_denied만 소셜 취소로 보낸다. 이렇게 하면 만료 손님과
+ *        소셜 취소 손님이 각각 맞는 안내를 받는다 — 한쪽을 짐작으로 고르지 않는다.
  * @매개변수: errorCode - 주소에 실려 온 오류 코드(없을 수 있음)
+ *            errorDescription - 주소에 실려 온 오류 설명(없을 수 있음)
  * @반환값: 만료 링크면 'verify', 손님이 소셜 로그인을 취소했으면 'oauth',
  *          판단할 수 없으면 null(부르는 쪽이 기본값을 정한다)
  */
 export function classifyProviderError(
   errorCode: string | null | undefined,
+  errorDescription?: string | null,
 ): AuthCallbackReason | null {
   if (isExpiredLinkCode(errorCode)) return 'verify'
+  if (isExpiredLinkDescription(errorDescription)) return 'verify'
   if (isUserCancelledOAuth(errorCode)) return 'oauth'
   return null
 }

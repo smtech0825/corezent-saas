@@ -18,6 +18,7 @@ import {
   authCallbackMessage,
   classifyProviderError,
   readProviderErrorCode,
+  readProviderErrorDescription,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
 import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
@@ -38,7 +39,9 @@ function reasonFromHash(): AuthCallbackReason | null {
   const raw = window.location.hash.replace(/^#/, '')
   if (!raw) return null
   // 읽는 키·판정 순서 모두 서버와 같은 것을 쓴다(lib/auth-callback-error.ts).
-  return classifyProviderError(readProviderErrorCode(new URLSearchParams(raw)))
+  // 오류 설명까지 함께 본다 — 만료 링크와 소셜 취소가 같은 코드로 올 수 있다.
+  const params = new URLSearchParams(raw)
+  return classifyProviderError(readProviderErrorCode(params), readProviderErrorDescription(params))
 }
 
 export default function LoginForm() {
