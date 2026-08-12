@@ -80,11 +80,17 @@ export function isUserCancelledOAuth(errorCode: string | null | undefined): bool
  * @설명: 오류 설명 문장이 "링크가 만료됐거나 무효"를 말하는지 판정합니다. GoTrue는 만료된
  *        메일 링크를 error=access_denied에 "Email link is invalid or has expired" 설명을
  *        붙여 보내는 경우가 있어, 코드만 보면 소셜 취소와 구분할 수 없습니다.
+ *
+ *        ★ invalid·expired 단어만으로 판정하지 않는다 — 링크·메일·토큰 문맥이 함께 있을
+ *        때만 만료로 본다. "Invalid scope: profile_image"(이 프로젝트에서 실제 발생 이력이
+ *        있는 카카오 설정 오류)나 invalid_request 계열 설명까지 만료로 읽으면, 소셜 로그인이
+ *        실패한 손님에게 "인증 메일을 다시 받아 주세요"라는 무관한 안내가 나간다.
  * @매개변수: description - 주소에 실려 온 오류 설명(없을 수 있음)
  * @반환값: 만료·무효 링크를 말하는 설명이면 true
  */
 export function isExpiredLinkDescription(description: string | null | undefined): boolean {
   if (!description) return false
+  if (!/link|email|otp|token|magic/i.test(description)) return false
   return /expired|invalid/i.test(description)
 }
 
