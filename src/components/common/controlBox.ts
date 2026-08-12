@@ -10,3 +10,8 @@
 /** 구매 바 컨트롤 박스 바깥 규격 — 각 컴포넌트가 자체 패딩/정렬을 뒤에 덧붙여 사용 */
 export const BUY_BAR_CONTROL_BOX =
   'inline-flex items-center h-10 box-border border border-rule rounded-md bg-paper'
+
+/** 구매 바 컨트롤 상단 라벨(기간·PC개수·수량·결제방법) 공통 규격 — 세 부품이 같은 리터럴을
+ *  복사해 쓰던 것을 한 곳으로 모음. text-xs(12px)+font-medium+ink-soft로 배경(#FBFAF6) 대비 6.45:1. */
+export const BUY_BAR_CONTROL_LABEL =
+  'block text-xs font-medium text-ink-soft mb-1 leading-none'

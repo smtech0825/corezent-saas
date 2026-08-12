@@ -7,7 +7,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { BUY_BAR_CONTROL_BOX } from './controlBox'
+import { BUY_BAR_CONTROL_BOX, BUY_BAR_CONTROL_LABEL } from './controlBox'
 
 /** 세그먼트 옵션 하나 */
 export interface SegmentOption {
@@ -38,7 +38,7 @@ interface Props {
 export default function SegmentControl({ label, value, options, onChange, ariaLabel }: Props) {
   return (
     <div className="min-w-0">
-      {label && <span className="block text-[11px] text-ink-faint mb-1 leading-none">{label}</span>}
+      {label && <span className={BUY_BAR_CONTROL_LABEL}>{label}</span>}
       <div
         role="radiogroup"
         aria-label={ariaLabel ?? label}

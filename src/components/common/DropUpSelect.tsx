@@ -11,7 +11,7 @@
 
 import { useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
 import { ChevronUp, Check } from 'lucide-react'
-import { BUY_BAR_CONTROL_BOX } from './controlBox'
+import { BUY_BAR_CONTROL_BOX, BUY_BAR_CONTROL_LABEL } from './controlBox'
 
 /** 드롭업 옵션 하나 — 값 라벨만 표시(가격은 바 우측 가격 영역에서만 노출) */
 export interface DropUpOption {
@@ -113,7 +113,7 @@ export default function DropUpSelect({
 
   return (
     <div ref={containerRef} className="min-w-0">
-      {label && <span className="block text-[11px] text-ink-faint mb-1 leading-none">{label}</span>}
+      {label && <span className={BUY_BAR_CONTROL_LABEL}>{label}</span>}
       <div className="relative">
         {/* 트리거 — 공통 박스 규격(BUY_BAR_CONTROL_BOX, h-10=40px)으로 옆 컨트롤과 하단선·높이 통일 */}
         <button

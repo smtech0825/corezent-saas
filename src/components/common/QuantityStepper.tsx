@@ -8,7 +8,7 @@
  */
 
 import { Minus, Plus } from 'lucide-react'
-import { BUY_BAR_CONTROL_BOX } from './controlBox'
+import { BUY_BAR_CONTROL_BOX, BUY_BAR_CONTROL_LABEL } from './controlBox'
 
 /** 체크아웃 수량 상한 (LS 자체 상한과 별개로 UI 오입력·남용 방지) */
 export const MAX_CHECKOUT_QUANTITY = 10
@@ -66,7 +66,7 @@ export default function QuantityStepper({ value, onChange, max = MAX_CHECKOUT_QU
   if (inline) {
     return (
       <div className="min-w-0">
-        <span className="block text-[11px] text-ink-faint mb-1 leading-none">수량</span>
+        <span className={BUY_BAR_CONTROL_LABEL}>수량</span>
         {stepper}
       </div>
     )
