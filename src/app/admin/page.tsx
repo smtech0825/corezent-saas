@@ -10,11 +10,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import {
   Users, DollarSign, Key, MessageSquare,
-  TrendingUp, TrendingDown, UserPlus,
+  TrendingUp, UserPlus,
 } from 'lucide-react'
 import ChurnAnalysis, { type CancelEntry } from './ChurnAnalysis'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import StatCard from '@/components/common/StatCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -192,82 +193,39 @@ export default async function AdminPage() {
         <p className="text-sm text-ink-soft mt-1">다시 오신 것을 환영합니다. 현재 상황을 확인하세요.</p>
       </div>
 
-      {/* 통계 카드 4개 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-
-        {/* ① Total Users — 월간/연간 신규 서브 지표 */}
-        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-ink-soft">총 사용자</p>
-            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
-              <Users size={17} className="text-mark" />
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-ink">{fmt(totalUsers)}</p>
-          <div className="mt-3 pt-3 border-t border-rule space-y-1.5">
-            <SubMetric
-              label="신규 (월간)"
-              value={fmt(newUsersMonth)}
-              growth={growthDisplay(newUsersMonth, prevUsersMonth)}
-            />
-            <SubMetric
-              label="신규 (연간)"
-              value={fmt(newUsersYear)}
-              growth={growthDisplay(newUsersYear, prevUsersYear)}
-            />
-          </div>
-        </div>
-
-        {/* ② Total Revenue — 월간/연간 매출 서브 지표 */}
-        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-ink-soft">총 매출</p>
-            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
-              <DollarSign size={17} className="text-mark" />
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-ink">{fmtCurrency(totalRevenue)}</p>
-          <div className="mt-3 pt-3 border-t border-rule space-y-1.5">
-            <SubMetric
-              label="매출 (월간)"
-              value={fmtCurrency(revMonth)}
-              growth={growthDisplay(revMonth, prevRevMonth)}
-            />
-            <SubMetric
-              label="매출 (연간)"
-              value={fmtCurrency(revYear)}
-              growth={growthDisplay(revYear, prevRevYear)}
-            />
-          </div>
-        </div>
-
-        {/* ③ Active Licenses */}
-        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-ink-soft">활성 라이선스</p>
-            <span className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center">
-              <Key size={17} className="text-mark" />
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-ink">{fmt(activeLicenses)}</p>
-        </div>
-
-        {/* ④ Open Tickets — 아이콘 클릭 → /admin/support */}
-        <div className="border border-rule bg-paper-raised rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-ink-soft">열린 티켓</p>
-            <Link
-              href="/admin/support"
-              title="고객지원 티켓 보기"
-              aria-label="고객지원 티켓 보기"
-              className="w-9 h-9 rounded-xl bg-mark/10 flex items-center justify-center hover:bg-mark/25 hover:scale-105 transition-all cursor-pointer"
-            >
-              <MessageSquare size={17} className="text-mark" />
-            </Link>
-          </div>
-          <p className="text-2xl font-bold text-ink">{fmt(openTickets)}</p>
-        </div>
-
+      {/* 통계 카드 4개 — 공용 StatCard. items-start: 보조 수치가 없는 카드는
+          옆 카드 높이에 맞춰 늘어나지 않고 내용만큼 작아진다(빈 공간 금지). */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
+        <StatCard
+          icon={<Users size={17} className="text-mark" />}
+          value={fmt(totalUsers)}
+          label="총 사용자"
+          subMetrics={[
+            { label: '신규 (월간)', value: fmt(newUsersMonth), growth: growthDisplay(newUsersMonth, prevUsersMonth) },
+            { label: '신규 (연간)', value: fmt(newUsersYear), growth: growthDisplay(newUsersYear, prevUsersYear) },
+          ]}
+        />
+        <StatCard
+          icon={<DollarSign size={17} className="text-mark" />}
+          value={fmtCurrency(totalRevenue)}
+          label="총 매출"
+          subMetrics={[
+            { label: '매출 (월간)', value: fmtCurrency(revMonth), growth: growthDisplay(revMonth, prevRevMonth) },
+            { label: '매출 (연간)', value: fmtCurrency(revYear), growth: growthDisplay(revYear, prevRevYear) },
+          ]}
+        />
+        <StatCard
+          icon={<Key size={17} className="text-mark" />}
+          value={fmt(activeLicenses)}
+          label="활성 라이선스"
+        />
+        <StatCard
+          icon={<MessageSquare size={17} className="text-mark" />}
+          value={fmt(openTickets)}
+          label="열린 티켓"
+          iconHref="/admin/support"
+          iconTitle="고객지원 티켓 보기"
+        />
       </div>
 
       {/* 두 컬럼 테이블 */}
@@ -357,40 +315,4 @@ export default async function AdminPage() {
   )
 }
 
-// ── SubMetric: 카드 하단 월간/연간 미니 지표 행 ─────────────────
-function SubMetric({
-  label,
-  value,
-  growth,
-}: {
-  label: string
-  value: string
-  growth: number | null
-}) {
-  const positive = growth !== null && growth >= 0
-
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-[11px] text-ink-faint shrink-0">{label}</span>
-      <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[11px] font-medium text-ink-soft truncate">{value}</span>
-        {growth !== null ? (
-          <span
-            className={`flex items-center gap-0.5 text-[10px] font-semibold shrink-0 ${
-              positive ? 'text-ok' : 'text-danger'
-            }`}
-          >
-            {positive
-              ? <TrendingUp size={10} />
-              : <TrendingDown size={10} />
-            }
-            {Math.abs(growth)}%
-          </span>
-        ) : (
-          // 비교할 이전 값이 없거나 이번 기간 값이 아직 0 — 억지 %(신규 100%·월초 ↘100%) 대신 –
-          <span className="text-[10px] text-ink-faint shrink-0" title="비교 데이터 없음">–</span>
-        )}
-      </div>
-    </div>
-  )
-}
+// 카드 하단 보조 수치 행과 – 표시는 공용 StatCard(components/common/StatCard.tsx)가 그린다.

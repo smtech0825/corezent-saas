@@ -11,6 +11,7 @@ import Link from 'next/link'
 import OnboardingChecklist from './OnboardingChecklist'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import StatCard from '@/components/common/StatCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -190,8 +191,8 @@ export default async function DashboardPage() {
         hasDownloaded={(downloadedCount ?? 0) > 0}
       />
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* 통계 카드 — 공용 StatCard (숫자·라벨을 위아래 두 줄로) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 items-start">
         <StatCard
           icon={<Key size={18} className="text-mark" />}
           label="전체 라이선스"
@@ -279,28 +280,8 @@ export default async function DashboardPage() {
 }
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
-
-function StatCard({ icon, label, value, href }: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  href: string
-}) {
-  // 숫자·라벨을 한 줄로(17 · 전체 라이선스) 배치해 카드 높이를 절반으로 줄이고 우측 여백을 없앤다.
-  return (
-    <Link href={href} className="group flex items-center gap-3 bg-paper-raised border border-rule hover:border-mark/40 rounded-xl px-4 py-3 transition-colors">
-      <div className="w-8 h-8 rounded-lg bg-paper border border-rule flex items-center justify-center shrink-0">
-        {icon}
-      </div>
-      <p className="flex items-baseline gap-1.5 min-w-0">
-        <span className="text-lg font-bold text-ink tabular-nums">{value}</span>
-        <span className="text-ink-faint">·</span>
-        <span className="text-sm text-ink-soft truncate">{label}</span>
-      </p>
-      <ArrowRight size={14} className="text-ink-faint group-hover:text-mark transition-colors ml-auto shrink-0" />
-    </Link>
-  )
-}
+// 통계 카드는 공용 StatCard(components/common/StatCard.tsx)를 쓴다.
+// ("숫자 · 라벨" 한 줄 표기는 자릿수가 커지면 줄이 밀리고 숫자가 눈에 안 들어와 두 줄로 되돌림)
 
 function Section({ title, href, children }: {
   title: string

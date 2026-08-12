@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
+import StatCard from '@/components/common/StatCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,14 +108,14 @@ export default async function RevenuePage() {
         <p className="text-sm text-ink-soft mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
       </div>
 
-      {/* KPI 카드 */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <Kpi icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
-        <Kpi icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
-        <Kpi icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} sub={`${refundCount}건`} />
-        <Kpi icon={<Repeat size={16} className="text-mark" />} label="활성 구독" value={activeSubs.toLocaleString('ko-KR')} />
-        <Kpi icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={formatKRW(mrrCents)} sub="월 환산" />
-        <Kpi icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} sub={`${endedSubs}/${totalSubs} 구독`} />
+      {/* KPI 카드 — 공용 StatCard */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
+        <StatCard icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
+        <StatCard icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} subline={`${refundCount}건`} />
+        <StatCard icon={<Repeat size={16} className="text-mark" />} label="활성 구독" value={activeSubs.toLocaleString('ko-KR')} />
+        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={formatKRW(mrrCents)} subline="월 환산" />
+        <StatCard icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} subline={`${endedSubs}/${totalSubs} 구독`} />
       </div>
 
       {/* 월별 매출 추이 */}
@@ -162,15 +163,4 @@ export default async function RevenuePage() {
   )
 }
 
-/** KPI 카드 */
-function Kpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
-  return (
-    <div className="border border-rule bg-paper-raised rounded-2xl p-5">
-      <div className="w-9 h-9 rounded-lg bg-mark/10 border border-mark/20 flex items-center justify-center mb-3">
-        {icon}
-      </div>
-      <p className="text-2xl font-bold text-ink tabular-nums">{value}</p>
-      <p className="text-xs text-ink-soft mt-1">{label}{sub && <span className="text-ink-faint"> · {sub}</span>}</p>
-    </div>
-  )
-}
+// KPI 카드는 공용 StatCard(components/common/StatCard.tsx)를 쓴다.

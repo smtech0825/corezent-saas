@@ -12,6 +12,7 @@ import DynamicIcon from '@/components/DynamicIcon'
 import CopyButton from '@/components/common/CopyButton'
 import PayoutAccountCard from './PayoutAccountCard'
 import PageContainer from '@/components/common/PageContainer'
+import StatCard from '@/components/common/StatCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -150,11 +151,11 @@ export default async function AffiliatePage() {
         )}
       </section>
 
-      {/* 지표 벤토 그리드 */}
+      {/* 지표 벤토 그리드 — 공용 StatCard */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <MetricCard icon="MousePointerClick" label="클릭" value={clicks.toLocaleString()} />
-        <MetricCard icon="UserPlus"          label="가입" value={signups.toLocaleString()} />
-        <MetricCard icon="ShoppingBag"       label="전환" value={conversions.toLocaleString()} hint="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
+        <StatCard icon={<DynamicIcon name="MousePointerClick" size={18} className="text-mark" />} label="클릭" value={clicks.toLocaleString()} />
+        <StatCard icon={<DynamicIcon name="UserPlus" size={18} className="text-mark" />}          label="가입" value={signups.toLocaleString()} />
+        <StatCard icon={<DynamicIcon name="ShoppingBag" size={18} className="text-mark" />}       label="전환" value={conversions.toLocaleString()} subline="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
       </section>
 
       {/* 스토어 크레딧 잔액 */}
@@ -174,14 +175,34 @@ export default async function AffiliatePage() {
       {/* 정산 계좌 */}
       <PayoutAccountCard initial={payout} />
 
-      {/* 적립 현황 */}
+      {/* 적립 현황 — 공용 StatCard (상태 색은 아이콘 배지에만) */}
       <section>
         <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider mb-4">적립 현황</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatusCard tone="warning" icon="Clock"       label="대기"      sub="보류 기간 중"   cents={buckets.held.cents}     count={buckets.held.count}     currency={currency} />
-          <StatusCard tone="accent"  icon="CircleCheck" label="지급 가능"  sub="전환 대기"     cents={buckets.eligible.cents} count={buckets.eligible.count} currency={currency} />
-          <StatusCard tone="success" icon="BadgeCheck"  label="지급 완료"  sub="크레딧 전환됨"  cents={buckets.paid.cents}     count={buckets.paid.count}     currency={currency} />
-          <StatusCard tone="error"   icon="CircleX"     label="반려"      sub="환불·취소"     cents={buckets.reversed.cents} count={buckets.reversed.count} currency={currency} />
+          <StatCard
+            icon={<DynamicIcon name="Clock" size={15} className={TONE.warning.text} />}
+            iconBadgeClassName={`${TONE.warning.bg} border ${TONE.warning.border}`}
+            label="대기" value={formatCents(buckets.held.cents, currency)}
+            subline={`보류 기간 중 · ${buckets.held.count}건`}
+          />
+          <StatCard
+            icon={<DynamicIcon name="CircleCheck" size={15} className={TONE.accent.text} />}
+            iconBadgeClassName={`${TONE.accent.bg} border ${TONE.accent.border}`}
+            label="지급 가능" value={formatCents(buckets.eligible.cents, currency)}
+            subline={`전환 대기 · ${buckets.eligible.count}건`}
+          />
+          <StatCard
+            icon={<DynamicIcon name="BadgeCheck" size={15} className={TONE.success.text} />}
+            iconBadgeClassName={`${TONE.success.bg} border ${TONE.success.border}`}
+            label="지급 완료" value={formatCents(buckets.paid.cents, currency)}
+            subline={`크레딧 전환됨 · ${buckets.paid.count}건`}
+          />
+          <StatCard
+            icon={<DynamicIcon name="CircleX" size={15} className={TONE.error.text} />}
+            iconBadgeClassName={`${TONE.error.bg} border ${TONE.error.border}`}
+            label="반려" value={formatCents(buckets.reversed.cents, currency)}
+            subline={`환불·취소 · ${buckets.reversed.count}건`}
+          />
         </div>
       </section>
     </PageContainer>
@@ -189,49 +210,12 @@ export default async function AffiliatePage() {
 }
 
 // ─── 서브 컴포넌트 ───────────────────────────────────────────
+// 지표·적립 카드는 공용 StatCard(components/common/StatCard.tsx)를 쓴다.
 
-/** 지표 카드 (클릭·가입·전환). hint: 라벨 아래 한 줄 설명(선택) */
-function MetricCard({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
-  return (
-    <div className="bg-paper-raised border border-rule rounded-2xl p-5">
-      <div className="w-9 h-9 rounded-lg bg-mark/10 flex items-center justify-center mb-3">
-        <DynamicIcon name={icon} size={18} className="text-mark" />
-      </div>
-      <p className="text-2xl font-bold text-ink">{value}</p>
-      <p className="text-xs text-ink-faint mt-1">{label}</p>
-      {hint && <p className="text-xs text-ink-faint/70 mt-1 leading-snug">{hint}</p>}
-    </div>
-  )
-}
-
+/** 적립 상태별 색조 — 아이콘 배지에만 쓴다(카드 모양은 공용과 동일하게 유지) */
 const TONE: Record<string, { text: string; bg: string; border: string }> = {
   warning: { text: 'text-caution', bg: 'bg-caution-soft', border: 'border-caution/20' },
   accent:  { text: 'text-mark',    bg: 'bg-mark/10',      border: 'border-mark/30' },
   success: { text: 'text-ok',      bg: 'bg-ok-soft',      border: 'border-ok/20' },
   error:   { text: 'text-danger',  bg: 'bg-danger-soft',  border: 'border-danger/20' },
-}
-
-/** 상태별 적립 카드 (금액 합·건수) */
-function StatusCard({
-  tone, icon, label, sub, cents, count, currency,
-}: {
-  tone: keyof typeof TONE
-  icon: string
-  label: string
-  sub: string
-  cents: number
-  count: number
-  currency: string
-}) {
-  const t = TONE[tone]
-  return (
-    <div className="bg-paper-raised border border-rule rounded-2xl p-5">
-      <div className={`w-8 h-8 rounded-lg ${t.bg} border ${t.border} flex items-center justify-center mb-3`}>
-        <DynamicIcon name={icon} size={15} className={t.text} />
-      </div>
-      <p className="text-lg font-bold text-ink">{formatCents(cents, currency)}</p>
-      <p className={`text-xs font-medium mt-1 ${t.text}`}>{label}</p>
-      <p className="text-xs text-ink-faint mt-0.5">{sub} · {count}건</p>
-    </div>
-  )
 }
