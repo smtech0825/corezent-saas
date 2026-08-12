@@ -35,7 +35,12 @@ export default function CookieConsentBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]">
+    <div
+      // 상품 상세의 하단 고정 구매 바(z-60)가 배너 버튼 줄을 덮지 않게, 바 높이(--buy-bar-h)만큼 위로.
+      // 바가 없는 화면에서는 변수가 비어 기존과 같은 16px 여백이 된다.
+      style={{ bottom: 'calc(var(--buy-bar-h, 0px) + 1rem)' }}
+      className="fixed left-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]"
+    >
       <div className="bg-[#111A2E] border border-[#1E293B] rounded-2xl p-4 shadow-2xl shadow-black/50 backdrop-blur-sm">
 
         {/* 헤더 */}
