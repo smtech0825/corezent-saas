@@ -57,7 +57,7 @@ export default function PayoutAccountCard({ initial }: { initial: Account }) {
     <section className="mb-6 bg-paper-raised border border-rule rounded-card p-6">
       <div className="flex items-center gap-2 mb-4">
         <Landmark size={18} className="text-mark" />
-        <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">정산 계좌</h2>
+        <h2 className="text-sm font-semibold text-ink">정산 계좌</h2>
       </div>
 
       {!editing ? (

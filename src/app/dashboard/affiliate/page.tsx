@@ -126,7 +126,7 @@ export default async function AffiliatePage() {
       <section className="mb-6 bg-paper-raised border border-rule rounded-card p-6">
         <div className="flex items-center gap-2 mb-4">
           <DynamicIcon name="Gift" size={18} className="text-mark" />
-          <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">내 추천 링크</h2>
+          <h2 className="text-sm font-semibold text-ink">내 추천 링크</h2>
         </div>
         {code ? (
           <>
@@ -169,7 +169,7 @@ export default async function AffiliatePage() {
       <section className="mb-6 bg-gradient-to-br from-paper-raised to-paper border border-mark/30 rounded-card p-6">
         <div className="flex items-center gap-2 mb-2">
           <DynamicIcon name="Wallet" size={18} className="text-mark" />
-          <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">스토어 크레딧 잔액</h2>
+          <h2 className="text-sm font-semibold text-ink">스토어 크레딧 잔액</h2>
         </div>
         <p className="text-4xl font-bold text-ink">{formatCents(balanceCents, currency)}</p>
         {cfg && (
