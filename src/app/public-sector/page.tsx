@@ -124,6 +124,12 @@ export default async function PublicSectorPage() {
                 </div>
               )}
             </dl>
+            {/* 우선구매·보유 자격·판매 채널 — 블록이 보일 때 항상 함께 표시(기존 톤 그대로) */}
+            <div className="mt-4 space-y-1.5 text-sm text-ink-soft">
+              <p>창업기업제품 공공기관 우선구매 대상 (총 구매액 8% 이상)</p>
+              <p>보유 자격: 경쟁입찰참가자격등록 · 소프트웨어사업자신고 · 중소기업확인서 · 창업기업확인서</p>
+              <p>판매 채널: corezent.com · 나라장터 · 벤처나라</p>
+            </div>
           </Section>
         )}
 
