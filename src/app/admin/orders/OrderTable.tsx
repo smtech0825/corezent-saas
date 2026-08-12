@@ -183,7 +183,8 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
       <div>
         <h1 className="text-2xl font-bold text-ink font-serif">주문</h1>
         <p className="text-sm text-ink-soft mt-1">총 {orders.length}건의 주문</p>
-        <p className="text-3xl font-bold text-ok mt-2 tabular-nums">
+        {/* 금액 기본은 검정(ink) — 증감 같은 비교 맥락이 없는 합계라 색을 쓰지 않는다 */}
+        <p className="text-3xl font-bold text-ink mt-2 tabular-nums">
           {formatKRW(totalRevenue)}
         </p>
         <p className="text-xs text-ink-faint mt-0.5">총 매출 (결제 완료)</p>
