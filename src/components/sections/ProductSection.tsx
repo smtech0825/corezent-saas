@@ -115,7 +115,7 @@ export default async function ProductSection() {
     <Section id="product" width="wide">
       <SectionHeader
         label="제품 소개"
-        title="나를 위해 일하는 소프트웨어"
+        title="공무원 업무를 위한 프로그램"
         sub="우리가 만드는 모든 제품은 첫날부터 시간을 아끼고, 번거로움을 줄이고, 실질적인 결과를 전하도록 설계되었습니다."
       />
 

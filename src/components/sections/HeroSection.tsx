@@ -127,7 +127,7 @@ export default function HeroSection({ content }: Props) {
 
         {/* 신뢰 요소 */}
         <div className="mt-8 flex flex-wrap justify-center gap-2.5 animate-fade-up" style={{ animationDelay: '0.28s' }}>
-          {['개발자가 직접 제작', '라이선스 즉시 활성화', '간편한 요금제', '전담 고객 지원'].map((item) => (
+          {['계산은 코드가', '자료는 내 PC에', '한글·PDF 바로 출력', '조달청 등록 제품'].map((item) => (
             <span
               key={item}
               className="inline-flex items-center gap-2 rounded border border-rule bg-paper-shade px-3 py-1 font-sans text-xs text-ink-soft"
