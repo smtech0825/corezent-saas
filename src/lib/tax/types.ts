@@ -9,14 +9,22 @@
 /** jsonb 컬럼 값의 범용 JSON 타입 */
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
-/** 세목 — tax_rules.tax_type CHECK 제약과 동일 */
+/**
+ * 세목 — tax_rules·tax_calculation_logs의 tax_type CHECK(058 확장분 포함)와 동일.
+ * ⚠️ 규제지역(tax_regulated_areas.applies_to)의 CHECK는 앞 6종만 허용한다 —
+ *    그쪽 화면·검증은 이 유니언이 아니라 labels.ts의 TAX_TYPES 배열(6종 고정)을 쓴다.
+ */
 export type TaxType =
-  | 'acquisition'    // 취득세
-  | 'rental'         // 임대소득세
-  | 'transfer'       // 양도소득세
-  | 'property'       // 재산세
-  | 'comprehensive'  // 종합부동산세
-  | 'inheritance'    // 상속·증여세
+  | 'acquisition'       // 취득세
+  | 'rental'            // 임대소득세
+  | 'transfer'          // 양도소득세
+  | 'property'          // 재산세
+  | 'comprehensive'     // 종합부동산세
+  | 'inheritance'       // 상속·증여세
+  | 'stamp'             // 인지세 (058)
+  | 'brokerage'         // 중개수수료 (058)
+  | 'jeonse_conversion' // 전월세 전환 (058)
+  | 'registration'      // 등기비용 (058)
 
 /**
  * 룰 저장소(tax_rules) 전용 세목 — 세목 6종 + 'common'(전 세목 공통 룰, 057에서 CHECK 확장).
