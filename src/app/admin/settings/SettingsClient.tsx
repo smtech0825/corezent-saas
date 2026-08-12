@@ -75,7 +75,7 @@ function SaveButton({
     <button
       onClick={() => onSave(section)}
       disabled={isLoading}
-      className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
     >
       {isLoading && <Loader2 size={14} className="animate-spin" />}
       {isSaved   && <Check   size={14} />}

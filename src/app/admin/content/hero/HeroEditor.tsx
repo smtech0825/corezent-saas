@@ -105,7 +105,7 @@ export default function HeroEditor({ initial, onSave }: Props) {
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="flex items-center gap-2 bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-mark hover:brightness-95 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           히어로 저장
         </button>

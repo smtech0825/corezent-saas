@@ -92,7 +92,7 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
         <button
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-3 sm:py-2.5 rounded-xl transition-colors"
         >
           {pending && <Loader2 size={14} className="animate-spin" />}
           {pending ? '저장 중…' : '설정 저장'}

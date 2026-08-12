@@ -918,7 +918,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         <button
           type="submit"
           disabled={loading || uploading}
-          className="bg-mark hover:brightness-95 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
+          className="flex-1 sm:flex-none bg-mark hover:brightness-95 disabled:opacity-50 text-white text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-lg transition-colors"
         >
           {loading ? '저장 중...' : submitLabel}
         </button>

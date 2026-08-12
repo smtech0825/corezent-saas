@@ -103,7 +103,7 @@ export default function PayoutAccountCard({ initial }: { initial: Account }) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 bg-mark text-white hover:brightness-95 disabled:opacity-60 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-mark text-white hover:brightness-95 disabled:opacity-60 text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-lg transition-colors"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               {saving ? '저장 중…' : '계좌 저장'}
