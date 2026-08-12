@@ -36,6 +36,20 @@ function growthRate(current: number, prev: number): number | null {
   return Math.round(((current - prev) / prev) * 100)
 }
 
+/**
+ * @함수명: growthDisplay
+ * @설명: 증감률을 화면에 보여줄지 정하는 표시 조건. 계산식(growthRate)은 그대로 두고
+ *        여기서만 거른다 — 비교할 이전 값이 없으면(전기 0) "신규 100%"는 억지 수치이고,
+ *        이번 기간 값이 아직 0이면(월초·연초) "↘100%"가 매달 초 반복되는 소음이라
+ *        둘 다 표시하지 않는다(화면에는 – 로 나간다). 양쪽 다 값이 있을 때만 %를 보인다.
+ * @매개변수: current - 이번 기간 값 / prev - 이전 기간 값
+ * @반환값: 표시할 증감률. 표시하지 않을 때 null
+ */
+function growthDisplay(current: number, prev: number): number | null {
+  if (current <= 0 || prev <= 0) return null
+  return growthRate(current, prev)
+}
+
 /** 매출 배열 합산 (amount는 센트 — 합산만, ÷100·₩표기는 formatKRW에서) */
 function sumAmount(rows: { amount: number | null }[]): number {
   return rows.reduce((s, o) => s + (o.amount ?? 0), 0)
@@ -194,12 +208,12 @@ export default async function AdminPage() {
             <SubMetric
               label="신규 (월간)"
               value={fmt(newUsersMonth)}
-              growth={growthRate(newUsersMonth, prevUsersMonth)}
+              growth={growthDisplay(newUsersMonth, prevUsersMonth)}
             />
             <SubMetric
               label="신규 (연간)"
               value={fmt(newUsersYear)}
-              growth={growthRate(newUsersYear, prevUsersYear)}
+              growth={growthDisplay(newUsersYear, prevUsersYear)}
             />
           </div>
         </div>
@@ -217,12 +231,12 @@ export default async function AdminPage() {
             <SubMetric
               label="매출 (월간)"
               value={fmtCurrency(revMonth)}
-              growth={growthRate(revMonth, prevRevMonth)}
+              growth={growthDisplay(revMonth, prevRevMonth)}
             />
             <SubMetric
               label="매출 (연간)"
               value={fmtCurrency(revYear)}
-              growth={growthRate(revYear, prevRevYear)}
+              growth={growthDisplay(revYear, prevRevYear)}
             />
           </div>
         </div>
@@ -360,7 +374,7 @@ function SubMetric({
       <span className="text-[11px] text-ink-faint shrink-0">{label}</span>
       <div className="flex items-center gap-1 min-w-0">
         <span className="text-[11px] font-medium text-ink-soft truncate">{value}</span>
-        {growth !== null && (
+        {growth !== null ? (
           <span
             className={`flex items-center gap-0.5 text-[10px] font-semibold shrink-0 ${
               positive ? 'text-ok' : 'text-danger'
@@ -372,6 +386,9 @@ function SubMetric({
             }
             {Math.abs(growth)}%
           </span>
+        ) : (
+          // 비교할 이전 값이 없거나 이번 기간 값이 아직 0 — 억지 %(신규 100%·월초 ↘100%) 대신 –
+          <span className="text-[10px] text-ink-faint shrink-0" title="비교 데이터 없음">–</span>
         )}
       </div>
     </div>
