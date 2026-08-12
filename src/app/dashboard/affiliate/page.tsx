@@ -151,11 +151,17 @@ export default async function AffiliatePage() {
         )}
       </section>
 
-      {/* 지표 벤토 그리드 — 공용 StatCard */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard icon={<DynamicIcon name="MousePointerClick" size={18} className="text-mark" />} label="클릭" value={clicks.toLocaleString()} />
-        <StatCard icon={<DynamicIcon name="UserPlus" size={18} className="text-mark" />}          label="가입" value={signups.toLocaleString()} />
-        <StatCard icon={<DynamicIcon name="ShoppingBag" size={18} className="text-mark" />}       label="전환" value={conversions.toLocaleString()} subline="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
+      {/* 지표 벤토 그리드 — 공용 StatCard.
+          아래 적립 현황(4열)과 열 수가 달라 세로선이 어긋나 보이던 것을,
+          적립 현황과 같은 구획 제목을 붙여 별개 블록으로 읽히게 한다
+          (3개 카드를 4열에 억지로 넣으면 빈 칸이 생겨 열 수 통일 대신 구분을 택함) */}
+      <section className="mb-6">
+        <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider mb-4">추천 성과</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard icon={<DynamicIcon name="MousePointerClick" size={18} className="text-mark" />} label="클릭" value={clicks.toLocaleString()} />
+          <StatCard icon={<DynamicIcon name="UserPlus" size={18} className="text-mark" />}          label="가입" value={signups.toLocaleString()} />
+          <StatCard icon={<DynamicIcon name="ShoppingBag" size={18} className="text-mark" />}       label="전환" value={conversions.toLocaleString()} subline="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
+        </div>
       </section>
 
       {/* 스토어 크레딧 잔액 */}
