@@ -74,6 +74,7 @@ export default function Navbar() {
     { label: '업데이트 내역', href: '/changelog' },
     { label: '매뉴얼', href: '/docs' },
     { label: '블로그', href: '/blog' },
+    { label: '부동산 계산기', href: '/tax' },
     { label: '사용 설명서', href: 'https://sites.google.com/view/corezent', external: true, hidden: true },
     { label: 'FAQ', href: '/faq' },
     { label: '문의하기', href: '/contact' },

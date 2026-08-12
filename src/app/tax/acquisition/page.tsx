@@ -3,14 +3,13 @@
  * @설명: 부동산 취득세 계산기 — 주택 유상취득(매매)·증여(무상취득).
  *        이 계산기의 목적은 세액보다 근거(어느 법 몇 조가, 언제 시행된 것이 적용됐는지)를
  *        보여주는 것이다. 하단에 참고용 고지와 마지막 룰 갱신일을 고정 표시한다.
+ *        테마·Navbar·Footer·계산기 전환 탭은 공유 레이아웃(tax/layout.tsx)이 담당한다.
  */
 
 import type { Metadata } from 'next'
 import { Landmark } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
 import CalculatorForm from './CalculatorForm'
 
 export const dynamic = 'force-dynamic'
@@ -53,11 +52,9 @@ export default async function AcquisitionTaxPage() {
   const lastUpdatedAt = await fetchLastRuleUpdatedAt()
 
   return (
-    <div className="theme-paper min-h-screen bg-paper text-ink font-sans">
-      <Navbar />
-
+    <>
       {/* Hero */}
-      <section className="pt-10 sm:pt-14 pb-4 px-4 sm:px-6 text-center">
+      <section className="pt-8 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">
           <Landmark size={26} className="text-pen" />
         </div>
@@ -88,8 +85,6 @@ export default async function AcquisitionTaxPage() {
           </p>
         </div>
       </section>
-
-      <Footer />
-    </div>
+    </>
   )
 }

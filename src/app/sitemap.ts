@@ -11,6 +11,7 @@ import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SITE_URL } from '@/lib/site'
 import { source, blog } from '@/lib/source'
+import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 
 // 상품 상세를 DB에서 그리므로 빌드타임 정적 생성 대신 요청 시점에 생성(다른 DB 페이지와 동일 규칙)
 export const dynamic = 'force-dynamic'
@@ -37,6 +38,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/legal/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/legal/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/legal/cookies`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+  ]
+
+  // 부동산 계산기 — 허브 + 사용 가능한 계산기만. 준비 중(available: false) 경로는
+  // 페이지가 없으므로 검색엔진에 노출하지 않는다(calculators.ts가 단일 출처).
+  const taxRoutes: MetadataRoute.Sitemap = [
+    { url: `${SITE_URL}/tax`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...TAX_CALCULATORS.filter((c) => c.available).map((c) => ({
+      url: `${SITE_URL}${c.path}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
   ]
 
   // 활성 상품 상세 페이지(/product/[slug]) — DB에서 동적 조회
@@ -84,5 +97,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     blogRoutes = []
   }
 
-  return [...staticRoutes, ...productRoutes, ...docsRoutes, ...blogRoutes]
+  return [...staticRoutes, ...taxRoutes, ...productRoutes, ...docsRoutes, ...blogRoutes]
 }
