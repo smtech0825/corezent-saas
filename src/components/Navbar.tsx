@@ -43,6 +43,9 @@ export default function Navbar() {
   const router = useRouter()
 
   const [mobileOpen, setMobileOpen] = useState(false)
+  // 헤더(배너+메뉴) 실제 높이를 --nav-h CSS 변수로 노출 → 앵커 이동 시 제목이 메뉴에 가리지 않게
+  // (globals.css의 section[id] scroll-margin-top이 이 값을 읽는다. 구매 바 --buy-bar-h와 같은 기법)
+  const headerRef = useRef<HTMLElement>(null)
   const [userOpen, setUserOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -155,8 +158,23 @@ export default function Navbar() {
   const initials = displayName ? displayName[0].toUpperCase() : 'U'
   const avatarColor = hashColor(displayName || user?.email || 'user')
 
+  // 헤더 높이 측정 — 배너 켬/끔·좁은 화면 줄바꿈을 그대로 따라간다.
+  // 모바일 메뉴가 열려 header가 커진 동안은 갱신하지 않는다(닫히면 effect가 다시 돌아 재측정).
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const root = document.documentElement
+    const apply = () => {
+      if (!mobileOpen) root.style.setProperty('--nav-h', `${el.offsetHeight}px`)
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [mobileOpen])
+
   return (
-    <header className="sticky top-0 inset-x-0 z-50 flex flex-col">
+    <header ref={headerRef} className="sticky top-0 inset-x-0 z-50 flex flex-col">
       {/* 공지 배너 — Admin에서 관리 */}
       {banner.visible === 'true' && (
         <div className="w-full bg-paper-shade border-b border-rule py-2 text-center text-xs text-ink-soft px-4">
