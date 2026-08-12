@@ -23,15 +23,32 @@ const CTASection          = lazy(() => import('@/components/sections/CTASection'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  ...buildPageMetadata({
-    path: '/',
-    title: 'CoreZent — 일을 더 쉽게 만드는 소프트웨어',
-    description:
-      'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.',
-  }),
-  // 홈은 제목 자체가 브랜드라 template('%s | CoreZent')을 붙이지 않도록 absolute 사용
-  title: { absolute: 'CoreZent — 일을 더 쉽게 만드는 소프트웨어' },
+/**
+ * @함수명: generateMetadata
+ * @설명: 홈 메타데이터 — 관리자 SEO 설정(front_settings)의 제목·설명을 그대로 사용합니다.
+ *        루트 레이아웃(generateMetadata)과 같은 출처라, 관리자에서 바꾸면 홈에도 즉시 반영됩니다.
+ * @반환값: canonical·OG를 포함한 Metadata 객체 (DB 조회 실패 시 아래 기본값)
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  let title = 'CoreZent — 일을 더 쉽게 만드는 소프트웨어'
+  let description =
+    'CoreZent는 AI 자동화 도구부터 생산성 앱까지, 정성껏 만든 소프트웨어를 직접 제작하고 판매합니다. 간편한 요금제와 즉시 활성화.'
+  try {
+    const { data: rows } = await createAdminClient()
+      .from('front_settings')
+      .select('key, value')
+      .in('key', ['seo_meta_title', 'seo_meta_description'])
+    const map = new Map((rows ?? []).map((r) => [r.key, r.value ?? '']))
+    title = map.get('seo_meta_title') || title
+    description = map.get('seo_meta_description') || description
+  } catch {
+    // DB 조회 실패 시 위 기본값 사용 (레이아웃과 동일한 폴백 문구)
+  }
+  return {
+    ...buildPageMetadata({ path: '/', title, description }),
+    // 홈은 제목 자체가 브랜드라 template('%s | CoreZent')을 붙이지 않도록 absolute 사용
+    title: { absolute: title },
+  }
 }
 
 // 섹션 기본 설정 (DB에 없을 경우 fallback)
