@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react'
-import { Landmark, Check, Loader2, Pencil } from 'lucide-react'
+import { Landmark, Loader2, Pencil } from 'lucide-react'
 import { PAYOUT_BANKS, maskAccountNumber, normalizeAccountNumber } from '@/lib/banks'
 import { savePayoutAccount } from './payout-actions'
 
@@ -104,7 +104,7 @@ export default function PayoutAccountCard({ initial }: { initial: Account }) {
               disabled={saving}
               className="inline-flex items-center gap-2 bg-mark text-white hover:brightness-95 disabled:opacity-60 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {saving && <Loader2 size={14} className="animate-spin" />}
               {saving ? '저장 중…' : '계좌 저장'}
             </button>
             {hasAccount && (

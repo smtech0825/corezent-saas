@@ -8,7 +8,7 @@
  */
 
 import { useState, useTransition } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
 
@@ -93,7 +93,7 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
           disabled={pending}
           className="inline-flex items-center gap-2 bg-mark hover:brightness-95 disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
         >
-          {pending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          {pending && <Loader2 size={14} className="animate-spin" />}
           {pending ? '저장 중…' : '설정 저장'}
         </button>
       </div>
