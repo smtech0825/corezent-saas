@@ -23,6 +23,8 @@ const SELECT_CLS =
 interface Props {
   /** 수정 대상 룰 (신규면 null) */
   initial: TaxRule | null
+  /** 신규 등록 시 시작 세목 — 목록 화면에서 보고 있던 탭의 세목을 그대로 이어받는다 */
+  defaultTaxType?: TaxRuleTaxType
   /** 겹침 경고 대조용 전체 룰 목록 */
   allRules: TaxRule[]
   /** 저장 완료·취소 시 호출 */
@@ -34,9 +36,10 @@ function periodsOverlap(fromA: string, toA: string | null, fromB: string, toB: s
   return fromA <= (toB ?? '9999-12-31') && fromB <= (toA ?? '9999-12-31')
 }
 
-export default function RuleForm({ initial, allRules, onDone }: Props) {
-  const [taxType, setTaxType] = useState<TaxRuleTaxType>(initial?.tax_type ?? 'acquisition')
-  const initialKnownKeys = knownKeysForTaxType(initial?.tax_type ?? 'acquisition')
+export default function RuleForm({ initial, defaultTaxType, allRules, onDone }: Props) {
+  const startTaxType = initial?.tax_type ?? defaultTaxType ?? 'acquisition'
+  const [taxType, setTaxType] = useState<TaxRuleTaxType>(startTaxType)
+  const initialKnownKeys = knownKeysForTaxType(startTaxType)
   const initialKnown = initial ? initialKnownKeys.includes(initial.rule_key) : true
   const [keyChoice, setKeyChoice] = useState<string>(
     initial ? (initialKnown ? initial.rule_key : '__custom') : initialKnownKeys[0] ?? '__custom',

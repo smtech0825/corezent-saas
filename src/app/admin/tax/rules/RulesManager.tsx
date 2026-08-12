@@ -74,6 +74,9 @@ export default function RulesManager({ rules }: { rules: TaxRule[] }) {
           // 그대로 남아, 저장 시 다른 룰을 이전 값으로 덮어쓴다 — key로 강제 리마운트
           key={editing === 'new' ? 'new' : editing.id}
           initial={editing === 'new' ? null : editing}
+          // 신규 등록은 지금 보고 있는 탭의 세목으로 시작 — 인지세 탭에서 새 룰을 열었는데
+          // 폼이 취득세로 시작해 다른 세목으로 저장되는 함정을 막는다
+          defaultTaxType={taxType}
           allRules={rules}
           onDone={handleDone}
         />

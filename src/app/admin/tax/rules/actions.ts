@@ -24,7 +24,7 @@ import {
 } from '@/lib/tax/rule-value'
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
 import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
-import { RULE_STATUSES, RULE_TAX_TYPES } from '@/lib/tax/labels'
+import { RULE_STATUSES, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
 /** 룰 저장 요청 — rule_value는 JSON 문자열로 받아 서버가 파싱·검증한다 */
@@ -62,6 +62,22 @@ function failed(reason: string): AdminActionResult {
 }
 
 /**
+ * 알려진 룰 키 → 반드시 저장해야 하는 세목.
+ * 다른 세목으로 저장하면 계산기의 fetchValidRules(세목별 조회)가 그 룰을 찾지 못해,
+ * 저장은 성공했는데 계산은 계속 "룰 미등록"이 되는 함정이 생긴다 — 저장 단계에서 차단.
+ */
+const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
+  [ACQUISITION_RULE_KEYS.onerousRates]: 'acquisition',
+  [ACQUISITION_RULE_KEYS.giftTaxBase]: 'acquisition',
+  [ACQUISITION_RULE_KEYS.giftRates]: 'acquisition',
+  [ACQUISITION_RULE_KEYS.giftHeavy]: 'acquisition',
+  [ACQUISITION_RULE_KEYS.deemedGiftThreshold]: 'acquisition',
+  [ACQUISITION_RULE_KEYS.rounding]: 'acquisition',
+  [STAMP_RULE_KEYS.rates]: 'stamp',
+  [COMMON_RULE_KEYS.metroScope]: 'common',
+}
+
+/**
  * @함수명: saveTaxRule
  * @설명: 룰을 등록(id 없음)하거나 수정(id 있음)합니다. 필수 입력·형식·스키마를 모두
  *        통과해야 저장되며, 근거(법령명·조문·원문 링크) 없는 룰은 저장할 수 없습니다.
@@ -79,9 +95,13 @@ export async function saveTaxRule(payload: TaxRulePayload): Promise<AdminActionR
   const lawUrl = payload.law_url.trim()
   if (!RULE_TAX_TYPES.includes(payload.tax_type)) return failed('세목이 올바르지 않습니다.')
   if (!ruleKey) return failed('룰 키를 입력해 주세요.')
-  // 공통 룰을 특정 세목에 저장하면 다른 세목 계산에서 조회되지 않는다 — 저장 단계에서 차단
-  if (ruleKey === COMMON_RULE_KEYS.metroScope && payload.tax_type !== 'common') {
-    return failed("'region.metro_scope' 룰은 세목을 '공통 (전 세목)'으로 등록해야 합니다.")
+  // 알려진 룰 키는 정해진 세목으로만 저장 허용 — 세목이 어긋나면 계산기가 룰을 못 찾는다
+  const requiredType = KEY_REQUIRED_TAX_TYPE[ruleKey]
+  if (requiredType && payload.tax_type !== requiredType) {
+    return failed(
+      `'${ruleKey}' 룰은 세목을 '${RULE_TAX_TYPE_LABELS[requiredType]}'(으)로 등록해야 합니다. ` +
+        '다른 세목에 저장하면 계산기가 이 룰을 찾지 못합니다.',
+    )
   }
   if (!RULE_STATUSES.includes(payload.status)) return failed('상태(확정/개정안/폐지)를 선택해 주세요.')
   if (!isValidDateString(payload.effective_from)) return failed('시행일을 입력해 주세요. (YYYY-MM-DD)')
