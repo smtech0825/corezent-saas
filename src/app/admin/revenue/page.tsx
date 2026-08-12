@@ -11,6 +11,18 @@ import { formatKRW } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
 import StatCard from '@/components/common/StatCard'
+import EmptyState from '@/components/common/EmptyState'
+
+/**
+ * @함수명: fmtCompact
+ * @설명: 차트 막대 위에 얹는 축약 표기(만·억 단위). 좁은 막대 위에 전체 금액을 쓰면
+ *        서로 겹쳐 읽을 수 없어 축약한다. 정확한 값은 Y축 눈금과 막대 툴팁(formatKRW)에 있다.
+ * @매개변수: cents - 정수 센트 금액
+ * @반환값: "123만" 형태의 축약 문자열
+ */
+function fmtCompact(cents: number): string {
+  return new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.round(cents / 100))
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -108,8 +120,9 @@ export default async function RevenuePage() {
         <p className="text-sm text-ink-soft mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
       </div>
 
-      {/* KPI 카드 — 공용 StatCard */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+      {/* KPI 카드 — 공용 StatCard. 6장이 3열×2줄로 헐렁하게 퍼지던 것을
+          넓은 화면에서 6열 한 줄로 모아 카드 폭과 내용을 맞춘다 */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
         <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
         <StatCard icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
         <StatCard icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} subline={`${refundCount}건`} />
@@ -118,24 +131,51 @@ export default async function RevenuePage() {
         <StatCard icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} subline={`${endedSubs}/${totalSubs} 구독`} />
       </div>
 
-      {/* 월별 매출 추이 */}
+      {/* 월별 매출 추이 — 데이터가 없으면 차트를 그리지 않는다.
+          예전에는 0원인 달에도 최소 높이 막대(바닥 선분 12개)가 그려져
+          값이 있는 것처럼 보였다. 이제 0원인 달은 막대가 아예 없다. */}
       <section className="border border-rule bg-paper-raised rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-ink mb-4">월별 매출 추이 (최근 12개월)</h2>
-        <div className="flex items-end gap-1.5 h-40">
-          {months.map((m) => (
-            <div key={m.key} className="flex-1 h-full flex items-end" title={`${m.label} · ${formatKRW(m.cents)}`}>
-              <div
-                className="w-full bg-mark/80 hover:bg-mark rounded-t transition-colors"
-                style={{ height: `${Math.max((m.cents / monthMax) * 100, 2)}%` }}
-              />
+        {months.every((m) => m.cents === 0) ? (
+          <EmptyState message="아직 매출 데이터가 없습니다" />
+        ) : (
+          <div className="flex gap-3">
+            {/* Y축 눈금 — 최대·절반·0 (실제 집계값의 표기, 만든 숫자 아님) */}
+            <div className="h-40 flex flex-col justify-between items-end shrink-0 text-[9px] text-ink-faint tabular-nums">
+              <span>{formatKRW(monthMax)}</span>
+              <span>{formatKRW(Math.round(monthMax / 2))}</span>
+              <span>₩0</span>
             </div>
-          ))}
-        </div>
-        <div className="flex gap-1.5 mt-1.5">
-          {months.map((m) => (
-            <span key={m.key} className="flex-1 text-center text-[9px] text-ink-faint">{m.label}</span>
-          ))}
-        </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-end gap-1.5 h-40 border-l border-b border-rule pl-1.5">
+                {months.map((m) => (
+                  <div
+                    key={m.key}
+                    className="flex-1 h-full flex flex-col justify-end items-center"
+                    title={`${m.label} · ${formatKRW(m.cents)}`}
+                  >
+                    {m.cents > 0 && (
+                      <span className="text-[9px] text-ink-faint tabular-nums mb-0.5 truncate max-w-full">
+                        {fmtCompact(m.cents)}
+                      </span>
+                    )}
+                    {m.cents > 0 && (
+                      <div
+                        className="w-full bg-mark/80 hover:bg-mark rounded-t transition-colors"
+                        style={{ height: `${Math.max((m.cents / monthMax) * 100, 2)}%` }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-1.5 mt-1.5 pl-1.5">
+                {months.map((m) => (
+                  <span key={m.key} className="flex-1 text-center text-[9px] text-ink-faint">{m.label}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 상품별 매출 */}
