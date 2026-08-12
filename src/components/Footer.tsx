@@ -56,7 +56,7 @@ export default async function Footer() {
               CoreZent
             </div>
             <p className="text-sm text-ink-soft leading-relaxed break-keep">
-              업무를 더 쉽게 만드는 소프트웨어를 직접 만들고 판매합니다.
+              공무원의 행정문서 작성을 돕는 프로그램을 만듭니다.
             </p>
           </div>
 
