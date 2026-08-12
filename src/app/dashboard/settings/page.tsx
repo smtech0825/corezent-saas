@@ -170,6 +170,8 @@ export default function SettingsPage() {
 
     if (error) {
       setMarketingOptIn(!next)       // 실패 시 원복
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[settings] 수신 설정 저장 실패:', error.message)
       showToast('error', '수신 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.')
     } else {
       showToast('success', next ? '수신 동의로 저장되었습니다.' : '수신을 거부했습니다.')
