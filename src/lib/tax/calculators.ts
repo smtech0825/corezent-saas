@@ -47,7 +47,7 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     name: '인지세',
     description: '부동산 매매계약서에 붙는 인지세를 계약금액 기준으로 계산합니다.',
     category: 'buy',
-    available: false,
+    available: true,
   },
   {
     slug: 'brokerage',

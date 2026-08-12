@@ -231,6 +231,52 @@ export interface RoundingValue {
   method: 'floor' | 'round' | 'ceil'
 }
 
+// ─── 인지세 (stamp) ───────────────────────────────────────────────────────────
+
+/**
+ * @타입: StampRateRow
+ * @설명: 인지세 세액표 한 행 — 세율(%)이 아니라 정해진 금액(amount·원)이 붙는다.
+ *        when 조건(price=계약금액, is_housing=주택 여부)은 취득세와 같은
+ *        eq/min/max/in·priority 방식을 그대로 쓴다.
+ *        비과세 행은 amount 0 + exemptReason(사유 문구 — 화면에 그대로 표시) 필수.
+ *        금액·구간 값은 전부 관리자가 룰에 입력하며 코드에는 없다.
+ */
+export interface StampRateRow {
+  when: Conditions
+  priority?: number
+  amount: number          // 인지세액(원) — 0이면 비과세 행
+  exemptReason?: string   // 비과세 사유(관리자 입력 한국어 문구) — amount 0일 때만
+}
+
+/** rule_value: 인지세 세액표 (stamp.rates) */
+export interface StampRatesValue {
+  rows: StampRateRow[]
+}
+
+/** 인지세 계산 입력 — 개인식별정보는 포함하지 않는다 */
+export interface StampInput {
+  baseDate: string        // 계약일 = 계산 기준일 (YYYY-MM-DD)
+  contractPrice: number   // 계약서 기재금액 (원)
+  isHousing: boolean      // 주택 여부
+}
+
+/**
+ * @타입: StampSuccess
+ * @설명: 인지세 계산 성공 결과. 계약서 1통 기준(당사자가 여럿이어도 1통에 1회 과세).
+ *        비과세면 amount 0 + exempt true + 사유를 함께 담아, 화면이 "왜 0원인지"를 표시한다.
+ */
+export interface StampSuccess {
+  ok: true
+  amount: number                  // 인지세액 (원)
+  exempt: boolean                 // 비과세 여부
+  exemptReason: string | null     // 비과세 사유 (룰의 관리자 입력 문구)
+  appliedRules: AppliedRuleInfo[]
+  ruleMode: TaxRuleMode
+  containsProposedRule: boolean
+}
+
+export type StampResult = StampSuccess | TaxEngineFailure
+
 /**
  * @타입: MetroScopeValue
  * @설명: 수도권 범위 (region.metro_scope, tax_type='common').

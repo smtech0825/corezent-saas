@@ -20,8 +20,10 @@ import {
   parseMetroScope,
   parseRateTable,
   parseRounding,
+  parseStampRates,
 } from '@/lib/tax/rule-value'
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
+import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
 import { RULE_STATUSES, RULE_TAX_TYPES } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
@@ -50,6 +52,7 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [ACQUISITION_RULE_KEYS.giftHeavy]: parseGiftHeavy,
   [ACQUISITION_RULE_KEYS.deemedGiftThreshold]: parseDeemedGiftThreshold,
   [ACQUISITION_RULE_KEYS.rounding]: parseRounding,
+  [STAMP_RULE_KEYS.rates]: parseStampRates,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 

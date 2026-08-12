@@ -8,6 +8,7 @@
  */
 
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
+import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
 import { COMMON_RULE_KEYS } from '@/lib/tax/rule-store'
 
 /** 룰 키 하나의 안내 */
@@ -132,6 +133,32 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
     notes: ['unit: 절사 단위(원, 정수) / method: "floor"(버림)·"round"(반올림)·"ceil"(올림)'],
     skeleton: `{ "unit": «단위(원)», "method": "floor" }`,
   },
+  [STAMP_RULE_KEYS.rates]: {
+    title: '인지세 세액표 — 계약금액 구간별 정액(원)이 붙습니다. 세율(%)이 아니라 금액입니다.',
+    notes: [
+      '쓸 수 있는 조건 필드: price(계약서 기재금액·원), is_housing(주택 여부 true/false)',
+      '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다. 구간은 min/max로 표현하세요.',
+      '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류). 비과세 행처럼 구체적인 행일수록 priority를 크게 두세요.',
+      'amount: 그 구간의 인지세액(원, 정액).',
+      '비과세 행은 amount를 0으로 하고 exemptReason(비과세 사유 — 화면에 그대로 표시됩니다)을 반드시 함께 적으세요. 사유 없는 0원은 저장이 거부됩니다.',
+      '계약서 1통 기준입니다. 주택/주택 외의 구간이 다르면 is_housing 조건으로 행을 나눠 등록하세요.',
+    ],
+    skeleton: `{
+  "rows": [
+    {
+      "when": { "is_housing": { "eq": true }, "price": { "max": «금액(원)» } },
+      "priority": 10,
+      "amount": 0,
+      "exemptReason": "«비과세 사유 — 법령 문구 요지»"
+    },
+    {
+      "when": { "price": { "min": «금액(원)», "max": «금액(원)» } },
+      "priority": 0,
+      "amount": «인지세액(원)»
+    }
+  ]
+}`,
+  },
   [COMMON_RULE_KEYS.metroScope]: {
     title: '수도권 범위 — 수도권으로 취급할 시·도 이름 목록. 세율표의 is_metro 조건이 이 목록으로 판정됩니다.',
     notes: [
@@ -152,12 +179,16 @@ export const KNOWN_ACQUISITION_KEYS: string[] = Object.values(ACQUISITION_RULE_K
 /** 공통(전 세목)에서 선택할 수 있는 룰 키 목록 */
 export const KNOWN_COMMON_KEYS: string[] = Object.values(COMMON_RULE_KEYS)
 
+/** 인지세에서 선택할 수 있는 룰 키 목록 */
+export const KNOWN_STAMP_KEYS: string[] = Object.values(STAMP_RULE_KEYS)
+
 /**
  * @함수명: knownKeysForTaxType
  * @설명: 세목별로 안내가 준비된 룰 키 목록을 돌려줍니다. 빈 배열이면 직접 입력만 가능합니다.
  */
 export function knownKeysForTaxType(taxType: string): string[] {
   if (taxType === 'acquisition') return KNOWN_ACQUISITION_KEYS
+  if (taxType === 'stamp') return KNOWN_STAMP_KEYS
   if (taxType === 'common') return KNOWN_COMMON_KEYS
   return []
 }

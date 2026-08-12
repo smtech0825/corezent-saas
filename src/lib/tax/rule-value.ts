@@ -18,6 +18,7 @@ import type {
   RateSpec,
   RateTableRow,
   RoundingValue,
+  StampRateRow,
   TaxEngineFailure,
 } from './engine-types'
 import { engineFail } from './rule-store'
@@ -198,18 +199,20 @@ export function parseRateTable(
 
 /**
  * @함수명: selectRateRow
- * @설명: 조건에 맞는 세율 행을 고릅니다. 0건이면 NO_MATCHING_RATE_ROW,
+ * @설명: 조건에 맞는 행을 고릅니다. 0건이면 NO_MATCHING_RATE_ROW,
  *        여러 건이면 priority 최고 1건(동률이면 AMBIGUOUS_RATE_ROW)입니다.
  *        조용히 아무 행이나 고르지 않는다.
  *        값 미확정으로 판정하지 못하고 건너뛴 행이 있으면 그 조건 필드명을
  *        unresolved로 함께 돌려준다 — 행이 선택됐어도 화면이 이 사실을 표시해야 한다.
+ *        행 선택은 when·priority만 보므로 세율표(RateTableRow)·인지세 세액표(StampRateRow)
+ *        등 같은 조건 구조를 쓰는 모든 행 타입에 재사용된다(제네릭 — 동작 동일).
  */
-export function selectRateRow(
-  rows: RateTableRow[],
+export function selectRateRow<T extends { when: Conditions; priority?: number }>(
+  rows: T[],
   context: Record<string, Json | undefined>,
   ruleKey: string,
-): { ok: true; row: RateTableRow; unresolved: string[] } | TaxEngineFailure {
-  const matched: RateTableRow[] = []
+): { ok: true; row: T; unresolved: string[] } | TaxEngineFailure {
+  const matched: T[] = []
   const unresolvedAll = new Set<string>()
   for (const row of rows) {
     const m = matchConditions(row.when, context, ruleKey)
@@ -363,6 +366,37 @@ export function applyRounding(amount: number, rounding: RoundingValue | null): n
   if (!rounding) return Math.floor(amount)
   const fn = rounding.method === 'floor' ? Math.floor : rounding.method === 'ceil' ? Math.ceil : Math.round
   return fn(amount / rounding.unit) * rounding.unit
+}
+
+/**
+ * @함수명: parseStampRates
+ * @설명: 인지세 세액표 rule_value({ rows: [...] })를 검증해 반환합니다.
+ *        인지세는 세율이 아니라 정액(amount·원)이며, 비과세 행은 amount 0에
+ *        exemptReason(사유)을 반드시 함께 적어야 합니다 — 사유 없는 0원을 막는 장치.
+ *        금액·구간 값은 전부 룰에서 온다.
+ */
+export function parseStampRates(
+  value: Json,
+  ruleKey: string,
+): { ok: true; rows: StampRateRow[] } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const rows = value.rows
+  if (!Array.isArray(rows) || rows.length === 0) return invalid(ruleKey, 'rows가 비어 있지 않은 배열이 아닙니다.')
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    if (!isObj(row)) return invalid(ruleKey, `rows[${i}]가 객체가 아닙니다.`)
+    if (!isObj(row.when)) return invalid(ruleKey, `rows[${i}].when이 객체가 아닙니다.`)
+    if (row.priority !== undefined && !isNum(row.priority)) return invalid(ruleKey, `rows[${i}].priority가 숫자가 아닙니다.`)
+    if (!isNum(row.amount) || row.amount < 0) return invalid(ruleKey, `rows[${i}].amount가 0 이상 숫자(원)가 아닙니다.`)
+    if (row.amount === 0) {
+      if (typeof row.exemptReason !== 'string' || row.exemptReason.trim() === '') {
+        return invalid(ruleKey, `rows[${i}]는 비과세 행(amount 0)이므로 exemptReason(비과세 사유)이 필요합니다.`)
+      }
+    } else if (row.exemptReason !== undefined) {
+      return invalid(ruleKey, `rows[${i}]는 세액이 있는 행이므로 exemptReason을 넣지 않습니다.`)
+    }
+  }
+  return { ok: true, rows: rows as unknown as StampRateRow[] }
 }
 
 /**
