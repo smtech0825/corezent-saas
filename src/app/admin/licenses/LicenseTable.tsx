@@ -141,6 +141,7 @@ export default function LicenseTable({ licenses }: Props) {
         <SelectField
           size="md"
           wrapperClassName="sm:w-40 shrink-0"
+          aria-label="라이선스 상태 필터"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
         >

@@ -32,13 +32,14 @@ export default function SelectField({
     <span className={`relative inline-block align-middle ${wrapperClassName ?? 'w-full'}`}>
       <select
         {...props}
-        className={`appearance-none w-full bg-paper border border-rule text-ink cursor-pointer focus:outline-none focus:border-mark disabled:opacity-60 disabled:cursor-not-allowed ${SIZE_CLS[size]} ${className ?? ''}`}
+        className={`peer appearance-none w-full bg-paper border border-rule text-ink cursor-pointer focus:outline-none focus:border-mark disabled:opacity-60 disabled:cursor-not-allowed ${SIZE_CLS[size]} ${className ?? ''}`}
       >
         {children}
       </select>
+      {/* peer-disabled: 입력칸이 흐려질 때 장식 화살표도 함께 흐려진다 */}
       <ChevronDown
         size={13}
-        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint"
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint peer-disabled:opacity-60"
       />
     </span>
   )

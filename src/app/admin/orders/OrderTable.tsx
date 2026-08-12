@@ -205,6 +205,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
         <SelectField
           size="sm"
           wrapperClassName="w-32"
+          aria-label="주문 상태 필터"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -234,7 +235,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
           type="button"
           onClick={handleExport}
           disabled={filtered.length === 0}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-mark border border-mark/40 hover:border-mark/60 hover:bg-mark/5 px-3 py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-mark border border-mark/40 hover:border-mark/60 hover:bg-mark/5 px-3 py-2.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Download size={14} /> CSV 내보내기
         </button>

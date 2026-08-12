@@ -29,15 +29,31 @@ const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounde
 const TEXTAREA_CLS = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-mark placeholder:text-ink-faint resize-y'
 
 /**
+ * @함수명: displayValue
+ * @설명: 화면 표시용 정규화 — 계좌이체 사용 여부는 미설정('')도 '비활성(false)'으로 보여준다.
+ *        표시와 "저장 안 됨" 판정이 같은 규칙을 쓰도록 한 곳에 둔다. 서로 다르면
+ *        활성↔비활성을 오갔다가 되돌려도 배지가 남는 오탐이 생긴다(검증에서 발견).
+ * @매개변수: key - 설정 키 / value - 원본 값
+ * @반환값: 화면·판정이 함께 쓰는 값
+ */
+function displayValue(key: string, value: string): string {
+  if (key === 'bank_transfer_enabled') return value === 'true' ? 'true' : 'false'
+  return value
+}
+
+/**
  * @함수명: sectionDirty
  * @설명: 카드의 현재 입력값이 마지막으로 저장된 값과 다른지 판정합니다.
  *        저장 안 한 변경이 있는 카드에 "저장 안 됨" 표시를 띄우는 유일한 기준이며,
  *        값을 넣어 검증할 수 있게 컴포넌트 밖의 순수 함수로 둡니다.
+ *        비교는 화면 표시와 같은 정규화(displayValue)를 거친다.
  * @매개변수: keys - 카드가 저장하는 키 목록 / values - 현재 입력값 / saved - 마지막 저장값
  * @반환값: 하나라도 다르면 true
  */
 function sectionDirty(keys: string[], values: Settings, saved: Settings): boolean {
-  return keys.some((key) => (values[key] ?? '') !== (saved[key] ?? ''))
+  return keys.some(
+    (key) => displayValue(key, values[key] ?? '') !== displayValue(key, saved[key] ?? ''),
+  )
 }
 
 // ─── 저장 버튼 (섹션별 로딩·성공 상태 표시) ──────────────────────────────────
@@ -283,7 +299,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         <Field label="계좌이체 결제 사용">
           <SelectField
             size="md"
-            value={values.bank_transfer_enabled === 'true' ? 'true' : 'false'}
+            value={displayValue('bank_transfer_enabled', values.bank_transfer_enabled ?? '')}
             onChange={(e) => update('bank_transfer_enabled', e.target.value)}
           >
             <option value="false">비활성</option>
