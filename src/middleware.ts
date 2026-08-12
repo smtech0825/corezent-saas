@@ -58,12 +58,17 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
-  // 로그인한 사용자가 보호 경로에 도착하면 "돌아갈 경로" 흔적을 지운다.
+  // 로그인한 사용자가 어디든 도착하면 "돌아갈 경로" 흔적을 지운다.
   // 이 쿠키는 로그인 후 한 번 쓰고 버리는 임시 표시인데, 이메일+비밀번호로 로그인하면
   // 인증 콜백을 거치지 않아 지워질 기회가 없다. 남으면 10분 동안 다음 로그인의 목적지를
-  // 이겨 엉뚱한 곳으로 보낸다. 인증 콜백은 보호 경로가 아니라 이 정리에 걸리지 않으므로,
-  // 콜백이 값을 읽을 기회를 빼앗지 않는다.
-  if (isProtected && user && request.cookies.has(RETURN_TO_COOKIE)) {
+  // 이겨 엉뚱한 곳으로 보낸다. 예전에는 "보호 경로 도착"일 때만 지워서, 로그인 후
+  // 목적지가 홈(/) 등이면 흔적이 남았다 — 지우는 목적은 "로그인이 끝났다"이지
+  // "어디에 도착했다"가 아니므로 조건을 로그인 여부로만 잡는다.
+  // 인증 콜백(/auth/callback)이 값을 읽을 기회는 빼앗지 않는다: 여기서 지우는 것은
+  // 응답 쿠키라 콜백 핸들러가 읽는 요청 쿠키는 그대로이고, 콜백을 밟는 시점의 손님은
+  // 아직 세션이 없어(user 없음) 이 정리에 걸리지도 않는다. 콜백은 네 출구 전부에서
+  // 스스로 지운다(withCookieCleared).
+  if (user && request.cookies.has(RETURN_TO_COOKIE)) {
     supabaseResponse.cookies.delete(RETURN_TO_COOKIE)
   }
 
