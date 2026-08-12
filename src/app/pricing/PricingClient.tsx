@@ -280,7 +280,7 @@ export default function PricingClient({ products }: Props) {
                       )}
                     </div>
 
-                    {/* 핵심 기능 — 최대 4개, 각 1줄 클램프(전체 설명은 상세 페이지에서). 카드 높이 통일 */}
+                    {/* 핵심 기능 — 최대 4개, 각 3줄까지(전체 설명은 상세 페이지에서). 카드 높이는 그리드 stretch로 통일 */}
                     {product.pricingFeatures.length > 0 && (
                       <ul className="space-y-3 mb-6">
                         {product.pricingFeatures.slice(0, 4).map((feature) => {
@@ -291,7 +291,7 @@ export default function PricingClient({ products }: Props) {
                           return (
                             <li key={feature} className="flex items-start gap-3">
                               <Check size={15} className="text-pen mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-ink-soft leading-relaxed line-clamp-1 min-w-0">
+                              <span className="text-sm text-ink-soft leading-relaxed line-clamp-3 min-w-0">
                                 {desc ? (
                                   <><strong className="text-ink">{title}:</strong> {desc}</>
                                 ) : title}

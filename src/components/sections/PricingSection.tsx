@@ -145,15 +145,16 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         </Button>
       )}
 
-      {/* 기능 목록 — 최대 4개, 각 1줄 클램프로 카드 높이 통일(전체 설명은 상세 페이지) */}
+      {/* 기능 목록 — 최대 4개, 각 3줄까지(전체 설명은 상세 페이지). 카드 높이는 그리드 stretch로 통일 */}
       {product.pricingFeatures.length > 0 && (
         <ul className="flex flex-col gap-3 border-t border-rule pt-5">
+          {/* 여러 줄 표시라 아이콘은 첫 줄에 상단 정렬(items-start + mt) */}
           {product.pricingFeatures.slice(0, 4).map((f) => (
-            <li key={f} className="flex items-center gap-3 text-sm text-ink-soft">
-              <span className="w-4 h-4 rounded-full bg-pen/10 flex items-center justify-center shrink-0">
+            <li key={f} className="flex items-start gap-3 text-sm text-ink-soft">
+              <span className="w-4 h-4 rounded-full bg-pen/10 flex items-center justify-center shrink-0 mt-0.5">
                 <Check size={10} className="text-pen" />
               </span>
-              <span className="line-clamp-1 min-w-0">{f}</span>
+              <span className="line-clamp-3 min-w-0">{f}</span>
             </li>
           ))}
         </ul>
