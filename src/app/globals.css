@@ -181,6 +181,20 @@
  * dangerouslySetInnerHTML로 그린 자식에는 유틸 클래스를 붙일 수 없어 스코프 CSS로 스타일링한다.
  * ---------------------------------------------------------- */
 @layer components {
+  /* 사이드바 메뉴 스크롤 그림자 — 메뉴가 화면보다 길어 스크롤이 생기면 위·아래에 흐린
+     그림자를 띄워 "더 있다"는 것을 알린다. 스크롤이 없으면 아무것도 안 보인다.
+     (배경 gradient + background-attachment 조합 — 그림자 색은 기존 잉크색 rgb(35,39,46) 재사용) */
+  .nav-scroll-shadow {
+    background:
+      linear-gradient(var(--color-paper-shade) 30%, transparent) top,
+      linear-gradient(transparent, var(--color-paper-shade) 70%) bottom,
+      radial-gradient(farthest-side at 50% 0, rgba(35, 39, 46, 0.14), transparent) top,
+      radial-gradient(farthest-side at 50% 100%, rgba(35, 39, 46, 0.14), transparent) bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 36px, 100% 36px, 100% 12px, 100% 12px;
+    background-attachment: local, local, scroll, scroll;
+  }
+
   /* overflow-x:auto — nowrap 등으로 컨테이너보다 넓어진 표를 좁은 화면에서 가로 스크롤로 수용(레이아웃 보호) */
   .rich-content { color: var(--color-ink-soft); font-size: 0.875rem; line-height: 1.75; overflow-x: auto; }
   .rich-content > :first-child { margin-top: 0; }

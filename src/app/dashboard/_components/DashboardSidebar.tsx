@@ -81,7 +81,8 @@ export default function DashboardSidebar({ user, supportBadge = 0, isAdmin = fal
       </div>
 
       {/* 네비게이션 */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+      {/* 스크롤이 생길 만큼 길어지면 위·아래 그림자로 알린다(짧으면 아무 변화 없음) */}
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto nav-scroll-shadow">
         {DASHBOARD_NAV.map((item) => {
           const Icon   = item.icon
           const active = isActive(item)

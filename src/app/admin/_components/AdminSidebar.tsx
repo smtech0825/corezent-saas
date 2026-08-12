@@ -206,12 +206,12 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
 
       {/* 네비게이션 — 그룹 3개(관리자·프론트엔드·시스템) 모두 같은 접힘 규칙.
           항목·순서·링크는 기존 그대로다. */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto nav-scroll-shadow">
         {GROUPS.map((group, gi) => {
           const groupActive = activeGroup === group.key
           const expanded = open[group.key]
           return (
-            <div key={group.key} className={gi > 0 ? 'mt-4' : undefined}>
+            <div key={group.key} className={gi > 0 ? 'mt-3' : undefined}>
               <button
                 onClick={() => toggleGroup(group.key)}
                 aria-expanded={expanded}
@@ -238,7 +238,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
                         key={item.href}
                         href={item.href}
                         onClick={onClose}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           active ? activeCls : idleCls
                         }`}
                       >
@@ -261,21 +261,21 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
         })}
       </nav>
 
-      {/* 대시보드 링크 */}
-      <div className="px-3 pt-2 border-t border-rule">
+      {/* 대시보드 링크 — 하단 고정 영역은 여백만 줄였다(글자 크기 불변) */}
+      <div className="px-3 pt-1 border-t border-rule">
         {/* 같은 구조의 형제(다른 영역 이동 링크) — ink-faint는 대비 2.81:1로 낮아
             ink-soft(5.85:1)로 맞춘다. 대시보드 쪽 관리자 이동 링크와 같은 색 */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-ink-soft hover:text-ink transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-ink-soft hover:text-ink transition-colors"
         >
           ← 사용자 대시보드
         </Link>
       </div>
 
       {/* 사용자 정보 + 로그아웃 */}
-      <div className="px-3 py-3">
-        <div className="flex items-center gap-3 px-3 py-2 mb-1">
+      <div className="px-3 py-2">
+        <div className="flex items-center gap-3 px-3 py-1.5 mb-0.5">
           <span className="w-8 h-8 rounded-full bg-mark/15 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
             {user.initials}
           </span>
@@ -286,7 +286,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
         >
           <LogOut size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
           로그아웃
