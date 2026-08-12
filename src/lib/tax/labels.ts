@@ -5,7 +5,7 @@
  *        서버 검증이 이 목록을 함께 쓴다.
  */
 
-import type { RegulatedAreaType, TaxRuleStatus, TaxType } from './types'
+import type { RegulatedAreaType, TaxRuleStatus, TaxRuleTaxType, TaxType } from './types'
 
 /** 세목 목록 (DB CHECK 제약과 동일 순서) */
 export const TAX_TYPES: TaxType[] = [
@@ -25,6 +25,19 @@ export const TAX_TYPE_LABELS: Record<TaxType, string> = {
   property: '재산세',
   comprehensive: '종합부동산세',
   inheritance: '상속·증여세',
+}
+
+/**
+ * 룰 편집(tax_rules) 전용 세목 목록 — 세목 6종 + 'common'(전 세목 공통).
+ * ⚠️ 규제지역 화면의 적용 세목 체크박스에는 쓰지 않는다(그쪽은 TAX_TYPES —
+ *    tax_regulated_areas.applies_to CHECK에 'common'이 없다).
+ */
+export const RULE_TAX_TYPES: TaxRuleTaxType[] = [...TAX_TYPES, 'common']
+
+/** 룰 편집 전용 세목 한국어 라벨 */
+export const RULE_TAX_TYPE_LABELS: Record<TaxRuleTaxType, string> = {
+  ...TAX_TYPE_LABELS,
+  common: '공통 (전 세목)',
 }
 
 /** 룰 상태 목록 */

@@ -25,6 +25,7 @@ export interface AcquisitionCalcPayload {
   price: number
   houseCountAfter: number
   areaOver85: boolean
+  areaSqm?: number          // 전용면적(㎡) — 있으면 엔진이 area_sqm 조건과 area_over_85를 함께 만든다
   ruleMode: TaxRuleMode
   firstHome?: boolean
   temporaryTwoHome?: boolean
@@ -63,10 +64,12 @@ export async function calculateAcquisition(payload: AcquisitionCalcPayload): Pro
   const input: AcquisitionInput = {
     baseDate: payload.baseDate,
     regionCode: buildRegionCode(payload.sido, payload.sigungu),
+    sido: payload.sido,   // is_metro(수도권) 판정용 — 위에서 목록 검증을 통과한 이름
     cause: payload.cause === 'gift' ? 'gift' : 'sale',
     price: payload.price,
     houseCountAfter: payload.houseCountAfter,
     areaOver85: payload.areaOver85 === true,
+    areaSqm: payload.areaSqm,
     firstHome: payload.firstHome === true,
     temporaryTwoHome: payload.temporaryTwoHome === true,
     donorRelation: payload.donorRelation,
@@ -94,6 +97,7 @@ export async function calculateAcquisition(payload: AcquisitionCalcPayload): Pro
           isRegulatedArea: result.isRegulatedArea,
           breakdown: result.breakdown,
           containsProposedRule: result.containsProposedRule,
+          unresolvedFields: result.unresolvedFields,
         },
         applied_rule_ids: result.appliedRules.map((r) => r.id),
       })

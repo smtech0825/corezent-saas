@@ -18,6 +18,13 @@ export type TaxType =
   | 'comprehensive'  // 종합부동산세
   | 'inheritance'    // 상속·증여세
 
+/**
+ * 룰 저장소(tax_rules) 전용 세목 — 세목 6종 + 'common'(전 세목 공통 룰, 057에서 CHECK 확장).
+ * 수도권 범위(region.metro_scope)처럼 여러 세목이 공유하는 룰은 'common'으로 저장한다.
+ * 규제지역·테스트케이스·계산 이력 테이블은 실제 세목만 담으므로 TaxType을 그대로 쓴다.
+ */
+export type TaxRuleTaxType = TaxType | 'common'
+
 /** 룰 상태 — confirmed(확정법) / proposed(개정안) / repealed(폐지) */
 export type TaxRuleStatus = 'confirmed' | 'proposed' | 'repealed'
 
@@ -37,7 +44,7 @@ export type RegulatedAreaAppliesTo = TaxType | 'all'
  */
 export interface TaxRule {
   id: string
-  tax_type: TaxType
+  tax_type: TaxRuleTaxType
   rule_key: string
   rule_value: Json
   effective_from: string        // date (YYYY-MM-DD)
@@ -46,6 +53,8 @@ export interface TaxRule {
   law_name: string              // 근거 법령명
   law_article: string           // 근거 조문
   law_url: string               // 법제처 원문 링크
+  law_id: string | null         // 법제처 법령 ID (057) — 법령 개정 자동 감시용, 선택 입력
+  law_article_no: string | null // 법제처 조문번호 6자리 = 조번호 4자리 + 가지번호 2자리 (057)
   note: string | null
   created_at: string
   updated_at: string

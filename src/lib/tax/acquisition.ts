@@ -16,7 +16,7 @@ import type {
   RoundingValue,
   TaxEngineFailure,
 } from './engine-types'
-import { engineFail, fetchValidRules, isRegulatedArea, isValidDateString, isValidRegionCode, requireRule } from './rule-store'
+import { COMMON_RULE_KEYS, engineFail, fetchValidRules, isRegulatedArea, isValidDateString, isValidRegionCode, requireRule } from './rule-store'
 import {
   applyRounding,
   evaluateRateSpec,
@@ -24,6 +24,7 @@ import {
   parseDeemedGiftThreshold,
   parseGiftHeavy,
   parseGiftTaxBase,
+  parseMetroScope,
   parseRateTable,
   parseRounding,
   selectRateRow,
@@ -70,7 +71,10 @@ function validateInput(input: AcquisitionInput): TaxEngineFailure | null {
   if (!Number.isInteger(input.houseCountAfter) || input.houseCountAfter < 1) {
     return engineFail('INVALID_INPUT', '취득 후 주택 수는 1 이상의 정수여야 합니다.')
   }
-  for (const [label, v] of [['시가인정액', input.marketValue], ['공시가격', input.officialPrice]] as const) {
+  if (input.areaSqm !== undefined && (!Number.isFinite(input.areaSqm) || input.areaSqm <= 0)) {
+    return engineFail('INVALID_INPUT', '전용면적은 0보다 큰 숫자(㎡)여야 합니다.')
+  }
+  for (const [label, v] of [['시가인정액', input.marketValue], ['공시가격(시가표준액)', input.officialPrice]] as const) {
     if (v !== undefined && (!Number.isFinite(v) || v < 0)) {
       return engineFail('INVALID_INPUT', `${label}은 0 이상의 숫자여야 합니다.`)
     }
@@ -122,6 +126,27 @@ export async function calculateAcquisitionTax(
   const applied = new Map<string, AppliedRuleInfo>()
   const use = (rule: TaxRule) => applied.set(rule.id, toAppliedInfo(rule))
 
+  // 값 미확정으로 판정하지 못한 조건 필드 — 결과에 담아 화면이 표시한다
+  const unresolvedFields = new Set<string>()
+
+  // ── 수도권 여부(is_metro) — region.metro_scope 룰(공통, tax_type='common')로 판정 ──
+  // 룰이 없거나 시·도를 모르면 '미확정'으로 두고, is_metro 조건을 쓰는 행은 매칭되지 않는다.
+  // 임의로 false로 간주하지 않는다 (수도권 시·도 목록은 코드에 없다 — 전부 관리자 입력).
+  const sidoName = input.sido && input.sido.trim() !== '' ? input.sido : undefined
+  let isMetro: boolean | undefined
+  const metroRule = rules.get(COMMON_RULE_KEYS.metroScope)
+  if (metroRule) {
+    const scope = parseMetroScope(metroRule.rule_value, metroRule.rule_key)
+    if (!scope.ok) return scope
+    if (sidoName !== undefined) isMetro = scope.value.sidoNames.includes(sidoName)
+  }
+
+  // ── 전용면적 — 숫자(areaSqm)가 오면 기존 boolean 조건(area_over_85)도 함께 만든다 ──
+  // 여기의 85는 세법 기준값이 아니라 'area_over_85'라는 기존 필드 이름 자체의 정의다
+  // (설계 문서 Wave 1 지시 — 기존 룰 형식 호환용). 면적 기준 판정(60㎡·85㎡ 등)은
+  // 룰이 area_sqm 필드에 min/max 조건을 걸어 수행하며, 기준 숫자는 룰 데이터에 있다.
+  const areaOver85 = input.areaSqm !== undefined ? input.areaSqm > 85 : input.areaOver85
+
   // ── 취득 유형 결정 — 증여인데 대가가 있으면 간주 기준(룰)으로 판정 ──────────
   let causeApplied: 'onerous' | 'gift' = input.cause === 'sale' ? 'onerous' : 'gift'
   let deemedGift = false
@@ -152,17 +177,21 @@ export async function calculateAcquisitionTax(
     const table = parseRateTable(ratesRule.rule.rule_value, ratesRule.rule.rule_key)
     if (!table.ok) return table
 
-    // 판정 컨텍스트 — 세율표 행의 when 조건은 이 필드들만 쓸 수 있다
-    const context: Record<string, Json> = {
+    // 판정 컨텍스트 — 세율표 행의 when 조건은 이 필드들만 쓸 수 있다 (undefined = 미확정)
+    const context: Record<string, Json | undefined> = {
       price: input.price,
       house_count: input.houseCountAfter,
       is_regulated: regulated,
-      area_over_85: input.areaOver85,
+      area_over_85: areaOver85,
       first_home: input.firstHome ?? false,
       temporary_two_home: input.temporaryTwoHome ?? false,
+      area_sqm: input.areaSqm,              // 전용면적(㎡) — 미입력이면 미확정
+      official_price: input.officialPrice,  // 공시가격(시가표준액) — 저가주택 중과 제외 판정용. 미입력이면 미확정
+      is_metro: isMetro,                    // 수도권 여부 — metro_scope 룰과 시·도가 있어야 확정
     }
     const picked = selectRateRow(table.rows, context, ratesRule.rule.rule_key)
     if (!picked.ok) return picked
+    picked.unresolved.forEach((f) => unresolvedFields.add(f))
     use(ratesRule.rule)
     selectedRow = picked.row
   } else {
@@ -208,17 +237,21 @@ export async function calculateAcquisitionTax(
       }
     }
 
-    const context: Record<string, Json> = {
+    const context: Record<string, Json | undefined> = {
       tax_base: taxBase,
       house_count: input.houseCountAfter,
       is_regulated: regulated,
-      area_over_85: input.areaOver85,
+      area_over_85: areaOver85,
       donor_relation: input.donorRelation ?? 'other',
+      area_sqm: input.areaSqm,              // 전용면적(㎡) — 미입력이면 미확정
+      official_price: input.officialPrice,  // 공시가격(시가표준액) — 미입력이면 미확정
+      is_metro: isMetro,                    // 수도권 여부 — metro_scope 룰과 시·도가 있어야 확정
     }
 
     if (heavyRows) {
       const picked = selectRateRow(heavyRows, context, heavyRuleKey)
       if (!picked.ok) return picked
+      picked.unresolved.forEach((f) => unresolvedFields.add(f))
       selectedRow = picked.row
     } else {
       const ratesRule = requireRule(rules, ACQUISITION_RULE_KEYS.giftRates, input.baseDate)
@@ -227,10 +260,14 @@ export async function calculateAcquisitionTax(
       if (!table.ok) return table
       const picked = selectRateRow(table.rows, context, ratesRule.rule.rule_key)
       if (!picked.ok) return picked
+      picked.unresolved.forEach((f) => unresolvedFields.add(f))
       use(ratesRule.rule)
       selectedRow = picked.row
     }
   }
+
+  // 선택된 행이 is_metro 조건을 썼다면 수도권 범위 룰도 계산 근거에 포함한다
+  if (metroRule && 'is_metro' in selectedRow.when) use(metroRule)
 
   // ── 세액 계산 + 단수 처리 ───────────────────────────────────────────────────
   const raw = computeItems(selectedRow, taxBase)
@@ -264,5 +301,6 @@ export async function calculateAcquisitionTax(
     appliedRules,
     ruleMode: mode,
     containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),
+    unresolvedFields: Array.from(unresolvedFields),
   }
 }

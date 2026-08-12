@@ -12,8 +12,8 @@ import { useEffect, useState, useTransition } from 'react'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Field, Input, Textarea } from '@/components/ui/Input'
-import { RULE_STATUSES, RULE_STATUS_LABELS, TAX_TYPES, TAX_TYPE_LABELS } from '@/lib/tax/labels'
-import type { TaxRule, TaxRuleStatus, TaxType } from '@/lib/tax/types'
+import { RULE_STATUSES, RULE_STATUS_LABELS, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
+import type { TaxRule, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 import { saveTaxRule } from './actions'
 import { KNOWN_ACQUISITION_KEYS, RULE_GUIDES } from './rule-guides'
 
@@ -35,7 +35,7 @@ function periodsOverlap(fromA: string, toA: string | null, fromB: string, toB: s
 }
 
 export default function RuleForm({ initial, allRules, onDone }: Props) {
-  const [taxType, setTaxType] = useState<TaxType>(initial?.tax_type ?? 'acquisition')
+  const [taxType, setTaxType] = useState<TaxRuleTaxType>(initial?.tax_type ?? 'acquisition')
   const initialKnown = initial ? KNOWN_ACQUISITION_KEYS.includes(initial.rule_key) : true
   const [keyChoice, setKeyChoice] = useState<string>(
     initial ? (initialKnown ? initial.rule_key : '__custom') : KNOWN_ACQUISITION_KEYS[0],
@@ -47,6 +47,8 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
   const [lawName, setLawName] = useState(initial?.law_name ?? '')
   const [lawArticle, setLawArticle] = useState(initial?.law_article ?? '')
   const [lawUrl, setLawUrl] = useState(initial?.law_url ?? '')
+  const [lawId, setLawId] = useState(initial?.law_id ?? '')
+  const [lawArticleNo, setLawArticleNo] = useState(initial?.law_article_no ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
   const [valueText, setValueText] = useState(
     initial ? JSON.stringify(initial.rule_value, null, 2) : '',
@@ -109,6 +111,8 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
         law_name: lawName,
         law_article: lawArticle,
         law_url: lawUrl,
+        law_id: lawId.trim() || null,
+        law_article_no: lawArticleNo.trim() || null,
         note: note || null,
       })
       if (result.status === 'ok') onDone(true)
@@ -123,8 +127,8 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="세목" htmlFor="rule-tax-type" required>
           <select id="rule-tax-type" className={SELECT_CLS} value={taxType}
-            onChange={(e) => { setTaxType(e.target.value as TaxType); setKeyChoice('__custom') }}>
-            {TAX_TYPES.map((t) => <option key={t} value={t}>{TAX_TYPE_LABELS[t]}</option>)}
+            onChange={(e) => { setTaxType(e.target.value as TaxRuleTaxType); setKeyChoice('__custom') }}>
+            {RULE_TAX_TYPES.map((t) => <option key={t} value={t}>{RULE_TAX_TYPE_LABELS[t]}</option>)}
           </select>
         </Field>
         <Field label="상태" htmlFor="rule-status" required
@@ -197,6 +201,19 @@ export default function RuleForm({ initial, allRules, onDone }: Props) {
         <Input id="rule-law-url" type="url" value={lawUrl} onChange={(e) => setLawUrl(e.target.value)}
           placeholder="https://law.go.kr/..." required />
       </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="법제처 법령 ID" htmlFor="rule-law-id"
+          hint="법령 개정 자동 감시에 사용됩니다. 모르면 비워두세요.">
+          <Input id="rule-law-id" value={lawId} onChange={(e) => setLawId(e.target.value)}
+            placeholder="법제처 법령 ID" />
+        </Field>
+        <Field label="조문번호 (법제처 6자리)" htmlFor="rule-law-article-no"
+          hint="조번호 4자리 + 가지번호 2자리. 모르면 비워두세요.">
+          <Input id="rule-law-article-no" value={lawArticleNo} onChange={(e) => setLawArticleNo(e.target.value)}
+            placeholder="숫자 6자리" inputMode="numeric" maxLength={6} />
+        </Field>
+      </div>
 
       <Field label="메모" htmlFor="rule-note">
         <Textarea id="rule-note" value={note} onChange={(e) => setNote(e.target.value)} className="min-h-20" />

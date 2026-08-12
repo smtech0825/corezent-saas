@@ -22,16 +22,18 @@ export type DonorRelation = 'spouse' | 'lineal' | 'other'
 export interface AcquisitionInput {
   baseDate: string           // 취득일 = 계산 기준일 (YYYY-MM-DD)
   regionCode: string         // 소재지 행정구역 코드 (tax_regulated_areas.region_code와 대조)
+  sido?: string              // 소재지 시·도 이름 — is_metro(수도권) 판정용. 없으면 is_metro 미확정
   cause: AcquisitionCause
   price: number              // 취득가액 (원). 증여면 실제 지급대가 — 순수 증여는 0
   houseCountAfter: number    // 취득 후 1세대 주택 수
   areaOver85: boolean        // 전용면적 85제곱미터 초과 여부
+  areaSqm?: number           // 전용면적(㎡, 원본 숫자). 있으면 area_sqm 조건에 쓰이고 area_over_85도 이 값에서 계산
   // 고급 입력 (기본 접힘)
   firstHome?: boolean            // 생애최초 취득 여부
   temporaryTwoHome?: boolean     // 일시적 2주택 여부
   donorRelation?: DonorRelation  // 증여 시 — 증여자와의 관계
   marketValue?: number           // 증여 시 — 시가인정액 (원)
-  officialPrice?: number         // 증여 시 — 공시가격 (원)
+  officialPrice?: number         // 공시가격(시가표준액) (원) — 증여 과세표준·중과 판정, 유상 저가주택 판정에 사용
   donorIsSingleHomeOwner?: boolean // 증여 시 — 증여자 1주택자 여부 (중과 배제 판단)
 }
 
@@ -74,6 +76,12 @@ export interface AcquisitionSuccess {
   appliedRules: AppliedRuleInfo[]
   ruleMode: TaxRuleMode
   containsProposedRule: boolean     // 개정안(proposed) 룰이 하나라도 쓰였는지 — 경고 배지용
+  /**
+   * 값 미입력(미확정)으로 판정하지 못한 조건 필드 목록 — 빈 배열이면 없음.
+   * 예: 시가표준액을 비워 두면 저가주택 중과 제외 행을 판정하지 못하고 여기에 담긴다.
+   * 화면이 이 사실을 근거 표시와 같은 비중으로 보여준다. 조용히 0·false로 대체하지 않는다.
+   */
+  unresolvedFields: string[]
 }
 
 // ─── 오류 ─────────────────────────────────────────────────────────────────────
@@ -112,6 +120,17 @@ export type AcquisitionResult = AcquisitionSuccess | TaxEngineFailure
  *                         세율% = slopePercent × (과세표준/per) + interceptPercent
  *                         (min/maxPercent로 상·하한 고정 가능. 계수는 관리자가 법령 산식대로 입력)
  */
+/**
+ * @타입: RatePercentRounding
+ * @설명: linear_by_base 산식 결과(세율%)의 소수점 반올림 지정.
+ *        자릿수(decimals)·방식(method)은 전부 룰(관리자 입력)에서 온다 — 코드에 자릿수를 박지 않는다.
+ *        지정이 없으면 반올림하지 않는다(기존 동작 유지).
+ */
+export interface RatePercentRounding {
+  decimals: number                     // 소수점 이하 유지 자릿수 (0 이상 정수)
+  method: 'round' | 'floor' | 'ceil'   // 반올림 / 버림 / 올림
+}
+
 export type RateSpec =
   | { type: 'fixed'; ratePercent: number }
   | {
@@ -121,6 +140,7 @@ export type RateSpec =
       interceptPercent: number
       minPercent?: number
       maxPercent?: number
+      rounding?: RatePercentRounding  // 산식 결과 세율%의 소수점 처리 — 룰에서 지정
     }
 
 /** 조건 명세 — eq(일치) / min·max(숫자 범위, 경계 포함) / in(목록 포함) */
@@ -185,4 +205,15 @@ export interface DeemedGiftThresholdValue {
 export interface RoundingValue {
   unit: number                     // 절사 단위 (원)
   method: 'floor' | 'round' | 'ceil'
+}
+
+/**
+ * @타입: MetroScopeValue
+ * @설명: 수도권 범위 (region.metro_scope, tax_type='common').
+ *        수도권으로 취급할 시·도 이름 목록 — 목록은 관리자가 법령 근거와 함께 입력하며
+ *        코드에는 어떤 시·도 이름도 박지 않는다. 이 룰이 없으면 is_metro는 미확정이 되어
+ *        is_metro 조건을 쓰는 세율 행은 매칭되지 않는다(임의 false 간주 금지).
+ */
+export interface MetroScopeValue {
+  sidoNames: string[]   // 수도권으로 취급할 시·도 이름 (regions.ts의 시·도 명칭과 동일 표기)
 }

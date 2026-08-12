@@ -25,6 +25,15 @@ export function isValidRegionCode(value: string): boolean {
   return value.length >= 1 && value.length <= 40 && /^[가-힣A-Za-z0-9| -]+$/.test(value)
 }
 
+/**
+ * 세목 공통 룰 키 — tax_type='common'으로 저장되며(057), fetchValidRules가
+ * 어떤 세목을 조회하든 항상 함께 로드한다. 특정 세목에 묻어 저장하면
+ * 다른 세목 조회에서 빠지므로 반드시 'common'으로 등록해야 한다.
+ */
+export const COMMON_RULE_KEYS = {
+  metroScope: 'region.metro_scope',   // 수도권으로 취급할 시·도 이름 목록 (관리자 입력)
+} as const
+
 /** 실패 결과 생성 헬퍼 */
 export function engineFail(
   code: TaxEngineFailure['code'],
@@ -41,6 +50,7 @@ export type RuleFetchResult =
 /**
  * @함수명: fetchValidRules
  * @설명: 세목·기준일·룰 모드에 맞는 유효 룰을 rule_key별로 1건씩 확정해 반환합니다.
+ *        - 세목 공통 룰(tax_type='common' — 예: region.metro_scope)은 항상 함께 로드합니다
  *        - effective_from ≤ 기준일, effective_to는 NULL(무기한) 또는 기준일 이상(종료일 포함)
  *        - confirmed 모드: status=confirmed만
  *        - proposed 모드: confirmed+proposed 조회 후 같은 키에 둘 다 있으면 proposed 우선
@@ -61,7 +71,7 @@ export async function fetchValidRules(
   let query = supabase
     .from('tax_rules')
     .select('*')
-    .eq('tax_type', taxType)
+    .in('tax_type', [taxType, 'common'])
     .lte('effective_from', baseDate)
     .or(`effective_to.is.null,effective_to.gte.${baseDate}`)
 

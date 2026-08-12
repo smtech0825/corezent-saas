@@ -12,22 +12,23 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
-import { isValidDateString } from '@/lib/tax/rule-store'
+import { COMMON_RULE_KEYS, isValidDateString } from '@/lib/tax/rule-store'
 import {
   parseDeemedGiftThreshold,
   parseGiftHeavy,
   parseGiftTaxBase,
+  parseMetroScope,
   parseRateTable,
   parseRounding,
 } from '@/lib/tax/rule-value'
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
-import { RULE_STATUSES, TAX_TYPES } from '@/lib/tax/labels'
-import type { Json, TaxRuleStatus, TaxType } from '@/lib/tax/types'
+import { RULE_STATUSES, RULE_TAX_TYPES } from '@/lib/tax/labels'
+import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
 /** 룰 저장 요청 — rule_value는 JSON 문자열로 받아 서버가 파싱·검증한다 */
 export interface TaxRulePayload {
   id?: string
-  tax_type: TaxType
+  tax_type: TaxRuleTaxType
   rule_key: string
   rule_value_text: string
   effective_from: string
@@ -36,6 +37,8 @@ export interface TaxRulePayload {
   law_name: string
   law_article: string
   law_url: string
+  law_id: string | null         // 법제처 법령 ID (선택)
+  law_article_no: string | null // 법제처 조문번호 6자리 = 조번호 4자리 + 가지번호 2자리 (선택)
   note: string | null
 }
 
@@ -47,6 +50,7 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [ACQUISITION_RULE_KEYS.giftHeavy]: parseGiftHeavy,
   [ACQUISITION_RULE_KEYS.deemedGiftThreshold]: parseDeemedGiftThreshold,
   [ACQUISITION_RULE_KEYS.rounding]: parseRounding,
+  [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 
 /** 실패 결과 생성 헬퍼 */
@@ -70,7 +74,7 @@ export async function saveTaxRule(payload: TaxRulePayload): Promise<AdminActionR
   const lawName = payload.law_name.trim()
   const lawArticle = payload.law_article.trim()
   const lawUrl = payload.law_url.trim()
-  if (!TAX_TYPES.includes(payload.tax_type)) return failed('세목이 올바르지 않습니다.')
+  if (!RULE_TAX_TYPES.includes(payload.tax_type)) return failed('세목이 올바르지 않습니다.')
   if (!ruleKey) return failed('룰 키를 입력해 주세요.')
   if (!RULE_STATUSES.includes(payload.status)) return failed('상태(확정/개정안/폐지)를 선택해 주세요.')
   if (!isValidDateString(payload.effective_from)) return failed('시행일을 입력해 주세요. (YYYY-MM-DD)')
@@ -81,6 +85,13 @@ export async function saveTaxRule(payload: TaxRulePayload): Promise<AdminActionR
   if (!lawName) return failed('근거 법령명을 입력해 주세요. 근거 없는 룰은 저장할 수 없습니다.')
   if (!lawArticle) return failed('근거 조문을 입력해 주세요. 근거 없는 룰은 저장할 수 없습니다.')
   if (!/^https?:\/\/.+/.test(lawUrl)) return failed('법제처 원문 링크를 http(s) 주소로 입력해 주세요.')
+
+  // 법령 참조(선택) — 법령 개정 자동 감시(다음 Stage)가 이 값으로 조회한다
+  const lawId = payload.law_id?.trim() || null
+  const lawArticleNo = payload.law_article_no?.trim() || null
+  if (lawArticleNo !== null && !/^\d{6}$/.test(lawArticleNo)) {
+    return failed('조문번호는 법제처 API 형식의 6자리 숫자(조번호 4자리 + 가지번호 2자리)로 입력해 주세요. 모르면 비워두세요.')
+  }
 
   // ── rule_value 파싱·스키마 검증 ────────────────────────────────────────────
   let ruleValue: Json
@@ -107,6 +118,8 @@ export async function saveTaxRule(payload: TaxRulePayload): Promise<AdminActionR
     law_name: lawName,
     law_article: lawArticle,
     law_url: lawUrl,
+    law_id: lawId,
+    law_article_no: lawArticleNo,
     note: payload.note?.trim() || null,
   }
 
