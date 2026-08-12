@@ -8,7 +8,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import {
   LayoutDashboard,
   Users,
@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NAV_ICON_SIZE, NAV_ICON_STROKE } from '@/components/common/nav-icon'
+import UnreadDot from '@/components/common/UnreadDot'
 
 /** 메뉴 항목 한 개 — exact는 '개요'처럼 정확 일치가 필요한 항목만 true */
 interface NavItem {
@@ -87,6 +88,10 @@ const GROUPS = [
 /** 접힘 상태를 기억하는 브라우저 저장 키 — 이 저장소는 이미 localStorage를 쓴다(아이디 저장 등) */
 const GROUP_STATE_KEY = 'corezent_admin_sidebar_groups'
 
+// 저장된 접힘 상태 복원은 첫 화면이 그려지기 전에 해야 "펼쳐졌다 접히는" 깜빡임이 없다.
+// useLayoutEffect는 서버 렌더에서 경고가 나므로 서버에서는 useEffect로 대체한다.
+const useClientLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
+
 /**
  * @함수명: itemActive
  * @설명: 메뉴 항목이 현재 경로에서 활성인지 판정합니다(기존 isActive와 같은 규칙).
@@ -125,22 +130,28 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
 
   const activeGroup = groupOfPath(pathname)
 
-  // 그룹별 접힘 상태 — 기본은 전부 펼침(기존 화면과 동일). 서버·클라이언트 첫 렌더가
-  // 같아야 해서 localStorage는 아래 useEffect에서만 읽는다.
+  // 그룹별 접힘 상태 — 기본: 관리자·시스템은 펼침, 프론트엔드는 그 그룹 화면일 때만
+  // 펼침(기존 화면과 동일). 서버·클라이언트 첫 렌더가 같아야 해서 localStorage는
+  // 아래 복원 효과에서만 읽는다.
   const [open, setOpen] = useState<Record<string, boolean>>({
     main: true, frontend: activeGroup === 'frontend', system: true,
   })
 
   // 저장된 접힘 상태 복원 — 단, 지금 보고 있는 화면이 속한 그룹은 항상 펼친다
-  // (접힌 그룹 안에 있으면 어디 있는지 알 수 없기 때문).
-  useEffect(() => {
+  // (접힌 그룹 안에 있으면 어디 있는지 알 수 없기 때문). 첫 페인트 전에 적용해
+  // "펼쳐졌다 접히는" 깜빡임을 없앤다. 저장값은 boolean인 키만 받는다(조작·손상 방어).
+  useClientLayoutEffect(() => {
     try {
       const raw = localStorage.getItem(GROUP_STATE_KEY)
       if (raw) {
-        const saved = JSON.parse(raw) as Record<string, boolean>
+        const parsed = JSON.parse(raw) as Record<string, unknown>
+        const saved: Record<string, boolean> = {}
+        for (const key of Object.keys(parsed)) {
+          if (typeof parsed[key] === 'boolean') saved[key] = parsed[key] as boolean
+        }
         setOpen((prev) => ({ ...prev, ...saved, ...(activeGroup ? { [activeGroup]: true } : {}) }))
       }
-    } catch { /* 저장값이 손상됐으면 기본값(전부 펼침) 유지 */ }
+    } catch { /* 저장값이 손상됐으면 기본값 유지 */ }
     // 복원은 처음 한 번만 — 이후 이동은 아래 자동 펼침 효과가 처리한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -210,52 +221,55 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
         {GROUPS.map((group, gi) => {
           const groupActive = activeGroup === group.key
           const expanded = open[group.key]
+          // 그룹 안에 미읽음 표시 항목이 있는지 — 접힌 상태에서 알림이 사라지지 않게
+          // 그룹 헤더에 같은 점을 올린다(검증에서 발견된 사각지대 방어)
+          const groupHasBadge = supportBadge > 0 && group.items.some((it) => it.href === '/admin/support')
           return (
             <div key={group.key} className={gi > 0 ? 'mt-3' : undefined}>
+              {/* 라벨 색: ink-faint(2.81:1)는 대비 미달이라 ink-soft(5.85:1)·활성은 ink.
+                  모바일 오버레이도 같은 컴포넌트라 터치 높이는 모바일 44px, 데스크톱만 얇게 */}
               <button
+                type="button"
                 onClick={() => toggleGroup(group.key)}
                 aria-expanded={expanded}
                 aria-controls={`admin-nav-${group.key}`}
-                className={`w-full flex items-center justify-between px-3 py-1 mb-1 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
-                  groupActive ? 'text-mark' : 'text-ink-faint hover:text-ink'
+                className={`w-full flex items-center justify-between px-3 py-1 mb-1 min-h-11 lg:min-h-0 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
+                  groupActive ? 'text-ink' : 'text-ink-soft hover:text-ink'
                 }`}
               >
-                <span>{group.label}</span>
+                <span className="flex items-center gap-2">
+                  <span>{group.label}</span>
+                  {!expanded && groupHasBadge && <UnreadDot />}
+                </span>
                 <ChevronDown
                   size={12}
                   className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
                 />
               </button>
 
-              {expanded && (
-                <div id={`admin-nav-${group.key}`} className="flex flex-col gap-0.5">
-                  {group.items.map((item) => {
-                    const Icon = item.icon
-                    const active = isActive(item.href, item.exact)
-                    const isSupport = item.href === '/admin/support'
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={onClose}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          active ? activeCls : idleCls
-                        }`}
-                      >
-                        <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} className={active ? 'text-mark' : ''} />
-                        <span className="flex-1">{item.label}</span>
-                        {/* 미읽음 뱃지 (Support 전용) */}
-                        {isSupport && supportBadge > 0 && (
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-danger" />
-                          </span>
-                        )}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
+              {/* 접혀도 요소는 남긴다(hidden) — aria-controls 참조가 끊기지 않게 */}
+              <div id={`admin-nav-${group.key}`} hidden={!expanded} className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href, item.exact)
+                  const isSupport = item.href === '/admin/support'
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg text-sm font-medium transition-colors ${
+                        active ? activeCls : idleCls
+                      }`}
+                    >
+                      <Icon size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} className={active ? 'text-mark' : ''} />
+                      <span className="flex-1">{item.label}</span>
+                      {/* 미읽음 뱃지 (Support 전용) */}
+                      {isSupport && supportBadge > 0 && <UnreadDot />}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           )
         })}
@@ -267,15 +281,15 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
             ink-soft(5.85:1)로 맞춘다. 대시보드 쪽 관리자 이동 링크와 같은 색 */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-ink-soft hover:text-ink transition-colors"
+          className="flex items-center gap-2 px-3 py-2 lg:py-1.5 rounded-lg text-xs text-ink-soft hover:text-ink transition-colors"
         >
           ← 사용자 대시보드
         </Link>
       </div>
 
       {/* 사용자 정보 + 로그아웃 */}
-      <div className="px-3 py-2">
-        <div className="flex items-center gap-3 px-3 py-1.5 mb-0.5">
+      <div className="px-3 py-3 lg:py-2">
+        <div className="flex items-center gap-3 px-3 py-2 lg:py-1.5 mb-0.5">
           <span className="w-8 h-8 rounded-full bg-mark/15 border border-mark/30 flex items-center justify-center text-xs font-bold text-mark shrink-0">
             {user.initials}
           </span>
@@ -286,7 +300,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg text-sm text-danger hover:bg-danger-soft transition-colors"
         >
           <LogOut size={NAV_ICON_SIZE} strokeWidth={NAV_ICON_STROKE} />
           로그아웃
