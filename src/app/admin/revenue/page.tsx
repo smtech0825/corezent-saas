@@ -121,8 +121,10 @@ export default async function RevenuePage() {
       </div>
 
       {/* KPI 카드 — 공용 StatCard. 6장이 3열×2줄로 헐렁하게 퍼지던 것을
-          넓은 화면에서 6열 한 줄로 모아 카드 폭과 내용을 맞춘다 */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
+          넓은 화면에서 열 수를 늘려 카드 폭과 내용을 맞춘다.
+          (xl 6열은 사이드바를 뺀 본문 폭에서 금액이 카드를 넘칠 수 있어 4열,
+          6열은 2xl부터 — 검증에서 발견된 겹침 방지) */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 items-start">
         <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
         <StatCard icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
         <StatCard icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} subline={`${refundCount}건`} />
@@ -155,15 +157,18 @@ export default async function RevenuePage() {
                     title={`${m.label} · ${formatKRW(m.cents)}`}
                   >
                     {m.cents > 0 && (
-                      <span className="text-[9px] text-ink-faint tabular-nums mb-0.5 truncate max-w-full">
-                        {fmtCompact(m.cents)}
-                      </span>
-                    )}
-                    {m.cents > 0 && (
-                      <div
-                        className="w-full bg-mark/80 hover:bg-mark rounded-t transition-colors"
-                        style={{ height: `${Math.max((m.cents / monthMax) * 100, 2)}%` }}
-                      />
+                      <>
+                        <span className="shrink-0 text-[9px] text-ink-faint tabular-nums mb-0.5 truncate max-w-full">
+                          {fmtCompact(m.cents)}
+                        </span>
+                        {/* 라벨 높이(16px)를 미리 빼고 전 막대를 같은 비율로 그린다.
+                            라벨과 막대를 그냥 쌓으면 flex가 최댓값 막대만 눌러
+                            상위 값들이 같은 높이로 뭉개진다(검증에서 발견). */}
+                        <div
+                          className="w-full shrink-0 bg-mark/80 hover:bg-mark rounded-t transition-colors"
+                          style={{ height: `max(calc((100% - 16px) * ${(m.cents / monthMax).toFixed(4)}), 3px)` }}
+                        />
+                      </>
                     )}
                   </div>
                 ))}
@@ -182,7 +187,7 @@ export default async function RevenuePage() {
       <section className="border border-rule bg-paper-raised rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-ink mb-4">상품별 매출</h2>
         {products.length === 0 ? (
-          <p className="text-sm text-ink-faint py-2">매출 데이터가 없습니다.</p>
+          <EmptyState message="매출 데이터가 없습니다." />
         ) : (
           <div className="space-y-3">
             {products.map((p) => (

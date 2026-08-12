@@ -13,6 +13,7 @@ import CopyButton from '@/components/common/CopyButton'
 import PayoutAccountCard from './PayoutAccountCard'
 import PageContainer from '@/components/common/PageContainer'
 import StatCard from '@/components/common/StatCard'
+import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,7 +148,7 @@ export default async function AffiliatePage() {
             </div>
           </>
         ) : (
-          <p className="text-sm text-ink-soft">추천 코드가 아직 없습니다. 고객지원에 문의해 주세요.</p>
+          <EmptyState message="추천 코드가 아직 없습니다. 고객지원에 문의해 주세요." />
         )}
       </section>
 
@@ -157,7 +158,7 @@ export default async function AffiliatePage() {
           (3개 카드를 4열에 억지로 넣으면 빈 칸이 생겨 열 수 통일 대신 구분을 택함) */}
       <section className="mb-6">
         <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider mb-4">추천 성과</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
           <StatCard icon={<DynamicIcon name="MousePointerClick" size={18} className="text-mark" />} label="클릭" value={clicks.toLocaleString()} />
           <StatCard icon={<DynamicIcon name="UserPlus" size={18} className="text-mark" />}          label="가입" value={signups.toLocaleString()} />
           <StatCard icon={<DynamicIcon name="ShoppingBag" size={18} className="text-mark" />}       label="전환" value={conversions.toLocaleString()} subline="추천으로 가입해 첫 결제한 인원 (환불 포함)" />
@@ -184,7 +185,7 @@ export default async function AffiliatePage() {
       {/* 적립 현황 — 공용 StatCard (상태 색은 아이콘 배지에만) */}
       <section>
         <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider mb-4">적립 현황</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-start">
           <StatCard
             icon={<DynamicIcon name="Clock" size={15} className={TONE.warning.text} />}
             iconBadgeClassName={`${TONE.warning.bg} border ${TONE.warning.border}`}

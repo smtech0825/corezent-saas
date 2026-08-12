@@ -139,7 +139,7 @@ export default function ChurnAnalysis({ entries }: Props) {
             </div>
 
             {chartData.length === 0 ? (
-              <p className="text-sm text-ink-faint text-center py-6">데이터 없음.</p>
+              <EmptyState message="데이터 없음." />
             ) : (
               <div className="space-y-3">
                 {chartData.map((d) => (
@@ -171,9 +171,7 @@ export default function ChurnAnalysis({ entries }: Props) {
             </div>
 
             {otherComments.length === 0 ? (
-              <p className="text-sm text-ink-faint text-center py-6 flex-1 flex items-center justify-center">
-                작성된 피드백이 {period === 'month' ? '이번 달에' : '아직'} 없습니다.
-              </p>
+              <EmptyState fill message={`작성된 피드백이 ${period === 'month' ? '이번 달에' : '아직'} 없습니다.`} />
             ) : (
               <div className="flex-1 overflow-y-auto max-h-[320px] space-y-2.5 pr-1">
                 {otherComments.map((c, i) => (
