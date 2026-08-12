@@ -13,12 +13,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import Pagination from '@/components/common/Pagination'
+import ErrorSummary, { type ErrorRow } from './ErrorSummary'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = { title: '모니터링 로그' }
 
 const PAGE_SIZE = 20
+// 오류 묶음 요약의 표본 상한 — 기존 화면의 조회 상한(200)과 동일. 상한을 늘리지 않는다
+const SUMMARY_LIMIT = 200
 
 // 필터 선택지 — 코드가 실제로 기록하는 값만 넣는다(추측 금지).
 // kind: 'email'(lib/email.ts:66,70·api/contact) · 'webhook'(api/webhooks/lemonsqueezy)
@@ -135,6 +138,23 @@ export default async function LogsPage({
   const total = count ?? 0
   const hasFilter = Boolean(kind || status || days || q)
 
+  // 같은 오류 묶음 요약용 — 표와 같은 필터로 실패(오류 있음) 행만 조회. 읽기 전용·상한 동일.
+  // '성공'만 보는 중이면 오류 요약은 의미가 없어 조회하지 않는다.
+  let summaryRows: ErrorRow[] = []
+  if (!error && status !== 'success') {
+    let sq = admin
+      .from('notification_logs')
+      .select('id, kind, event, target, error, created_at')
+      .not('error', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(SUMMARY_LIMIT)
+    if (kind) sq = sq.eq('kind', kind)
+    if (days) sq = sq.gte('created_at', new Date(Date.now() - Number(days) * 86400000).toISOString())
+    if (q) sq = sq.or(`event.ilike.%${q}%,target.ilike.%${q}%,error.ilike.%${q}%`)
+    const { data: sData } = await sq
+    summaryRows = (sData ?? []) as ErrorRow[]
+  }
+
   return (
     <PageContainer variant="admin" className="space-y-6">
       <div>
@@ -175,6 +195,9 @@ export default async function LogsPage({
               </button>
             </form>
           </div>
+
+          {/* 같은 오류 묶음 — 접힌 요약, 펼치면 한글 설명·원문 전문·개별 건 전부 */}
+          <ErrorSummary rows={summaryRows} limit={SUMMARY_LIMIT} fmt={fmtDateTime} />
 
           {logs.length === 0 ? (
             <EmptyState
