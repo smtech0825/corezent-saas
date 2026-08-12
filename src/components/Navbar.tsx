@@ -60,19 +60,22 @@ export default function Navbar() {
   const userRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // 네비게이션 링크
-  const navLinks: { label: string; href: string; external?: boolean }[] = [
+  // 네비게이션 링크 — hidden: true면 메뉴에서만 숨긴다(페이지·주소 직접 접근은 그대로).
+  // 다시 보이게 하려면 해당 항목의 hidden만 지우면 된다. 데스크톱·모바일 메뉴가
+  // 아래 visibleNavLinks 하나를 같이 쓰므로 여기 한 곳이 켬/끔의 전부다.
+  const navLinks: { label: string; href: string; external?: boolean; hidden?: boolean }[] = [
     { label: '회사소개', href: '/about' },
     { label: '제품', href: '/product' },
     { label: '요금', href: '/pricing' },
-    { label: '기관 도입', href: '/public-sector' },
+    { label: '기관 도입', href: '/public-sector', hidden: true },
     { label: '업데이트 내역', href: '/changelog' },
     { label: '매뉴얼', href: '/docs' },
     { label: '블로그', href: '/blog' },
-    { label: '사용 설명서', href: 'https://sites.google.com/view/corezent', external: true },
+    { label: '사용 설명서', href: 'https://sites.google.com/view/corezent', external: true, hidden: true },
     { label: 'FAQ', href: '/faq' },
     { label: '문의하기', href: '/contact' },
   ]
+  const visibleNavLinks = navLinks.filter((link) => !link.hidden)
 
   // 배너 데이터 로드
   useEffect(() => {
@@ -194,7 +197,7 @@ export default function Navbar() {
 
           {/* 데스크톱 메뉴 */}
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
+            {visibleNavLinks.map((link) => (
               <button
                 key={link.label}
                 type="button"
@@ -300,7 +303,7 @@ export default function Navbar() {
         {/* 모바일 메뉴 */}
         {mobileOpen && (
           <div className="lg:hidden border-t border-rule bg-paper px-6 py-4 flex flex-col gap-4">
-            {navLinks.map((link) => (
+            {visibleNavLinks.map((link) => (
               <button
                 key={link.label}
                 type="button"
