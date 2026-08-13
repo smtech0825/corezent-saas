@@ -139,8 +139,9 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
       '중개보수 상한 요율표 — 조건에 맞는 행 하나로 상한액(거래금액 × 요율, 한도액 이하)을 계산합니다. 세금이 아니라 상한이며, 실제 금액은 협의로 정해집니다.',
     notes: [
       '쓸 수 있는 조건 필드: deal_type(거래 유형 — "sale_exchange" 매매·교환 / "lease" 임대차), price(거래금액·원 — 임대차는 환산액 기준), sido(중개사무소 소재지 시·도 이름 — 계산기 드롭다운의 시·도 표기와 글자까지 똑같이)',
-      '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다. 거래금액 구간은 min/max로 표현하세요.',
-      '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류). sido 조건이 없는 행은 전국 공통이고, 조례가 다른 특정 시·도 행은 priority를 더 크게 두세요.',
+      '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다.',
+      '⚠️ 거래금액 구간은 max로 나누지 말고 min + priority 오름차순으로 표현하세요. 법령의 "○○원 미만"을 max로 그대로 옮기면 경계 금액(구간이 바뀌는 딱 그 금액)에서 두 행이 동시에 맞아 계산이 오류로 중단됩니다. 요령: 조건 없는 행이 가장 낮은 구간(priority 최소), 금액이 커질수록 min("○○원 이상") 행의 priority를 높이세요 — 취득세 룰과 같은 방식입니다.',
+      '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류). sido 조건이 없는 행은 전국 공통이고, 조례가 다른 특정 시·도 행은 공통 행 전체보다 큰 priority 대역을 쓰세요(예: 공통 0~9, 특정 시·도 10~19).',
       'ratePercent: 그 구간의 상한 요율(%). limitAmount: 그 구간의 한도액(원) — 한도 규정이 없으면 빼세요. 둘 다 0은 저장할 수 없습니다(상한액 0원이 정상 결과처럼 보이는 것을 막기 위해서입니다).',
       'leaseConversion(필수): 임대차 거래금액 환산 방식 — multiplier(월세 환산 배수). 1차 환산액이 lowDeposit.thresholdAmount 미만이면 lowDeposit.multiplier로 다시 환산합니다(해당 규정이 없으면 lowDeposit을 빼세요).',
       '이 계산기는 아파트 기준입니다 — 아파트 외 물건의 요율은 등록하지 마세요.',
@@ -148,14 +149,30 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
     skeleton: `{
   "rows": [
     {
-      "when": { "deal_type": { "eq": "sale_exchange" }, "price": { "max": «금액(원)» } },
+      "when": { "deal_type": { "eq": "sale_exchange" } },
       "priority": 0,
       "ratePercent": «요율%»,
       "limitAmount": «한도액(원)»
     },
     {
-      "when": { "deal_type": { "eq": "lease" }, "price": { "min": «금액(원)» } },
+      "when": { "deal_type": { "eq": "sale_exchange" }, "price": { "min": «구간 시작 금액(원)» } },
+      "priority": 1,
+      "ratePercent": «요율%»,
+      "limitAmount": «한도액(원)»
+    },
+    {
+      "when": { "deal_type": { "eq": "sale_exchange" }, "price": { "min": «더 큰 구간 시작 금액(원)» } },
+      "priority": 2,
+      "ratePercent": «요율%»
+    },
+    {
+      "when": { "deal_type": { "eq": "lease" } },
       "priority": 0,
+      "ratePercent": «요율%»
+    },
+    {
+      "when": { "deal_type": { "eq": "lease" }, "price": { "min": «구간 시작 금액(원)» } },
+      "priority": 1,
       "ratePercent": «요율%»
     }
   ],

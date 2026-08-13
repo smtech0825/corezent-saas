@@ -10,17 +10,26 @@ import type { Metadata } from 'next'
 import { Handshake } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
+import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import BrokerageForm from './BrokerageForm'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = buildPageMetadata({
-  path: '/tax/brokerage',
-  title: '부동산 중개수수료 상한 계산기 — 법령 근거 기반',
-  description:
-    '부동산 매매·교환·임대차의 중개보수 법정 상한액을 계산합니다. 실제 중개보수는 상한 안에서 협의로 정해지며, 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시합니다.',
-})
+/** 이 계산기의 목록 항목 — 열림 여부(available)의 단일 출처는 calculators.ts */
+const CALC_INFO = TAX_CALCULATORS.find((c) => c.slug === 'brokerage')
+
+export const metadata: Metadata = {
+  ...buildPageMetadata({
+    path: '/tax/brokerage',
+    title: '부동산 중개수수료 상한 계산기 — 법령 근거 기반',
+    description:
+      '부동산 매매·교환·임대차의 중개보수 법정 상한액을 계산합니다. 실제 중개보수는 상한 안에서 협의로 정해지며, 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시합니다.',
+  }),
+  // 준비 중(available:false)인 동안은 검색엔진 색인 금지 — 주소 직접 접근 시 보이는
+  // "룰 미등록" 안내 화면이 검색 결과에 잡히지 않게 한다. available:true로 열면 자동 해제.
+  ...(CALC_INFO?.available ? {} : { robots: { index: false, follow: false } }),
+}
 
 /**
  * @함수명: fetchLastRuleUpdatedAt
@@ -81,10 +90,6 @@ export default async function BrokeragePage() {
             <li>
               결과는 법정 <strong className="text-ink">상한액</strong>입니다. 실제 중개보수는
               상한을 넘지 않는 범위에서 의뢰인과 개업공인중개사가 협의하여 정합니다.
-            </li>
-            <li>
-              이 계산기는 아파트를 기준으로 합니다. 오피스텔·상가·토지는 요율 체계가
-              달라 결과가 맞지 않습니다.
             </li>
             <li>
               상한 요율·한도액을 정하는 시·도 조례는 물건 소재지가 아니라{' '}
