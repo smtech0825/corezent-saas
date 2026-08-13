@@ -4,6 +4,7 @@
  */
 
 import type { Metadata } from 'next'
+import { after } from 'next/server'
 import { redirect } from 'next/navigation'
 import SelectField from '@/components/common/SelectField'
 import { revalidatePath } from 'next/cache'
@@ -93,15 +94,17 @@ export default async function SupportPage({
         .from('support_replies')
         .insert({ ticket_id: ticket.id, user_id: currentUser.id, is_admin: false, message })
 
-      // 관리자 새 티켓 알림 — 실패해도 접수는 유지된다(notifyNewTicket이 모든 오류를 삼킴).
-      // 개인정보는 최소한만: 계정 이메일·제목·내용 앞 80자. 로그인 사용자 전용 경로라 스팸 위험 낮음.
-      await notifyNewTicket({
+      // 관리자 새 티켓 알림 — after(): 응답이 나간 뒤 실행돼 폼 제출·화면 갱신을 붙잡지
+      // 않는다(SMTP가 느려도 접수는 즉시 끝남 — 검증 지적). 실패해도 접수는 유지된다.
+      // 개인정보는 최소한만: 계정 이메일·제목·내용 앞 80자. 같은 계정 반복 제출은
+      // 30분에 한 통만 발송(헬퍼의 계정 기준 억제 — 로그인 사용자발 폭주 방어).
+      after(() => notifyNewTicket({
         ticketId: ticket.id,
         userEmail: currentUser.email ?? '(이메일 없음)',
         subject,
         priority,
         preview: message,
-      })
+      }))
     }
 
     revalidatePath('/dashboard/support')

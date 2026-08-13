@@ -24,9 +24,11 @@ const NOTIFY_SETTING_KEY: Record<AdminNotifyKind, string> = {
   new_ticket: 'notify_new_ticket',
 }
 
-/** HTML 이스케이프 — 손님 입력(이름·제목 등)을 본문에 넣기 전 반드시 통과 */
-function escapeHtml(s: string): string {
-  return s
+/** HTML 이스케이프 — 손님 입력(이름·제목 등)을 본문에 넣기 전 반드시 통과.
+ *  외부 페이로드는 타입 선언과 달리 문자열이 아닐 수 있어 String()으로 먼저 정규화한다
+ *  (여기서 예외가 새면 "알림이 본 처리를 막지 않는다" 보장이 깨진다). */
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -46,9 +48,9 @@ function row(label: string, value: string, strong = false): string {
  */
 function adminAlertHtml(title: string, rows: [string, string, boolean?][], footer: string): string {
   return `<!DOCTYPE html><html lang="ko"><body style="font-family:Arial,sans-serif;color:#23272E;">
-  <h2 style="margin:0 0 16px;font-size:18px;">${title}</h2>
+  <h2 style="margin:0 0 16px;font-size:18px;">${escapeHtml(title)}</h2>
   <table cellpadding="6" style="border-collapse:collapse;font-size:14px;">
-    ${rows.map(([l, v, s]) => row(l, v, s)).join('\n    ')}
+    ${rows.map(([l, v, s]) => row(escapeHtml(l), v, s)).join('\n    ')}
   </table>
   <p style="margin:16px 0 0;font-size:13px;color:#565C66;">${footer}</p>
 </body></html>`
@@ -147,41 +149,51 @@ export async function notifyNewOrder(input: {
   status: string
   extra?: [string, string][]
 }): Promise<void> {
-  const shortId = input.orderId.slice(0, 8).toUpperCase()
-  const isBank = input.method === 'bank_transfer'
-  const subject = isBank
-    ? `[CoreZent] 새 계좌이체 주문 #${shortId} — 입금 확인·라이선스 수동 발급 필요`
-    : `[CoreZent] 새 주문 #${shortId} (카드)`
+  // 함수 전체를 try로 감싼다 — 인자 조립 단계(외부 페이로드가 선언과 다른 타입일 때 등)의
+  // 예외도 밖으로 새면 안 된다. 이 함수는 어떤 경우에도 reject하지 않는다.
+  try {
+    const shortId = String(input.orderId ?? '').slice(0, 8).toUpperCase()
+    const isBank = input.method === 'bank_transfer'
+    const subject = isBank
+      ? `[CoreZent] 새 계좌이체 주문 #${shortId} — 입금 확인·라이선스 수동 발급 필요`
+      : `[CoreZent] 새 주문 #${shortId} (카드)`
 
-  const rows: [string, string, boolean?][] = [
-    ['주문 번호', escapeHtml(input.orderId)],
-    ['접수 시각', new Date().toISOString()],
-    ['구매자', escapeHtml(input.buyerEmail)],
-    ['상품', escapeHtml(input.productName), true],
-    ['수량', String(input.quantity)],
-    ['금액', escapeHtml(input.amountLabel), true],
-    ['결제 방법', isBank ? '계좌이체(무통장 입금)' : '신용카드'],
-    ['지금 상태', escapeHtml(input.status)],
-    ...(input.extra ?? []).map(([l, v]): [string, string, boolean?] => [l, escapeHtml(v)]),
-  ]
+    const rows: [string, string, boolean?][] = [
+      ['주문 번호', escapeHtml(input.orderId)],
+      ['접수 시각', new Date().toISOString()],
+      ['구매자', escapeHtml(input.buyerEmail)],
+      ['상품', escapeHtml(input.productName), true],
+      ['수량', escapeHtml(input.quantity)],
+      ['금액', escapeHtml(input.amountLabel), true],
+      ['결제 방법', isBank ? '계좌이체(무통장 입금)' : '신용카드'],
+      ['지금 상태', escapeHtml(input.status)],
+      ...(input.extra ?? []).map(([l, v]): [string, string, boolean?] => [l, escapeHtml(v)]),
+    ]
 
-  const footer = isBank
-    ? '<strong>입금 확인 후 라이선스는 수동 발급이 필요합니다.</strong> 관리자 → 주문에서 [결제 확인]을 눌러 주세요.'
-    : '관리자 → 주문에서 상세를 확인할 수 있습니다. 라이선스는 자동 발급됩니다.'
+    const footer = isBank
+      ? '<strong>입금 확인 후 라이선스는 수동 발급이 필요합니다.</strong> 관리자 → 주문에서 [결제 확인]을 눌러 주세요.'
+      : '관리자 → 주문에서 상세를 확인할 수 있습니다. 라이선스는 자동 발급됩니다.'
 
-  await notifyAdmin({
-    kind: 'new_order',
-    subject,
-    html: adminAlertHtml(isBank ? '새 계좌이체 주문 (입금 대기)' : '새 주문 접수', rows, footer),
-    target: `order:${input.orderId}`,
-    // 같은 주문의 중복 전달만 억제(제목에 주문 번호 포함) — 다른 주문은 각각 발송된다.
-    dedupeMinutes: 30,
-  })
+    await notifyAdmin({
+      kind: 'new_order',
+      subject,
+      html: adminAlertHtml(isBank ? '새 계좌이체 주문 (입금 대기)' : '새 주문 접수', rows, footer),
+      target: `order:${input.orderId}`,
+      // 같은 주문의 중복 전달만 억제(제목에 주문 번호 포함) — 다른 주문은 각각 발송된다.
+      dedupeMinutes: 30,
+    })
+  } catch (err) {
+    console.error('[admin-notify] 새 주문 알림 조립 중 오류(무시):', err instanceof Error ? err.message : String(err))
+  }
 }
 
 /**
  * @함수명: notifyNewTicket
  * @설명: 새 고객지원 티켓 알림. 개인정보는 최소한만 — 계정 이메일·제목·내용 앞부분(80자)만 넣는다.
+ *        제목은 티켓 번호가 아니라 "계정" 기준이다 — 같은 계정이 30분 안에 반복 제출하면
+ *        첫 통만 발송돼(같은 제목 억제) 로그인 사용자발 메일 폭주를 막는다. 티켓 제출에는
+ *        상류 방어(rate limit)가 없어서 이 억제가 유일한 방어선이다. 티켓 번호는 본문에 있고,
+ *        억제된 건도 관리자 → 고객지원 목록에는 전부 남는다. 다른 계정은 각각 발송된다.
  * @매개변수: ticketId - 티켓 id / userEmail - 계정 이메일 / subject - 제목 / priority - 우선순위 / preview - 내용 앞부분
  */
 export async function notifyNewTicket(input: {
@@ -191,26 +203,31 @@ export async function notifyNewTicket(input: {
   priority: string
   preview: string
 }): Promise<void> {
-  const shortId = input.ticketId.slice(0, 8).toUpperCase()
-  const preview = input.preview.length > 80 ? `${input.preview.slice(0, 80)}…` : input.preview
+  // 함수 전체를 try로 감싼다 — 조립 단계 예외도 접수 흐름으로 새면 안 된다.
+  try {
+    const previewRaw = String(input.preview ?? '')
+    const preview = previewRaw.length > 80 ? `${previewRaw.slice(0, 80)}…` : previewRaw
 
-  await notifyAdmin({
-    kind: 'new_ticket',
-    subject: `[CoreZent] 새 고객지원 티켓 #${shortId}`,
-    html: adminAlertHtml(
-      '새 고객지원 티켓',
-      [
-        ['티켓 번호', escapeHtml(input.ticketId)],
-        ['접수 시각', new Date().toISOString()],
-        ['계정', escapeHtml(input.userEmail)],
-        ['제목', escapeHtml(input.subject), true],
-        ['우선순위', escapeHtml(input.priority)],
-        ['내용 앞부분', escapeHtml(preview)],
-      ],
-      '관리자 → 고객지원에서 전체 내용을 확인하고 답변할 수 있습니다.',
-    ),
-    target: `ticket:${input.ticketId}`,
-    // 같은 티켓의 중복 전달만 억제(제목에 티켓 번호 포함).
-    dedupeMinutes: 30,
-  })
+    await notifyAdmin({
+      kind: 'new_ticket',
+      subject: `[CoreZent] 새 고객지원 티켓 — ${String(input.userEmail ?? '')}`,
+      html: adminAlertHtml(
+        '새 고객지원 티켓',
+        [
+          ['티켓 번호', escapeHtml(input.ticketId)],
+          ['접수 시각', new Date().toISOString()],
+          ['계정', escapeHtml(input.userEmail)],
+          ['제목', escapeHtml(input.subject), true],
+          ['우선순위', escapeHtml(input.priority)],
+          ['내용 앞부분', escapeHtml(preview)],
+        ],
+        '관리자 → 고객지원에서 전체 내용을 확인하고 답변할 수 있습니다.',
+      ),
+      target: `ticket:${input.ticketId}`,
+      // 같은 계정의 반복 제출만 억제(제목=계정 기준) — 폭주 방어 겸 중복 전달 차단.
+      dedupeMinutes: 30,
+    })
+  } catch (err) {
+    console.error('[admin-notify] 새 티켓 알림 조립 중 오류(무시):', err instanceof Error ? err.message : String(err))
+  }
 }

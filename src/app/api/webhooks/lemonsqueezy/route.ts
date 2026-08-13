@@ -19,7 +19,7 @@
  *   order_refunded/subscription_payment_refunded=반전. 적립/반전은 스키마-누락 관용 없음(affiliate-commission.ts).
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   verifyLSWebhook,
@@ -467,31 +467,33 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     }
   }
 
-  // 관리자 새 주문 알림 — 주문 확정 직후·발급 이전에 보낸다(뒤 단계가 실패해도 접수 사실은
-  // 알려져야 하고, 재전송은 위 멱등 체크에서 걸러져 이 지점에 다시 오지 않는다 — 주문당 한 통).
-  // 블록 전체를 try로 감싼다: 여기서 예외가 새면 웹훅이 500 → 재전송이 멱등 체크에 걸러져
-  // 라이선스 발급이 영영 누락될 수 있다. 알림은 어떤 경우에도 발급을 막으면 안 된다.
-  try {
-    let productName = '-'
-    if (productId) {
-      const { data: p } = await admin.from('products').select('name').eq('id', productId).maybeSingle()
-      if (p?.name) productName = p.name
-    } else if (bundleId) {
-      productName = '번들 상품'
+  // 관리자 새 주문 알림 — after(): 응답이 나간 뒤 실행돼 결제·발급 경로를 붙잡지 않는다.
+  // 이 지점(주문 확정~발급 사이)은 실패하면 재전송이 멱등 체크에 걸러져 복구되지 않는 구간이라,
+  // 알림의 예외뿐 아니라 "SMTP 무응답으로 시간을 소모하는 것"조차 여기 있으면 안 된다(검증 지적).
+  // 재전송은 위 멱등 체크에서 걸러져 이 지점에 다시 오지 않는다 — 주문당 한 통.
+  after(async () => {
+    try {
+      let productName = '-'
+      if (productId) {
+        const { data: p } = await admin.from('products').select('name').eq('id', productId).maybeSingle()
+        if (p?.name) productName = p.name
+      } else if (bundleId) {
+        productName = '번들 상품'
+      }
+      await notifyNewOrder({
+        orderId,
+        productName,
+        quantity,
+        // 주문 행에 저장한 값(attrs.total cents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
+        amountLabel: formatKRW(attrs.total),
+        buyerEmail: attrs.user_email,
+        method: 'card',
+        status: '결제 완료(paid)',
+      })
+    } catch (notifyErr) {
+      console.error('[LS Webhook] 새 주문 알림 실패(무시):', notifyErr instanceof Error ? notifyErr.message : String(notifyErr))
     }
-    await notifyNewOrder({
-      orderId,
-      productName,
-      quantity,
-      // 주문 행에 저장한 값(attrs.total cents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
-      amountLabel: formatKRW(attrs.total),
-      buyerEmail: attrs.user_email,
-      method: 'card',
-      status: '결제 완료(paid)',
-    })
-  } catch (notifyErr) {
-    console.error('[LS Webhook] 새 주문 알림 실패(무시 — 발급 흐름 계속):', notifyErr instanceof Error ? notifyErr.message : String(notifyErr))
-  }
+  })
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
     // 수량 N 주문 → 라이선스 N개 발급. tier는 옵션 행 license_tier 우선(best-effort)

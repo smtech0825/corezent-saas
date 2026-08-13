@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyNewOrder } from '@/lib/admin-notify'
 import { formatKRW } from '@/lib/money'
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 
 const DEPOSIT_WINDOW_DAYS = 3
 
@@ -83,12 +83,13 @@ export async function POST(request: Request) {
     }
 
     // 4. 관리자 알림 — 공용 헬퍼(admin-notify) 한 곳으로 통일. 수신 주소는 설정
-    //    (front_settings.support_email)에서 읽고, 실패는 헬퍼가 전부 삼키므로
-    //    주문 흐름은 어떤 경우에도 진행된다. (기존 인라인 발송을 교체 — 두 통 방지)
+    //    (front_settings.support_email)에서 읽는다. (기존 인라인 발송을 교체 — 두 통 방지)
+    //    after(): 응답이 나간 뒤 실행 — SMTP가 느리거나 죽어도 손님의 주문 완료 응답을
+    //    붙잡지 않고, 알림 실패가 이미 생성된 주문을 500으로 오인시키지 않는다(검증 지적).
     const prodRaw = (price as Record<string, unknown>).products
     const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
     const opts = [price.option_axis1_label, price.option_axis2_label].filter(Boolean).join(' · ')
-    await notifyNewOrder({
+    after(() => notifyNewOrder({
       orderId: order.id,
       productName: `${prod?.name ?? '-'}${opts ? ` (${opts})` : ''}`,
       quantity: qty,
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
       method: 'bank_transfer',
       status: '입금 대기(pending_deposit)',
       extra: [['입금 기한', expiresAt]],
-    })
+    }))
 
     return NextResponse.json({ ok: true, orderId: order.id })
   } catch (err) {
