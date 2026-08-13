@@ -48,8 +48,8 @@ function invalid(ruleKey: string, detail: string): TaxEngineFailure {
 
 // ─── RateSpec 검증·평가 ──────────────────────────────────────────────────────
 
-/** RateSpec 구조 검증 — 통과하면 null, 실패하면 사유 문자열 */
-function checkRateSpec(spec: unknown): string | null {
+/** RateSpec 구조 검증 — 통과하면 null, 실패하면 사유 문자열. 양도세 검증기(transfer-rules.ts)도 공유 */
+export function checkRateSpec(spec: unknown): string | null {
   if (!isObj(spec)) return '세율 명세가 객체가 아닙니다.'
   if (spec.type === 'fixed') {
     if (!isNum(spec.ratePercent) || spec.ratePercent < 0) return 'fixed 세율의 ratePercent가 0 이상 숫자가 아닙니다.'
@@ -283,6 +283,42 @@ export function selectRateRow<T extends { when: Conditions; priority?: number }>
     return engineFail(
       'AMBIGUOUS_RATE_ROW',
       `룰('${ruleKey}')의 세율표에서 입력 조건에 맞는 행이 ${winners.length}건이라 하나로 정할 수 없습니다. 관리자 화면에서 행 조건·우선순위를 정리해 주세요.`,
+      ruleKey,
+    )
+  }
+  return { ok: true, row: winners[0], unresolved }
+}
+
+/**
+ * @함수명: selectRateRowOptional
+ * @설명: selectRateRow와 같은 규칙(전 조건 일치·priority 최고 1건·동률 오류)으로 행을
+ *        고르되, 조건에 맞는 행이 0건이면 오류 대신 row: null을 반환합니다.
+ *        "매칭 없음 = 미적용"이 정상 의미인 표(단기 보유 세율·장기보유특별공제 등)에
+ *        사용합니다 — 세액표처럼 반드시 행이 있어야 하는 곳에는 selectRateRow를 쓸 것.
+ *        (기존 selectRateRow는 회귀 위험을 피해 손대지 않고 로직을 별도로 둔다)
+ */
+export function selectRateRowOptional<T extends { when: Conditions; priority?: number }>(
+  rows: T[],
+  context: Record<string, Json | undefined>,
+  ruleKey: string,
+): { ok: true; row: T | null; unresolved: string[] } | TaxEngineFailure {
+  const matched: T[] = []
+  const unresolvedAll = new Set<string>()
+  for (const row of rows) {
+    const m = matchConditions(row.when, context, ruleKey)
+    if (!m.ok) return m
+    if (m.matched) matched.push(row)
+    else m.unresolved.forEach((f) => unresolvedAll.add(f))
+  }
+  const unresolved = Array.from(unresolvedAll)
+  if (matched.length === 0) return { ok: true, row: null, unresolved }
+  if (matched.length === 1) return { ok: true, row: matched[0], unresolved }
+  const top = Math.max(...matched.map((r) => r.priority ?? 0))
+  const winners = matched.filter((r) => (r.priority ?? 0) === top)
+  if (winners.length > 1) {
+    return engineFail(
+      'AMBIGUOUS_RATE_ROW',
+      `룰('${ruleKey}')의 표에서 입력 조건에 맞는 행이 ${winners.length}건이라 하나로 정할 수 없습니다. 관리자 화면에서 행 조건·우선순위를 정리해 주세요.`,
       ruleKey,
     )
   }

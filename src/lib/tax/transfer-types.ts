@@ -1,0 +1,236 @@
+/**
+ * @파일: lib/tax/transfer-types.ts
+ * @설명: 양도소득세 엔진의 입력·결과·rule_value(jsonb) 스키마 타입.
+ *        ⚠️ 세율·공제율·구간·기준액·연수 요건·날짜(중과 유예·경과조치 기한 포함) 등
+ *        실제 숫자는 이 파일에 절대 넣지 않는다 — 구조(스키마)만 정의하고 값은 전부
+ *        DB(tax_rules)에서 읽는다. 중과의 유예/재개 시기는 별도 날짜 필드가 아니라
+ *        transfer.heavy 룰의 시행기간(effective_from/to) 이력으로 표현한다.
+ *        (engine-types.ts가 300줄을 초과한 상태라 양도세 타입은 이 파일로 분리 — 공통
+ *        타입(RateSpec·Conditions·AppliedRuleInfo 등)은 engine-types.ts의 것을 그대로 쓴다)
+ */
+
+import type { TaxRuleMode } from './types'
+import type { AppliedRuleInfo, Conditions, RateSpec, TaxEngineFailure } from './engine-types'
+import type { DayInclusionMode } from './period'
+
+// ─── rule_value 공통 행 형태 ──────────────────────────────────────────────────
+
+/** 세율 행 — 단기 보유 세율표·지방소득세 단기표에 사용 (조건: holding_years 등) */
+export interface TransferRateRow {
+  when: Conditions
+  priority?: number
+  rate: RateSpec
+}
+
+/** 중과 가산 행 — 기본 누진세율에 더할 가산 포인트(%p). 값은 관리자 입력 */
+export interface TransferHeavyRow {
+  when: Conditions
+  priority?: number
+  addPercentPoints: number
+}
+
+/**
+ * 경과조치 행 — 계약일부터 양도까지 허용되는 '개월 수'(지역 조건별). 값은 관리자 입력.
+ * 지역 구분은 when 조건(sido·sigungu·is_metro)으로 표현한다 — 예: 특정 구 목록 행(높은
+ * priority) + 조건 없는 공통 행. 코드는 "지역별 기간을 찾아 계약일에 더한다"만 안다.
+ */
+export interface TransferGraceRow {
+  when: Conditions
+  priority?: number
+  monthsFromContract: number
+}
+
+/** 장기보유특별공제 행 — 연수 조건별 공제율(%). 값은 관리자 입력 */
+export interface TransferLtsdRow {
+  when: Conditions
+  priority?: number
+  deductPercent: number
+}
+
+// ─── rule_value 스키마 (룰 키별) ─────────────────────────────────────────────
+
+/** transfer.base_rates — 기본세율(누진 구조 RateSpec) */
+export interface TransferBaseRatesValue {
+  rate: RateSpec
+}
+
+/** transfer.short_term_rates — 단기 보유 세율표. 조건에 맞는 행이 없으면 단기 미해당 */
+export interface TransferShortTermValue {
+  rows: TransferRateRow[]
+}
+
+/**
+ * transfer.heavy — 다주택 중과 가산과 경과조치.
+ * 중과가 유예된 기간은 이 룰의 시행기간 이력(effective_from/to)으로 표현한다 —
+ * 기준일에 유효한 heavy 룰이 없으면 중과 없음(날짜를 코드·값에 이중으로 두지 않는다).
+ * grace(경과조치): 계약 마감일 이전에 매매계약을 체결하고 계약금을 받은 경우,
+ * 계약일부터 rows의 개월 수(지역 조건별) 안에 양도하면 중과를 면한다.
+ * finalDeadline이 있으면 그 날짜까지 양도한 경우에만 면제된다.
+ * 마감일·개월 수·지역 목록은 전부 관리자가 룰에 입력한다 — 코드에 없다.
+ */
+export interface TransferHeavyValue {
+  rows: TransferHeavyRow[]
+  grace?: {
+    contractDeadline: string     // YYYY-MM-DD — 이 날짜 이전(포함) 계약 체결·계약금 수령
+    rows: TransferGraceRow[]     // 지역 조건별 허용 연수 (조건 없는 행 = 공통)
+    finalDeadline?: string       // YYYY-MM-DD — 최종 양도 기한 (없으면 연수 조건만)
+  }
+}
+
+/** transfer.ltsd.general — 장기보유특별공제 작은 표 (조건: holding_years_ltsd) */
+export interface TransferLtsdGeneralValue {
+  rows: TransferLtsdRow[]
+}
+
+/**
+ * transfer.ltsd.one_house — 장기보유특별공제 큰 표(1세대 1주택 + 거주 요건 충족 시).
+ * 보유분(holdingRows)·거주분(residenceRows)을 각각 찾아 합산한다.
+ * minResidenceYears: 이 표를 쓰기 위한 최소 거주 연수 — 지역과 무관하게 항상 적용
+ * (비과세의 거주 요건과 별개 조문·별개 조건이다. 절대 혼용 금지).
+ */
+export interface TransferLtsdOneHouseValue {
+  minResidenceYears: number
+  holdingRows: TransferLtsdRow[]     // 조건: holding_years_ltsd
+  residenceRows: TransferLtsdRow[]   // 조건: residence_years
+}
+
+/** transfer.basic_deduction — 기본공제액(원) */
+export interface TransferBasicDeductionValue {
+  amount: number
+}
+
+/**
+ * transfer.exemption — 1세대 1주택 비과세 요건과 고가주택 기준.
+ * residenceIfAcquiredRegulated: '취득 당시' 조정대상지역이었던 경우에만 적용되는
+ * 거주 요건(연수) — 장기보유특별공제 큰 표의 거주 요건(항상 적용)과 다르다. 혼용 금지.
+ */
+export interface TransferExemptionValue {
+  minHoldingYears: number
+  residenceIfAcquiredRegulated: { minYears: number }
+  highPriceThreshold: number    // 고가주택 기준(양도가액, 원) — 초과분 비율만 과세
+}
+
+/** transfer.temporary_two_house — 일시적 2주택: 신규주택 취득일부터 허용 연수 */
+export interface TransferTemporaryTwoHouseValue {
+  maxYearsFromNewAcquisition: number
+}
+
+/**
+ * transfer.local_income_tax — 지방소득세. 양도소득세액의 10%가 아니라 같은 과세표준에
+ * 별도 세율표를 적용하는 독립 세목이므로, 국세와 병렬 구조(기본·단기·중과)를 갖는다.
+ * 국세가 단기·중과 경로일 때 대응 표(shortTerm·heavyRows)가 없으면 계산을 중단한다
+ * (국세의 1/10로 추정하지 않는다).
+ */
+export interface TransferLocalIncomeTaxValue {
+  rate: RateSpec
+  shortTerm?: { rows: TransferRateRow[] }
+  heavyRows?: TransferHeavyRow[]
+}
+
+/** transfer.period_rule — 연수 계산 방식(초일 산입 여부). 값은 관리자가 확인 후 입력 */
+export interface TransferPeriodRuleValue {
+  dayInclusion: DayInclusionMode
+}
+
+// ─── 계산기 입력 ──────────────────────────────────────────────────────────────
+
+/** 양도 당시 보유 주택 수 — 3은 '3주택 이상' */
+export type TransferHouseCount = 1 | 2 | 3
+
+/**
+ * @타입: TransferInput
+ * @설명: 양도소득세 계산 입력. 개인식별정보(이름·이메일·IP)는 포함하지 않는다.
+ *        보유기간 기산일 규칙(상속 자산의 세율용/공제용 분리)은 엔진이 조문에 따라
+ *        입력 날짜들로부터 결정한다.
+ */
+export interface TransferInput {
+  baseDate: string                // 양도일 = 계산 기준일 (YYYY-MM-DD)
+  acquiredAt: string              // 취득일 (YYYY-MM-DD)
+  regionCode: string              // 소재지 행정구역 코드 — '양도 당시' 조정대상지역 판정용
+  sido?: string                   // 소재지 시·도 이름 — 경과조치 지역 조건·is_metro 판정용
+  sigungu?: string                // 소재지 시·군·구 이름 — 경과조치의 구 단위 지역 조건용
+  transferPrice: number           // 양도가액 (원)
+  acquirePrice: number            // 취득가액 (원)
+  expenses?: number               // 필요경비(취득세·중개수수료·자본적지출 등, 원) — 비우면 0
+  houseCount: TransferHouseCount  // 양도 당시 1세대 보유 주택 수
+  residenceYears?: number         // 거주기간(만 연수) — 1주택 비과세·장특공제 큰 표 판정용
+  /**
+   * '취득 당시' 조정대상지역이었는지 — 비과세 거주 요건 판정 전용.
+   * 과거 이력이 DB에 없어 자동 판정이 불가능하므로 사용자가 직접 선택한다.
+   * '양도 당시' 판정(중과)은 tax_regulated_areas 이력으로 자동 수행 — 혼용 금지.
+   */
+  acquiredInRegulatedArea?: boolean
+  isTemporaryTwoHouse?: boolean   // 2주택 — 일시적 2주택 여부
+  newHouseAcquiredAt?: string     // 2주택 — 신규주택 취득일 (일시적 2주택 판정용)
+  inherited?: boolean             // 상속받은 주택 여부
+  inheritanceOpenedAt?: string    // 상속개시일 — 공제·비과세 보유기간 기산(제95조④ 계열)
+  decedentAcquiredAt?: string     // 피상속인 취득일 — 세율용 보유기간 기산(제104조②)
+  graceContractDate?: string      // 경과조치 — 매매계약 체결일 (해당 시)
+  graceDepositReceived?: boolean  // 경과조치 — 계약금 수령 여부
+}
+
+// ─── 계산 결과 ────────────────────────────────────────────────────────────────
+
+/** 계산 과정 각 단계 금액 — 화면이 단계별로 그대로 보여준다 */
+export interface TransferBreakdown {
+  transferGain: number        // 양도차익 (고가주택 안분 후)
+  ltsdAmount: number          // 장기보유특별공제액
+  taxableGain: number         // 양도소득금액
+  basicDeduction: number      // 기본공제 (실제 차감액)
+  taxBase: number             // 과세표준
+  transferTax: number         // 양도소득세 (단수 처리 후)
+  localIncomeTax: number      // 지방소득세 (단수 처리 후)
+  totalTax: number
+  netProceeds: number         // 손에 쥐는 돈 = 양도가액 − 취득가액 − 필요경비 − 세금 합계
+}
+
+/** 장기보유특별공제에 실제 사용된 표 */
+export type TransferLtsdTable = 'one_house' | 'general' | 'none'
+
+/** 세액 산출에 채택된 경로 — 비교과세 결과 */
+export type TransferRatePath = 'base' | 'heavy' | 'short_term'
+
+/**
+ * @타입: TransferSuccess
+ * @설명: 양도소득세 계산 성공 결과. 어느 공제 표를 왜 썼는지, 중과·경과조치·비교과세가
+ *        어떻게 적용됐는지를 전부 담는다 — 이 계산기에서 가장 오해가 많은 부분이므로
+ *        화면이 사유를 그대로 보여줄 수 있어야 한다.
+ */
+export interface TransferSuccess {
+  ok: true
+  /** 비과세 여부 — true면 세액 0, 사유 필수 */
+  exempt: boolean
+  exemptReason: string | null
+  /** 고가주택 안분 적용 여부와 과세 비율(0~1) */
+  highPriceApplied: boolean
+  taxableRatio: number
+  breakdown: TransferBreakdown
+  /** 장기보유특별공제 — 어느 표를 왜 썼는지 */
+  ltsdTable: TransferLtsdTable
+  ltsdReason: string
+  ltsdPercentTotal: number        // 적용 공제율 합계(%)
+  /** 다주택 중과 */
+  heavyApplied: boolean           // 가산이 실제 반영됐는지
+  heavyExemptedByGrace: boolean   // 경과조치로 면제됐는지
+  heavyReason: string
+  /** 비교과세 — 채택 경로와 비교 대상 세액(절사 전) */
+  ratePathChosen: TransferRatePath
+  comparisonApplied: boolean
+  /** 판정에 사용된 값들 (화면 표시·이력용) */
+  holdingYearsForRate: number
+  holdingYearsForLtsd: number
+  /**
+   * 거주 요건 판정에 실제 사용된 거주기간(만 연수) — 어떤 판정에도 안 썼으면 null.
+   * 거주기간 산정의 초일 산입 방식은 법령·집행기준에서 확인되지 않았으므로, 이 값이
+   * null이 아니면 화면이 그 한계를 안내한다(보유기간과 같은 방식을 전제로 입력받음).
+   */
+  residenceYearsUsed: number | null
+  regulatedAtTransfer: boolean    // '양도 당시' 조정대상지역 여부 (이력 자동 판정)
+  appliedRules: AppliedRuleInfo[]
+  ruleMode: TaxRuleMode
+  containsProposedRule: boolean
+  /** 값 미입력(미확정)으로 판정하지 못한 조건 — 화면이 눈에 띄게 표시한다 */
+  unresolvedFields: string[]
+}
+
+export type TransferResult = TransferSuccess | TaxEngineFailure

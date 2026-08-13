@@ -27,6 +27,19 @@ import {
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
 import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
 import { BROKERAGE_RULE_KEYS } from '@/lib/tax/brokerage'
+import {
+  TRANSFER_RULE_KEYS,
+  parseTransferBaseRates,
+  parseTransferBasicDeduction,
+  parseTransferExemption,
+  parseTransferHeavy,
+  parseTransferLocalIncomeTax,
+  parseTransferLtsdGeneral,
+  parseTransferLtsdOneHouse,
+  parseTransferPeriodRule,
+  parseTransferShortTerm,
+  parseTransferTemporaryTwoHouse,
+} from '@/lib/tax/transfer-rules'
 import { RULE_STATUSES, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
@@ -58,6 +71,17 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [STAMP_RULE_KEYS.rates]: parseStampRates,
   [BROKERAGE_RULE_KEYS.rates]: parseBrokerageRates,
   [BROKERAGE_RULE_KEYS.vat]: parseBrokerageVat,
+  [TRANSFER_RULE_KEYS.baseRates]: parseTransferBaseRates,
+  [TRANSFER_RULE_KEYS.shortTermRates]: parseTransferShortTerm,
+  [TRANSFER_RULE_KEYS.heavy]: parseTransferHeavy,
+  [TRANSFER_RULE_KEYS.ltsdGeneral]: parseTransferLtsdGeneral,
+  [TRANSFER_RULE_KEYS.ltsdOneHouse]: parseTransferLtsdOneHouse,
+  [TRANSFER_RULE_KEYS.basicDeduction]: parseTransferBasicDeduction,
+  [TRANSFER_RULE_KEYS.exemption]: parseTransferExemption,
+  [TRANSFER_RULE_KEYS.temporaryTwoHouse]: parseTransferTemporaryTwoHouse,
+  [TRANSFER_RULE_KEYS.localIncomeTax]: parseTransferLocalIncomeTax,
+  [TRANSFER_RULE_KEYS.periodRule]: parseTransferPeriodRule,
+  [TRANSFER_RULE_KEYS.rounding]: parseRounding,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 
@@ -81,6 +105,17 @@ const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
   [STAMP_RULE_KEYS.rates]: 'stamp',
   [BROKERAGE_RULE_KEYS.rates]: 'brokerage',
   [BROKERAGE_RULE_KEYS.vat]: 'brokerage',
+  [TRANSFER_RULE_KEYS.baseRates]: 'transfer',
+  [TRANSFER_RULE_KEYS.shortTermRates]: 'transfer',
+  [TRANSFER_RULE_KEYS.heavy]: 'transfer',
+  [TRANSFER_RULE_KEYS.ltsdGeneral]: 'transfer',
+  [TRANSFER_RULE_KEYS.ltsdOneHouse]: 'transfer',
+  [TRANSFER_RULE_KEYS.basicDeduction]: 'transfer',
+  [TRANSFER_RULE_KEYS.exemption]: 'transfer',
+  [TRANSFER_RULE_KEYS.temporaryTwoHouse]: 'transfer',
+  [TRANSFER_RULE_KEYS.localIncomeTax]: 'transfer',
+  [TRANSFER_RULE_KEYS.periodRule]: 'transfer',
+  [TRANSFER_RULE_KEYS.rounding]: 'transfer',
   [COMMON_RULE_KEYS.metroScope]: 'common',
 }
 

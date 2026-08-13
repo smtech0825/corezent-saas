@@ -72,6 +72,8 @@ function addYearsAnniversary(date: Ymd, n: number): Ymd {
  * @설명: 시작일부터 종료일까지 경과한 만 연수(내림)를 구합니다.
  *        - exclude_start(초일 불산입): 종료일이 시작일의 N주년 응당일 이상이면 N년 경과
  *        - include_start(초일 산입): 기간이 하루 일찍 차므로 응당일 하루 전에 N년 경과
+ *          (양도소득세 집행기준 89-154-20 "취득한 날의 초일을 산입하여 양도한 날까지" —
+ *          N년 충족 최초 양도일 = 취득일 + N년 − 1일. 실제 적용 방식은 룰이 정한다)
  *        종료일이 시작일보다 앞서면 0을, 날짜 형식이 잘못되면 NaN을 반환합니다
  *        (호출 전 형식 검증은 엔진의 isValidDateString이 담당 — 이중 방어).
  * @매개변수: startDate - 기산 기준 날짜 / endDate - 종료 날짜 / mode - 초일 산입 방식(필수)
@@ -93,10 +95,52 @@ export function fullYearsBetween(startDate: string, endDate: string, mode: DayIn
 }
 
 /**
+ * n개월 뒤 응당일 — 응당일이 없는 경우(예: 1/31 기산 + 1개월)는 그 달의 말일로 당긴다.
+ */
+function addMonthsAnniversary(date: Ymd, n: number): Ymd {
+  const totalMonths = date.y * 12 + (date.m - 1) + n
+  const y = Math.floor(totalMonths / 12)
+  const m = (totalMonths % 12) + 1
+  return { y, m, d: Math.min(date.d, daysInMonth(y, m)) }
+}
+
+/**
+ * @함수명: isOnOrBeforeMonthsAfter
+ * @설명: 종료일이 시작일의 n개월 뒤 응당일 이하인지("n개월 이내"인지) 판정합니다.
+ *        중과 경과조치(계약일부터 지역별 개월 수 안에 양도)처럼 개월 단위 기한 판정에
+ *        사용합니다 — 응당일 당일까지 포함하는 달력 비교이며, 허용 개월 수는 룰에서 온다.
+ *        날짜 형식이 잘못되면 false를 반환합니다.
+ * @매개변수: startDate - 기산일 / endDate - 판정할 날짜 / months - 허용 개월 수(룰 값)
+ * @반환값: endDate ≤ (startDate + months개월) 이면 true
+ */
+export function isOnOrBeforeMonthsAfter(startDate: string, endDate: string, months: number): boolean {
+  const start = parseYmd(startDate)
+  const end = parseYmd(endDate)
+  if (!start || !end || !Number.isFinite(months) || months < 0) return false
+  return compareYmd(end, addMonthsAnniversary(start, Math.floor(months))) <= 0
+}
+
+/**
+ * @함수명: isOnOrBeforeAnniversary
+ * @설명: 종료일이 시작일의 n주년 응당일 이하인지("n년 이내"인지) 판정합니다.
+ *        기한 판정(일시적 2주택의 양도 기한, 경과조치의 계약일 기준 양도 기한 등)에
+ *        사용합니다 — 응당일 당일까지 포함하며, 초일 산입 방식과 무관한 달력 비교입니다.
+ *        허용 연수(n)는 전부 룰에서 온다. 날짜 형식이 잘못되면 false를 반환합니다.
+ * @매개변수: startDate - 기산일 / endDate - 판정할 날짜 / years - 허용 연수(룰 값)
+ * @반환값: endDate ≤ (startDate + years년) 이면 true
+ */
+export function isOnOrBeforeAnniversary(startDate: string, endDate: string, years: number): boolean {
+  const start = parseYmd(startDate)
+  const end = parseYmd(endDate)
+  if (!start || !end || !Number.isFinite(years) || years < 0) return false
+  return compareYmd(end, addYearsAnniversary(start, Math.floor(years))) <= 0
+}
+
+/**
  * @함수명: holdingYearsForRate
  * @설명: 세율 적용용 보유기간(만 연수) — 소득세법 제104조제2항의 보유기간.
- *        상속받은 자산은 피상속인이 취득한 날부터 기산하는 등 기산일 선택은
- *        엔진이 조문에 따라 결정해 startDate로 넘긴다(이 함수는 계산만 한다).
+ *        상속받은 자산은 '피상속인이 취득한 날'부터 기산한다(집행기준 104-0-11).
+ *        기산일 선택은 엔진이 조문에 따라 결정해 startDate로 넘긴다(이 함수는 계산만 한다).
  *        ⚠️ 장기보유특별공제용 보유기간(holdingYearsForLtsd)과 절대 바꿔 쓰지 마라 —
  *        근거 조문이 다르고 상속 자산에서 결과가 갈린다.
  */
@@ -107,8 +151,8 @@ export function holdingYearsForRate(startDate: string, transferDate: string, mod
 /**
  * @함수명: holdingYearsForLtsd
  * @설명: 장기보유특별공제용 보유기간(만 연수) — 소득세법 제95조제4항의 보유기간.
- *        상속받은 자산은 상속개시일부터 기산하는 등 기산일 선택은 엔진이 조문에 따라
- *        결정해 startDate로 넘긴다(이 함수는 계산만 한다).
+ *        상속받은 자산은 '상속개시일'부터 기산한다(집행기준 95-0-1).
+ *        기산일 선택은 엔진이 조문에 따라 결정해 startDate로 넘긴다(이 함수는 계산만 한다).
  *        ⚠️ 세율용 보유기간(holdingYearsForRate)과 절대 바꿔 쓰지 마라.
  */
 export function holdingYearsForLtsd(startDate: string, transferDate: string, mode: DayInclusionMode): number {
