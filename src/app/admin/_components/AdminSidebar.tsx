@@ -34,6 +34,7 @@ import {
   TrendingUp,
   Activity,
   Scale,
+  FileText,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NAV_ICON_SIZE, NAV_ICON_STROKE } from '@/components/common/nav-icon'
@@ -58,6 +59,7 @@ const mainNav: NavItem[] = [
   { label: '제휴',       href: '/admin/affiliates', icon: Gift },
   { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
   { label: '문의',       href: '/admin/inquiries', icon: Inbox },
+  { label: '견적 요청',  href: '/admin/quotes',    icon: FileText },
 ]
 
 const frontendNav: NavItem[] = [
