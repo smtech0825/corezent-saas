@@ -9,11 +9,10 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail } from '@/lib/email'
+import { notifyNewOrder } from '@/lib/admin-notify'
+import { formatKRW } from '@/lib/money'
 import { NextResponse } from 'next/server'
 
-// 관리자 알림 수신 주소(비회원 문의 라우트와 동일 기준)
-const ADMIN_EMAIL = 'smtech.semi@gmail.com'
 const DEPOSIT_WINDOW_DAYS = 3
 
 export async function POST(request: Request) {
@@ -83,30 +82,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '주문 생성에 실패했습니다.', code: 'DB_ERROR' }, { status: 500 })
     }
 
-    // 4. 관리자 알림 메일(best-effort — 실패해도 주문 흐름은 진행)
-    try {
-      const prodRaw = (price as Record<string, unknown>).products
-      const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
-      const opts = [price.option_axis1_label, price.option_axis2_label].filter(Boolean).join(' · ')
-      const shortId = order.id.slice(0, 8).toUpperCase()
-      await sendEmail({
-        to: ADMIN_EMAIL,
-        subject: `[CoreZent] 계좌이체 입금 대기 주문 #${shortId}`,
-        html: `
-          <p>새 계좌이체(무통장 입금) 주문이 접수되었습니다. 입금 확인 후 관리자 주문 목록에서 <b>[결제 확인]</b>을 눌러 주세요.</p>
-          <p><b>라이선스는 수동 발송이 필요합니다.</b></p>
-          <ul>
-            <li>주문번호: ${order.id}</li>
-            <li>상품: ${prod?.name ?? '-'}${opts ? ` (${opts})` : ''}</li>
-            <li>수량: ${qty}</li>
-            <li>금액: ₩${(priceWon * qty).toLocaleString('ko-KR')}</li>
-            <li>가입 이메일: ${user.email ?? '-'}</li>
-            <li>입금 기한: ${expiresAt}</li>
-          </ul>`,
-      })
-    } catch (e) {
-      console.error('[orders/bank-transfer] admin email failed (ignored):', e)
-    }
+    // 4. 관리자 알림 — 공용 헬퍼(admin-notify) 한 곳으로 통일. 수신 주소는 설정
+    //    (front_settings.support_email)에서 읽고, 실패는 헬퍼가 전부 삼키므로
+    //    주문 흐름은 어떤 경우에도 진행된다. (기존 인라인 발송을 교체 — 두 통 방지)
+    const prodRaw = (price as Record<string, unknown>).products
+    const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
+    const opts = [price.option_axis1_label, price.option_axis2_label].filter(Boolean).join(' · ')
+    await notifyNewOrder({
+      orderId: order.id,
+      productName: `${prod?.name ?? '-'}${opts ? ` (${opts})` : ''}`,
+      quantity: qty,
+      // 주문 행에 저장한 값(amountCents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
+      amountLabel: formatKRW(amountCents),
+      buyerEmail: user.email ?? enteredEmail,
+      method: 'bank_transfer',
+      status: '입금 대기(pending_deposit)',
+      extra: [['입금 기한', expiresAt]],
+    })
 
     return NextResponse.json({ ok: true, orderId: order.id })
   } catch (err) {

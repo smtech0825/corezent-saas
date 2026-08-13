@@ -37,6 +37,8 @@ import { logNotification } from '@/lib/notification-log'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { maskSecret, maskSecretsInText } from '@/lib/mask'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
+import { notifyNewOrder } from '@/lib/admin-notify'
+import { formatKRW } from '@/lib/money'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
@@ -463,6 +465,29 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     } else {
       throw new Error(`주문 생성 실패: ${orderErr?.message}`)
     }
+  }
+
+  // 관리자 새 주문 알림 — 주문 확정 직후·발급 이전에 보낸다(뒤 단계가 실패해도 접수 사실은
+  // 알려져야 하고, 재전송은 위 멱등 체크에서 걸러져 이 지점에 다시 오지 않는다 — 주문당 한 통).
+  // notifyNewOrder는 모든 오류를 삼키므로 결제 처리 흐름에는 영향이 없다(알림 덧붙임일 뿐).
+  {
+    let productName = '-'
+    if (productId) {
+      const { data: p } = await admin.from('products').select('name').eq('id', productId).maybeSingle()
+      if (p?.name) productName = p.name
+    } else if (bundleId) {
+      productName = '번들 상품'
+    }
+    await notifyNewOrder({
+      orderId,
+      productName,
+      quantity,
+      // 주문 행에 저장한 값(attrs.total cents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
+      amountLabel: formatKRW(attrs.total),
+      buyerEmail: attrs.user_email,
+      method: 'card',
+      status: '결제 완료(paid)',
+    })
   }
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
