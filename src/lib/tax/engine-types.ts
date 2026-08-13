@@ -287,3 +287,84 @@ export type StampResult = StampSuccess | TaxEngineFailure
 export interface MetroScopeValue {
   sidoNames: string[]   // 수도권으로 취급할 시·도 이름 (regions.ts의 시·도 명칭과 동일 표기)
 }
+
+// ─── 중개수수료 (brokerage) ───────────────────────────────────────────────────
+// ⚠️ 중개수수료는 세금이 아니라 '법정 상한'이다 — 엔진은 "이 금액을 넘을 수 없다"는
+//    상한액만 계산하고, 실제 금액은 의뢰인과 개업공인중개사의 협의로 정해진다(화면이 안내).
+
+/** 거래 유형 — sale_exchange(매매·교환) / lease(임대차) */
+export type BrokerageDealType = 'sale_exchange' | 'lease'
+
+/**
+ * @타입: BrokerageRateRow
+ * @설명: 중개수수료 상한 요율표 한 행. when 조건(deal_type·price·sido)은 취득세·인지세와
+ *        같은 eq/min/max/in·priority 방식을 그대로 쓴다.
+ *        조건에 sido가 없는 행은 전국 공통이고, 특정 시·도의 조례가 다르면 sido 조건을 단
+ *        행을 더 높은 priority로 추가한다(시·도 조례 우선 구조).
+ *        요율·한도액 값은 전부 관리자가 룰에 입력하며 코드에는 없다.
+ */
+export interface BrokerageRateRow {
+  when: Conditions
+  priority?: number
+  ratePercent: number     // 상한 요율(%) — 관리자 입력
+  limitAmount?: number    // 이 구간의 한도액(원) — 있으면 상한액이 이 금액을 넘지 않는다
+}
+
+/**
+ * @타입: BrokerageLeaseConversion
+ * @설명: 임대차 거래금액 환산 방식 — 환산액 = 보증금 + 월세 × multiplier.
+ *        1차 환산액이 lowDeposit.thresholdAmount '미만'이면 lowDeposit.multiplier로
+ *        다시 환산한다. 코드는 이 구조만 알고 배수·기준액 숫자는 전부 룰에서 온다.
+ */
+export interface BrokerageLeaseConversion {
+  multiplier: number          // 월세 환산 배수 — 관리자 입력
+  lowDeposit?: {
+    thresholdAmount: number   // 1차 환산액이 이 금액 미만이면 대체 배수 적용 (원)
+    multiplier: number        // 대체 배수
+  }
+}
+
+/** rule_value: 중개수수료 상한 요율표 (brokerage.rates) */
+export interface BrokerageRatesValue {
+  rows: BrokerageRateRow[]
+  leaseConversion: BrokerageLeaseConversion
+}
+
+/** rule_value: 중개수수료 부가가치세 (brokerage.vat) — 요율과 성격·개정 주기가 달라 분리 */
+export interface BrokerageVatValue {
+  ratePercent: number   // 부가가치세율(%) — 관리자 입력
+}
+
+/** 중개수수료 계산 입력 — 개인식별정보는 포함하지 않는다 */
+export interface BrokerageInput {
+  baseDate: string              // 기준일 (YYYY-MM-DD)
+  dealType: BrokerageDealType   // 매매·교환 / 임대차
+  sido: string                  // 소재지 시·도 이름 (regions.ts 표기와 동일)
+  price?: number                // 매매·교환 — 거래금액 (원)
+  deposit?: number              // 임대차 — 보증금 (원)
+  monthlyRent?: number          // 임대차 — 월세 (원, 없으면 0)
+}
+
+/**
+ * @타입: BrokerageSuccess
+ * @설명: 중개수수료 상한 계산 성공 결과. capAmount는 '상한액'이며 실제 금액이 아니다 —
+ *        화면이 이 구분을 결과 바로 옆에서 안내한다. 부가가치세는 별도 항목으로 담는다.
+ */
+export interface BrokerageSuccess {
+  ok: true
+  dealType: BrokerageDealType
+  dealPrice: number                 // 요율이 적용된 거래금액 (임대차는 환산액)
+  /** 임대차 환산 정보 — 매매·교환이면 null. multiplierUsed는 실제 적용된 배수(룰 값) */
+  leaseConversion: { multiplierUsed: number; usedLowDeposit: boolean } | null
+  capAmount: number                 // 중개보수 '상한액' (원) — 실제 금액은 협의로 결정
+  appliedRatePercent: number        // 적용된 상한 요율(%) — 룰 값
+  limitApplied: boolean             // 한도액으로 상한이 제한됐는지
+  limitAmount: number | null        // 적용 구간의 한도액 (원) — 룰에 없으면 null
+  vatRatePercent: number            // 부가가치세율(%) — 룰 값
+  vatAmount: number                 // 상한액 기준 부가가치세 (원, 별도)
+  appliedRules: AppliedRuleInfo[]
+  ruleMode: TaxRuleMode
+  containsProposedRule: boolean
+}
+
+export type BrokerageResult = BrokerageSuccess | TaxEngineFailure

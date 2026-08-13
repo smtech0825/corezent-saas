@@ -8,6 +8,10 @@
 
 import type { Json } from './types'
 import type {
+  BrokerageLeaseConversion,
+  BrokerageRateRow,
+  BrokerageRatesValue,
+  BrokerageVatValue,
   ConditionSpec,
   Conditions,
   DeemedGiftThresholdValue,
@@ -397,6 +401,74 @@ export function parseStampRates(
     }
   }
   return { ok: true, rows: rows as unknown as StampRateRow[] }
+}
+
+/**
+ * @함수명: parseBrokerageRates
+ * @설명: 중개수수료 상한 요율표 rule_value({ rows, leaseConversion })를 검증해 반환합니다.
+ *        요율(ratePercent)·한도액(limitAmount)·임대차 환산 배수·기준액은 전부 관리자가
+ *        룰에 입력하며 코드에는 어떤 숫자도 없다. 임대차 계산이 언제든 올 수 있으므로
+ *        leaseConversion은 필수다(없으면 임대차 요청 때 원인 불명 실패가 되는 것을 막는다).
+ */
+export function parseBrokerageRates(
+  value: Json,
+  ruleKey: string,
+): { ok: true; value: BrokerageRatesValue } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const rows = value.rows
+  if (!Array.isArray(rows) || rows.length === 0) return invalid(ruleKey, 'rows가 비어 있지 않은 배열이 아닙니다.')
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    if (!isObj(row)) return invalid(ruleKey, `rows[${i}]가 객체가 아닙니다.`)
+    if (!isObj(row.when)) return invalid(ruleKey, `rows[${i}].when이 객체가 아닙니다.`)
+    if (row.priority !== undefined && !isNum(row.priority)) return invalid(ruleKey, `rows[${i}].priority가 숫자가 아닙니다.`)
+    if (!isNum(row.ratePercent) || row.ratePercent < 0) return invalid(ruleKey, `rows[${i}].ratePercent가 0 이상 숫자(%)가 아닙니다.`)
+    if (row.limitAmount !== undefined && (!isNum(row.limitAmount) || row.limitAmount < 0)) {
+      return invalid(ruleKey, `rows[${i}].limitAmount가 0 이상 숫자(원)가 아닙니다.`)
+    }
+  }
+  const conv = value.leaseConversion
+  if (!isObj(conv)) {
+    return invalid(ruleKey, 'leaseConversion(임대차 환산 방식)이 없습니다. 월세 환산 배수를 룰에 넣어야 합니다.')
+  }
+  if (!isNum(conv.multiplier) || conv.multiplier <= 0) {
+    return invalid(ruleKey, 'leaseConversion.multiplier가 0보다 큰 숫자가 아닙니다.')
+  }
+  let lowDeposit: BrokerageLeaseConversion['lowDeposit']
+  if (conv.lowDeposit !== undefined) {
+    const low = conv.lowDeposit
+    if (!isObj(low)) return invalid(ruleKey, 'leaseConversion.lowDeposit이 객체가 아닙니다.')
+    if (!isNum(low.thresholdAmount) || low.thresholdAmount < 0) {
+      return invalid(ruleKey, 'leaseConversion.lowDeposit.thresholdAmount가 0 이상 숫자(원)가 아닙니다.')
+    }
+    if (!isNum(low.multiplier) || low.multiplier <= 0) {
+      return invalid(ruleKey, 'leaseConversion.lowDeposit.multiplier가 0보다 큰 숫자가 아닙니다.')
+    }
+    lowDeposit = { thresholdAmount: low.thresholdAmount, multiplier: low.multiplier }
+  }
+  return {
+    ok: true,
+    value: {
+      rows: rows as unknown as BrokerageRateRow[],
+      leaseConversion: { multiplier: conv.multiplier, lowDeposit },
+    },
+  }
+}
+
+/**
+ * @함수명: parseBrokerageVat
+ * @설명: 중개수수료 부가가치세 rule_value({ ratePercent })를 검증해 반환합니다.
+ *        세율 숫자는 관리자가 입력한다 — 코드에 넣지 않는다.
+ */
+export function parseBrokerageVat(
+  value: Json,
+  ruleKey: string,
+): { ok: true; value: BrokerageVatValue } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  if (!isNum(value.ratePercent) || value.ratePercent < 0) {
+    return invalid(ruleKey, 'ratePercent가 0 이상 숫자(%)가 아닙니다.')
+  }
+  return { ok: true, value: { ratePercent: value.ratePercent } }
 }
 
 /**

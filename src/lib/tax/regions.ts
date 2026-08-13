@@ -133,6 +133,15 @@ export function findSigunguList(sido: string): string[] | null {
 }
 
 /**
+ * @함수명: isKnownSido
+ * @설명: 시·도 이름이 행정구역 목록에 있는지 검사합니다 — 시·도만 받는 계산기
+ *        (예: 중개수수료)의 서버 검증용. 목록 밖 임의 문자열을 차단합니다.
+ */
+export function isKnownSido(sido: string): boolean {
+  return findSigunguList(sido) !== null
+}
+
+/**
  * @함수명: isKnownRegion
  * @설명: 시·도/시·군·구 조합이 목록에 있는지 검사합니다(주소 직접 입력 차단용 서버 검증).
  */

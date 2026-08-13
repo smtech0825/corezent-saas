@@ -13,5 +13,6 @@ initBotId({
     // 세금 계산 서버 액션(공개 POST) — 무제한 호출로 인한 룰 조회·이력 적재 남용 방지
     { path: '/tax/acquisition',      method: 'POST' },
     { path: '/tax/stamp',            method: 'POST' },
+    { path: '/tax/brokerage',        method: 'POST' },
   ],
 })

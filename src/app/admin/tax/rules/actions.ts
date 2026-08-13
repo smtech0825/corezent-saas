@@ -14,6 +14,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 import { COMMON_RULE_KEYS, isValidDateString } from '@/lib/tax/rule-store'
 import {
+  parseBrokerageRates,
+  parseBrokerageVat,
   parseDeemedGiftThreshold,
   parseGiftHeavy,
   parseGiftTaxBase,
@@ -24,6 +26,7 @@ import {
 } from '@/lib/tax/rule-value'
 import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
 import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
+import { BROKERAGE_RULE_KEYS } from '@/lib/tax/brokerage'
 import { RULE_STATUSES, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
@@ -53,6 +56,8 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [ACQUISITION_RULE_KEYS.deemedGiftThreshold]: parseDeemedGiftThreshold,
   [ACQUISITION_RULE_KEYS.rounding]: parseRounding,
   [STAMP_RULE_KEYS.rates]: parseStampRates,
+  [BROKERAGE_RULE_KEYS.rates]: parseBrokerageRates,
+  [BROKERAGE_RULE_KEYS.vat]: parseBrokerageVat,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 
@@ -74,6 +79,8 @@ const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
   [ACQUISITION_RULE_KEYS.deemedGiftThreshold]: 'acquisition',
   [ACQUISITION_RULE_KEYS.rounding]: 'acquisition',
   [STAMP_RULE_KEYS.rates]: 'stamp',
+  [BROKERAGE_RULE_KEYS.rates]: 'brokerage',
+  [BROKERAGE_RULE_KEYS.vat]: 'brokerage',
   [COMMON_RULE_KEYS.metroScope]: 'common',
 }
 
