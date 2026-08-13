@@ -65,6 +65,14 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     category: 'buy',
     available: false,
   },
+  {
+    slug: 'transfer',
+    path: '/tax/transfer',
+    name: '양도소득세',
+    description: '아파트를 팔 때의 양도소득세를 비과세·중과 판정과 함께 계산합니다.',
+    category: 'sell',
+    available: false,   // 룰 값 등록·검산 후 연다 (S4)
+  },
   // 전월세 전환 계산기는 만들지 않는다(2026-08-13 범위 조정) — 세금이 아니고
   // 아파트 매매와 무관해 서비스 목적에서 벗어남. '준비 중'으로도 표시하지 않는다.
 ]
