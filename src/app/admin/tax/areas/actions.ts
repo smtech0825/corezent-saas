@@ -29,6 +29,8 @@ export interface TaxAreaPayload {
   designated_from: string
   designated_to: string | null
   source_url: string
+  /** 메모(선택, 059) — 적용 한계·일부 동·읍·면 한정 지정 등 행 단위 기록 */
+  note: string | null
 }
 
 /** 실패 결과 생성 헬퍼 */
@@ -80,6 +82,7 @@ export async function saveTaxArea(payload: TaxAreaPayload): Promise<AdminActionR
     designated_from: payload.designated_from,
     designated_to: payload.designated_to,
     source_url: payload.source_url.trim(),
+    note: payload.note?.trim() || null,   // 빈 문자열은 NULL로 — 룰 저장(saveTaxRule)과 같은 관례
   }
 
   const { error } = payload.id

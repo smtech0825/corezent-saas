@@ -10,7 +10,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, Loader2, Pencil, Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { Field, Input } from '@/components/ui/Input'
+import { Field, Input, Textarea } from '@/components/ui/Input'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import { AREA_TYPES, AREA_TYPE_LABELS, TAX_TYPES, TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { RegulatedAreaType, TaxRegulatedArea, TaxType } from '@/lib/tax/types'
@@ -37,6 +37,7 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
   const [designatedFrom, setDesignatedFrom] = useState(initial?.designated_from ?? '')
   const [designatedTo, setDesignatedTo] = useState(initial?.designated_to ?? '')
   const [sourceUrl, setSourceUrl] = useState(initial?.source_url ?? '')
+  const [note, setNote] = useState(initial?.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -63,6 +64,7 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
         designated_from: designatedFrom,
         designated_to: designatedTo || null,
         source_url: sourceUrl,
+        note: note || null,
       })
       if (result.status === 'ok') onDone(true)
       else setError(result.reason)
@@ -135,6 +137,11 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
         hint="공고 근거 없는 이력은 저장할 수 없습니다.">
         <Input id="area-source" type="url" value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://www.molit.go.kr/..." required />
+      </Field>
+
+      <Field label="메모" htmlFor="area-note"
+        hint="이력의 적용 한계, 일부 동·읍·면만 지정된 경우의 범위 한정 등을 기록하세요.">
+        <Textarea id="area-note" value={note} onChange={(e) => setNote(e.target.value)} className="min-h-20" />
       </Field>
 
       {error && <p className="text-sm font-medium text-seal" role="alert">{error}</p>}
@@ -215,6 +222,9 @@ export default function AreasManager({ areas }: { areas: TaxRegulatedArea[] }) {
                       공고 <ExternalLink size={10} />
                     </a>
                   </p>
+                  {area.note && (
+                    <p className="text-xs text-ink-faint mt-1 whitespace-pre-line">{area.note}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => { setSavedNotice(false); setEditing(area) }}

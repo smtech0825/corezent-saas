@@ -1,0 +1,41 @@
+-- ============================================================
+-- 059_tax_regulated_areas_note.sql
+-- 대상 DB: 본체 Supabase (CoreZent 메인 프로젝트)
+-- 설명: 규제지역 이력(tax_regulated_areas)에 메모(note) 컬럼 추가.
+--   쓰임새 두 가지:
+--     1) 이력의 적용 한계 기록 — 적용 세목을 넓힐 때(예: 양도세 추가)
+--        "이 이력은 양도 당시 판정에만 사용 가능하고, 취득 당시 판정에는
+--        과거 이력이 없어 사용할 수 없다" 같은 취지를 행 단위로 남긴다.
+--     2) 과거 이력 입력 대비 — 규제지역이 시·군·구 전체가 아니라 일부
+--        동·읍·면만 지정된 사례가 있어, 행정구역 단위 컬럼(sido·sigungu)로는
+--        담을 수 없는 범위 한정을 기록할 곳이 필요하다.
+--   nullable text — 기존 행과 기존 저장 경로에 영향 없는 무해 추가.
+--   ⚠️ 지역명·날짜·세율 등 실무 데이터는 이 파일에 넣지 않는다(시드 없음).
+--      기존 40행의 applies_to 확장·메모 채우기는 이 마이그레이션 적용 후
+--      별도 UPDATE로 수행한다(코드·마이그레이션에 데이터를 넣지 않는 원칙).
+--
+-- 적용 방법: 운영자가 Supabase SQL Editor에서 직접 실행 (055~058 적용 이후).
+-- ⚠️ 비멱등 — 운영 재실행 금지 (055~058과 동일 관례).
+-- ============================================================
+
+ALTER TABLE tax_regulated_areas
+  ADD COLUMN note text;
+
+-- ─── 회귀 검증(운영자 적용 후) ────────────────────────────────────────────
+-- 1) note 컬럼이 생겼는지 (nullable text 1행이 나오면 정상):
+--      SELECT column_name, data_type, is_nullable
+--        FROM information_schema.columns
+--       WHERE table_name = 'tax_regulated_areas' AND column_name = 'note';
+-- 2) note 없이 기존 방식 INSERT가 여전히 성공하는지 (성공해야 정상, ROLLBACK):
+--      BEGIN;
+--      INSERT INTO tax_regulated_areas (sido, sigungu, region_code, area_type, applies_to, designated_from, source_url)
+--        VALUES ('검증용', '검증용', '검증용|검증용', 'adjustment', ARRAY['acquisition'], '2000-01-01', 'https://example.com');
+--      ROLLBACK;
+-- 3) note를 채운 INSERT도 성공하는지 (성공해야 정상, ROLLBACK):
+--      BEGIN;
+--      INSERT INTO tax_regulated_areas (sido, sigungu, region_code, area_type, applies_to, designated_from, source_url, note)
+--        VALUES ('검증용', '검증용', '검증용|검증용', 'adjustment', ARRAY['acquisition'], '2000-01-01', 'https://example.com', '검증용 메모');
+--      ROLLBACK;
+-- 4) 기존 행의 note가 전부 NULL인지 (0이 나오면 정상 — 적용 직후 기준):
+--      SELECT count(*) FROM tax_regulated_areas WHERE note IS NOT NULL;
+-- ============================================================

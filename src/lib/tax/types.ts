@@ -83,6 +83,7 @@ export interface TaxRegulatedArea {
   designated_from: string       // date (YYYY-MM-DD)
   designated_to: string | null  // NULL이면 현재 지정 상태
   source_url: string            // 국토교통부 공고 링크
+  note: string | null           // 메모 (059) — 적용 한계·일부 동·읍·면 한정 지정 등 기록
   created_at: string
   updated_at: string
 }
