@@ -59,7 +59,11 @@ function toNum(v: string): number | undefined {
   return Number(v)
 }
 
-export default function TransferForm() {
+export default function TransferForm({ graceDeadlineText }: {
+  /** 중과 경과조치 계약 마감일 안내 문구(예: '2026년 5월 9일') — 서버가 heavy 룰에서 읽어
+   *  넘긴다. 룰이 없거나 값을 못 읽으면 null — 날짜 없는 일반 문구로 표시한다. */
+  graceDeadlineText?: string | null
+}) {
   // ── 기본 입력 ──────────────────────────────────────────────────────────────
   const [transferDate, setTransferDate] = useState(todayString())
   const [acquiredAt, setAcquiredAt] = useState('')
@@ -273,7 +277,9 @@ export default function TransferForm() {
               <div className="bg-caution-soft border border-caution/30 rounded-md p-4 space-y-3">
                 <p className="text-sm font-semibold text-caution">다주택 중과 경과조치</p>
                 <p className="text-xs text-ink leading-relaxed">
-                  2026년 5월 9일까지 매매계약을 체결하고 계약금을 받았다면 아래에 입력하세요.
+                  {graceDeadlineText
+                    ? `${graceDeadlineText}까지 매매계약을 체결하고 계약금을 받았다면 아래에 입력하세요. `
+                    : '중과 유예 종료 전에 매매계약을 체결하고 계약금을 받았다면 아래에 입력하세요. '}
                   계약일부터 일정 기간(지역별로 다름) 안에 양도하면 다주택 중과를 면할 수
                   있습니다. 적용 기한·기간은 등록된 룰 기준으로 판정됩니다.
                 </p>

@@ -11,6 +11,7 @@ import { Landmark } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import RuleBasisBanner from '../_components/RuleBasisBanner'
 import CalculatorForm from './CalculatorForm'
 
 export const dynamic = 'force-dynamic'
@@ -71,6 +72,7 @@ export default async function AcquisitionTaxPage() {
 
       {/* 계산기 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <RuleBasisBanner taxTypes={['acquisition', 'common']} />
         <ApartmentOnlyNotice />
         <CalculatorForm />
 

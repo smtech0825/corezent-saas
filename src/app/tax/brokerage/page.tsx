@@ -12,6 +12,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import RuleBasisBanner from '../_components/RuleBasisBanner'
 import BrokerageForm from './BrokerageForm'
 
 export const dynamic = 'force-dynamic'
@@ -80,6 +81,7 @@ export default async function BrokeragePage() {
 
       {/* 계산기 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <RuleBasisBanner taxTypes={['brokerage']} />
         <ApartmentOnlyNotice />
         <BrokerageForm />
 

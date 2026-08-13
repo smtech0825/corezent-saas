@@ -12,6 +12,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import RuleBasisBanner from '../_components/RuleBasisBanner'
 import TransferForm from './TransferForm'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,41 @@ export const metadata: Metadata = {
   // 준비 중(available:false)인 동안은 검색엔진 색인 금지 — 룰 미등록 안내 화면이 검색에
   // 잡히지 않게 한다. available:true로 열면 자동 해제 (중개수수료와 같은 방식).
   ...(CALC_INFO?.available ? {} : { robots: { index: false, follow: false } }),
+}
+
+/** 오늘 날짜(한국 시간) YYYY-MM-DD — 룰 유효기간 판정용 */
+function todayKst(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date())
+}
+
+/**
+ * @함수명: fetchGraceDeadlineText
+ * @설명: 오늘 기준 유효한 다주택 중과 룰(transfer.heavy)에서 경과조치 계약 마감일을 읽어
+ *        안내 문구용 한국어 날짜로 반환합니다. 룰이 없거나 값이 없으면 null —
+ *        폼은 날짜 없는 일반 문구를 표시합니다(마감일의 단일 출처는 룰).
+ */
+async function fetchGraceDeadlineText(): Promise<string | null> {
+  const supabase = await createClient()
+  const today = todayKst()
+  const { data, error } = await supabase
+    .from('tax_rules')
+    .select('rule_value')
+    .eq('tax_type', 'transfer')
+    .eq('rule_key', 'transfer.heavy')
+    .eq('status', 'confirmed')
+    .lte('effective_from', today)
+    .or(`effective_to.is.null,effective_to.gte.${today}`)
+    .order('effective_from', { ascending: false })
+    .limit(1)
+  if (error) {
+    console.error('[tax] 경과조치 마감일 조회 실패:', error.message)
+    return null
+  }
+  const value = data?.[0]?.rule_value as { grace?: { contractDeadline?: string } } | undefined
+  const deadline = value?.grace?.contractDeadline
+  if (typeof deadline !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return null
+  const [y, m, d] = deadline.split('-').map(Number)
+  return `${y}년 ${m}월 ${d}일`
 }
 
 /**
@@ -59,7 +95,10 @@ function formatKstDate(iso: string): string {
 }
 
 export default async function TransferTaxPage() {
-  const lastUpdatedAt = await fetchLastRuleUpdatedAt()
+  const [lastUpdatedAt, graceDeadlineText] = await Promise.all([
+    fetchLastRuleUpdatedAt(),
+    fetchGraceDeadlineText(),
+  ])
 
   return (
     <>
@@ -80,8 +119,9 @@ export default async function TransferTaxPage() {
 
       {/* 계산기 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <RuleBasisBanner taxTypes={['transfer', 'common']} />
         <ApartmentOnlyNotice />
-        <TransferForm />
+        <TransferForm graceDeadlineText={graceDeadlineText} />
 
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들(제외 특례 명시) */}
         <div className="mt-8 bg-paper-raised border border-rule rounded-lg p-5">
