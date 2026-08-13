@@ -72,6 +72,30 @@ function checkRateSpec(spec: unknown): string | null {
     }
     return null
   }
+  if (spec.type === 'progressive') {
+    const brackets = spec.brackets
+    if (!Array.isArray(brackets) || brackets.length === 0) return 'progressive의 brackets가 비어 있지 않은 배열이 아닙니다.'
+    const seenMin = new Set<number>()
+    let hasLowest = false
+    for (let i = 0; i < brackets.length; i++) {
+      const b = brackets[i]
+      if (!isObj(b)) return `brackets[${i}]가 객체가 아닙니다.`
+      if (b.minBase !== undefined && (!isNum(b.minBase) || b.minBase < 0)) {
+        return `brackets[${i}].minBase가 0 이상 숫자(원)가 아닙니다.`
+      }
+      const minKey = (b.minBase as number | undefined) ?? 0
+      if (seenMin.has(minKey)) return `brackets[${i}]의 구간 시작(minBase ${minKey})이 다른 구간과 겹칩니다.`
+      seenMin.add(minKey)
+      if (minKey === 0) hasLowest = true
+      if (!isNum(b.ratePercent) || b.ratePercent < 0) return `brackets[${i}].ratePercent가 0 이상 숫자(%)가 아닙니다.`
+      if (!isNum(b.progressiveDeduction) || b.progressiveDeduction < 0) {
+        return `brackets[${i}].progressiveDeduction이 0 이상 숫자(원)가 아닙니다.`
+      }
+    }
+    // 최저 구간(minBase 생략 또는 0)이 없으면 작은 과세표준이 어느 구간에도 못 들어간다
+    if (!hasLowest) return 'progressive에는 minBase가 0이거나 생략된 최저 구간이 하나 필요합니다.'
+    return null
+  }
   return `알 수 없는 세율 유형('${String((spec as Record<string, unknown>).type)}')입니다.`
 }
 
@@ -81,10 +105,26 @@ function checkRateSpec(spec: unknown): string | null {
  *        linear_by_base는 산식 결과(세율%)에 룰이 지정한 소수점 처리(rounding)를
  *        먼저 적용한 뒤(법령 산식의 일부), 관리자 상·하한(min/maxPercent)으로 자릅니다.
  *        반올림 지정이 없으면 반올림하지 않습니다. 음수 세율은 0으로 고정합니다.
+ *        progressive는 과세표준이 속한 구간(minBase 이상 중 최대)의 세율을 곱하고
+ *        누진공제액을 뺍니다(음수면 0) — 구간·세율·공제액 숫자는 전부 룰에서 온다.
  * @매개변수: spec - 세율 명세 / taxBase - 과세표준(원)
  * @반환값: 세액 (절사 전)
  */
 export function evaluateRateSpec(spec: RateSpec, taxBase: number): number {
+  if (spec.type === 'progressive') {
+    // 과세표준 이상으로 시작하는 구간 중 시작값(minBase)이 가장 큰 행 — 검증이
+    // 최저 구간(minBase 0/생략) 존재를 보장하므로 반드시 하나는 선택된다
+    let picked = spec.brackets[0]
+    let pickedMin = -1
+    for (const b of spec.brackets) {
+      const min = b.minBase ?? 0
+      if (taxBase >= min && min > pickedMin) {
+        picked = b
+        pickedMin = min
+      }
+    }
+    return Math.max((taxBase * picked.ratePercent) / 100 - picked.progressiveDeduction, 0)
+  }
   let percent: number
   if (spec.type === 'fixed') {
     percent = spec.ratePercent

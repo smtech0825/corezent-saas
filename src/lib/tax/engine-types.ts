@@ -143,6 +143,19 @@ export interface RatePercentRounding {
   method: 'round' | 'floor' | 'ceil'   // 반올림 / 버림 / 올림
 }
 
+/**
+ * @타입: ProgressiveBracket
+ * @설명: 누진세율 한 구간. 과세표준이 minBase 이상인 구간 중 minBase가 가장 큰 행이
+ *        적용된다 — 구간 상한(max)을 쓰지 않는 min 방식(중개수수료 요율표와 같은 요령,
+ *        경계 금액 충돌 없음). 세액 = 과세표준 × ratePercent/100 − progressiveDeduction
+ *        (음수면 0). 구간 수·세율·누진공제액 숫자는 전부 관리자가 룰에 입력한다.
+ */
+export interface ProgressiveBracket {
+  minBase?: number              // 구간 시작 과세표준(원, 이상). 최저 구간은 생략(=0) 가능
+  ratePercent: number           // 구간 세율(%)
+  progressiveDeduction: number  // 누진공제액(원)
+}
+
 export type RateSpec =
   | { type: 'fixed'; ratePercent: number }
   | {
@@ -153,6 +166,11 @@ export type RateSpec =
       minPercent?: number
       maxPercent?: number
       rounding?: RatePercentRounding  // 산식 결과 세율%의 소수점 처리 — 룰에서 지정
+    }
+  | {
+      /** 누진세율 — 구간을 찾아 세율을 곱하고 누진공제액을 뺀다는 규칙만 코드가 안다 */
+      type: 'progressive'
+      brackets: ProgressiveBracket[]
     }
 
 /** 조건 명세 — eq(일치) / min·max(숫자 범위, 경계 포함) / in(목록 포함) */
