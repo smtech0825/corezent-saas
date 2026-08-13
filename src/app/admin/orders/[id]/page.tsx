@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatKRW } from '@/lib/money'
 import OrderActions from './OrderActions'
+import OrgInfoSection from './OrgInfoSection'
 import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
@@ -83,6 +84,23 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     discountAmount = Number(extraCols.discount_amount ?? 0)
   }
 
+  // 기관 구매 정보(061 마이그레이션 컬럼) — 같은 best-effort 관례. 미적용이면 폼 대신 안내만
+  // 보여주고 상세 페이지 자체는 정상 동작한다.
+  let orgInfo: { orgName: string; orgBizRegNo: string; orgContactName: string; taxInvoiceNo: string } | null = null
+  const { data: orgCols, error: orgColsErr } = await admin
+    .from('orders')
+    .select('org_name, org_biz_reg_no, org_contact_name, tax_invoice_no')
+    .eq('id', id)
+    .maybeSingle()
+  if (!orgColsErr && orgCols) {
+    orgInfo = {
+      orgName:        (orgCols.org_name as string) ?? '',
+      orgBizRegNo:    (orgCols.org_biz_reg_no as string) ?? '',
+      orgContactName: (orgCols.org_contact_name as string) ?? '',
+      taxInvoiceNo:   (orgCols.tax_invoice_no as string) ?? '',
+    }
+  }
+
   // 연관 데이터 병렬 조회
   const [profileRes, authRes, priceRes, licRes, subRes] = await Promise.all([
     admin.from('profiles').select('name').eq('id', order.user_id).single(),
@@ -151,6 +169,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <Row label="주문일시">{fmtDateTime(order.created_at as string)}</Row>
           <Row label="상태">{badge.label}</Row>
         </section>
+
+        {/* 기관 구매 정보 — 전부 선택 입력. 061 미적용이면 안내만(화면은 정상) */}
+        {orgInfo ? (
+          <OrgInfoSection orderId={order.id as string} initial={orgInfo} />
+        ) : (
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
+            <h2 className="text-sm font-semibold text-ink mb-1">기관 구매 정보</h2>
+            <p className="text-xs text-ink-faint">
+              기관 정보 칸이 아직 준비되지 않았습니다. supabase/migrations/061_orders_org_info.sql 을 적용하면 여기서 입력할 수 있습니다.
+            </p>
+          </section>
+        )}
 
         {/* 주문 처리 — 환불/구독취소 (실제 결제/구독 반영) */}
         <OrderActions
