@@ -11,11 +11,10 @@
 
 import { useState } from 'react'
 import { Loader2, CheckCircle } from 'lucide-react'
+import { QUOTE_MIN_PC as MIN_PC } from '@/lib/quote-constants'
 
 const INPUT_CLS =
   'w-full bg-paper-raised border border-rule rounded-lg px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors'
-
-const MIN_PC = 10
 
 export default function QuoteForm() {
   const [sending, setSending] = useState(false)

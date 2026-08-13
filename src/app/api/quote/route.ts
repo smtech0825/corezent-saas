@@ -14,9 +14,9 @@ import { checkBotId } from 'botid/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isRateLimited } from '@/lib/contact-rate-limit'
 import { notifyAdmin } from '@/lib/admin-notify'
+import { QUOTE_MIN_PC as MIN_PC } from '@/lib/quote-constants'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MIN_PC = 10
 
 export async function POST(request: NextRequest) {
   try {
