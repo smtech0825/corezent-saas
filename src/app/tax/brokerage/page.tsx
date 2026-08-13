@@ -9,7 +9,6 @@
 import type { Metadata } from 'next'
 import { Handshake } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
-import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
@@ -32,36 +31,7 @@ export const metadata: Metadata = {
   ...(CALC_INFO?.available ? {} : { robots: { index: false, follow: false } }),
 }
 
-/**
- * @함수명: fetchLastRuleUpdatedAt
- * @설명: 중개수수료 룰의 마지막 갱신 일시를 조회합니다(하단 고지용). 룰이 없으면 null.
- */
-async function fetchLastRuleUpdatedAt(): Promise<string | null> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tax_rules')
-    .select('updated_at')
-    .eq('tax_type', 'brokerage')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-  if (error) {
-    console.error('[tax] 중개수수료 룰 갱신일 조회 실패:', error.message)
-    return null
-  }
-  return data?.[0]?.updated_at ?? null
-}
-
-/** 타임스탬프를 한국 시간 날짜 문자열로 변환 */
-function formatKstDate(iso: string): string {
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'long',
-    timeZone: 'Asia/Seoul',
-  }).format(new Date(iso))
-}
-
 export default async function BrokeragePage() {
-  const lastUpdatedAt = await fetchLastRuleUpdatedAt()
-
   return (
     <>
       {/* Hero */}
@@ -106,17 +76,12 @@ export default async function BrokeragePage() {
           </ul>
         </div>
 
-        {/* 하단 고정 문구 — 참고용 고지 + 마지막 룰 갱신일 */}
-        <div className="mt-8 border-t border-rule pt-5 text-center space-y-1.5">
+        {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
+        <div className="mt-8 border-t border-rule pt-5 text-center">
           <p className="text-xs text-ink-soft leading-relaxed">
             본 계산기는 참고용이며 법적 효력이 없습니다. 실제 중개보수는 소재지 시·도
             조례와 중개대상물 확인·설명서, 개업공인중개사와의 협의를 통해 반드시
             확인하시기 바랍니다.
-          </p>
-          <p className="text-xs text-ink-faint">
-            {lastUpdatedAt
-              ? `마지막 룰 갱신일: ${formatKstDate(lastUpdatedAt)}`
-              : '아직 등록된 중개수수료 룰이 없습니다. 룰 등록 전에는 계산이 제공되지 않습니다.'}
           </p>
         </div>
       </section>

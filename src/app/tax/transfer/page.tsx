@@ -67,38 +67,8 @@ async function fetchGraceDeadlineText(): Promise<string | null> {
   return `${y}년 ${m}월 ${d}일`
 }
 
-/**
- * @함수명: fetchLastRuleUpdatedAt
- * @설명: 양도소득세 룰의 마지막 갱신 일시를 조회합니다(하단 고지용). 룰이 없으면 null.
- */
-async function fetchLastRuleUpdatedAt(): Promise<string | null> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tax_rules')
-    .select('updated_at')
-    .eq('tax_type', 'transfer')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-  if (error) {
-    console.error('[tax] 양도소득세 룰 갱신일 조회 실패:', error.message)
-    return null
-  }
-  return data?.[0]?.updated_at ?? null
-}
-
-/** 타임스탬프를 한국 시간 날짜 문자열로 변환 */
-function formatKstDate(iso: string): string {
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'long',
-    timeZone: 'Asia/Seoul',
-  }).format(new Date(iso))
-}
-
 export default async function TransferTaxPage() {
-  const [lastUpdatedAt, graceDeadlineText] = await Promise.all([
-    fetchLastRuleUpdatedAt(),
-    fetchGraceDeadlineText(),
-  ])
+  const graceDeadlineText = await fetchGraceDeadlineText()
 
   return (
     <>
@@ -147,16 +117,11 @@ export default async function TransferTaxPage() {
           </ul>
         </div>
 
-        {/* 하단 고정 문구 — 참고용 고지 + 마지막 룰 갱신일 */}
-        <div className="mt-8 border-t border-rule pt-5 text-center space-y-1.5">
+        {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
+        <div className="mt-8 border-t border-rule pt-5 text-center">
           <p className="text-xs text-ink-soft leading-relaxed">
             본 계산기는 참고용이며 법적 효력이 없습니다. 실제 신고·납부 세액은 홈택스,
             관할 세무서 또는 세무 전문가를 통해 반드시 확인하시기 바랍니다.
-          </p>
-          <p className="text-xs text-ink-faint">
-            {lastUpdatedAt
-              ? `마지막 룰 갱신일: ${formatKstDate(lastUpdatedAt)}`
-              : '아직 등록된 양도소득세 룰이 없습니다. 룰 등록 전에는 계산이 제공되지 않습니다.'}
           </p>
         </div>
       </section>

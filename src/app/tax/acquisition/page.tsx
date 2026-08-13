@@ -9,7 +9,6 @@
 import type { Metadata } from 'next'
 import { Landmark } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
-import { createClient } from '@/lib/supabase/server'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import CalculatorForm from './CalculatorForm'
@@ -23,36 +22,7 @@ export const metadata: Metadata = buildPageMetadata({
     '주택 유상취득·증여 취득세를 법령 근거와 함께 계산합니다. 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시하고, 확정된 법과 개정안을 분리해 보여줍니다.',
 })
 
-/**
- * @함수명: fetchLastRuleUpdatedAt
- * @설명: 취득세 룰의 마지막 갱신 일시를 조회합니다(하단 고지용). 룰이 없으면 null.
- */
-async function fetchLastRuleUpdatedAt(): Promise<string | null> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tax_rules')
-    .select('updated_at')
-    .eq('tax_type', 'acquisition')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-  if (error) {
-    console.error('[tax] 룰 갱신일 조회 실패:', error.message)
-    return null
-  }
-  return data?.[0]?.updated_at ?? null
-}
-
-/** 타임스탬프를 한국 시간 날짜 문자열로 변환 */
-function formatKstDate(iso: string): string {
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'long',
-    timeZone: 'Asia/Seoul',
-  }).format(new Date(iso))
-}
-
 export default async function AcquisitionTaxPage() {
-  const lastUpdatedAt = await fetchLastRuleUpdatedAt()
-
   return (
     <>
       {/* Hero */}
@@ -76,16 +46,11 @@ export default async function AcquisitionTaxPage() {
         <ApartmentOnlyNotice />
         <CalculatorForm />
 
-        {/* 하단 고정 문구 — 참고용 고지 + 마지막 룰 갱신일 */}
-        <div className="mt-8 border-t border-rule pt-5 text-center space-y-1.5">
+        {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
+        <div className="mt-8 border-t border-rule pt-5 text-center">
           <p className="text-xs text-ink-soft leading-relaxed">
             본 계산기는 참고용이며 법적 효력이 없습니다. 실제 신고·납부 세액은 위택스,
             관할 지방자치단체 또는 세무 전문가를 통해 반드시 확인하시기 바랍니다.
-          </p>
-          <p className="text-xs text-ink-faint">
-            {lastUpdatedAt
-              ? `마지막 룰 갱신일: ${formatKstDate(lastUpdatedAt)}`
-              : '아직 등록된 취득세 룰이 없습니다. 룰 등록 전에는 계산이 제공되지 않습니다.'}
           </p>
         </div>
       </section>
