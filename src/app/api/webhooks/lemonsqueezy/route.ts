@@ -469,8 +469,9 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   // 관리자 새 주문 알림 — 주문 확정 직후·발급 이전에 보낸다(뒤 단계가 실패해도 접수 사실은
   // 알려져야 하고, 재전송은 위 멱등 체크에서 걸러져 이 지점에 다시 오지 않는다 — 주문당 한 통).
-  // notifyNewOrder는 모든 오류를 삼키므로 결제 처리 흐름에는 영향이 없다(알림 덧붙임일 뿐).
-  {
+  // 블록 전체를 try로 감싼다: 여기서 예외가 새면 웹훅이 500 → 재전송이 멱등 체크에 걸러져
+  // 라이선스 발급이 영영 누락될 수 있다. 알림은 어떤 경우에도 발급을 막으면 안 된다.
+  try {
     let productName = '-'
     if (productId) {
       const { data: p } = await admin.from('products').select('name').eq('id', productId).maybeSingle()
@@ -488,6 +489,8 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
       method: 'card',
       status: '결제 완료(paid)',
     })
+  } catch (notifyErr) {
+    console.error('[LS Webhook] 새 주문 알림 실패(무시 — 발급 흐름 계속):', notifyErr instanceof Error ? notifyErr.message : String(notifyErr))
   }
 
   if (productPriceId && productId && productPrice?.type === 'one_time') {
