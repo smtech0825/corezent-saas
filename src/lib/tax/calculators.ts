@@ -55,7 +55,7 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     name: '중개수수료',
     description: '부동산 중개보수 상한을 계산합니다.',
     category: 'buy',
-    available: false,
+    available: true,
   },
   {
     slug: 'registration',
