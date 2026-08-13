@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation'
 import SelectField from '@/components/common/SelectField'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { notifyNewTicket } from '@/lib/admin-notify'
 import Pagination from '@/components/common/Pagination'
 import TicketList from './TicketList'
 import PageContainer from '@/components/common/PageContainer'
@@ -91,6 +92,16 @@ export default async function SupportPage({
       await supabaseServer
         .from('support_replies')
         .insert({ ticket_id: ticket.id, user_id: currentUser.id, is_admin: false, message })
+
+      // 관리자 새 티켓 알림 — 실패해도 접수는 유지된다(notifyNewTicket이 모든 오류를 삼킴).
+      // 개인정보는 최소한만: 계정 이메일·제목·내용 앞 80자. 로그인 사용자 전용 경로라 스팸 위험 낮음.
+      await notifyNewTicket({
+        ticketId: ticket.id,
+        userEmail: currentUser.email ?? '(이메일 없음)',
+        subject,
+        priority,
+        preview: message,
+      })
     }
 
     revalidatePath('/dashboard/support')
