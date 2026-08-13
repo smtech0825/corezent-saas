@@ -6,6 +6,10 @@ import { createMDX } from 'fumadocs-mdx/next'
 const withMDX = createMDX()
 
 const nextConfig: NextConfig = {
+  // 견적서 PDF 자산(한글 폰트·도장) — 라우트가 fs로 읽으므로 서버리스 번들에 명시적으로 포함
+  outputFileTracingIncludes: {
+    '/api/admin/quotes/issue': ['./src/assets/quotation/**/*'],
+  },
   images: {
     formats: ['image/webp'],
     remotePatterns: [

@@ -13,7 +13,7 @@ import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
 
 type Settings = Record<string, string>
-type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify'
+type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'company'
 
 const SECTION_KEYS: Record<Section, string[]> = {
   general: ['site_name', 'site_url', 'support_email', 'footer_copyright'],
@@ -25,6 +25,9 @@ const SECTION_KEYS: Record<Section, string[]> = {
   bank:    ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder'],
   // 관리자 알림 켬/끔 — lib/admin-notify.ts가 읽는다. 미설정은 켜짐(값이 'false'일 때만 끔).
   notify:  ['notify_new_order', 'notify_new_ticket'],
+  // 견적서 공급자 정보 — 견적서 PDF에 그대로 인쇄된다. 푸터 정보와 별개(서로 영향 없음).
+  // 하나라도 비면 견적서 발급이 차단된다(빈칸 있는 견적서 방지).
+  company: ['company_name', 'company_biz_no', 'company_ceo', 'company_address', 'company_biz_type', 'company_biz_item', 'company_phone'],
 }
 
 const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
@@ -354,6 +357,38 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         <p className="text-xs text-ink-faint">
           받는 주소는 <b className="text-ink-soft">일반 설정의 고객지원 이메일</b>입니다. 주소가 비어 있으면 알림을 건너뛰고 모니터링 로그에 남깁니다. 새 문의 알림은 별도 스위치 없이 항상 발송됩니다(스팸은 자동 차단).
         </p>
+      </SectionCard>
+
+      {/* ── 견적서 공급자 정보 ───────────────────────────────────────────── */}
+      <SectionCard
+        title="견적서 공급자 정보"
+        dirty={sectionDirty(SECTION_KEYS['company'], values, savedValues)}
+        description="견적서 PDF의 공급자 칸에 그대로 인쇄됩니다. 푸터 정보와 별개이며, 하나라도 비면 견적서 발급이 막힙니다."
+        footer={<SaveButton section="company" {...btnProps} />}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="상호(법인명)">
+            <input value={values.company_name ?? ''} onChange={(e) => update('company_name', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="사업자등록번호">
+            <input value={values.company_biz_no ?? ''} onChange={(e) => update('company_biz_no', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="대표자">
+            <input value={values.company_ceo ?? ''} onChange={(e) => update('company_ceo', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="전화번호">
+            <input value={values.company_phone ?? ''} onChange={(e) => update('company_phone', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="업태">
+            <input value={values.company_biz_type ?? ''} onChange={(e) => update('company_biz_type', e.target.value)} className={INPUT_CLS} />
+          </Field>
+          <Field label="종목">
+            <input value={values.company_biz_item ?? ''} onChange={(e) => update('company_biz_item', e.target.value)} className={INPUT_CLS} />
+          </Field>
+        </div>
+        <Field label="주소">
+          <input value={values.company_address ?? ''} onChange={(e) => update('company_address', e.target.value)} className={INPUT_CLS} />
+        </Field>
       </SectionCard>
 
       {/* ── SMTP Settings ────────────────────────────────────────────────── */}

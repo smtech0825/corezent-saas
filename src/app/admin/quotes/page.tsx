@@ -12,6 +12,7 @@ import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import { parsePageParam } from '@/lib/validate'
+import IssueQuoteForm, { type PriceOption } from './IssueQuoteForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,6 +91,21 @@ export default async function QuotesPage({
   // 테이블 미적용(42P01)은 원인이 분명하므로 일반 실패와 구분해 안내한다(로그 화면 관례)
   const tableMissing = error?.code === '42P01'
 
+  // 견적서 발급용 상품 옵션 — 단가는 product_prices.price(원)를 그대로 보여주고 그대로 쓴다
+  const { data: priceRows } = await adminClient
+    .from('product_prices')
+    .select('id, price, option_axis1_label, option_axis2_label, products(name)')
+    .eq('is_active', true)
+  const options: PriceOption[] = (priceRows ?? []).map((p) => {
+    const prodRaw = (p as Record<string, unknown>).products
+    const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
+    const opts = [p.option_axis1_label, p.option_axis2_label].filter(Boolean).join(' · ')
+    return {
+      id: p.id as string,
+      label: `${prod?.name ?? '-'}${opts ? ` — ${opts}` : ''} (₩${Number(p.price).toLocaleString('ko-KR')})`,
+    }
+  })
+
   return (
     <PageContainer variant="admin" className="space-y-6">
       <div>
@@ -146,6 +162,8 @@ export default async function QuotesPage({
                       <p className="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap break-words">{r.note}</p>
                     </div>
                   )}
+                  {/* 견적서 발급 — 같은 요청에 여러 번 발급 가능(번호는 DB가 채번, 중복 불가) */}
+                  <IssueQuoteForm requestId={r.id} defaultQty={r.pc_count} options={options} />
                 </div>
               </details>
             )
