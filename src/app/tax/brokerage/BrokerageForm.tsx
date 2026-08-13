@@ -56,7 +56,7 @@ export default function BrokerageForm() {
     setFormError(null)
 
     if (!sido) {
-      setFormError('소재지(시·도)를 목록에서 선택해 주세요.')
+      setFormError('중개사무소 소재지(시·도)를 목록에서 선택해 주세요.')
       return
     }
     let priceNum: number | undefined
@@ -117,9 +117,9 @@ export default function BrokerageForm() {
           ]}
         />
 
-        {/* 소재지 — 상한 요율이 시·도 조례로 정해지므로 시·도를 받는다 (목록 선택만 허용) */}
-        <Field label="소재지 (시·도)" htmlFor="brokerage-sido" required
-          hint="중개보수 상한 요율은 시·도 조례로 정해져 지역마다 다를 수 있습니다.">
+        {/* 소재지 — 상한 요율 조례는 물건이 아니라 '중개사무소' 소재지 기준으로 적용된다 (목록 선택만 허용) */}
+        <Field label="중개사무소 소재지 (시·도)" htmlFor="brokerage-sido" required
+          hint="상한 요율을 정하는 시·도 조례는 물건 소재지가 아니라 중개사무소 소재지 기준으로 적용됩니다.">
           <select
             id="brokerage-sido" className={SELECT_CLS} value={sido}
             onChange={(e) => setSido(e.target.value)}

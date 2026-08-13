@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import { Handshake } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
+import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import BrokerageForm from './BrokerageForm'
 
 export const dynamic = 'force-dynamic'
@@ -70,6 +71,7 @@ export default async function BrokeragePage() {
 
       {/* 계산기 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <ApartmentOnlyNotice />
         <BrokerageForm />
 
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 */}
@@ -81,13 +83,18 @@ export default async function BrokeragePage() {
               상한을 넘지 않는 범위에서 의뢰인과 개업공인중개사가 협의하여 정합니다.
             </li>
             <li>
-              상한 요율·한도액은 시·도 조례로 정해집니다. 지역·시기·물건 종류에 따라 값이
-              다를 수 있으며, 등록된 요율표의 조건 범위를 벗어나는 거래는 결과 대신
-              안내가 표시됩니다.
+              이 계산기는 아파트를 기준으로 합니다. 오피스텔·상가·토지는 요율 체계가
+              달라 결과가 맞지 않습니다.
             </li>
             <li>
-              부가가치세는 별도입니다. 개업공인중개사의 과세 유형(일반과세·간이과세)에
-              따라 적용 방식이 다르므로 계약 전에 확인하세요.
+              상한 요율·한도액을 정하는 시·도 조례는 물건 소재지가 아니라{' '}
+              <strong className="text-ink">중개사무소 소재지</strong> 기준으로 적용됩니다.
+              지역·시기에 따라 값이 다를 수 있습니다.
+            </li>
+            <li>
+              요율표의 금액에 부가가치세가 포함되는지는 법령에 명시가 없어 실제 거래 시
+              확인이 필요합니다. 이 계산기는 부가가치세를 별도 항목으로 표시하며,
+              개업공인중개사의 과세 유형(일반과세·간이과세)에 따라 적용 방식이 다릅니다.
             </li>
           </ul>
         </div>

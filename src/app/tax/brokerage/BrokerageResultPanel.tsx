@@ -91,14 +91,15 @@ export default function BrokerageResultPanel({ result }: { result: BrokerageResu
           </div>
         </dl>
         <p className="mt-3 text-xs text-ink-soft leading-relaxed">
-          부가가치세는 중개보수와 별도로 붙을 수 있으며, 개업공인중개사의 과세 유형
-          (일반과세·간이과세)에 따라 적용 방식이 다릅니다. 계약 전에 확인하세요.
+          요율표 금액에 부가가치세가 포함되는지는 법령에 명시가 없어 실제 거래 시 확인이
+          필요합니다. 부가가치세 적용 방식은 개업공인중개사의 과세 유형
+          (일반과세·간이과세)에 따라 다릅니다. 계약 전에 확인하세요.
         </p>
 
         <p className="mt-4 pt-4 border-t border-rule text-xs text-ink-soft leading-relaxed">
-          상한 요율과 한도액은 시·도 조례로 정해져 지역·시기에 따라 다를 수 있습니다.
-          이 결과는 등록된 룰 기준이며, 실제 적용 요율은 소재지 시·도 조례와
-          중개대상물 확인·설명서에서 확인할 수 있습니다.
+          상한 요율과 한도액을 정하는 시·도 조례는 중개사무소 소재지 기준으로 적용되며,
+          지역·시기에 따라 다를 수 있습니다. 이 결과는 등록된 룰 기준이며, 실제 적용
+          요율은 해당 시·도 조례와 중개대상물 확인·설명서에서 확인할 수 있습니다.
         </p>
       </div>
 

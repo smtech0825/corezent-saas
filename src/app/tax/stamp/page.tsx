@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import { Stamp } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
+import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import StampForm from './StampForm'
 
 export const dynamic = 'force-dynamic'
@@ -70,6 +71,7 @@ export default async function StampTaxPage() {
 
       {/* 계산기 */}
       <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <ApartmentOnlyNotice />
         <StampForm />
 
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 */}
