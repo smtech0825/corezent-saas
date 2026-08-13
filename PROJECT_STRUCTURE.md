@@ -1,6 +1,6 @@
 # CoreZent SaaS — 프로젝트 구조 & 데이터 흐름
 
-> 마지막 업데이트: 2026-07-07
+> 마지막 업데이트: 2026-08-13
 > 이 문서는 작업 완료 시마다 함께 업데이트됩니다. 변경 시 해당 섹션만 수정하세요.
 
 CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이트**입니다. 자체 개발한 데스크톱/웹 앱(GeniePost 등)을 최종 사용자에게 직접 판매합니다 — B2B SaaS 도구가 아닙니다. 결제는 **Lemon Squeezy**, 데이터는 **Supabase**, 라이선스는 **제품별로 분리**(GeniePost=Google Sheets, GenieStock·GenieWork=각각 별도 Supabase 프로젝트)되어 본체 DB와 동기화됩니다.
@@ -18,7 +18,8 @@ CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이�
 | **@supabase/ssr** | ^0.10.0 | 서버 컴포넌트/미들웨어용 Supabase 클라이언트 |
 | @supabase/supabase-js | ^2.101.1 | 브라우저/서버 Supabase SDK |
 | **googleapis** | ^171.4.0 | Google Sheets API + Google Indexing API (서비스 계정 JWT, `google.indexing()`) |
-| **nodemailer** | ^8.0.4 | SMTP 메일 발송 (문의/주문확인 이메일) |
+| **nodemailer** | ^8.0.4 | SMTP 메일 발송 (문의/주문확인/관리자 알림 이메일) |
+| **@react-pdf/renderer** ⭐신규 | 4.6.0 | 견적서 PDF 생성(서버 전용) — 나눔고딕 TTF 임베드, `lib/quotation-pdf.tsx`가 `/api/admin/quotes/issue`에서 호출 |
 | **botid** | ^1.5.11 | Vercel BotID — public POST 엔드포인트 봇 차단 |
 | @vercel/analytics | ^2.0.1 | 페이지 뷰/이벤트 분석 |
 | @vercel/speed-insights | ^2.0.0 | Real Experience Score 측정 |
@@ -57,12 +58,13 @@ CoreZent_SaaS/
 │   │   │   ├── billing/       # 구독/결제 내역 + 다운로드 버튼
 │   │   │   ├── settings/      # 프로필·알림·계정 관리
 │   │   │   ├── support/       # 고객지원 티켓
-│   │   │   └── _components/   # DashboardShell, DashboardSidebar, LicenseCopyButton
+│   │   │   └── _components/   # DashboardShell, DashboardSidebar
 │   │   │
 │   │   ├── admin/             # 관리자 영역 (role='admin' 필수)
 │   │   │   ├── page.tsx       # 관리자 홈 + ChurnAnalysis
 │   │   │   ├── users/         # 사용자 목록 + RoleSelect
-│   │   │   ├── orders/        # 주문 테이블
+│   │   │   ├── orders/        # 주문 테이블 + [id]/OrgInfoSection.tsx(⭐신규 기관 구매 정보 4칸 편집)
+│   │   │   ├── quotes/        # ⭐신규 견적 요청 목록(quote_requests) + IssueQuoteForm.tsx(견적서 PDF 발급)
 │   │   │   ├── products/      # 상품 CRUD + Changelog 관리
 │   │   │   │   ├── ProductForm.tsx
 │   │   │   │   ├── ChangelogSection.tsx
@@ -71,7 +73,7 @@ CoreZent_SaaS/
 │   │   │   │   └── [id]/edit/page.tsx
 │   │   │   ├── licenses/      # 전체 라이선스 + Revoke
 │   │   │   ├── support/       # 문의 답변
-│   │   │   ├── settings/      # 시스템 설정 + ReindexPanel.tsx(⭐신규 — 검색엔진 색인 재요청 버튼)
+│   │   │   ├── settings/      # 시스템 설정 + ReindexPanel.tsx(검색엔진 색인 재요청 버튼) — SettingsClient.tsx에 ⭐신규 'company'(견적서 공급자 정보 7종)·'notify'(주문/티켓 알림 스위치) 섹션 추가
 │   │   │   ├── content/       # 프론트엔드 CMS (10+ 섹션)
 │   │   │   │   ├── hero/, cta/, features/, testimonials/, faq/
 │   │   │   │   ├── about/, how-it-works/, announcement/
@@ -82,6 +84,7 @@ CoreZent_SaaS/
 │   │   ├── api/               # Server routes
 │   │   │   ├── auth/check-email/   # 회원가입 전 inactive 계정 차단
 │   │   │   ├── contact/            # 비회원 문의 (rate limit + honeypot + BotID)
+│   │   │   ├── quote/               # ⭐신규 기관 견적 요청 접수 — BotID + rate limit(contact와 공유) + honeypot, quote_requests 저장
 │   │   │   ├── subscriptions/cancel/  # LS 구독 취소
 │   │   │   ├── webhooks/lemonsqueezy/ # LS 결제 이벤트 핸들러 (8종)
 │   │   │   ├── license/            # ⭐ 데스크톱 앱이 호출 — product로 분기
@@ -95,7 +98,9 @@ CoreZent_SaaS/
 │   │   │       ├── settings/
 │   │   │       ├── products/reorder/
 │   │   │       ├── sections/{toggle,reorder}/
-│   │   │       └── seo/reindex/   # ⭐신규 POST — sitemap 전체(또는 지정 URL)를 IndexNow+Google Indexing에 제출 (requireAdmin)
+│   │   │       ├── seo/reindex/   # sitemap 전체(또는 지정 URL)를 IndexNow+Google Indexing에 제출 (requireAdmin)
+│   │   │       ├── orders/org-info/  # ⭐신규 POST — 주문 기관 정보 4칸(기관명·사업자번호·담당자·세금계산서번호) 저장
+│   │   │       └── quotes/issue/     # ⭐신규 POST — 견적서 PDF 발급(공급자 정보 검증 + react-pdf 렌더 + quote_issues 채번)
 │   │   │
 │   │   ├── pricing/           # 요금제 (DB 동적 + 카테고리 필터)
 │   │   │   └── PricingClient.tsx
@@ -142,6 +147,11 @@ CoreZent_SaaS/
 │   │   ├── lemonsqueezy.ts    # verifyLSWebhook + buildCheckoutUrl + 타입
 │   │   ├── sheets.ts          # ⭐ CoreZent 라이선스 시트 (LS 웹훅 동기화)
 │   │   ├── email.ts           # nodemailer + HTML 템플릿
+│   │   ├── admin-notify.ts    # ⭐신규(문서 반영) 관리자 알림 단일 창구 — `notifyAdmin`/`notifyNewOrder`/`notifyNewTicket`, front_settings notify_* 스위치·30분 중복 억제
+│   │   ├── front-defaults.ts  # ⭐신규(문서 반영) 랜딩 문구(front_content) 한국어 예비값 단일 출처 — HeroSection·CTASection·Navbar·admin/content 편집기 공용
+│   │   ├── contact-rate-limit.ts # ⭐신규 IP 분당 요청 제한 — `/api/contact`에서 이동, `/api/quote`와 카운터 공유(RPC `check_contact_rate_limit`)
+│   │   ├── quote-constants.ts # ⭐신규 `QUOTE_MIN_PC`(=10) — 폼(QuoteForm)·API(/api/quote) 공용 단일 출처
+│   │   ├── quotation-pdf.tsx  # ⭐신규 견적서 PDF 생성(@react-pdf/renderer, 서버 전용) — 나눔고딕 임베드 + 도장 PNG 합성
 │   │   ├── cookies.ts         # UTM 데이터 read/write
 │   │   ├── countries.ts       # 국가 목록
 │   │   ├── products.ts        # 카테고리·뱃지 색상 상수 (다크용 + ⭐PRODUCT_BADGE_COLORS_PAPER/CATEGORY_BADGE_PAPER 페이퍼 전용 추가)
@@ -149,11 +159,19 @@ CoreZent_SaaS/
 │   │   └── seo/
 │   │       └── indexing.ts    # ⭐신규 서버 전용 — `submitToIndexNow`/`submitToGoogleIndexing`/`submitUrlsToSearchEngines`
 │   │
+│   ├── assets/
+│   │   └── quotation/         # ⭐신규 견적서 PDF 전용 자산 — next.config.ts `outputFileTracingIncludes`로 서버리스 번들에 명시 포함
+│   │       ├── corp-stamp.png       # 투명 배경 법인 도장 PNG
+│   │       └── fonts/
+│   │           ├── NanumGothic-Regular.ttf
+│   │           ├── NanumGothic-Bold.ttf
+│   │           └── OFL.txt          # SIL Open Font License 1.1
+│   │
 │   ├── instrumentation-client.ts  # Vercel BotID 초기화
 │   └── middleware.ts          # 세션 갱신 + 보호 라우트
 │
 ├── supabase/
-│   └── migrations/            # 001 ~ 027 (29개)
+│   └── migrations/            # 001 ~ 061 (60개, 039 결번) — ⭐신규 060_quote_requests.sql·061_orders_org_info.sql
 │
 ├── public/                    # 정적 자산 (favicon, og 이미지 등)
 │   └── 5ae2e03853bc47f8a8569d00d31788d4.txt  # ⭐신규 IndexNow 키 소유 증명 파일 (내용=키값 그대로)
@@ -180,6 +198,7 @@ CoreZent_SaaS/
 | 역할 | 파일 |
 |---|---|
 | 메인 페이지 | [src/app/page.tsx](src/app/page.tsx) — Promise.all로 7개 테이블 병렬 조회, 섹션 visibility/order는 `front_sections` |
+| 문구 예비값 단일 출처 ⭐신규(문서 반영) | [src/lib/front-defaults.ts](src/lib/front-defaults.ts) — `HERO_DEFAULTS`/`CTA_DEFAULTS`/`BANNER_DEFAULTS`. `front_content`에 값이 없을 때 HeroSection·CTASection·Navbar 배너가 쓰는 예비 문구이며, `admin/content/{hero,cta,announcement}` 편집기 초기값도 동일 객체를 재사용(두 곳이 달라지면 편집기 저장 한 번에 랜딩이 예비 문구로 덮이는 사고 방지). 클라이언트에서도 import되므로 서버 전용 코드 추가 금지 |
 | Below-fold 섹션 lazy 로드 | `next/dynamic` 사용 — Hero만 정적 import, 나머지는 청크 분리 (1.35MB → 299KB) |
 | Pricing 섹션 (다중 상품) | [src/components/sections/PricingSection.tsx](src/components/sections/PricingSection.tsx) — 1/2/3+ 그리드 자동 전환 |
 | Product 섹션 | [src/components/sections/ProductSection.tsx](src/components/sections/ProductSection.tsx) — Coming Soon 플레이스홀더 자동 채움 |
@@ -197,12 +216,15 @@ CoreZent_SaaS/
 | 관리자 홈 | [src/app/admin/page.tsx](src/app/admin/page.tsx) + [ChurnAnalysis.tsx](src/app/admin/ChurnAnalysis.tsx) |
 | 사용자 관리 | [src/app/admin/users/page.tsx](src/app/admin/users/page.tsx) + [UserTable.tsx](src/app/admin/users/UserTable.tsx) + [RoleSelect.tsx](src/app/admin/users/RoleSelect.tsx) |
 | 주문 | [src/app/admin/orders/page.tsx](src/app/admin/orders/page.tsx) + [OrderTable.tsx](src/app/admin/orders/OrderTable.tsx) |
+| 주문 상세 — 기관 구매 정보 ⭐신규 | [src/app/admin/orders/[id]/OrgInfoSection.tsx](src/app/admin/orders/[id]/OrgInfoSection.tsx) — 기관명·사업자등록번호·담당자·세금계산서 발급번호 4칸(전부 선택 입력) 편집. API: [src/app/api/admin/orders/org-info/route.ts](src/app/api/admin/orders/org-info/route.ts) (`requireAdmin`, `orders` 4컬럼만 UPDATE, 061 미적용은 원인 구분 안내) |
+| 견적 요청 목록·PDF 발급 ⭐신규 | [src/app/admin/quotes/page.tsx](src/app/admin/quotes/page.tsx) — `quote_requests` 아코디언 목록(문의 목록과 동일 UI 패턴) + [IssueQuoteForm.tsx](src/app/admin/quotes/IssueQuoteForm.tsx)(상품 옵션·수량 선택 후 발급). API: [src/app/api/admin/quotes/issue/route.ts](src/app/api/admin/quotes/issue/route.ts) — 공급자 정보 7항목 검증 → `@react-pdf/renderer`로 PDF 생성 → `quote_issues` 채번 저장 → 요청 상태 `quoted` 갱신 |
 | 상품 CRUD | [src/app/admin/products/ProductForm.tsx](src/app/admin/products/ProductForm.tsx) — 가격 플랜 다중 입력 + 태그 + 기능 카드 + Changelog 통합 |
 | Changelog | [src/app/admin/products/ChangelogSection.tsx](src/app/admin/products/ChangelogSection.tsx) + [changelog-actions.ts](src/app/admin/products/changelog-actions.ts) — 버전·다운로드 URL·릴리스 노트 4분류 |
 | 라이선스 관리 | [src/app/admin/licenses/LicenseTable.tsx](src/app/admin/licenses/LicenseTable.tsx) — 검색/필터/Revoke (DB + Sheets + LS 동시 비활성화) |
 | 문의 답변 | [src/app/admin/support/[id]/ReplyForm.tsx](src/app/admin/support/[id]/ReplyForm.tsx) |
 | **콘텐츠 CMS** | [src/app/admin/content/](src/app/admin/content/) — 10+ 섹션 인라인 편집기 (Hero/CTA/Features/Testimonials/FAQ/About/HowItWorks/Announcement/Sections/Partners/Pages/Tools) |
-| 검색엔진 색인 재요청 ⭐신규 | [src/app/admin/settings/ReindexPanel.tsx](src/app/admin/settings/ReindexPanel.tsx) — `admin/settings` 페이지에서 SettingsClient 아래 렌더, 버튼 클릭 시 sitemap 전체(또는 지정) URL을 IndexNow+Google Indexing에 제출. API: [src/app/api/admin/seo/reindex/route.ts](src/app/api/admin/seo/reindex/route.ts) (`requireAdmin` + [src/lib/seo/indexing.ts](src/lib/seo/indexing.ts)) |
+| 검색엔진 색인 재요청 | [src/app/admin/settings/ReindexPanel.tsx](src/app/admin/settings/ReindexPanel.tsx) — `admin/settings` 페이지에서 SettingsClient 아래 렌더, 버튼 클릭 시 sitemap 전체(또는 지정) URL을 IndexNow+Google Indexing에 제출. API: [src/app/api/admin/seo/reindex/route.ts](src/app/api/admin/seo/reindex/route.ts) (`requireAdmin` + [src/lib/seo/indexing.ts](src/lib/seo/indexing.ts)) |
+| 시스템 설정 — 견적서 공급자 정보·알림 스위치 ⭐신규 | [src/app/admin/settings/SettingsClient.tsx](src/app/admin/settings/SettingsClient.tsx) — 기존 `/api/admin/settings`(공용 key-value 저장 API, 신규 라우트 아님) 그대로 사용해 섹션만 2개 추가: `company`(견적서에 인쇄되는 공급자 정보 7종 — 상호·사업자번호·대표자·주소·업태·종목·전화, 하나라도 비면 견적서 발급이 차단됨) · `notify`(`notify_new_order`/`notify_new_ticket` 관리자 알림 켬/끔, 미설정 시 기본 켜짐) |
 
 ### 2.4 사용자 대시보드
 
@@ -211,10 +233,10 @@ CoreZent_SaaS/
 | 레이아웃 + 사이드바 | [src/app/dashboard/layout.tsx](src/app/dashboard/layout.tsx) + [DashboardShell.tsx](src/app/dashboard/_components/DashboardShell.tsx) |
 | 대시보드 홈 | [src/app/dashboard/page.tsx](src/app/dashboard/page.tsx) |
 | 라이선스 목록 | [src/app/dashboard/licenses/page.tsx](src/app/dashboard/licenses/page.tsx) — 서버 페이지네이션 (10개/page), 구독 만료일은 `subscriptions.current_period_end` 우선 |
-| 라이선스 키 복사 | [src/app/dashboard/_components/LicenseCopyButton.tsx](src/app/dashboard/_components/LicenseCopyButton.tsx) |
+| 라이선스 키 복사 (정정 — `LicenseCopyButton`은 삭제됨, 공용 `CopyButton`으로 통합) | [src/components/common/CopyButton.tsx](src/components/common/CopyButton.tsx) — `dashboard/licenses/page.tsx`가 사용, 앞 8자만 표시하고 전체 키는 복사 버튼으로만 제공 |
 | 결제/구독 | [src/app/dashboard/billing/page.tsx](src/app/dashboard/billing/page.tsx) + [BillingSubscriptionSection.tsx](src/app/dashboard/billing/BillingSubscriptionSection.tsx) + [DownloadButton.tsx](src/app/dashboard/billing/DownloadButton.tsx) |
 | 설정 | [src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx) — 프로필·국가·탈퇴 |
-| 고객지원 | [src/app/dashboard/support/page.tsx](src/app/dashboard/support/page.tsx) + [TicketList.tsx](src/app/dashboard/support/TicketList.tsx) |
+| 고객지원 | [src/app/dashboard/support/page.tsx](src/app/dashboard/support/page.tsx) + [TicketList.tsx](src/app/dashboard/support/TicketList.tsx) — 티켓 생성 시 `notifyNewTicket()`(`lib/admin-notify.ts`) 호출, 같은 계정 30분 내 반복 제출은 알림 억제 |
 
 ### 2.5 라이선스 시스템 (⭐ 핵심)
 
@@ -262,8 +284,10 @@ CoreZent_SaaS/
 | 역할 | 파일 |
 |---|---|
 | 헬퍼 | [src/lib/lemonsqueezy.ts](src/lib/lemonsqueezy.ts) — `verifyLSWebhook` (HMAC-SHA256), `buildCheckoutUrl` (custom_data 주입), `generateSerialKey`, `fetchLsLicenseKey`, 타입 정의 |
-| 웹훅 핸들러 | [src/app/api/webhooks/lemonsqueezy/route.ts](src/app/api/webhooks/lemonsqueezy/route.ts) — 8개 이벤트 처리 |
+| 웹훅 핸들러 | [src/app/api/webhooks/lemonsqueezy/route.ts](src/app/api/webhooks/lemonsqueezy/route.ts) — 8개 이벤트 처리, `order_created`(카드) 시 `notifyNewOrder` 호출 |
 | 구독 취소 | [src/app/api/subscriptions/cancel/route.ts](src/app/api/subscriptions/cancel/route.ts) — LS API PATCH + DB 동기화 |
+| 관리자 새 주문 알림 ⭐신규(문서 반영) | [src/lib/admin-notify.ts](src/lib/admin-notify.ts) — `notifyNewOrder()`. 카드 결제는 위 웹훅에서, 계좌이체는 `api/orders/bank-transfer/route.ts`에서 호출(입금 확인·라이선스 수동 발급 필요 문구 포함). 받는 주소는 `front_settings.support_email`, 켬/끔은 `notify_new_order`(기본 켜짐), 같은 주문 재발송은 30분 억제 |
+| 기관 구매 정보 ⭐신규 | `orders.org_name`/`org_biz_reg_no`/`org_contact_name`/`tax_invoice_no`(전부 nullable) — 관리자 주문 상세에서만 입력(§2.3 참조), 결제·라이선스 발급 로직에는 영향 없음 |
 
 **처리 이벤트**:
 - `order_created` → orders + licenses 생성, 시트 행 추가, 주문확인 메일
@@ -278,16 +302,26 @@ CoreZent_SaaS/
 
 | 역할 | 파일 |
 |---|---|
-| API | [src/app/api/contact/route.ts](src/app/api/contact/route.ts) — BotID + Rate Limit (1분 3회 IP) + Honeypot + 5MB 첨부 + DB 저장 + 이메일 발송 |
+| API | [src/app/api/contact/route.ts](src/app/api/contact/route.ts) — BotID + Rate Limit (1분 3회 IP, Supabase RPC 공유 카운터) + Honeypot + 5MB 첨부 + DB 저장 + 이메일 발송 |
 | 폼 | [src/app/contact/ContactForm.tsx](src/app/contact/ContactForm.tsx) + [ContactFormWrapper.tsx](src/app/contact/ContactFormWrapper.tsx) |
 | 이메일 발송 | [src/lib/email.ts](src/lib/email.ts) — nodemailer SMTP + `inquiryEmailHtml` / `orderConfirmationEmailHtml` |
+| Rate Limit 단일 출처 ⭐신규 | [src/lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) — `isRateLimited()`를 `api/contact`에서 이 파일로 이동(로직 변화 없음), `/api/quote`와 IP별 분당 카운터를 공유(같은 IP 합산 분당 3회) |
+
+> **기관 견적 요청(Quote)** — 비회원 문의와 보안 패턴(BotID·rate limit·honeypot)은 같지만 저장소(`quote_requests`)와 후속 절차(관리자 PDF 발급)가 별개다. 아래는 견적 전용 파일.
+
+| 역할 | 파일 |
+|---|---|
+| API ⭐신규 | [src/app/api/quote/route.ts](src/app/api/quote/route.ts) — BotID + Rate Limit(`contact-rate-limit` 공유) + Honeypot + 이메일/사업자번호 형식 검증 + PC 수 최소 10대(`QUOTE_MIN_PC`) 검증 → `quote_requests` INSERT → `notifyAdmin`(after) |
+| 폼 ⭐신규 | [src/app/public-sector/QuoteForm.tsx](src/app/public-sector/QuoteForm.tsx) — `/public-sector`(기관 도입 페이지)에 배치, 클라이언트 선검증 후 `/api/quote` 호출 |
+| 최소 PC 대수 상수 ⭐신규 | [src/lib/quote-constants.ts](src/lib/quote-constants.ts) — `QUOTE_MIN_PC = 10`, 폼·API·060 마이그레이션 CHECK 제약이 같은 값을 참조 |
+| 관리자 처리 | §2.3 관리자 표의 "견적 요청 목록·PDF 발급" 행 참조(같은 파일을 두 번 적지 않음) |
 
 ### 2.8 봇 차단 (Vercel BotID)
 
 | 역할 | 파일 |
 |---|---|
 | Next.js 설정 | [next.config.ts](next.config.ts) — `withBotId(nextConfig)` |
-| 클라이언트 초기화 | [src/instrumentation-client.ts](src/instrumentation-client.ts) — `/api/contact`, `/api/auth/check-email` 보호 등록 |
+| 클라이언트 초기화 | [src/instrumentation-client.ts](src/instrumentation-client.ts) — `/api/contact`, `/api/quote`(⭐신규), `/api/auth/check-email` 등 보호 등록 |
 | 서버 검증 | 각 API 라우트에서 `checkBotId()` 호출 → `isBot: true` 시 차단 |
 
 ---
@@ -314,7 +348,11 @@ LS Webhook → /api/webhooks/lemonsqueezy
      → CoreZent 라이선스 시트에 새 행 추가 (A~G)
 [4] sendEmail(orderConfirmationEmailHtml)
      → 사용자에게 시리얼 키 + 다운로드 링크 발송
+[5] notifyNewOrder({...})  ⭐신규(문서 반영)
+     → 관리자에게 새 주문 알림 메일(front_settings.notify_new_order가 'false'가 아니면)
 ```
+
+> 계좌이체(무통장 입금) 주문은 `api/orders/bank-transfer/route.ts`가 별도 처리 — 라이선스는 자동 발급되지 않고, `notifyNewOrder`가 "입금 확인 후 수동 발급 필요"를 알리면 관리자가 `/admin/orders`에서 확인 후 발급한다.
 
 ### 3.2 데스크톱 앱 → 라이선스 검증 (GeniePost / Google Sheets 경로)
 
@@ -375,7 +413,7 @@ profiles 없음
    ↓ FormData (email, subject, message, attachment, website[honeypot])
 POST /api/contact
    ↓ checkBotId()
-   ↓ Rate Limit (IP별 1분 3회, in-memory Map + 60초 cleanup)
+   ↓ Rate Limit (IP별 1분 3회 — Supabase RPC `check_contact_rate_limit`, /api/quote와 카운터 공유)
    ↓ Honeypot 체크 (website 필드 채워지면 200 success 가짜 반환)
    ↓ 이메일 형식·길이 검증, 5MB 첨부 검증
    ↓ DB INSERT inquiries (이메일 실패해도 OK)
@@ -383,11 +421,40 @@ POST /api/contact
    ↓ 200 { success: true }
 ```
 
+### 3.6 기관 견적 요청 → 관리자 PDF 발급 ⭐신규
+
+```
+[담당자: /public-sector 페이지 QuoteForm 제출]
+   ↓ { org, email, bizno?, dept?, person?, phone?, seats(≥10), needed?, payment?, note?, website[honeypot] }
+POST /api/quote
+   ↓ checkBotId() → Honeypot → 이메일 형식·사업자번호 형식 검증 → PC 수 ≥ QUOTE_MIN_PC(10)
+   ↓ Rate Limit (contact-rate-limit 공유 카운터, IP별 1분 3회)
+   ↓ DB INSERT quote_requests (status='received')
+   ↓ after(): notifyAdmin({kind:'new_ticket', ...})  → 관리자에게 접수 알림
+   ↓ 200 { ok: true }
+
+[관리자: /admin/quotes 목록에서 행 확장 → IssueQuoteForm]
+   ↓ 상품 옵션(product_prices) + 수량 선택 → "견적서 만들기"
+POST /api/admin/quotes/issue { requestId, productPriceId, quantity }
+   ↓ requireAdmin()
+   ↓ 공급자 정보 7항목(front_settings company_*) 검증 → 하나라도 비면 차단
+   ↓ 도장·폰트 파일 존재 확인(fs.existsSync) → 없으면 차단
+   ↓ 금액 계산: 합계 = 단가(product_prices.price, VAT포함) × 수량 (사이트 표시가 그대로 보존)
+             부가세 = 합계 × 10/110 반올림, 공급가액 = 합계 − 부가세 (역산 표기만)
+   ↓ DB INSERT quote_issues (quote_no는 시퀀스+UNIQUE 자동 채번, 발급 스냅샷 저장)
+   ↓ buildQuotationPdf() — @react-pdf/renderer, 나눔고딕 임베드 + 도장 PNG 합성
+   ↓ (PDF 생성 실패 시 방금 만든 quote_issues 행을 DELETE로 되돌림 — 번호 결번은 무해)
+   ↓ DB UPDATE quote_requests SET status='quoted', quoted_at, quoted_by
+   ↓ 200 PDF 바이너리 (Content-Disposition: attachment) → 브라우저가 즉시 다운로드
+```
+
+> ⚠️ 견적 요청·발급 어느 단계에서도 `orders`·`licenses`에는 어떤 행도 만들지 않는다 — 견적은 주문이 아니다.
+
 ---
 
 ## 4. 데이터베이스 (Supabase PostgreSQL)
 
-마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~027 (29개)
+마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~061 (60개, 039 결번). ⚠️ 아래 4.1~4.5 표는 이번 견적서 라운드(060·061)와 과거 주요 변경만 반영한 요약이며, 028~059 구간의 모든 마이그레이션이 개별 서술되어 있지는 않음 — 정확한 컬럼은 항상 해당 `.sql` 파일을 1차 출처로 확인할 것.
 
 ### 4.1 사용자 데이터
 
@@ -408,7 +475,7 @@ POST /api/contact
 
 | 테이블 | 주요 컬럼 | 출처 |
 |---|---|---|
-| `orders` | id, user_id, product_id, lemon_squeezy_order_id, total, status, created_at | 003 |
+| `orders` | id, user_id, product_id, lemon_squeezy_order_id, total, status, created_at, **org_name**, **org_biz_reg_no**, **org_contact_name**, **tax_invoice_no**(전부 nullable — ⭐신규 기관 구매 정보, 관리자 주문 상세에서만 입력) | 003, 061 |
 | `licenses` | id, user_id, order_id, product_id, serial_key UNIQUE, status(active/expired/revoked), max_devices, expires_at, download_url, lemon_squeezy_license_key | 003 |
 | `license_activations` | id, license_id, device_fingerprint, device_name, activated_at, last_seen_at, UNIQUE(license_id, device_fingerprint) | 003 |
 | `subscriptions` | id, user_id, license_id, lemon_squeezy_subscription_id, status, billing_interval, current_period_end, cancellation_reason | 003, 012, 024 |
@@ -425,8 +492,9 @@ POST /api/contact
 | `front_faqs` | FAQ 아코디언 |
 | `announcement_banner` | 상단 공지 배너 |
 | `about_page` | About 페이지 블록 |
+| `front_settings` | key-value 시스템/운영 설정(site_name·support_email·footer_info·SMTP·계좌이체 등, 최초 005/007). ⭐신규 키(문서 반영): `company_name`/`company_biz_no`/`company_ceo`/`company_address`/`company_biz_type`/`company_biz_item`/`company_phone`(견적서 공급자 정보 7종, 하나라도 비면 견적서 발급 차단) · `notify_new_order`/`notify_new_ticket`(관리자 알림 켬/끔, 미설정 시 기본 켜짐). key-value 구조라 새 키 추가에 스키마 마이그레이션 불필요 |
 
-마이그레이션: 007, 009, 013, 015, 016, 019, 025
+마이그레이션(위 8개 CMS 테이블 한정): 007, 009, 013, 015, 016, 019, 025
 
 ### 4.5 지원·기타
 
@@ -436,6 +504,8 @@ POST /api/contact
 | `inquiries` | 비회원 문의 (`/api/contact`에서 INSERT, 022) |
 | `downloads` | 라이선스 다운로드 추적 (021) |
 | `affiliate_*` | 제휴 프로그램 (005) |
+| `quote_requests` ⭐신규 | 기관 견적 요청 1건=1행 — org_name, biz_reg_no, department, contact_name, phone, email, pc_count(CHECK ≥10), needed_by, payment_pref, note, status(received/quoted), quoted_at, quoted_by, ip_address. RLS 켜고 정책 없음(서버 전용, 060) |
+| `quote_issues` ⭐신규 | 견적서 발급 이력 1회=1행 — request_id FK, **quote_no**(시퀀스+UNIQUE 자동 채번 `CZQ-연도-0001`), product_price_id, quantity, unit_price, total_amount(발급 당시 스냅샷), issued_by, issued_at. RLS 켜고 정책 없음(서버 전용, 060) |
 
 ---
 
@@ -494,7 +564,7 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 | 위치 | 보호 대상 |
 |---|---|
 | [next.config.ts](next.config.ts) | `withBotId` 래퍼 |
-| [instrumentation-client.ts](src/instrumentation-client.ts) | 클라이언트 토큰 자동 첨부 — `/api/contact` POST, `/api/auth/check-email` POST |
+| [instrumentation-client.ts](src/instrumentation-client.ts) | 클라이언트 토큰 자동 첨부 — `/api/contact` POST, `/api/quote` POST(⭐신규), `/api/auth/check-email` POST 등 |
 | 각 라우트 | `checkBotId()` 서버 검증 |
 
 > 보호하지 **않는** 엔드포인트:
@@ -506,6 +576,7 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 ### 5.5 이메일 (Nodemailer SMTP)
 
 [src/lib/email.ts](src/lib/email.ts) — `sendEmail({to, subject, html, replyTo, attachments})` + HTML 템플릿:
+- [src/lib/admin-notify.ts](src/lib/admin-notify.ts) ⭐신규(문서 반영) — 새 SMTP 설정 없이 위 `sendEmail`을 재사용. 새 주문(카드·계좌이체)·새 티켓·새 견적 요청 알림의 단일 창구. 수신 주소는 `front_settings.support_email`, 켬/끔은 `notify_new_order`/`notify_new_ticket`, 새 env 변수는 없음
 - `inquiryEmailHtml` — 비회원 문의 알림 (관리자에게)
 - `orderConfirmationEmailHtml` — 주문 확인 (구매자에게)
 
@@ -542,7 +613,8 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 | `/auth/login`, `/auth/register` 접근 | 이미 로그인된 사용자는 `/dashboard`로 | middleware |
 | `/admin/*` 진입 | `profiles.role='admin'` 검증 (RLS 재귀 회피 위해 admin client 사용) | [admin/layout.tsx](src/app/admin/layout.tsx) |
 | 쿠키 초기 동의 | `CookieConsentBanner` 표시 → 동의 시 GA/Pixel 활성화 | [CookieConsentBanner.tsx](src/components/CookieConsentBanner.tsx) |
-| 1분 무브먼트 | `/api/contact` Rate Limit Map 정리 | contact route `setInterval` |
+| 문의·견적 요청마다(정정 — in-memory Map 아님) | IP별 분당 3회 제한을 Supabase RPC(`check_contact_rate_limit`)로 원자적 카운트(다중 서버리스 인스턴스에도 안전, 별도 cleanup 불필요) | [lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) — `/api/contact`·`/api/quote` 공유 |
+| 새 주문·새 견적 요청 응답 후 | `after()`로 관리자 알림 메일 비동기 발송(본 처리 지연·실패 없음) | webhooks/lemonsqueezy, orders/bank-transfer, `api/quote` → [lib/admin-notify.ts](src/lib/admin-notify.ts) |
 
 ---
 
@@ -561,6 +633,7 @@ npm run lint   # ESLint
 - `.next` 캐시 손상 시 `rm -rf .next && npm run build`
 - TypeScript: 동일 파일 내 `import dynamic from 'next/dynamic'`과 `export const dynamic`은 충돌 — `import lazy from 'next/dynamic'`로 alias
 - `src/app/page.tsx`는 `force-dynamic` (DB 데이터 SSR)
+- ⭐신규 견적서 PDF 자산(`src/assets/quotation/`)은 [next.config.ts](next.config.ts)의 `outputFileTracingIncludes['/api/admin/quotes/issue']`로 서버리스 번들에 명시 포함 — 이 설정이 빠지면 로컬에서는 되는데 Vercel 배포본에서만 폰트·도장 파일을 못 찾는 사고가 남
 
 ---
 
@@ -572,7 +645,10 @@ npm run lint   # ESLint
 | `license_activations.last_seen_at` | 컬럼은 있으나 업데이트하는 API 없음 | 앱이 validate 호출 시 last_seen 갱신 로직 추가 필요 (TODO) |
 | Google Sheets API | 분당 60회 read, 100회 write 한도 | LS 웹훅 단발 호출이므로 현재 안전, 단 batch revoke 시 주의 |
 | LS 웹훅 멱등성 | 같은 이벤트 재전송 가능 | `lemon_squeezy_order_id` UNIQUE로 중복 INSERT 방지 |
-| Rate Limit (Contact) | in-memory Map → 다중 인스턴스에서 정확하지 않음 | Vercel은 단일 region serverless라 큰 문제 없음 |
+| Rate Limit (Contact·Quote) — 정정 | 과거 in-memory Map 방식이었으나 현재는 Supabase RPC(`check_contact_rate_limit`, 050) 기반 → 다중 인스턴스에서도 정확 | `/api/contact`·`/api/quote`가 [lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) 공유(같은 IP 합산 분당 3회). RPC 자체가 실패하면 fail-open(정상 사용자 통과) |
+| 견적서 발급 = 견적일 뿐 세금계산서 아님 ⭐신규 | `/api/admin/quotes/issue`는 PDF 견적서만 만든다. 실제 세금계산서는 홈택스에서 대표님이 직접 발급 | 발급 후 번호를 `orders.tax_invoice_no`에 수기 기록(자동 발급 연동 아님) |
+| 견적서 공급자 정보 미입력 시 발급 전면 차단 ⭐신규 | `front_settings`의 `company_*` 7종 중 하나라도 비면 `/api/admin/quotes/issue`가 400으로 거부(빈칸 견적서 방지) | 관리자 → 설정 → 견적서 공급자 정보에서 7종 모두 입력 필요 |
+| `quote_requests`/`quote_issues` RLS ⭐신규 | RLS는 켜져 있으나 정책이 하나도 없음 = 브라우저(익명·로그인 불문) 접근 전면 차단, 오직 service role(서버)만 접근 | `/api/quote`·`/api/admin/quotes/issue`·`/admin/quotes` 모두 `createAdminClient()` 사용, 새 화면 추가 시에도 반드시 서버 경유 |
 | BotID 토큰 | 클라이언트만 발급 가능 (네이티브 앱 X) | 앱 호출 라우트(`/api/license/*`)는 BotID 미적용 |
 | 디자인 시스템 이원화 (GenieWork 재브랜딩) | 퍼블릭(페이퍼: `--color-paper`/`--color-ink` 등)과 `dashboard`·`admin`(다크: `--color-bg`/`--color-surface` 등)이 서로 다른 토큰·컴포넌트를 사용 | 새 컴포넌트 작성 시 대상 영역(퍼블릭 vs 대시보드/관리자) 확인 후 `src/components/ui/`(페이퍼 전용) 또는 기존 다크 스타일 중 맞는 쪽 사용. 양쪽에서 쓰이는 컴포넌트는 `.theme-paper` 조상 셀렉터로 분기 |
 | Google Indexing API 일일 할당량 | 기본 200건/일, 공식 지원 범위는 채용·라이브 구조화 데이터가 우선(그 외 URL은 승인이 보수적일 수 있음) | 대량 URL은 IndexNow(Bing·Naver 등, 별도 제한 없음)가 더 안정적 — 두 채널 모두 시도하되 부분 실패 허용 |
@@ -587,6 +663,7 @@ npm run lint   # ESLint
 | 2026-07-02 | 퍼블릭 페이지 GenieWork 재브랜딩(페이퍼 테마) — 공통 UI 프리미티브(`ui/`) 6종, 히어로 보조 컴포넌트 2종 신규, `globals.css` 페이퍼 토큰·애니메이션 추가, `layout.tsx` Noto Serif KR 도입, 퍼블릭 전 페이지 `theme-paper` 적용(dashboard·admin은 다크 유지), `products.ts` 페이퍼 뱃지 상수, `CountrySelect` 이중 테마 지원, Navbar fixed→sticky | 신규 8 · 수정 다수(프레젠테이션 레이어, 로직/DB/API 변경 없음) |
 | 2026-07-07 | SEO 색인 자동화 — 표준 URL 단일 출처(`lib/site.ts`) 신규 도입해 `robots.ts`·`sitemap.ts`가 공통 사용(Host를 항상 www.corezent.com으로 정규화), IndexNow+Google Indexing API 제출 헬퍼(`lib/seo/indexing.ts`) 및 관리자 전용 재색인 API(`/api/admin/seo/reindex`)·설정 페이지 버튼(`ReindexPanel`) 추가, IndexNow 키 소유 증명 파일 배포, Google 서비스 계정 JSON `.gitignore` 패턴 추가 | 신규 5 · 수정 3(+.gitignore) |
 | 2026-07-23 | 국가(country) 필드 전면 제거 — 회원가입 국가 선택·저장 흐름, dashboard 설정·admin(사용자 목록/상세·주문 상세) 국가 표시 삭제, `profiles.country` 컬럼 DROP(052), 죽은 코드 `CountrySelect`·`lib/countries.ts` 삭제 | 삭제 2 · 수정 7 · 마이그레이션 1(052) |
+| 2026-08-13 | 기관 견적서 발급 시스템 — 견적 요청 접수(`/api/quote` + `/public-sector` QuoteForm, BotID·rate limit 공유·honeypot)와 관리자 목록·PDF 발급(`/admin/quotes` + IssueQuoteForm, `@react-pdf/renderer`로 나눔고딕·도장 합성) 신규, `quote_requests`/`quote_issues`(060, RLS 켜고 정책 없음=서버 전용) 및 `orders` 기관 정보 4컬럼(061) 마이그레이션 추가, 주문 상세 `OrgInfoSection`(기관명·사업자번호·담당자·세금계산서번호), 문의·견적 공용 rate limit을 `lib/contact-rate-limit.ts`로 분리(로직 변화 없음, 카운터 공유), `front_settings`에 `company_*` 7종(견적서 공급자 정보)·`notify_new_order`/`notify_new_ticket`(알림 스위치) 키 추가. 겸사 문서 반영: 이전 라운드에 배포된 관리자 알림 단일 창구(`lib/admin-notify.ts`)·랜딩 문구 예비값 단일 출처(`lib/front-defaults.ts`)를 최초로 §2·§6에 기재, §2.4의 삭제된 `LicenseCopyButton` 참조를 실제 공용 `CopyButton`으로 정정, 문의 Rate Limit 설명을 실제 구현(Supabase RPC)에 맞게 정정 | 신규 16 · 수정 6(+문서 정정 3곳) · 마이그레이션 2(060·061) |
 
 ---
 
