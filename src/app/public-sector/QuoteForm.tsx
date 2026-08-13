@@ -2,9 +2,11 @@
 
 /**
  * @컴포넌트: QuoteForm
- * @설명: 기관 도입 견적 요청 폼. 새 테이블을 만들지 않고 기존 문의 API(/api/contact)를
- *        그대로 재사용한다 — 입력값을 사람이 읽는 형태로 조합해 message에 담아 보낸다.
- *        스팸 방지 미끼 칸(website)과 필드 이름은 기존 문의 폼과 동일하게 맞춘다.
+ * @설명: 기관 도입 견적 요청 폼 — 전용 API(/api/quote)로 구조화 접수한다(문의와 별개 저장소).
+ *        PC 수는 최소 10대 — 미만이면 보내지 않고 개인 구매(요금 페이지)로 안내한다.
+ *        사업자등록번호는 형식만 가볍게 확인한다(숫자 10자리, 하이픈 허용).
+ *        스팸 방지 미끼 칸(website)과 개인정보 안내 문구는 기존 문의 폼 방식 그대로.
+ *        저장이 실패하면 서버가 보낸 이유를 그대로 보여준다(성공한 척 금지).
  */
 
 import { useState } from 'react'
@@ -13,20 +15,7 @@ import { Loader2, CheckCircle } from 'lucide-react'
 const INPUT_CLS =
   'w-full bg-paper-raised border border-rule rounded-lg px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors'
 
-/** 입력값을 문의 본문 한 통으로 조합한다. 값이 빈 항목은 줄 자체를 넣지 않는다. */
-function buildMessage(f: Record<string, string>): string {
-  const lines: [string, string][] = [
-    ['기관명', f.org],
-    ['부서', f.dept],
-    ['담당자', f.person],
-    ['연락처', f.phone],
-    ['도입 예정 PC 수', f.seats],
-    ['희망 결제 방식', f.payment],
-  ]
-  const head = lines.filter(([, v]) => v.trim()).map(([k, v]) => `${k}: ${v.trim()}`).join('\n')
-  const note = f.note.trim() ? `\n\n[추가 요청사항]\n${f.note.trim()}` : ''
-  return `${head}${note}`
-}
+const MIN_PC = 10
 
 export default function QuoteForm() {
   const [sending, setSending] = useState(false)
@@ -46,19 +35,33 @@ export default function QuoteForm() {
       return
     }
 
+    // PC 수 — 최소 10대. 미만이면 서버로 보내지 않고 바로 개인 구매 안내(서버도 같은 검사를 한 번 더 한다).
+    const seats = Math.trunc(Number(get('seats')))
+    if (!Number.isInteger(seats) || seats < MIN_PC) {
+      setError(`기관 견적은 ${MIN_PC}대부터 가능합니다. ${MIN_PC}대 미만 도입은 요금 페이지에서 개인 구매로 바로 이용하실 수 있습니다.`)
+      return
+    }
+
+    // 사업자등록번호 — 형식만 가볍게(숫자 10자리, 하이픈 허용). 비워도 된다.
+    const bizno = get('bizno').trim()
+    if (bizno && !/^\d{10}$/.test(bizno.replace(/-/g, ''))) {
+      setError('사업자등록번호는 숫자 10자리로 입력해 주세요. (예: 000-00-00000)')
+      return
+    }
+
     setSending(true)
     try {
-      const body = new FormData()
-      body.append('email', email)
-      body.append('subject', `[기관 견적 요청] ${org}`)
-      body.append('message', buildMessage({
-        org, dept: get('dept'), person: get('person'), phone: get('phone'),
-        seats: get('seats'), payment: get('payment'), note: get('note'),
-      }))
-      // 미끼 칸 — 기존 문의 폼과 같은 이름으로 함께 보낸다(봇 차단 로직 공유)
-      body.append('website', get('website'))
-
-      const res = await fetch('/api/contact', { method: 'POST', body })
+      const res = await fetch('/api/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org, email, bizno,
+          dept: get('dept'), person: get('person'), phone: get('phone'),
+          seats: get('seats'), needed: get('needed'), payment: get('payment'), note: get('note'),
+          // 미끼 칸 — 기존 문의 폼과 같은 이름(봇 차단 로직 공유)
+          website: get('website'),
+        }),
+      })
       // 서버가 이유를 담아 보내면 그대로 보여준다 — 횟수 초과(429)·저장 실패(500)를
       // "전송 실패" 한 문구로 뭉뚱그리면 손님이 원인을 몰라 계속 재시도한다.
       const data = await res.json().catch(() => null)
@@ -98,6 +101,10 @@ export default function QuoteForm() {
           <input id="qf-org" name="org" required className={INPUT_CLS} placeholder="○○시청" />
         </div>
         <div className="space-y-1.5">
+          <label htmlFor="qf-bizno" className="text-xs font-medium text-ink-soft">사업자등록번호</label>
+          <input id="qf-bizno" name="bizno" inputMode="numeric" className={INPUT_CLS} placeholder="000-00-00000" />
+        </div>
+        <div className="space-y-1.5">
           <label htmlFor="qf-dept" className="text-xs font-medium text-ink-soft">부서</label>
           <input id="qf-dept" name="dept" className={INPUT_CLS} placeholder="○○과" />
         </div>
@@ -114,8 +121,12 @@ export default function QuoteForm() {
           <input id="qf-phone" name="phone" className={INPUT_CLS} placeholder="02-000-0000" />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="qf-seats" className="text-xs font-medium text-ink-soft">도입 예정 PC 수</label>
-          <input id="qf-seats" name="seats" type="number" min="1" className={INPUT_CLS} />
+          <label htmlFor="qf-seats" className="text-xs font-medium text-ink-soft">도입 예정 PC 수 <span className="text-seal">*</span> <span className="text-ink-faint">(최소 {MIN_PC}대)</span></label>
+          <input id="qf-seats" name="seats" type="number" min={MIN_PC} required className={INPUT_CLS} placeholder={`${MIN_PC}`} />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="qf-needed" className="text-xs font-medium text-ink-soft">필요 시기</label>
+          <input id="qf-needed" name="needed" className={INPUT_CLS} placeholder="예: 2026년 9월 중" />
         </div>
       </div>
 
