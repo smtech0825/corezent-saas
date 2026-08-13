@@ -13,7 +13,7 @@ import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
 
 type Settings = Record<string, string>
-type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank'
+type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify'
 
 const SECTION_KEYS: Record<Section, string[]> = {
   general: ['site_name', 'site_url', 'support_email', 'footer_copyright'],
@@ -23,6 +23,8 @@ const SECTION_KEYS: Record<Section, string[]> = {
   seo:     ['seo_ga_tracking_id', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords'],
   smtp:    ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name'],
   bank:    ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder'],
+  // 관리자 알림 켬/끔 — lib/admin-notify.ts가 읽는다. 미설정은 켜짐(값이 'false'일 때만 끔).
+  notify:  ['notify_new_order', 'notify_new_ticket'],
 }
 
 const INPUT_CLS    = 'w-full bg-paper border border-rule text-ink text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
@@ -38,6 +40,8 @@ const TEXTAREA_CLS = 'w-full bg-paper border border-rule text-ink text-sm rounde
  */
 function displayValue(key: string, value: string): string {
   if (key === 'bank_transfer_enabled') return value === 'true' ? 'true' : 'false'
+  // 알림 스위치는 기본이 켜짐 — 미설정('')도 '켜짐(true)'으로 보여준다(admin-notify와 같은 규칙).
+  if (key === 'notify_new_order' || key === 'notify_new_ticket') return value === 'false' ? 'false' : 'true'
   return value
 }
 
@@ -317,6 +321,38 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         </Field>
         <p className="text-xs text-ink-faint">
           계좌이체는 자동 갱신이 없어 <b className="text-ink-soft">1회 결제</b>로 기록됩니다. 입금 확인은 <b className="text-ink-soft">주문</b> 화면에서 [결제 확인]으로 처리하며, 라이선스는 수동 발송해야 합니다.
+        </p>
+      </SectionCard>
+
+      {/* ── 관리자 알림 설정 ─────────────────────────────────────────────── */}
+      <SectionCard
+        title="관리자 알림"
+        dirty={sectionDirty(SECTION_KEYS['notify'], values, savedValues)}
+        description="새 주문·새 고객지원 티켓이 생기면 지원 이메일로 알림 메일을 보냅니다. 기본은 모두 켜짐입니다."
+        footer={<SaveButton section="notify" {...btnProps} />}
+      >
+        <Field label="새 주문 알림 (카드·계좌이체)">
+          <SelectField
+            size="md"
+            value={displayValue('notify_new_order', values.notify_new_order ?? '')}
+            onChange={(e) => update('notify_new_order', e.target.value)}
+          >
+            <option value="true">켜짐</option>
+            <option value="false">꺼짐</option>
+          </SelectField>
+        </Field>
+        <Field label="새 고객지원 티켓 알림">
+          <SelectField
+            size="md"
+            value={displayValue('notify_new_ticket', values.notify_new_ticket ?? '')}
+            onChange={(e) => update('notify_new_ticket', e.target.value)}
+          >
+            <option value="true">켜짐</option>
+            <option value="false">꺼짐</option>
+          </SelectField>
+        </Field>
+        <p className="text-xs text-ink-faint">
+          받는 주소는 <b className="text-ink-soft">일반 설정의 고객지원 이메일</b>입니다. 주소가 비어 있으면 알림을 건너뛰고 모니터링 로그에 남깁니다. 새 문의 알림은 별도 스위치 없이 항상 발송됩니다(스팸은 자동 차단).
         </p>
       </SectionCard>
 
