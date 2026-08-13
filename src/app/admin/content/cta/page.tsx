@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import CtaEditor from './CtaEditor'
 import PageContainer from '@/components/common/PageContainer'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { CTA_DEFAULTS } from '@/lib/front-defaults'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,16 +17,9 @@ const ctaKeys = [
   'cta_btn1_text', 'cta_btn1_href', 'cta_btn2_text', 'cta_btn2_href', 'cta_footnote',
 ]
 
-const defaults: Record<string, string> = {
-  cta_eyebrow:   'Get started today',
-  cta_headline:  'Find the right tool for your work.',
-  cta_subtext:   'Explore our products, pick what fits, and get instant access. Built by developers who care about quality.',
-  cta_btn1_text: 'Browse products',
-  cta_btn1_href: '#product',
-  cta_btn2_text: 'Create free account →',
-  cta_btn2_href: '/auth/register',
-  cta_footnote:  'No credit card required · Instant activation',
-}
+// 초기값(예비값)은 공개 화면과 같은 단일 출처(lib/front-defaults.ts)를 쓴다.
+// 별도 영문 사본을 두면 "DB 키 삭제 → 편집기에 영문 표시 → 저장 한 번에 랜딩이
+// 영어로 덮이는" 사고가 나므로, 여기서 다른 문구를 정의하지 않는다.
 
 async function saveCta(data: Record<string, string>): Promise<AdminActionResult> {
   'use server'
@@ -56,14 +50,14 @@ export default async function CtaAdminPage() {
   const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]))
 
   const initial = {
-    eyebrow:   map['cta_eyebrow']   ?? defaults['cta_eyebrow'],
-    headline:  map['cta_headline']  ?? defaults['cta_headline'],
-    subtext:   map['cta_subtext']   ?? defaults['cta_subtext'],
-    btn1_text: map['cta_btn1_text'] ?? defaults['cta_btn1_text'],
-    btn1_href: map['cta_btn1_href'] ?? defaults['cta_btn1_href'],
-    btn2_text: map['cta_btn2_text'] ?? defaults['cta_btn2_text'],
-    btn2_href: map['cta_btn2_href'] ?? defaults['cta_btn2_href'],
-    footnote:  map['cta_footnote']  ?? defaults['cta_footnote'],
+    eyebrow:   map['cta_eyebrow']   ?? CTA_DEFAULTS.eyebrow,
+    headline:  map['cta_headline']  ?? CTA_DEFAULTS.headline,
+    subtext:   map['cta_subtext']   ?? CTA_DEFAULTS.subtext,
+    btn1_text: map['cta_btn1_text'] ?? CTA_DEFAULTS.btn1_text,
+    btn1_href: map['cta_btn1_href'] ?? CTA_DEFAULTS.btn1_href,
+    btn2_text: map['cta_btn2_text'] ?? CTA_DEFAULTS.btn2_text,
+    btn2_href: map['cta_btn2_href'] ?? CTA_DEFAULTS.btn2_href,
+    footnote:  map['cta_footnote']  ?? CTA_DEFAULTS.footnote,
   }
 
   async function handleSave(formData: typeof initial): Promise<AdminActionResult> {

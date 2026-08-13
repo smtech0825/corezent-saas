@@ -8,6 +8,7 @@
 import Button from '@/components/ui/Button'
 import { FieldLabel } from '@/components/ui/Section'
 import HeroDraftDemo from '@/components/sections/HeroDraftDemo'
+import { HERO_DEFAULTS } from '@/lib/front-defaults'
 
 export interface HeroContent {
   badge?: string | null
@@ -24,17 +25,8 @@ interface Props {
   content?: HeroContent
 }
 
-const defaults: Required<HeroContent> = {
-  badge: '공무원·공공기관 실무자를 위한 업무 자동화',
-  headline1: '보고서, 이제',
-  headline2: '저절로 써집니다',
-  subtext:
-    '계획서·보고서·공문 초안 작성과 자료 검색까지 — 반복되는 문서 업무를 AI로 줄이는 설치형 프로그램, 지니워크(GenieWork)입니다.',
-  cta1_text: '제품 둘러보기',
-  cta1_href: '#product',
-  cta2_text: '무료 계정 만들기',
-  cta2_href: '/auth/register',
-}
+// 예비값 단일 출처 — lib/front-defaults.ts (관리자 편집기 초기값과 반드시 동일해야 함)
+const defaults: Required<HeroContent> = HERO_DEFAULTS
 
 /** 결재란 서명 스트로크 — 셀마다 다른 볼펜 낙서 경로 */
 const SIGN_PATHS = [

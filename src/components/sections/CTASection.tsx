@@ -6,6 +6,7 @@
 import Button from '@/components/ui/Button'
 import Container from '@/components/ui/Container'
 import StampSeal from '@/components/sections/StampSeal'
+import { CTA_DEFAULTS } from '@/lib/front-defaults'
 
 export interface CtaContent {
   eyebrow?: string | null
@@ -22,17 +23,8 @@ interface Props {
   content?: CtaContent
 }
 
-const defaults: Required<CtaContent> = {
-  eyebrow: '지금 도입하세요',
-  headline: '문서 업무의 시간을 되돌려 드립니다',
-  subtext:
-    '지니워크를 내려받아 담당자 PC에 설치하고, 라이선스를 인증하면 바로 사용할 수 있습니다.',
-  btn1_text: '제품 둘러보기',
-  btn1_href: '#product',
-  btn2_text: '무료 계정 만들기',
-  btn2_href: '/auth/register',
-  footnote: '신용카드 불필요 · 즉시 활성화',
-}
+// 예비값 단일 출처 — lib/front-defaults.ts (관리자 편집기 초기값과 반드시 동일해야 함)
+const defaults: Required<CtaContent> = CTA_DEFAULTS
 
 export default function CTASection({ content }: Props) {
   const c: Required<CtaContent> = {

@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import HeroEditor from './HeroEditor'
 import PageContainer from '@/components/common/PageContainer'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { HERO_DEFAULTS } from '@/lib/front-defaults'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,16 +17,9 @@ const heroKeys = [
   'hero_cta1_text', 'hero_cta1_href', 'hero_cta2_text', 'hero_cta2_href',
 ]
 
-const defaults: Record<string, string> = {
-  hero_badge: 'Software built to make your work easier',
-  hero_headline1: 'Powerful Software,',
-  hero_headline2: 'Crafted with Care.',
-  hero_subtext: 'CoreZent creates and sells thoughtfully-built software — from AI automation tools to productivity apps. Simple pricing, instant activation, and dedicated support.',
-  hero_cta1_text: 'Browse products',
-  hero_cta1_href: '#product',
-  hero_cta2_text: 'Create free account',
-  hero_cta2_href: '/auth/register',
-}
+// 초기값(예비값)은 공개 화면과 같은 단일 출처(lib/front-defaults.ts)를 쓴다.
+// 별도 영문 사본을 두면 "DB 키 삭제 → 편집기에 영문 표시 → 저장 한 번에 랜딩이
+// 영어로 덮이는" 사고가 나므로, 여기서 다른 문구를 정의하지 않는다.
 
 async function saveHero(data: Record<string, string>): Promise<AdminActionResult> {
   'use server'
@@ -56,14 +50,14 @@ export default async function HeroAdminPage() {
   const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]))
 
   const initial = {
-    badge:     map['hero_badge']     ?? defaults['hero_badge'],
-    headline1: map['hero_headline1'] ?? defaults['hero_headline1'],
-    headline2: map['hero_headline2'] ?? defaults['hero_headline2'],
-    subtext:   map['hero_subtext']   ?? defaults['hero_subtext'],
-    cta1_text: map['hero_cta1_text'] ?? defaults['hero_cta1_text'],
-    cta1_href: map['hero_cta1_href'] ?? defaults['hero_cta1_href'],
-    cta2_text: map['hero_cta2_text'] ?? defaults['hero_cta2_text'],
-    cta2_href: map['hero_cta2_href'] ?? defaults['hero_cta2_href'],
+    badge:     map['hero_badge']     ?? HERO_DEFAULTS.badge,
+    headline1: map['hero_headline1'] ?? HERO_DEFAULTS.headline1,
+    headline2: map['hero_headline2'] ?? HERO_DEFAULTS.headline2,
+    subtext:   map['hero_subtext']   ?? HERO_DEFAULTS.subtext,
+    cta1_text: map['hero_cta1_text'] ?? HERO_DEFAULTS.cta1_text,
+    cta1_href: map['hero_cta1_href'] ?? HERO_DEFAULTS.cta1_href,
+    cta2_text: map['hero_cta2_text'] ?? HERO_DEFAULTS.cta2_text,
+    cta2_href: map['hero_cta2_href'] ?? HERO_DEFAULTS.cta2_href,
   }
 
   async function handleSave(formData: typeof initial): Promise<AdminActionResult> {

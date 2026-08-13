@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import BannerEditor from './BannerEditor'
 import PageContainer from '@/components/common/PageContainer'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { BANNER_DEFAULTS } from '@/lib/front-defaults'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,13 +16,9 @@ const bannerKeys = [
   'banner_text', 'banner_text_mobile', 'banner_link_text', 'banner_link_url', 'banner_visible',
 ]
 
-const defaults: Record<string, string> = {
-  banner_text: 'Introducing GeniePost — AI-powered WordPress posting, starting at $9/month.',
-  banner_text_mobile: 'GeniePost is here — AI WordPress posting from $9/mo.',
-  banner_link_text: 'Learn more →',
-  banner_link_url: '#product',
-  banner_visible: 'true',
-}
+// 초기값(예비값)은 공개 화면과 같은 단일 출처(lib/front-defaults.ts)를 쓴다.
+// 별도 영문 사본을 두면 "DB 키 삭제 → 편집기에 영문 표시 → 저장 한 번에 배너가
+// 영어로 덮이는" 사고가 나므로, 여기서 다른 문구를 정의하지 않는다.
 
 export default async function AnnouncementAdminPage() {
   const client = createAdminClient()
@@ -33,11 +30,11 @@ export default async function AnnouncementAdminPage() {
   const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]))
 
   const initial = {
-    text:        map['banner_text']        ?? defaults['banner_text'],
-    text_mobile: map['banner_text_mobile'] ?? defaults['banner_text_mobile'],
-    link_text:   map['banner_link_text']   ?? defaults['banner_link_text'],
-    link_url:    map['banner_link_url']    ?? defaults['banner_link_url'],
-    visible:     map['banner_visible']     ?? defaults['banner_visible'],
+    text:        map['banner_text']        ?? BANNER_DEFAULTS.text,
+    text_mobile: map['banner_text_mobile'] ?? BANNER_DEFAULTS.text_mobile,
+    link_text:   map['banner_link_text']   ?? BANNER_DEFAULTS.link_text,
+    link_url:    map['banner_link_url']    ?? BANNER_DEFAULTS.link_url,
+    visible:     map['banner_visible']     ?? BANNER_DEFAULTS.visible,
   }
 
   async function handleSave(formData: typeof initial): Promise<AdminActionResult> {

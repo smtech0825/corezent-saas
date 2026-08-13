@@ -13,6 +13,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
+import { BANNER_DEFAULTS } from '@/lib/front-defaults'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Zap, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -52,13 +53,8 @@ export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null)
 
   // 공지 배너 데이터 (DB에서 로드)
-  const [banner, setBanner] = useState({
-    text: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱, 지금 만나보세요.',
-    text_mobile: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱',
-    link_text: '자세히 보기 →',
-    link_url: '#product',
-    visible: 'true',
-  })
+  // 예비값 단일 출처 — lib/front-defaults.ts (관리자 편집기 초기값과 반드시 동일해야 함)
+  const [banner, setBanner] = useState(BANNER_DEFAULTS)
 
   const userRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
