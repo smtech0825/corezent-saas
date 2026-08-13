@@ -422,9 +422,13 @@ export function parseBrokerageRates(
     if (!isObj(row)) return invalid(ruleKey, `rows[${i}]가 객체가 아닙니다.`)
     if (!isObj(row.when)) return invalid(ruleKey, `rows[${i}].when이 객체가 아닙니다.`)
     if (row.priority !== undefined && !isNum(row.priority)) return invalid(ruleKey, `rows[${i}].priority가 숫자가 아닙니다.`)
-    if (!isNum(row.ratePercent) || row.ratePercent < 0) return invalid(ruleKey, `rows[${i}].ratePercent가 0 이상 숫자(%)가 아닙니다.`)
-    if (row.limitAmount !== undefined && (!isNum(row.limitAmount) || row.limitAmount < 0)) {
-      return invalid(ruleKey, `rows[${i}].limitAmount가 0 이상 숫자(원)가 아닙니다.`)
+    // 0은 거부 — 요율 0%·한도액 0원이 저장되면 "상한액 0원"이 정상 결과처럼 표시된다
+    // (인지세의 '사유 없는 0원 저장 금지'와 같은 취지의 방어)
+    if (!isNum(row.ratePercent) || row.ratePercent <= 0) {
+      return invalid(ruleKey, `rows[${i}].ratePercent가 0보다 큰 숫자(%)가 아닙니다. 상한 요율 0%는 등록할 수 없습니다.`)
+    }
+    if (row.limitAmount !== undefined && (!isNum(row.limitAmount) || row.limitAmount <= 0)) {
+      return invalid(ruleKey, `rows[${i}].limitAmount가 0보다 큰 숫자(원)가 아닙니다. 한도 규정이 없으면 limitAmount를 빼세요.`)
     }
   }
   const conv = value.leaseConversion
@@ -465,8 +469,9 @@ export function parseBrokerageVat(
   ruleKey: string,
 ): { ok: true; value: BrokerageVatValue } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
-  if (!isNum(value.ratePercent) || value.ratePercent < 0) {
-    return invalid(ruleKey, 'ratePercent가 0 이상 숫자(%)가 아닙니다.')
+  // 0%는 거부 — 부가세 0원이 정상 결과처럼 표시되는 것을 막는다 (요율표와 같은 방어)
+  if (!isNum(value.ratePercent) || value.ratePercent <= 0) {
+    return invalid(ruleKey, 'ratePercent가 0보다 큰 숫자(%)가 아닙니다.')
   }
   return { ok: true, value: { ratePercent: value.ratePercent } }
 }

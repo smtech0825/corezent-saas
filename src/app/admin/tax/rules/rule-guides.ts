@@ -141,7 +141,7 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
       '쓸 수 있는 조건 필드: deal_type(거래 유형 — "sale_exchange" 매매·교환 / "lease" 임대차), price(거래금액·원 — 임대차는 환산액 기준), sido(중개사무소 소재지 시·도 이름 — 계산기 드롭다운의 시·도 표기와 글자까지 똑같이)',
       '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다. 거래금액 구간은 min/max로 표현하세요.',
       '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류). sido 조건이 없는 행은 전국 공통이고, 조례가 다른 특정 시·도 행은 priority를 더 크게 두세요.',
-      'ratePercent: 그 구간의 상한 요율(%). limitAmount: 그 구간의 한도액(원) — 한도 규정이 없으면 빼세요.',
+      'ratePercent: 그 구간의 상한 요율(%). limitAmount: 그 구간의 한도액(원) — 한도 규정이 없으면 빼세요. 둘 다 0은 저장할 수 없습니다(상한액 0원이 정상 결과처럼 보이는 것을 막기 위해서입니다).',
       'leaseConversion(필수): 임대차 거래금액 환산 방식 — multiplier(월세 환산 배수). 1차 환산액이 lowDeposit.thresholdAmount 미만이면 lowDeposit.multiplier로 다시 환산합니다(해당 규정이 없으면 lowDeposit을 빼세요).',
       '이 계산기는 아파트 기준입니다 — 아파트 외 물건의 요율은 등록하지 마세요.',
     ],
