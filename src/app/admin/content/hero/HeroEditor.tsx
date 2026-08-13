@@ -9,6 +9,7 @@ import { useState, useTransition } from 'react'
 import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { HERO_DEFAULTS } from '@/lib/front-defaults'
 
 interface HeroData {
   badge: string
@@ -58,17 +59,17 @@ export default function HeroEditor({ initial, onSave }: Props) {
 
       <div className="space-y-1.5">
         <label className={labelCls}>뱃지 텍스트</label>
-        <input value={form.badge} onChange={(e) => set('badge', e.target.value)} placeholder="Software built to make your work easier" className={inputCls} />
+        <input value={form.badge} onChange={(e) => set('badge', e.target.value)} placeholder={HERO_DEFAULTS.badge} className={inputCls} />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className={labelCls}>헤드라인 1번째 줄</label>
-          <input value={form.headline1} onChange={(e) => set('headline1', e.target.value)} placeholder="Powerful Software," className={inputCls} />
+          <input value={form.headline1} onChange={(e) => set('headline1', e.target.value)} placeholder={HERO_DEFAULTS.headline1} className={inputCls} />
         </div>
         <div className="space-y-1.5">
           <label className={labelCls}>헤드라인 2번째 줄 (그라데이션)</label>
-          <input value={form.headline2} onChange={(e) => set('headline2', e.target.value)} placeholder="Crafted with Care." className={inputCls} />
+          <input value={form.headline2} onChange={(e) => set('headline2', e.target.value)} placeholder={HERO_DEFAULTS.headline2} className={inputCls} />
         </div>
       </div>
 
@@ -85,22 +86,22 @@ export default function HeroEditor({ initial, onSave }: Props) {
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className={labelCls}>기본 CTA 텍스트</label>
-          <input value={form.cta1_text} onChange={(e) => set('cta1_text', e.target.value)} placeholder="Browse products" className={inputCls} />
+          <input value={form.cta1_text} onChange={(e) => set('cta1_text', e.target.value)} placeholder={HERO_DEFAULTS.cta1_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
           <label className={labelCls}>기본 CTA 링크</label>
-          <input value={form.cta1_href} onChange={(e) => set('cta1_href', e.target.value)} placeholder="#product" className={inputCls} />
+          <input value={form.cta1_href} onChange={(e) => set('cta1_href', e.target.value)} placeholder={HERO_DEFAULTS.cta1_href} className={inputCls} />
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className={labelCls}>보조 CTA 텍스트</label>
-          <input value={form.cta2_text} onChange={(e) => set('cta2_text', e.target.value)} placeholder="Create free account" className={inputCls} />
+          <input value={form.cta2_text} onChange={(e) => set('cta2_text', e.target.value)} placeholder={HERO_DEFAULTS.cta2_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
           <label className={labelCls}>보조 CTA 링크</label>
-          <input value={form.cta2_href} onChange={(e) => set('cta2_href', e.target.value)} placeholder="/auth/register" className={inputCls} />
+          <input value={form.cta2_href} onChange={(e) => set('cta2_href', e.target.value)} placeholder={HERO_DEFAULTS.cta2_href} className={inputCls} />
         </div>
       </div>
 

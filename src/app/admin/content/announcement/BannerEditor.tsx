@@ -10,6 +10,7 @@ import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import SelectField from '@/components/common/SelectField'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { BANNER_DEFAULTS } from '@/lib/front-defaults'
 
 interface BannerData {
   text: string
@@ -73,7 +74,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
         <input
           value={form.text}
           onChange={(e) => set('text', e.target.value)}
-          placeholder="Introducing GeniePost — AI-powered WordPress posting, starting at $9/month."
+          placeholder={BANNER_DEFAULTS.text}
           className={inputCls}
         />
       </div>
@@ -84,7 +85,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
         <input
           value={form.text_mobile}
           onChange={(e) => set('text_mobile', e.target.value)}
-          placeholder="GeniePost is here — AI WordPress posting from $9/mo."
+          placeholder={BANNER_DEFAULTS.text_mobile}
           className={inputCls}
         />
       </div>
@@ -96,7 +97,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
           <input
             value={form.link_text}
             onChange={(e) => set('link_text', e.target.value)}
-            placeholder="Learn more →"
+            placeholder={BANNER_DEFAULTS.link_text}
             className={inputCls}
           />
         </div>
@@ -105,7 +106,7 @@ export default function BannerEditor({ initial, onSave }: Props) {
           <input
             value={form.link_url}
             onChange={(e) => set('link_url', e.target.value)}
-            placeholder="#product"
+            placeholder={BANNER_DEFAULTS.link_url}
             className={inputCls}
           />
         </div>
