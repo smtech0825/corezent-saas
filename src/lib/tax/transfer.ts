@@ -150,6 +150,10 @@ export async function calculateTransferTax(
   const ltsdStart = input.inherited === true ? (input.inheritanceOpenedAt as string) : input.acquiredAt
   const yearsForRate = holdingYearsForRate(rateStart, input.baseDate, incl)
   const yearsForLtsd = holdingYearsForLtsd(ltsdStart, input.baseDate, incl)
+  // 거주기간은 보유기간(공제 기준) 안에 있어야 한다 — 거주 > 보유 입력은 판정을 왜곡하므로 차단
+  if (input.residenceYears !== undefined && input.residenceYears > yearsForLtsd) {
+    return engineFail('INVALID_INPUT', '거주기간이 보유기간보다 길 수 없습니다. 취득일·거주기간 입력을 확인해 주세요.')
+  }
   // 비과세 보유 요건 판정용 — 이번 범위(상속주택 특례 제외)에서는 공제용과 같은 기산일이지만
   // 조문이 달라 변수로 분리해 둔다 (혼용 방지)
   const yearsForExemption = fullYearsBetween(ltsdStart, input.baseDate, incl)
@@ -349,8 +353,14 @@ export async function calculateTransferTax(
     ltsdReason = '조정대상지역 다주택 중과 대상이라 장기보유특별공제가 적용되지 않습니다.'
   } else {
     // 큰 표(1세대 1주택 + 거주 요건 — 지역과 무관하게 항상 적용되는 거주 요건이다 ③)
+    // 전제: 비과세 요건(§154① 기준 — 보유, 취득 당시 조정대상지역이면 거주까지)을 충족한
+    // 1세대 1주택이어야 한다(고가주택이라 비과세를 못 받아도 요건 충족이면 큰 표 대상).
+    // 요건 미충족(exemptionQualified=false)이면 거주기간과 무관하게 일반 표로 간다.
     let useOneHouseTable = false
-    if (effectiveOneHouse) {
+    if (effectiveOneHouse && !exemptionQualified) {
+      ltsdReason = '1세대 1주택이지만 비과세 요건(보유·거주 — 소득세법 §154① 기준)을 충족하지 못해 큰 표 대상이 아닙니다.'
+    }
+    if (effectiveOneHouse && exemptionQualified) {
       const oneRule = requireRule(rules, TRANSFER_RULE_KEYS.ltsdOneHouse, input.baseDate)
       if (!oneRule.ok) return oneRule
       const one = parseTransferLtsdOneHouse(oneRule.rule.rule_value, oneRule.rule.rule_key)

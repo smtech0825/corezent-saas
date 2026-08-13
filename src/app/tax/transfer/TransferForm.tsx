@@ -93,6 +93,10 @@ export default function TransferForm({ graceDeadlineText }: {
 
   const sigunguList = sido ? (findSigunguList(sido) ?? []) : []
 
+  // 1주택 트랙 — 일시적 2주택도 1주택으로 보아 비과세·큰 표 판정을 받으므로
+  // 거주기간·취득 당시 조정 여부 입력이 똑같이 필요하다 (엔진의 effectiveOneHouse와 동일 기준)
+  const oneHouseTrack = houseCount === 1 || (houseCount === 2 && temporaryTwo)
+
   /**
    * @함수명: handleSubmit
    * @설명: 입력을 검증하고 서버 액션을 호출합니다. 서버 액션 예외는 잡아서
@@ -120,6 +124,11 @@ export default function TransferForm({ graceDeadlineText }: {
     if (resNum !== undefined && (Number.isNaN(resNum) || resNum < 0)) {
       setFormError('거주기간을 0 이상 숫자(만 연수)로 입력해 주세요.'); return
     }
+    // 1주택 트랙은 취득 당시 조정 여부가 비과세 판정에 필요하다 — 서버 오류로 떠넘기지 않고 폼에서 요구
+    if (oneHouseTrack && acquiredRegulated === '') {
+      setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
+      return
+    }
 
     startTransition(async () => {
       try {
@@ -132,9 +141,9 @@ export default function TransferForm({ graceDeadlineText }: {
           acquirePrice: acqNum,
           expenses: expNum,
           houseCount,
-          residenceYears: resNum,
+          residenceYears: oneHouseTrack ? resNum : undefined,
           acquiredInRegulatedArea:
-            houseCount === 1 && acquiredRegulated !== '' ? acquiredRegulated === 'yes' : undefined,
+            oneHouseTrack && acquiredRegulated !== '' ? acquiredRegulated === 'yes' : undefined,
           isTemporaryTwoHouse: houseCount === 2 ? temporaryTwo : undefined,
           newHouseAcquiredAt: houseCount === 2 && temporaryTwo && newHouseAcquiredAt ? newHouseAcquiredAt : undefined,
           inherited,
@@ -208,30 +217,10 @@ export default function TransferForm({ graceDeadlineText }: {
           ]}
         />
 
-        {/* 1주택 — 비과세·장기보유특별공제 큰 표 판정용 입력 */}
-        {houseCount === 1 && (
-          <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <Field label="거주기간 (만 연수)" htmlFor="tr-residence"
-              hint="실제 거주한 만 연수. 산정 방식(초일 산입)은 법령·집행기준에서 확인되지 않아 보유기간과 같은 방식을 전제로 합니다.">
-              <Input id="tr-residence" type="number" min={0} step={1} value={residenceYears}
-                onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
-            </Field>
-            <Field label="취득 당시 조정대상지역이었는지" htmlFor="tr-acq-regulated"
-              hint="취득 시점의 지정 여부는 과거 이력이 시스템에 없어 자동 판정할 수 없습니다. 취득 당시 국토교통부 공고 또는 관할 시·군·구에서 확인 후 직접 선택하세요. 비과세 거주 요건 판정에만 쓰입니다.">
-              <select id="tr-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
-                onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
-                <option value="">선택 안 함</option>
-                <option value="yes">예 — 취득 당시 조정대상지역</option>
-                <option value="no">아니요 — 취득 당시 비규제</option>
-              </select>
-            </Field>
-          </div>
-        )}
-
         {/* 2주택 — 일시적 2주택 판정용 입력 */}
         {houseCount === 2 && (
           <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <CheckRow label="일시적 2주택" hint="신규주택 취득으로 일시적으로 2주택이 된 경우 체크하세요."
+            <CheckRow label="일시적 2주택" hint="신규주택 취득으로 일시적으로 2주택이 된 경우 체크하세요. 요건을 충족하면 1주택으로 보아 판정합니다."
               checked={temporaryTwo} onChange={setTemporaryTwo} />
             {temporaryTwo && (
               <Field label="신규주택 취득일" htmlFor="tr-new-house" required>
@@ -239,6 +228,26 @@ export default function TransferForm({ graceDeadlineText }: {
                   onChange={(e) => setNewHouseAcquiredAt(e.target.value)} required />
               </Field>
             )}
+          </div>
+        )}
+
+        {/* 1주택 트랙(1주택 또는 일시적 2주택) — 비과세·장기보유특별공제 큰 표 판정용 입력 */}
+        {oneHouseTrack && (
+          <div className="space-y-4 border-l-2 border-pen/20 pl-4">
+            <Field label="거주기간 (만 연수)" htmlFor="tr-residence"
+              hint="실제 거주한 만 연수. 산정 방식(초일 산입)은 법령·집행기준에서 확인되지 않아 보유기간과 같은 방식을 전제로 합니다.">
+              <Input id="tr-residence" type="number" min={0} step={1} value={residenceYears}
+                onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
+            </Field>
+            <Field label="취득 당시 조정대상지역이었는지" htmlFor="tr-acq-regulated" required
+              hint="취득 시점의 지정 여부는 과거 이력이 시스템에 없어 자동 판정할 수 없습니다. 취득 당시 국토교통부 공고 또는 관할 시·군·구에서 확인 후 직접 선택하세요. 비과세 거주 요건 판정에만 쓰입니다.">
+              <select id="tr-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
+                onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
+                <option value="">선택</option>
+                <option value="yes">예 — 취득 당시 조정대상지역</option>
+                <option value="no">아니요 — 취득 당시 비규제</option>
+              </select>
+            </Field>
           </div>
         )}
 

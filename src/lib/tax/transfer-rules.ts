@@ -64,6 +64,27 @@ function invalid(ruleKey: string, detail: string): TaxEngineFailure {
   )
 }
 
+/**
+ * 세율 명세의 세율이 전부 0보다 큰지 검사 — 통과하면 null, 실패하면 사유.
+ * 세율 0%가 저장되면 세액 0원이 정상 결과처럼 표시되므로 양도세 세율표에서는 거부한다
+ * (checkRateSpec 자체는 취득세 농어촌특별세 0% 같은 정당한 0을 위해 0을 허용 — 손대지 않는다).
+ */
+function checkRatePositive(spec: unknown): string | null {
+  if (!isObj(spec)) return null   // 구조 오류는 checkRateSpec이 먼저 잡는다
+  if (spec.type === 'fixed' && typeof spec.ratePercent === 'number' && spec.ratePercent <= 0) {
+    return '세율 0% 이하는 등록할 수 없습니다(세액 0원이 정상 결과처럼 보이는 것을 막기 위해서입니다).'
+  }
+  if (spec.type === 'progressive' && Array.isArray(spec.brackets)) {
+    for (let i = 0; i < spec.brackets.length; i++) {
+      const b = spec.brackets[i] as Record<string, unknown>
+      if (typeof b?.ratePercent === 'number' && b.ratePercent <= 0) {
+        return `brackets[${i}]의 세율이 0% 이하입니다 — 누진 구간의 세율은 전부 0보다 커야 합니다.`
+      }
+    }
+  }
+  return null
+}
+
 /** 행 공통(when·priority) 검사 — 통과하면 null, 실패하면 사유 */
 function checkRowShape(row: unknown, label: string): string | null {
   if (!isObj(row)) return `${label}가 객체가 아닙니다.`
@@ -78,7 +99,8 @@ function checkRateRows(rows: unknown, ruleKey: string, field: string): TaxEngine
   for (let i = 0; i < rows.length; i++) {
     const shape = checkRowShape(rows[i], `${field}[${i}]`)
     if (shape) return invalid(ruleKey, shape)
-    const reason = checkRateSpec((rows[i] as Record<string, unknown>).rate)
+    const rate = (rows[i] as Record<string, unknown>).rate
+    const reason = checkRateSpec(rate) ?? checkRatePositive(rate)
     if (reason) return invalid(ruleKey, `${field}[${i}].rate — ${reason}`)
   }
   return null
@@ -114,7 +136,7 @@ export function parseTransferBaseRates(
   ruleKey: string,
 ): { ok: true; value: TransferBaseRatesValue } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
-  const reason = checkRateSpec(value.rate)
+  const reason = checkRateSpec(value.rate) ?? checkRatePositive(value.rate)
   if (reason) return invalid(ruleKey, `rate — ${reason}`)
   return { ok: true, value: value as unknown as TransferBaseRatesValue }
 }
@@ -254,7 +276,7 @@ export function parseTransferLocalIncomeTax(
   ruleKey: string,
 ): { ok: true; value: TransferLocalIncomeTaxValue } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
-  const reason = checkRateSpec(value.rate)
+  const reason = checkRateSpec(value.rate) ?? checkRatePositive(value.rate)
   if (reason) return invalid(ruleKey, `rate — ${reason}`)
   let shortTerm: TransferLocalIncomeTaxValue['shortTerm']
   if (value.shortTerm !== undefined) {
