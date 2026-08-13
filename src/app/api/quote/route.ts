@@ -28,14 +28,12 @@ export async function POST(request: NextRequest) {
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
     const admin = createAdminClient()
-    if (await isRateLimited(admin, ip)) {
-      return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' }, { status: 429 })
-    }
 
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
     if (!body) {
       return NextResponse.json({ error: '요청 형식이 올바르지 않습니다.' }, { status: 400 })
     }
+    /** 본문 문자열 필드 정리 — trim + 길이 제한(타입 이상값도 String으로 흡수) */
     const s = (k: string, max = 200) => String(body[k] ?? '').trim().slice(0, max)
 
     // 미끼 칸 — 봇이 채우면 조용히 성공으로 응답(저장·알림 없음, 문의와 동일)
@@ -69,6 +67,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '사업자등록번호는 숫자 10자리로 입력해 주세요. (예: 000-00-00000)', code: 'BIZNO' }, { status: 400 })
     }
 
+    // 분당 횟수 제한 — 검증을 전부 통과한 요청만 카운트한다(이메일 오타 400까지 세면
+    // 같은 공인 IP를 쓰는 관공서에서 정상 접수가 막힌다 — 검증 지적). 봇은 위의
+    // BotID·허니팟이 먼저 거른다. 문의 폼과 카운터 공유는 의도(봇 방어 목적).
+    if (await isRateLimited(admin, ip)) {
+      return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' }, { status: 429 })
+    }
+
     // 저장 — 실패하면 실패라고 답한다(접수된 척 금지). 주문·라이선스는 절대 만들지 않는다.
     const { data: inserted, error: dbError } = await admin
       .from('quote_requests')
@@ -90,8 +95,15 @@ export async function POST(request: NextRequest) {
 
     if (dbError || !inserted) {
       console.error('[Quote API] insert error:', dbError)
+      // 060 미적용(42P01)이면 잠시 후 재시도로는 해결되지 않는다 — 손님에게는 대체 경로를 안내
+      const tableMissing = dbError?.code === '42P01'
       return NextResponse.json(
-        { error: '접수 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.', code: 'DB_ERROR' },
+        {
+          error: tableMissing
+            ? '지금은 견적 접수가 어렵습니다. 문의하기 페이지로 보내주시면 빠르게 회신드리겠습니다.'
+            : '접수 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+          code: 'DB_ERROR',
+        },
         { status: 500 },
       )
     }

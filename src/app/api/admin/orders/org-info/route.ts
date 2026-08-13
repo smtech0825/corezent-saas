@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     if (!body?.orderId) {
       return NextResponse.json({ error: '요청 정보가 올바르지 않습니다.' }, { status: 400 })
     }
+    /** 입력값 정리 — trim + 길이 제한, 빈 값은 null(칸 비우기 = 지우기) */
     const clean = (v: unknown, max = 200) => {
       const s = String(v ?? '').trim().slice(0, max)
       return s || null

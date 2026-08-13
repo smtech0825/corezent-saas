@@ -12,6 +12,7 @@ import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import { parsePageParam } from '@/lib/validate'
+import { formatPrice } from '@/lib/price'
 import IssueQuoteForm, { type PriceOption } from './IssueQuoteForm'
 
 export const dynamic = 'force-dynamic'
@@ -91,18 +92,22 @@ export default async function QuotesPage({
   // 테이블 미적용(42P01)은 원인이 분명하므로 일반 실패와 구분해 안내한다(로그 화면 관례)
   const tableMissing = error?.code === '42P01'
 
-  // 견적서 발급용 상품 옵션 — 단가는 product_prices.price(원)를 그대로 보여주고 그대로 쓴다
+  // 견적서 발급용 상품 옵션 — 단가는 product_prices.price(원·VAT 포함)를 그대로 보여주고 그대로 쓴다.
+  // 월/연·1회 구매 구분을 라벨에 항상 병기한다(같은 대수의 월간·연간 행을 헷갈리지 않게 — 검증 지적).
   const { data: priceRows } = await adminClient
     .from('product_prices')
-    .select('id, price, option_axis1_label, option_axis2_label, products(name)')
+    .select('id, price, type, interval, option_axis1_label, option_axis2_label, products(name)')
     .eq('is_active', true)
   const options: PriceOption[] = (priceRows ?? []).map((p) => {
     const prodRaw = (p as Record<string, unknown>).products
     const prod = (Array.isArray(prodRaw) ? prodRaw[0] : prodRaw) as { name?: string } | null
     const opts = [p.option_axis1_label, p.option_axis2_label].filter(Boolean).join(' · ')
+    const payType = p.type === 'subscription'
+      ? (p.interval === 'annual' ? '연간 구독' : p.interval === 'monthly' ? '월 구독' : '구독')
+      : '1회 구매'
     return {
       id: p.id as string,
-      label: `${prod?.name ?? '-'}${opts ? ` — ${opts}` : ''} (₩${Number(p.price).toLocaleString('ko-KR')})`,
+      label: `${prod?.name ?? '-'}${opts ? ` — ${opts}` : ''} [${payType}] (${formatPrice(Number(p.price))})`,
     }
   })
 

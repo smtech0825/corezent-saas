@@ -43,13 +43,19 @@ CREATE INDEX idx_quote_requests_created_at ON quote_requests (created_at DESC);
 CREATE INDEX idx_quote_requests_status     ON quote_requests (status);
 
 -- 견적서 발급 이력 — 발급 1회 = 1행. 번호는 DB가 채번(UNIQUE + 시퀀스 기본값).
+-- 어떤 상품·수량·금액으로 발급했는지 함께 남긴다(감사 추적·문의 대조용 — 검증 지적 반영).
 CREATE TABLE quote_issues (
-  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  request_id uuid        NOT NULL REFERENCES quote_requests(id) ON DELETE CASCADE,
-  quote_no   text        NOT NULL UNIQUE
-             DEFAULT ('CZQ-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('quote_no_seq')::text, 4, '0')),
-  issued_by  uuid,                                        -- 발급 관리자(auth.users id)
-  issued_at  timestamptz NOT NULL DEFAULT now()
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id       uuid        NOT NULL REFERENCES quote_requests(id) ON DELETE CASCADE,
+  quote_no         text        NOT NULL UNIQUE
+                   -- 연도는 한국시간 기준(UTC 자정 경계에서 전년도로 찍히는 것 방지)
+                   DEFAULT ('CZQ-' || to_char(now() AT TIME ZONE 'Asia/Seoul', 'YYYY') || '-' || lpad(nextval('quote_no_seq')::text, 4, '0')),
+  product_price_id uuid,                                  -- 발급 당시 선택한 옵션 행
+  quantity         integer,                               -- 발급 당시 수량
+  unit_price       numeric,                               -- 발급 당시 단가(원·VAT 포함)
+  total_amount     bigint,                                -- 발급 당시 합계금액(원·VAT 포함)
+  issued_by        uuid,                                  -- 발급 관리자(auth.users id)
+  issued_at        timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_quote_issues_request ON quote_issues (request_id, issued_at DESC);
@@ -60,7 +66,7 @@ ALTER TABLE quote_issues   ENABLE ROW LEVEL SECURITY;
 
 COMMENT ON TABLE  quote_requests          IS '기관 견적 요청(기관 도입 페이지 폼 접수)';
 COMMENT ON COLUMN quote_requests.status   IS 'received=접수됨, quoted=견적 발급됨 — 이 둘만 사용';
-COMMENT ON TABLE  quote_issues            IS '견적서 발급 이력 — quote_no는 시퀀스 기본값+UNIQUE라 중복 불가';
+COMMENT ON TABLE  quote_issues            IS '견적서 발급 이력 — quote_no는 시퀀스 기본값+UNIQUE라 중복 불가. 발급 당시 상품·수량·금액 스냅샷 포함';
 
 -- ─── 회귀 검증(운영자 적용 후) ────────────────────────────────────────────
 -- 1) 접수 INSERT가 성공하는지 (성공해야 정상, ROLLBACK):

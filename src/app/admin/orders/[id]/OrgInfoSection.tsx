@@ -29,11 +29,13 @@ export default function OrgInfoSection({ orderId, initial }: { orderId: string; 
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
+  /** 입력값 갱신 — 바꾸는 순간 "저장됨" 표시를 끈다 */
   function set(key: keyof OrgInfo, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
     setSaved(false)
   }
 
+  /** 저장 — 실패하면 서버가 보낸 이유(061 미적용 안내 포함)를 그대로 표시 */
   async function save() {
     setError('')
     setBusy(true)

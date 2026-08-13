@@ -21,10 +21,12 @@ export default function QuoteForm() {
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
 
+  /** 제출 — 클라이언트 선검증(필수·PC수·사업자번호) 후 /api/quote로 접수 */
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     const el = e.currentTarget.elements as unknown as Record<string, HTMLInputElement | undefined>
+    /** 폼 필드 값 읽기(없으면 빈 문자열) */
     const get = (n: string) => el[n]?.value ?? ''
 
     const org = get('org').trim()

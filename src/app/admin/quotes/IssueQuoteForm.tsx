@@ -24,24 +24,32 @@ export default function IssueQuoteForm({
   options,
 }: {
   requestId: string
+  /** 요청 PC 수 — 참고 표시용. 옵션 단가가 이미 "대수 포함"인 상품이 있어 기본 수량으로 쓰지 않는다(검증 지적) */
   defaultQty: number
   options: PriceOption[]
 }) {
   const router = useRouter()
   const [priceId, setPriceId] = useState(options[0]?.id ?? '')
-  const [qty, setQty] = useState(String(defaultQty))
+  // 기본 수량 1 — 대수 포함 옵션(예: "10PC용")에 요청 PC 수를 곱하면 금액이 몇 배로 튄다
+  const [qty, setQty] = useState('1')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [issuedNo, setIssuedNo] = useState('')
 
+  /** 발급 요청 — 수량을 검증해 보내고, 성공 시 PDF를 내려받는다. 실패 이유는 그대로 표시 */
   async function issue() {
     setError('')
+    const quantity = Math.trunc(Number(qty))
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      setError('수량을 1 이상의 숫자로 입력해 주세요.')
+      return
+    }
     setBusy(true)
     try {
       const res = await fetch('/api/admin/quotes/issue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, productPriceId: priceId, quantity: Math.trunc(Number(qty)) }),
+        body: JSON.stringify({ requestId, productPriceId: priceId, quantity }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
@@ -75,8 +83,11 @@ export default function IssueQuoteForm({
   return (
     <div className="mt-3 pt-3 border-t border-rule space-y-2.5">
       <p className="text-xs font-medium text-ink-soft">견적서 발급</p>
+      <p className="text-xs text-ink-faint">
+        요청 PC 수: <b className="text-ink-soft">{defaultQty}대</b> — 옵션 이름에 대수(예: 10PC용)가 이미 들어 있으면 수량은 1로 두세요. 금액 = 옵션 단가 × 수량.
+      </p>
       <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
-        <SelectField size="md" value={priceId} onChange={(e) => setPriceId(e.target.value)}>
+        <SelectField size="md" aria-label="상품 옵션" value={priceId} onChange={(e) => setPriceId(e.target.value)}>
           {options.map((o) => (
             <option key={o.id} value={o.id}>{o.label}</option>
           ))}
