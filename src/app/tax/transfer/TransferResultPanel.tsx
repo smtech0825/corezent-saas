@@ -17,6 +17,13 @@ function won(amount: number): string {
   return `${amount.toLocaleString('ko-KR')}원`
 }
 
+/** 세액 산출 경로 라벨 — 실제 적용된 경로를 그대로 표시한다(중과를 '기본 세율'로 오표시 금지) */
+const RATE_PATH_LABELS: Record<string, string> = {
+  base: '기본 세율',
+  heavy: '중과 세율(기본세율+가산)',
+  short_term: '단기 세율',
+}
+
 /** 미확정 조건 필드명 → 한국어 라벨 */
 const UNRESOLVED_LABELS: Record<string, string> = {
   residence_years: '거주기간',
@@ -120,7 +127,7 @@ export default function TransferResultPanel({ result }: { result: TransferResult
           )}
           {result.comparisonApplied && (
             <span className="px-1.5 py-0.5 rounded text-[11px] font-semibold bg-info-soft text-info">
-              비교과세 — {result.ratePathChosen === 'short_term' ? '단기 세율 적용(더 큰 세액)' : '기본 세율 적용(더 큰 세액)'}
+              비교과세 — {RATE_PATH_LABELS[result.ratePathChosen]} 적용(더 큰 세액)
             </span>
           )}
         </div>

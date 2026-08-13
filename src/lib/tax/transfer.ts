@@ -79,19 +79,37 @@ function validateInput(input: TransferInput): TaxEngineFailure | null {
   if (input.residenceYears !== undefined && (!Number.isFinite(input.residenceYears) || input.residenceYears < 0)) {
     return engineFail('INVALID_INPUT', '거주기간은 0 이상의 숫자(만 연수)여야 합니다.')
   }
+  // 미래 날짜 차단 — 양도일보다 뒤인 날짜가 통과하면 일시적 2주택·경과조치가 부당하게
+  // 인정되거나(세액 과소) 보유 연수가 0으로 튄다(단기 경로). 전부 양도일 이하만 허용.
   if (input.inherited === true) {
     if (!input.inheritanceOpenedAt || !isValidDateString(input.inheritanceOpenedAt)) {
       return engineFail('INVALID_INPUT', '상속 주택은 상속개시일 입력이 필요합니다. (YYYY-MM-DD)')
     }
+    if (input.inheritanceOpenedAt > input.baseDate) {
+      return engineFail('INVALID_INPUT', '상속개시일이 양도일보다 늦을 수 없습니다.')
+    }
     if (!input.decedentAcquiredAt || !isValidDateString(input.decedentAcquiredAt)) {
       return engineFail('INVALID_INPUT', '상속 주택은 피상속인 취득일 입력이 필요합니다. (YYYY-MM-DD)')
     }
+    if (input.decedentAcquiredAt > input.baseDate) {
+      return engineFail('INVALID_INPUT', '피상속인 취득일이 양도일보다 늦을 수 없습니다.')
+    }
   }
-  if (input.newHouseAcquiredAt !== undefined && !isValidDateString(input.newHouseAcquiredAt)) {
-    return engineFail('INVALID_INPUT', '신규주택 취득일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+  if (input.newHouseAcquiredAt !== undefined) {
+    if (!isValidDateString(input.newHouseAcquiredAt)) {
+      return engineFail('INVALID_INPUT', '신규주택 취득일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+    }
+    if (input.newHouseAcquiredAt > input.baseDate) {
+      return engineFail('INVALID_INPUT', '신규주택 취득일이 양도일보다 늦을 수 없습니다.')
+    }
   }
-  if (input.graceContractDate !== undefined && !isValidDateString(input.graceContractDate)) {
-    return engineFail('INVALID_INPUT', '매매계약 체결일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+  if (input.graceContractDate !== undefined) {
+    if (!isValidDateString(input.graceContractDate)) {
+      return engineFail('INVALID_INPUT', '매매계약 체결일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+    }
+    if (input.graceContractDate > input.baseDate) {
+      return engineFail('INVALID_INPUT', '매매계약 체결일이 양도일보다 늦을 수 없습니다.')
+    }
   }
   return null
 }

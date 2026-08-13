@@ -129,6 +129,20 @@ export default function TransferForm({ graceDeadlineText }: {
       setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
       return
     }
+    // 미래 날짜 차단 — 양도일보다 뒤인 날짜는 판정을 왜곡한다 (엔진도 같은 검증으로 이중 방어)
+    if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
+    if (houseCount === 2 && temporaryTwo && newHouseAcquiredAt && newHouseAcquiredAt > transferDate) {
+      setFormError('신규주택 취득일이 양도일보다 늦을 수 없습니다.'); return
+    }
+    if (inherited && inheritanceOpenedAt && inheritanceOpenedAt > transferDate) {
+      setFormError('상속개시일이 양도일보다 늦을 수 없습니다.'); return
+    }
+    if (inherited && decedentAcquiredAt && decedentAcquiredAt > transferDate) {
+      setFormError('피상속인 취득일이 양도일보다 늦을 수 없습니다.'); return
+    }
+    if (graceContractDate && graceContractDate > transferDate) {
+      setFormError('매매계약 체결일이 양도일보다 늦을 수 없습니다.'); return
+    }
 
     startTransition(async () => {
       try {
