@@ -18,6 +18,7 @@ import { formatDateTimeKR, formatDateKR } from '@/lib/datetime'
 import CancellationModal, {
   cancelErrorMessage, OTHER_REASON, type CancelReason, type CancelTarget,
 } from './CancellationModal'
+import PaymentMethodButton from './PaymentMethodButton'
 
 export interface SubInfo {
   id: string
@@ -180,9 +181,12 @@ export default function BillingTable({ rows }: Props) {
             const optimistic = cancelledIds.has(row.subscription?.id ?? '')
             const badge = rowStatus(row, optimistic)
             const sub = row.subscription
-            const isPureActive = sub
-              ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd }) === 'active'
-              : false
+            const derived = sub
+              ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd })
+              : null
+            const isPureActive = derived === 'active'
+            // 결제수단 변경 — LS 구독 실체가 있고 해지·만료 전이면 노출(결제 실패도 active로 와 포함됨)
+            const showPayment = !!sub?.lsSubscriptionId && derived !== null && derived !== 'cancelled' && derived !== 'expired'
             return (
               <div key={row.orderId} className={`grid ${gridCols} gap-4 items-center px-5 py-3 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors`}>
                 {/* 제품 + 옵션 */}
@@ -214,6 +218,7 @@ export default function BillingTable({ rows }: Props) {
                   {sub && (
                     <span className="text-xs text-ink-faint whitespace-nowrap">갱신 {formatDateKR(sub.currentPeriodEnd)}</span>
                   )}
+                  {sub && showPayment && <PaymentMethodButton subscriptionId={sub.id} />}
                   {sub && isPureActive && (
                     <button onClick={() => openCancelModal(sub, row.productName)} className="inline-flex items-center text-xs text-danger border border-danger/20 hover:border-danger/40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
                       구독 취소
@@ -232,9 +237,12 @@ export default function BillingTable({ rows }: Props) {
           const optimistic = cancelledIds.has(row.subscription?.id ?? '')
           const badge = rowStatus(row, optimistic)
           const sub = row.subscription
-          const isPureActive = sub
-            ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd }) === 'active'
-            : false
+          const derived = sub
+            ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd })
+            : null
+          const isPureActive = derived === 'active'
+          // 데스크톱 표와 같은 노출 규칙 — LS 구독 실체가 있고 해지·만료 전이면 결제수단 변경 노출
+          const showPayment = !!sub?.lsSubscriptionId && derived !== null && derived !== 'cancelled' && derived !== 'expired'
           return (
             <div key={row.orderId} className="bg-paper-raised border border-rule rounded-card p-4">
               <div className="flex items-start justify-between gap-3">
@@ -259,6 +267,7 @@ export default function BillingTable({ rows }: Props) {
                   <ExternalLink size={11} /> 라이선스 확인
                 </Link>
                 {sub && <span className="text-xs text-ink-faint">갱신 {formatDateKR(sub.currentPeriodEnd)}</span>}
+                {sub && showPayment && <PaymentMethodButton subscriptionId={sub.id} />}
                 {sub && isPureActive && (
                   <button onClick={() => openCancelModal(sub, row.productName)} className="inline-flex items-center text-xs text-danger border border-danger/20 px-3 py-1.5 rounded-lg">
                     구독 취소
