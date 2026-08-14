@@ -2,17 +2,18 @@
 
 /**
  * @파일: dashboard/settings/page.tsx
- * @설명: 설정 페이지 — 프로필(이름) 수정, 비밀번호 변경(현재 비밀번호 검증)
+ * @설명: 설정 페이지 — 프로필(이름) 수정, 이메일 변경(확인 메일 방식), 비밀번호 변경(현재 비밀번호 검증)
  */
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, CheckCircle } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
 import WithdrawSection from './WithdrawSection'
+import EmailChangeSection from './EmailChangeSection'
 import PageContainer from '@/components/common/PageContainer'
+import { FormField, SubmitButton, inputCls } from './settings-ui'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -23,6 +24,8 @@ export default function SettingsPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
+  // 이메일 변경 확인 대기 주소 (auth.users.new_email — 확인 링크를 아직 안 누른 상태)
+  const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null)
 
   // 비밀번호
   const [currentPassword, setCurrentPassword] = useState('')
@@ -39,6 +42,7 @@ export default function SettingsPage() {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return
       setEmail(data.user.email ?? '')
+      setPendingNewEmail(data.user.new_email ?? null)
       supabase
         .from('profiles')
         .select('name, phone')
@@ -218,24 +222,17 @@ export default function SettingsPage() {
             )}
           </FormField>
 
-          <FormField label="이메일">
-            <input
-              type="email"
-              value={email}
-              disabled
-              className={`${inputCls} opacity-50 cursor-not-allowed`}
-            />
-            <p className="text-xs text-ink-faint mt-1.5">이메일은 여기서 변경할 수 없습니다.</p>
-          </FormField>
-
           <div className="flex justify-stretch sm:justify-end pt-1">
             <SubmitButton loading={profileLoading} label="변경사항 저장" />
           </div>
         </form>
       </section>
 
+      {/* 이메일 변경 섹션 — 확인 메일 방식(인증 도구가 처리). 결제사 주소 한계 안내 포함 */}
+      <EmailChangeSection currentEmail={email} pendingEmail={pendingNewEmail} />
+
       {/* 비밀번호 섹션 */}
-      <section className="bg-paper-raised border border-rule rounded-card p-6 max-w-2xl">
+      <section className="bg-paper-raised border border-rule rounded-card p-6 max-w-2xl mt-6">
         <h2 className="text-base font-semibold text-ink mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           <FormField label="현재 비밀번호">
@@ -311,28 +308,4 @@ export default function SettingsPage() {
   )
 }
 
-// ─── 서브 컴포넌트 ───────────────────────────────────────────
-
-const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors'
-
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function SubmitButton({ loading, label }: { loading: boolean; label: string }) {
-  return (
-    <button
-      type="submit"
-      disabled={loading}
-      className="w-full sm:w-auto bg-mark text-white font-semibold py-3 sm:py-2.5 px-5 rounded-lg text-sm hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-    >
-      {loading && <Loader2 size={14} className="animate-spin" />}
-      {label}
-    </button>
-  )
-}
+// 서브 컴포넌트(FormField·SubmitButton·inputCls)는 settings-ui.tsx로 이동 — 이메일 변경 섹션과 공유

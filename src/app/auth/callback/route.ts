@@ -29,7 +29,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
   const tokenHash = url.searchParams.get('token_hash')
-  const type = url.searchParams.get('type') as 'magiclink' | 'email' | 'signup' | 'recovery' | null
+  // email_change: 대시보드 '이메일 변경'의 확인 링크 — verifyOtp가 그대로 처리하고 redirect로 돌아간다
+  const type = url.searchParams.get('type') as 'magiclink' | 'email' | 'signup' | 'recovery' | 'email_change' | null
   const origin = url.origin
 
   // 돌아갈 경로 결정: return_to 쿠키 → ?redirect 쿼리 → 기본값 '/'

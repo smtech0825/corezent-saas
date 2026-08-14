@@ -25,6 +25,21 @@ export function isWrongPassword(message: string | null | undefined): boolean {
 }
 
 /**
+ * @함수명: isEmailInUse
+ * @설명: 이메일 변경·가입에서 "이미 쓰이고 있는 주소"라서 실패한 것인지 판정합니다.
+ *        Supabase는 error.code 'email_exists' 또는 "...already been registered" 문장으로
+ *        알려주므로 코드 우선, 문장 보조로 판정합니다.
+ * @매개변수: message - Supabase가 돌려준 오류 메시지
+ * @매개변수: code - Supabase AuthError의 code (있으면 우선 사용)
+ * @반환값: 이미 등록된 주소면 true
+ */
+export function isEmailInUse(message: string | null | undefined, code?: string | null): boolean {
+  if (code === 'email_exists') return true
+  const raw = (message ?? '').toLowerCase()
+  return raw.includes('already been registered') || raw.includes('already registered')
+}
+
+/**
  * @함수명: isRateLimited
  * @설명: 짧은 시간에 너무 자주 요청해서 막힌 것인지 판정합니다.
  *        Supabase는 "Request rate limit reached" 또는 "...you can only request this after N
