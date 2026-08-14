@@ -71,7 +71,7 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     name: '재산세',
     description: '아파트 보유 시 매년 내는 재산세를 지방교육세·도시지역분과 함께 계산합니다.',
     category: 'hold',
-    available: false,
+    available: true,
   },
   {
     slug: 'comprehensive',
@@ -79,7 +79,7 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     name: '종합부동산세',
     description: '공시가격 합계 기준으로 종합부동산세 과세 대상 여부와 세액을 계산합니다.',
     category: 'hold',
-    available: false,
+    available: true,
   },
   {
     slug: 'transfer',
