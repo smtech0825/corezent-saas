@@ -45,6 +45,7 @@ import {
   upsertLicenseForOrder as supaUpsertLicenseForOrder,
   applyLsKeyForOrder as supaApplyLsKeyForOrder,
   updateLicenseExpiry as supaUpdateLicenseExpiry,
+  updateLicenseTier as supaUpdateLicenseTier,
   setLicenseActive as supaSetLicenseActive,
   type Tier as SupaTier,
 } from '../../license/_lib_supabase'
@@ -836,6 +837,155 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
       }
     }
   }
+
+  // ── 플랜 변경 갈래(추가) — 위 기존 갱신·동기화 흐름은 그대로 두고, 통지에 실린
+  //    variant가 우리 기록과 다를 때만 옵션행·라이선스 대수를 따라 바꾼다.
+  await syncPlanChangeIfNeeded(payload)
+}
+
+/**
+ * @함수명: syncPlanChangeIfNeeded
+ * @설명: subscription_updated에 실려 온 새 플랜(variant)을 우리 기록과 대조해,
+ *        다르면 ① 전용 라이선스 DB의 tier(PC 한도) → ② 본체 subscriptions.product_price_id
+ *        순서로 함께 갱신한다. 결제사가 알려준 값을 그대로 따라갈 뿐 금액 계산은 없다.
+ *
+ *        ★ 두 DB 일관성 보장: 멱등 판정 키를 "나중에 갱신하는 본체"에 둔다 —
+ *        본체가 새 variant를 가리키면 전용 DB는 이미 갱신된 뒤라는 뜻이다.
+ *        전용 DB만 성공하고 본체가 실패하면 throw → 웹훅 500 → LS 재전송 →
+ *        같은 값 재UPDATE(무해) 후 본체 재시도로 수렴한다. 재전송이 소진되면
+ *        실패 알림(notification_logs)이 남아 관리자가 수동 복구할 수 있다.
+ *
+ *        ★ 등록된 PC는 건드리지 않는다 — 내림(다운그레이드) 통지도 tier만 따라
+ *        바꾼다. 기존 PC 인증은 유지되고 신규 등록만 새 한도로 막히는 것이
+ *        인증 코드의 기존 검사 순서다(등록된 HWID 통과가 한도 검사보다 먼저).
+ * @매개변수: payload - subscription_updated 웹훅 페이로드
+ * @반환값: 없음(반영 불가 사유는 알림으로 남기고, 재전송으로 치유 가능한 실패만 throw)
+ */
+async function syncPlanChangeIfNeeded(payload: LSWebhookPayload): Promise<void> {
+  const attrs = payload.data.attributes as LSSubscriptionAttributes
+  const lsSubId = String(payload.data.id)
+  const newVariantId = String(attrs.variant_id ?? '')
+  if (!newVariantId || newVariantId === 'undefined' || newVariantId === '0') return
+
+  const admin = createAdminClient()
+
+  // 1) 우리 구독 행과 현재 옵션행 — 구독 미기록(수동 데이터 등)이면 판단 대상 아님
+  const { data: sub } = await admin
+    .from('subscriptions')
+    .select('id, order_id, product_price_id')
+    .eq('lemon_squeezy_subscription_id', lsSubId)
+    .maybeSingle()
+  if (!sub) return
+
+  let currentVariantId: string | null = null
+  let currentProductId: string | null = null
+  let currentLabel = ''
+  if (sub.product_price_id) {
+    const { data: cur } = await admin
+      .from('product_prices')
+      .select('lemon_squeezy_variant_id, product_id, option_axis1_label, option_axis2_label')
+      .eq('id', sub.product_price_id)
+      .maybeSingle()
+    currentVariantId = (cur?.lemon_squeezy_variant_id as string | null) ?? null
+    currentProductId = (cur?.product_id as string | null) ?? null
+    currentLabel = [cur?.option_axis1_label, cur?.option_axis2_label].filter(Boolean).join(' · ')
+  }
+
+  // 2) 멱등 판정 — 본체가 이미 새 variant를 가리키면 처리 완료 상태(재전송이어도 안전)
+  if (currentVariantId === newVariantId) return
+
+  // 3) 새 variant의 옵션행 — 없으면 반영 불가. 옵션행을 등록하면 재전송 때 자가 치유되므로
+  //    발급의 license_tier_missing 전례처럼 알림 후 throw(웹훅 500 → LS 재전송).
+  const { data: ppRows } = await admin
+    .from('product_prices')
+    .select('id, product_id, license_tier, option_axis1_label, option_axis2_label')
+    .eq('lemon_squeezy_variant_id', newVariantId)
+    .order('created_at', { ascending: true })
+  const newPP = ppRows?.[0]
+  if (!newPP) {
+    await logNotification({
+      kind: 'webhook', status: 'failure', event: '플랜 변경 미반영 — 옵션 행 없음',
+      target: `sub:${lsSubId}`,
+      error: `variant ${newVariantId}에 매칭되는 옵션 행(product_prices)이 없어 라이선스 대수를 못 바꿨습니다. 옵션 행 등록 후 웹훅 재전송이 오면 자동 반영됩니다.`,
+    })
+    throw new Error(`플랜 변경 미반영 — variant ${newVariantId} 옵션 행 없음 (sub=${lsSubId})`)
+  }
+  if ((ppRows?.length ?? 0) > 1) {
+    console.warn(`[LS Webhook] (plan) variant ${newVariantId}에 옵션 행 ${ppRows!.length}개 — 첫 행 사용 (sub=${lsSubId})`)
+  }
+  const newLabel = [newPP.option_axis1_label, newPP.option_axis2_label].filter(Boolean).join(' · ')
+
+  // 다른 상품으로 바뀐 통지 — 라이선스 구조가 달라 자동 반영하지 않는다(재전송으로도
+  // 해결되지 않는 구조적 상황이라 throw 없이 알림만 — 관리자 수동 처리 대상).
+  if (currentProductId && newPP.product_id !== currentProductId) {
+    await logNotification({
+      kind: 'webhook', status: 'failure', event: '플랜 변경 미반영 — 다른 상품',
+      target: `sub:${lsSubId}`,
+      error: `구독이 다른 상품의 variant(${newVariantId})로 바뀌었습니다. 자동 반영 대상이 아니라 관리자 확인이 필요합니다(현재 옵션: ${currentLabel || '?'} → 통지 옵션: ${newLabel || '?'}).`,
+    })
+    return
+  }
+
+  // 4) 전용 라이선스 DB의 tier 갱신 — GenieStock·GenieWork 상품만(시트 상품은 tier 없음)
+  const { data: prod } = await admin
+    .from('products')
+    .select('slug')
+    .eq('id', newPP.product_id)
+    .maybeSingle()
+  const supaSlug = isSupabaseProduct(((prod?.slug as string) ?? '').toLowerCase())
+
+  if (supaSlug) {
+    const newTier = normalizeTier(newPP.license_tier)
+    if (!newTier) {
+      // 발급의 license_tier_missing과 같은 전례 — 옵션 행에 유효 tier를 넣으면 재전송 때 치유
+      await logNotification({
+        kind: 'webhook', status: 'failure', event: '플랜 변경 미반영 — tier 미결정',
+        target: `sub:${lsSubId}`,
+        error: `새 옵션 행(variant ${newVariantId})의 license_tier가 비었거나 유효하지 않아 PC 한도를 못 바꿨습니다. 옵션 행에 유효 tier(1pc/3pc/5pc/10pc/lite/pro/max)를 입력하세요.`,
+      })
+      throw new Error(`플랜 변경 미반영 — tier 미결정 (sub=${lsSubId}, variant=${newVariantId})`)
+    }
+
+    const licInfo = await findLicensesByLsSubId(lsSubId)
+    if (!licInfo) {
+      // 발급된 라이선스가 없는 구독 — 대수를 바꿀 대상이 없다. 옵션행만 따라가고 사실을 남긴다.
+      await logNotification({
+        kind: 'webhook', status: 'failure', event: '플랜 변경 — 라이선스 없음',
+        target: `sub:${lsSubId}`,
+        error: `플랜 변경 통지를 받았지만 이 구독에 연결된 라이선스가 없어 대수 변경 없이 옵션만 갱신했습니다.`,
+      })
+    } else {
+      for (const lic of licInfo.licenses) {
+        const found = await supaFindLicenseInAnyDb(lic.serialKey)
+        if (found) {
+          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
+          // 실패는 throw로 전파 → 웹훅 500 → LS 재전송(같은 값 재UPDATE는 무해 — 수렴)
+          await supaUpdateLicenseTier(lic.serialKey, newTier, p)
+          console.log(`[LS Webhook] (plan) ${p} tier 변경: ${maskSecret(lic.serialKey, 8)} → ${newTier}`)
+        } else {
+          // 시트(GeniePost) 키 — tier 개념이 없어 대상 아님. 흔적만 남긴다.
+          console.warn(`[LS Webhook] (plan) 전용 DB에 없는 키 — tier 변경 생략: ${maskSecret(lic.serialKey, 8)}`)
+        }
+      }
+    }
+  }
+
+  // 5) 본체 갱신(멱등 판정 키) — 여기가 성공해야 "처리 완료"로 기록된다
+  const { error: subErr } = await admin
+    .from('subscriptions')
+    .update({ product_price_id: newPP.id, updated_at: new Date().toISOString() })
+    .eq('id', sub.id)
+  if (subErr) {
+    throw new Error(`플랜 변경 — 구독 옵션행 갱신 실패: ${subErr.message}`)
+  }
+
+  // 6) 무엇이 바뀌었는지 기록 — 관리자 → 모니터링 로그에서 조회된다
+  await logNotification({
+    kind: 'webhook', status: 'success',
+    event: `플랜 변경 반영 — ${currentLabel || '(옵션 미상)'} → ${newLabel || `variant ${newVariantId}`}`,
+    target: `sub:${lsSubId}`,
+  })
+  console.log(`[LS Webhook] 플랜 변경 반영 완료: ${lsSubId} (${currentLabel || '?'} → ${newLabel || newVariantId})`)
 }
 
 // ─── subscription_cancelled / expired 핸들러 ─────────────────────────────────

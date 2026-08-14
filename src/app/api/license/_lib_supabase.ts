@@ -552,6 +552,43 @@ export async function updateLicenseExpiry(
   }
 }
 
+/**
+ * @함수명: updateLicenseTier
+ * @설명: 기존 라이선스의 tier(PC 한도의 단일 출처)만 바꾼다 — 플랜 변경 웹훅 전용.
+ *        새 라이선스를 발급하지 않고 UPDATE만 한다(updateLicenseExpiry와 같은 꼴).
+ *        tier가 비면 한도를 정할 수 없으므로 조용히 넘기지 않고 명시적으로 실패한다.
+ *        등록된 PC(hwid_mapping)는 건드리지 않는다 — 한도가 줄어도 기존 PC 인증은
+ *        유지되고 신규 등록만 막히는 것이 기존 검사 순서의 동작이다.
+ * @매개변수: key - 라이선스 키 / tier - 새 tier(1pc·10pc·lite 등) / product - DB 선택
+ * @반환값: 없음(실패는 throw — 호출부가 웹훅 500으로 전파해 재전송을 유도)
+ */
+export async function updateLicenseTier(
+  key: string,
+  tier: Tier,
+  product?: SupabaseProduct,
+): Promise<void> {
+  const k = key?.trim()
+  if (!k) return
+  if (!tier) {
+    throw new Error('updateLicenseTier: tier 누락 — 한도를 정할 수 없어 변경 중단')
+  }
+
+  try {
+    const admin = licenseClientFor(product)
+    const { error } = await admin
+      .from('license_keys')
+      .update({ tier })
+      .eq('license_key', k)
+    if (error) {
+      console.error('[supabase-license] updateLicenseTier error:', maskPgUniqueViolation(error))
+      throw new Error(`tier 변경 실패: ${error.message}`)
+    }
+  } catch (err) {
+    console.error('[supabase-license] updateLicenseTier exception:', maskSecretsInText(String(err)))
+    throw err
+  }
+}
+
 /** 활성 상태 토글 (취소/환불 시 LS 웹훅에서 호출). product로 DB 선택. */
 export async function setLicenseActive(
   key: string,
