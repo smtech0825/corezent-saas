@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import { revalidatePath } from 'next/cache'
 import { logAdminActivity } from '@/lib/adminActivityLog'
+import { fetchUserList } from './query'
 
 /** 역할 변경 */
 export async function changeRole(userId: string, newRole: string) {
@@ -71,4 +72,85 @@ export async function withdrawUser(userId: string): Promise<{ error?: string }> 
 
   revalidatePath('/admin/users')
   return {}
+}
+
+/** CSV 내보내기 결과 — 실패 사유는 화면에 그대로 보여줄 한국어 문장 */
+export type ExportCsvResult =
+  | { ok: true; csv: string; count: number }
+  | { ok: false; reason: string }
+
+/**
+ * @함수명: csvCell
+ * @설명: CSV 한 칸을 안전하게 만듭니다 — 따옴표 감싸기 + 내부 따옴표 이중화,
+ *        엑셀 수식 인젝션 방어(=,+,-,@ 로 시작하면 ' 접두).
+ * @매개변수: v - 칸에 넣을 값
+ * @반환값: CSV에 그대로 넣을 문자열
+ */
+function csvCell(v: string): string {
+  let s = v.replace(/\r?\n/g, ' ')
+  if (/^[=+\-@]/.test(s)) s = `'${s}`
+  return `"${s.replace(/"/g, '""')}"`
+}
+
+/**
+ * @함수명: exportUsersCsv
+ * @설명: 지금 화면과 같은 검색·정렬 조건의 회원 목록을 CSV 문자열로 만듭니다.
+ *        ★ 개인정보 파일 — 반출 기록(admin_activity_log)이 먼저 성공해야만 내보냅니다.
+ *        기록이 실패하면 반출도 하지 않습니다(누가 언제 무엇을 내보냈는지 없이는 안 나감).
+ *        칸은 이름·이메일·역할·상태·가입일 5개뿐 — 비밀번호·토큰·정산 계좌는 넣지 않습니다.
+ *        한글 깨짐 방지: 맨 앞에 UTF-8 BOM을 붙여 엑셀이 인코딩을 바로 인식하게 합니다.
+ * @매개변수: input - q(검색어)·sort(정렬) — 화면의 조건 그대로
+ * @반환값: { ok, csv, count } 또는 { ok: false, reason }
+ */
+export async function exportUsersCsv(input: { q?: string; sort?: string }): Promise<ExportCsvResult> {
+  let actorId: string
+  try {
+    actorId = await requireAdminOrThrow()
+  } catch {
+    return { ok: false, reason: '관리자 권한을 확인하지 못했습니다. 다시 로그인해 주세요.' }
+  }
+
+  const q = (input.q ?? '').trim().slice(0, 80)
+  const sort = input.sort === 'name' ? 'name' as const : 'joined' as const
+
+  // 화면과 같은 조건 전체(페이지 무관) — 조회 로직은 query.ts 단일 출처
+  let users
+  try {
+    ;({ users } = await fetchUserList({ q, sort }))
+  } catch (err) {
+    console.error('[users] CSV 조회 실패:', err instanceof Error ? err.message : String(err))
+    return { ok: false, reason: '회원 목록을 조회하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
+
+  // ★ 반출 기록 먼저 — 실패하면 내보내지 않는다(best-effort 헬퍼가 아니라 직접 기록)
+  try {
+    const adminClient = createAdminClient()
+    const { error: logErr } = await adminClient.from('admin_activity_log').insert({
+      admin_user_id: actorId,
+      action: 'user.csv_export',
+      target_type: 'user_list',
+      target_id: 'csv',
+      detail: { q: q || null, sort, count: users.length },
+    })
+    if (logErr) {
+      console.error('[users] CSV 반출 기록 실패:', logErr.message)
+      return { ok: false, reason: '반출 기록을 남기지 못해 내보내기를 중단했습니다. 잠시 후 다시 시도해 주세요.' }
+    }
+  } catch (err) {
+    console.error('[users] CSV 반출 기록 예외:', err instanceof Error ? err.message : String(err))
+    return { ok: false, reason: '반출 기록을 남기지 못해 내보내기를 중단했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
+
+  const statusLabel: Record<string, string> = { active: '활성', inactive: '탈퇴' }
+  const header = ['이름', '이메일', '역할', '상태', '가입일'].map(csvCell).join(',')
+  const lines = users.map((u) => [
+    u.name,
+    u.email,
+    u.role,
+    statusLabel[u.status] ?? u.status,
+    new Date(u.created_at).toLocaleDateString('ko-KR'),
+  ].map(csvCell).join(','))
+
+  // ﻿ = UTF-8 BOM — 엑셀 한글 깨짐 방지
+  return { ok: true, csv: '\uFEFF' + `${header}\n${lines.join('\n')}`, count: users.length }
 }

@@ -1,67 +1,36 @@
 /**
  * @파일: admin/users/page.tsx
- * @설명: 관리자 사용자 관리 — 서버에서 전체 데이터 수집 후 클라이언트로 전달
+ * @설명: 관리자 사용자 관리 — 서버사이드 검색·정렬·페이지 나누기(20명/페이지).
+ *        전에는 전 회원+전 주문을 통째로 클라이언트에 내려보냈다 — 수백 명이 되면
+ *        무너지는 구조라, 조회는 query.ts(단일 출처 — CSV 내보내기와 공유)로 옮기고
+ *        이 페이지는 현재 페이지 분량만 받아 넘긴다. 검색·정렬 조건은 주소(searchParams)에 담긴다.
  */
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { parsePageParam } from '@/lib/validate'
+import { fetchUserList, type UserSort } from './query'
 import UserTable from './UserTable'
 
 export const dynamic = 'force-dynamic'
 
-export default async function UsersPage() {
-  const adminClient = createAdminClient()
+const PAGE_SIZE = 20
 
-  // 프로필 전체 조회 (status 포함)
-  const { data: profiles } = await adminClient
-    .from('profiles')
-    .select('id, name, role, created_at, status, payout_account_number')
-    .order('created_at', { ascending: false })
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string; sort?: string }>
+}) {
+  const sp = await searchParams
+  const page = parsePageParam(sp.page)
+  const q = (sp.q ?? '').trim().slice(0, 80)
+  const sort: UserSort = sp.sort === 'name' ? 'name' : 'joined'
 
-  // Auth 유저 이메일 맵
-  let emailMap = new Map<string, string>()
-  try {
-    const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 })
-    emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']))
-  } catch { /* 무시 */ }
-
-  // 주문 전체 조회 후 user_id별 그룹화
-  const { data: orders } = await adminClient
-    .from('orders')
-    .select('id, user_id, amount, status, created_at')
-    .order('created_at', { ascending: false })
-
-  const ordersMap = new Map<string, Array<{ id: string; user_id: string; amount: number; status: string; created_at: string }>>()
-  ;(orders ?? []).forEach((o) => {
-    if (!ordersMap.has(o.user_id)) ordersMap.set(o.user_id, [])
-    ordersMap.get(o.user_id)!.push(o)
+  const { users, total } = await fetchUserList({
+    q,
+    sort,
+    page,
+    pageSize: PAGE_SIZE,
+    withOrders: true,
   })
 
-  // 구독 취소 사유 — order_id 기준 매핑 (UserTable 아코디언에서 표시용)
-  const { data: cancelledSubs } = await adminClient
-    .from('subscriptions')
-    .select('order_id, cancellation_reason')
-    .not('cancellation_reason', 'is', null)
-
-  const cancelReasonMap = new Map<string, string>()
-  ;(cancelledSubs ?? []).forEach((s) => {
-    if (s.order_id && s.cancellation_reason) {
-      cancelReasonMap.set(s.order_id as string, s.cancellation_reason as string)
-    }
-  })
-
-  const users = (profiles ?? []).map((p) => ({
-    id:         p.id,
-    name:       p.name ?? '',
-    email:      emailMap.get(p.id) ?? '—',
-    role:       p.role ?? 'user',
-    created_at: p.created_at,
-    status:     (p.status as string) ?? 'active',
-    hasPayout:  !!(p.payout_account_number as string | null),
-    orders:     (ordersMap.get(p.id) ?? []).map((o) => ({
-      ...o,
-      cancelReason: cancelReasonMap.get(o.id) ?? null,
-    })),
-  }))
-
-  return <UserTable users={users} />
+  return <UserTable users={users} total={total} page={page} pageSize={PAGE_SIZE} q={q} sort={sort} />
 }

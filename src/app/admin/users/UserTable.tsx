@@ -2,21 +2,25 @@
 
 /**
  * @컴포넌트: UserTable
- * @설명: 관리자 사용자 목록 — 이메일 검색, Status 배지, 구매 내역 아코디언,
- *        탈퇴 확인 모달, 역할 변경 드롭다운, 20명/페이지 페이지네이션
+ * @설명: 관리자 사용자 목록 — 서버사이드 검색·정렬·페이지 나누기(조건은 주소에 담김),
+ *        Status 배지, 구매 내역 아코디언, 탈퇴 확인 모달, 역할 변경 드롭다운, CSV 내보내기.
+ *        데이터는 현재 페이지 분량만 받는다(전 회원을 통째로 받지 않는다 — page.tsx 참조).
  */
 
-import { useState, useMemo, Fragment } from 'react'
+import { useState, Fragment } from 'react'
 import Link from 'next/link'
-import { Receipt, UserX, Search, X, Loader2, ChevronLeft, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Receipt, UserX, Search, X, Loader2, MessageSquare, ExternalLink } from 'lucide-react'
 import RoleSelect from './RoleSelect'
 import { formatKRW } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
+import type { UserSort } from './query'
+import CsvExportButton from './CsvExportButton'
+import Pagination from '@/components/common/Pagination'
+import SelectField from '@/components/common/SelectField'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import InitialAvatar from '@/components/common/InitialAvatar'
-
-const PAGE_SIZE = 20
 
 interface Order {
   id: string
@@ -40,6 +44,12 @@ interface UserData {
 
 interface Props {
   users: UserData[]
+  /** 현재 검색 조건의 전체 인원(페이지와 무관) */
+  total: number
+  page: number
+  pageSize: number
+  q: string
+  sort: UserSort
 }
 
 function fmtDate(d: string) {
@@ -107,31 +117,26 @@ function IconBtn({
   )
 }
 
-export default function UserTable({ users }: Props) {
-  const [search, setSearch]               = useState('')
-  const [page, setPage]                   = useState(1)
+export default function UserTable({ users, total, page, pageSize, q, sort }: Props) {
+  const router = useRouter()
   const [expandedId, setExpandedId]       = useState<string | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<UserData | null>(null)
   const [withdrawing, setWithdrawing]     = useState(false)
 
-  // ─── 검색 필터 (이메일 + 이름) ──────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return users
-    return users.filter(
-      (u) => u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q),
-    )
-  }, [users, search])
-
-  // ─── 페이지네이션 ────────────────────────────────────────────
-  const total      = filtered.length
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  function handleSearch(val: string) {
-    setSearch(val)
-    setPage(1)
-    setExpandedId(null)
+  /**
+   * @함수명: buildHref
+   * @설명: 검색어·정렬을 유지한 채 페이지만 바꾸는 주소를 만듭니다(페이지네이션·정렬 공용).
+   * @매개변수: p - 이동할 페이지 / overrideSort - 정렬 변경 시 지정
+   * @반환값: /admin/users?... 주소 문자열
+   */
+  function buildHref(p: number, overrideSort?: UserSort): string {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    const s = overrideSort ?? sort
+    if (s !== 'joined') params.set('sort', s)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return qs ? `/admin/users?${qs}` : '/admin/users'
   }
 
   function toggleExpand(id: string) {
@@ -159,55 +164,62 @@ export default function UserTable({ users }: Props) {
     }
   }
 
-  // ─── 페이지 번호 목록 (최대 5개) ─────────────────────────────
-  const pageNums = useMemo<number[]>(() => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1)
-    if (page <= 3)             return [1, 2, 3, 4, 5]
-    if (page >= totalPages - 2) return [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
-    return [page - 2, page - 1, page, page + 1, page + 2]
-  }, [page, totalPages])
-
   return (
     <PageContainer variant="admin" className="space-y-6">
 
-      {/* ── 헤더 + 검색바 ─────────────────────────────────────── */}
+      {/* ── 헤더 + 검색·정렬·내보내기 ─────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold font-serif text-ink">사용자 관리</h1>
           <p className="text-sm text-ink-soft mt-1">
-            {search.trim()
-              ? `전체 ${users.length}명 중 ${filtered.length}명`
-              : `총 ${users.length}명`}
+            {q ? `검색 결과 ${total}명` : `총 ${total}명`}
           </p>
         </div>
 
-        {/* 검색바 */}
-        <div className="relative sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="이메일 또는 이름으로 검색..."
-            className="w-full bg-paper border border-rule rounded-xl pl-9 pr-8 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
-          />
-          {search && (
-            <button
-              onClick={() => handleSearch('')}
-              title="검색어 지우기"
-              aria-label="검색어 지우기"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink transition-colors"
-            >
-              <X size={12} />
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* 검색바 — 엔터로 검색(서버 조회 — 전체 회원 대상, 조건은 주소에 담김) */}
+          <form action="/admin/users" method="GET" className="relative sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+            <input
+              type="text"
+              name="q"
+              defaultValue={q}
+              placeholder="이메일 또는 이름으로 검색..."
+              className="w-full bg-paper border border-rule rounded-xl pl-9 pr-8 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
+            />
+            {sort !== 'joined' && <input type="hidden" name="sort" value={sort} />}
+            {q && (
+              <Link
+                href={sort !== 'joined' ? `/admin/users?sort=${sort}` : '/admin/users'}
+                title="검색어 지우기"
+                aria-label="검색어 지우기"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink transition-colors"
+              >
+                <X size={12} />
+              </Link>
+            )}
+          </form>
+
+          {/* 정렬 — 가입일·이름 두 가지만 */}
+          <SelectField
+            size="md"
+            aria-label="정렬 기준"
+            value={sort}
+            onChange={(e) => router.push(buildHref(1, e.target.value === 'name' ? 'name' : 'joined'))}
+          >
+            <option value="joined">가입일 최신순</option>
+            <option value="name">이름순</option>
+          </SelectField>
+
+          {/* CSV 내보내기 — 지금 화면의 검색 조건 그대로(확인 창·반출 기록) */}
+          <CsvExportButton q={q} sort={sort} total={total} />
         </div>
       </div>
 
       {/* ── 테이블 ────────────────────────────────────────────── */}
       <div className="border border-rule bg-paper-raised rounded-card overflow-hidden">
-        {paginated.length === 0 ? (
-          <EmptyState message={search ? '검색 결과가 없습니다.' : '사용자가 없습니다.'} />
+        {users.length === 0 ? (
+          <EmptyState message={q ? '검색 결과가 없습니다.' : '사용자가 없습니다.'} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -222,7 +234,7 @@ export default function UserTable({ users }: Props) {
               </thead>
 
               <tbody>
-                {paginated.map((u) => (
+                {users.map((u) => (
                   <Fragment key={u.id}>
                     {/* ── 메인 행 ── */}
                     <tr className="border-b border-rule/50 hover:bg-paper-shade transition-colors">
@@ -373,47 +385,8 @@ export default function UserTable({ users }: Props) {
         )}
       </div>
 
-      {/* ── 페이지네이션 ──────────────────────────────────────── */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-xs text-ink-faint shrink-0">
-            {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              title="이전 페이지"
-              aria-label="이전 페이지"
-              className="w-9 h-9 flex items-center justify-center text-ink-soft border border-rule rounded-lg disabled:opacity-30 hover:bg-paper-shade transition-colors"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            {pageNums.map((n) => (
-              <button
-                key={n}
-                onClick={() => setPage(n)}
-                className={`w-9 h-9 text-xs font-medium rounded-lg transition-colors ${
-                  n === page
-                    ? 'bg-mark text-white font-semibold'
-                    : 'text-ink-soft border border-rule hover:bg-paper-shade'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              title="다음 페이지"
-              aria-label="다음 페이지"
-              className="w-9 h-9 flex items-center justify-center text-ink-soft border border-rule rounded-lg disabled:opacity-30 hover:bg-paper-shade transition-colors"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── 페이지네이션 — 공용 부품(검색어·정렬 유지) ─────────── */}
+      <Pagination page={page} total={total} pageSize={pageSize} buildHref={(p) => buildHref(p)} />
 
       {/* ── 탈퇴 확인 모달 ────────────────────────────────────── */}
       {withdrawTarget && (
