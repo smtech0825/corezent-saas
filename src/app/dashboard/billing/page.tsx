@@ -10,6 +10,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CreditCard } from 'lucide-react'
 import Pagination from '@/components/common/Pagination'
 import BillingTable, { type BillingRow } from './BillingTable'
+// PC 한도 판정의 단일 출처 — "더 큰 플랜" 후보 산출에 재사용(대수 비교일 뿐 금액 계산 아님)
+import { hwidLimitForTier } from '@/app/api/license/_lib_supabase'
+import type { UpgradeOption } from './PlanUpgradeButton'
 import { formatKRW } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
@@ -60,16 +63,68 @@ export default async function BillingPage({
 
   const priceNameMap = new Map<string, string>()
   const priceOptMap = new Map<string, string>()
+  // 플랜 올리기 후보 산출용 — 현재 옵션의 상품·주기·tier 정보
+  const priceInfoMap = new Map<string, { productId: string; axis1: string; tier: string }>()
   if (priceIds.length > 0) {
     const { data: prices } = await supabase
       .from('product_prices')
-      .select('id, option_axis1_label, option_axis2_label, products(name)')
+      .select('id, product_id, license_tier, option_axis1_label, option_axis2_label, products(name)')
       .in('id', priceIds)
     ;(prices ?? []).forEach((pp: any) => {
       priceNameMap.set(pp.id, pp.products?.name ?? 'CoreZent 제품')
       const parts = [pp.option_axis1_label, pp.option_axis2_label].filter(Boolean)
       if (parts.length) priceOptMap.set(pp.id, parts.join(' · '))
+      priceInfoMap.set(pp.id, {
+        productId: pp.product_id ?? '',
+        axis1: pp.option_axis1_label ?? '',
+        tier: String(pp.license_tier ?? ''),
+      })
     })
+  }
+
+  // 플랜 올리기 후보 — 구독이 있는 상품의 활성 옵션행 전체를 한 번에 조회해,
+  // 같은 상품·같은 결제 주기에서 PC 한도가 지금보다 큰 옵션만 후보로 삼는다.
+  // (한도 판정은 라이선스 검증과 같은 hwidLimitForTier — 금액 비교가 아니다)
+  const subProductIds = [...new Set(
+    (orders ?? [])
+      .filter((o: any) => (Array.isArray(o.subscriptions) ? o.subscriptions[0] : o.subscriptions))
+      .map((o: any) => priceInfoMap.get(o.product_price_id)?.productId)
+      .filter(Boolean),
+  )] as string[]
+  type UpgradeRow = { id: string; product_id: string; license_tier: string | null; option_axis1_label: string | null; option_axis2_label: string | null; lemon_squeezy_variant_id: string | null }
+  let upgradeRows: UpgradeRow[] = []
+  if (subProductIds.length > 0) {
+    const { data: ur } = await supabase
+      .from('product_prices')
+      .select('id, product_id, license_tier, option_axis1_label, option_axis2_label, lemon_squeezy_variant_id')
+      .in('product_id', subProductIds)
+      .eq('is_active', true)
+    upgradeRows = (ur ?? []) as UpgradeRow[]
+  }
+
+  /**
+   * @함수명: buildUpgradeOptions
+   * @설명: 현재 옵션행 기준으로 "올릴 수 있는" 상위 옵션 목록을 만듭니다
+   *        (같은 상품·같은 주기·한도 더 큼·결제사 variant 있음). 한도 오름차순 정렬.
+   * @매개변수: currentPriceId - 지금 구독의 옵션행 id
+   * @반환값: 상위 옵션 목록(없으면 빈 배열 — 버튼 미노출)
+   */
+  function buildUpgradeOptions(currentPriceId: string | null): UpgradeOption[] {
+    if (!currentPriceId) return []
+    const cur = priceInfoMap.get(currentPriceId)
+    if (!cur || !cur.productId) return []
+    const curLimit = hwidLimitForTier(cur.tier)
+    return upgradeRows
+      .filter((r) =>
+        r.product_id === cur.productId &&
+        (r.option_axis1_label ?? '') === cur.axis1 &&
+        !!r.lemon_squeezy_variant_id &&
+        hwidLimitForTier(String(r.license_tier ?? '')) > curLimit)
+      .sort((a, b) => hwidLimitForTier(String(a.license_tier ?? '')) - hwidLimitForTier(String(b.license_tier ?? '')))
+      .map((r) => ({
+        priceId: r.id,
+        label: [r.option_axis1_label, r.option_axis2_label].filter(Boolean).join(' · ') || '상위 옵션',
+      }))
   }
 
   // "주문" 폴백 — product_price_id로 제품명을 못 구한 주문을 order_id→제품명(라이선스)으로 2차 해석
@@ -118,6 +173,8 @@ export default async function BillingPage({
         currentPeriodEnd:  s.current_period_end ?? null,
         billingInterval:   s.billing_interval ?? null,
         lsSubscriptionId:  s.lemon_squeezy_subscription_id ?? null,
+        currentOptionLabel: priceOptMap.get(o.product_price_id) ?? '',
+        upgradeOptions:    buildUpgradeOptions(o.product_price_id ?? null),
       } : null,
     }
   })

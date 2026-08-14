@@ -19,6 +19,7 @@ import CancellationModal, {
   cancelErrorMessage, OTHER_REASON, type CancelReason, type CancelTarget,
 } from './CancellationModal'
 import PaymentMethodButton from './PaymentMethodButton'
+import PlanUpgradeButton, { type UpgradeOption } from './PlanUpgradeButton'
 
 export interface SubInfo {
   id: string
@@ -27,6 +28,10 @@ export interface SubInfo {
   currentPeriodEnd: string | null
   billingInterval: string | null
   lsSubscriptionId: string | null
+  /** 지금 옵션 라벨(플랜 올리기 모달 안내용) */
+  currentOptionLabel?: string
+  /** 올릴 수 있는 상위 옵션(서버 산출 — 비면 버튼 미노출) */
+  upgradeOptions?: UpgradeOption[]
 }
 
 export interface BillingRow {
@@ -219,6 +224,9 @@ export default function BillingTable({ rows }: Props) {
                   {sub && (
                     <span className="text-xs text-ink-faint whitespace-nowrap">갱신 {formatDateKR(sub.currentPeriodEnd)}</span>
                   )}
+                  {sub && isPureActive && (sub.upgradeOptions?.length ?? 0) > 0 && (
+                    <PlanUpgradeButton subscriptionId={sub.id} currentLabel={sub.currentOptionLabel ?? ''} options={sub.upgradeOptions ?? []} />
+                  )}
                   {sub && showPayment && <PaymentMethodButton subscriptionId={sub.id} />}
                   {sub && isPureActive && (
                     <button onClick={() => openCancelModal(sub, row.productName)} className="inline-flex items-center text-xs text-danger border border-danger/20 hover:border-danger/40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
@@ -269,6 +277,9 @@ export default function BillingTable({ rows }: Props) {
                   <ExternalLink size={11} /> 라이선스 확인
                 </Link>
                 {sub && <span className="text-xs text-ink-faint">갱신 {formatDateKR(sub.currentPeriodEnd)}</span>}
+                {sub && isPureActive && (sub.upgradeOptions?.length ?? 0) > 0 && (
+                  <PlanUpgradeButton subscriptionId={sub.id} currentLabel={sub.currentOptionLabel ?? ''} options={sub.upgradeOptions ?? []} />
+                )}
                 {sub && showPayment && <PaymentMethodButton subscriptionId={sub.id} />}
                 {sub && isPureActive && (
                   <button onClick={() => openCancelModal(sub, row.productName)} className="inline-flex items-center text-xs text-danger border border-danger/20 px-3 py-1.5 rounded-lg">
