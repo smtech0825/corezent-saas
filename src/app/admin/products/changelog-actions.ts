@@ -8,6 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import { revalidatePath } from 'next/cache'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 export interface ChangelogContent {
   new_features: string[]
@@ -74,7 +75,7 @@ export async function upsertChangelog(
   data: ChangelogFormData,
   changelogId?: string
 ): Promise<{ error?: string; id?: string }> {
-  await requireAdminOrThrow()
+  const adminUserId = await requireAdminOrThrow()
   const client = createAdminClient()
 
   // 다운로드 URL: 빈 값 제거 + http/https 형식 검증 (서버가 최종 방어선)
@@ -101,6 +102,13 @@ export async function upsertChangelog(
   }
 
   if (changelogId) {
+    // 감사 기록용 전값 — 조회 실패해도 저장은 진행
+    let before: { version?: string; is_latest?: boolean } | null = null
+    try {
+      const { data: b } = await client.from('changelogs').select('version, is_latest').eq('id', changelogId).maybeSingle()
+      before = b ?? null
+    } catch { /* 전값 없이 기록 */ }
+
     const { error } = await client.from('changelogs').update(payload).eq('id', changelogId)
     if (error) {
       // 원문은 영문이라 화면에 내보내지 않는다. 사유는 서버 기록에만 남긴다.
@@ -108,6 +116,18 @@ export async function upsertChangelog(
       return { error: '변경 이력을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
     }
     await unsetOtherLatest(client, productId, data.is_latest, changelogId)
+    // 감사 기록 — 어느 제품의 어느 버전을 고쳤는지 전/후(내용 전문은 남기지 않음)
+    await logAdminActivity({
+      adminUserId,
+      action: 'changelog.update',
+      targetType: 'changelog',
+      targetId: changelogId,
+      detail: {
+        productId,
+        from: before ? { version: before.version, isLatest: before.is_latest } : null,
+        to: { version: payload.version, isLatest: payload.is_latest },
+      },
+    })
   } else {
     const { error, data: inserted } = await client
       .from('changelogs')
@@ -119,6 +139,14 @@ export async function upsertChangelog(
       return { error: '변경 이력을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
     }
     await unsetOtherLatest(client, productId, data.is_latest, inserted?.id as string | undefined)
+    // 감사 기록 — 새 버전 추가 사실(내용 전문은 남기지 않음)
+    await logAdminActivity({
+      adminUserId,
+      action: 'changelog.create',
+      targetType: 'changelog',
+      targetId: (inserted?.id as string) ?? '',
+      detail: { productId, version: payload.version, isLatest: payload.is_latest },
+    })
     revalidatePath('/admin/products')
     revalidatePath('/changelog')
     return { id: inserted?.id as string }
@@ -131,13 +159,34 @@ export async function upsertChangelog(
 
 /** Changelog 삭제 */
 export async function deleteChangelog(changelogId: string): Promise<{ error?: string }> {
-  await requireAdminOrThrow()
+  const adminUserId = await requireAdminOrThrow()
   const client = createAdminClient()
+
+  // 감사 기록용 — 지우기 전에 어느 제품·버전이었는지 확보(조회 실패해도 삭제는 진행)
+  let deleted: { product_id?: string; version?: string } | null = null
+  try {
+    const { data: b } = await client
+      .from('changelogs')
+      .select('product_id, version')
+      .eq('id', changelogId)
+      .maybeSingle()
+    deleted = b ?? null
+  } catch { /* 전값 없이 기록 */ }
+
   const { error } = await client.from('changelogs').delete().eq('id', changelogId)
   if (error) {
     console.error('[changelog] 삭제 실패:', error.message)
     return { error: '변경 이력을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
   }
+
+  // 감사 기록 — 삭제된 버전 정보(실패해도 삭제는 이미 성공)
+  await logAdminActivity({
+    adminUserId,
+    action: 'changelog.delete',
+    targetType: 'changelog',
+    targetId: changelogId,
+    detail: { productId: deleted?.product_id ?? null, version: deleted?.version ?? null },
+  })
 
   revalidatePath('/admin/products')
   revalidatePath('/changelog')

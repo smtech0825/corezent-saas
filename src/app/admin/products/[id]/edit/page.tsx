@@ -10,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
-import { logAdminActivity } from '@/lib/adminActivityLog'
+import { logAdminActivity, summarizeForLog } from '@/lib/adminActivityLog'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
 import PageContainer from '@/components/common/PageContainer'
@@ -299,6 +299,60 @@ export default async function EditProductPage({
         return { error: '새 가격 항목을 저장하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.' }
       }
     }
+
+    // 감사 기록 — 실제로 바뀐 항목만. 짧은 값은 전/후 그대로, 긴 문구는 앞부분+글자 수 요약,
+    // 목록형(태그·FAQ 등)은 바뀐 사실과 개수만(전문 금지). is_active는 위 toggle 기록이 담당.
+    // 비교 계산 자체가 실패해도 저장은 이미 성공 — try로 감싸 조용히 넘어간다.
+    try {
+      const SHORT_FIELDS = ['name', 'slug', 'tagline', 'category', 'category_group', 'badge_text', 'badge_color', 'logo_url', 'manual_url', 'hero_image_url', 'version_info_url', 'procurement_class_number', 'procurement_item_number', 'option_axis1_name', 'option_axis2_name'] as const
+      const LIST_FIELDS = ['tags', 'pricing_features', 'product_features', 'screenshots', 'faqs'] as const
+      const changed: Array<Record<string, unknown>> = []
+      for (const f of SHORT_FIELDS) {
+        const from = String(initialData[f] ?? '')
+        const to = String(data[f] ?? '')
+        if (from === to) continue
+        changed.push(from.length <= 80 && to.length <= 80
+          ? { key: f, from, to }
+          : { key: f, from: summarizeForLog(from), to: summarizeForLog(to) })
+      }
+      // 긴 문구 — description은 실제 저장된 값(sanitize 후) 기준으로 비교한다
+      const longPairs: Array<[string, string, string]> = [
+        ['description', String(initialData.description ?? ''), String(productUpdate.description ?? '')],
+        ['list_description', String(initialData.list_description ?? ''), String(data.list_description ?? '')],
+        ['system_requirements', String(initialData.system_requirements ?? ''), String(data.system_requirements ?? '')],
+      ]
+      for (const [key, from, to] of longPairs) {
+        if (from !== to) changed.push({ key, from: summarizeForLog(from), to: summarizeForLog(to) })
+      }
+      for (const f of LIST_FIELDS) {
+        const from = initialData[f] as unknown[]
+        const to = data[f] as unknown[]
+        if (JSON.stringify(from) !== JSON.stringify(to)) {
+          changed.push({ key: f, changed: true, fromCount: from.length, toCount: to.length })
+        }
+      }
+      // 가격(돈 경로)은 행별 전/후를 그대로 남긴다
+      const beforePriceMap = new Map(initialData.prices.filter((p) => p.id).map((p) => [p.id as string, p.price]))
+      const priceChanges = data.prices
+        .filter((p) => p.id && p.price !== '' && beforePriceMap.has(p.id as string)
+          && parseFloat(beforePriceMap.get(p.id as string)!) !== parseFloat(p.price))
+        .map((p) => ({ id: p.id, from: beforePriceMap.get(p.id as string), to: p.price }))
+
+      if (changed.length > 0 || priceChanges.length > 0 || toDeactivate.length > 0 || newPrices.length > 0) {
+        await logAdminActivity({
+          adminUserId: gate.userId,
+          action: 'product.update',
+          targetType: 'product',
+          targetId: id,
+          detail: {
+            changed,
+            priceChanges,
+            pricesDeactivated: toDeactivate.length,
+            pricesAdded: newPrices.length,
+          },
+        })
+      }
+    } catch { /* 기록 실패는 저장을 막지 않는다 */ }
 
     revalidatePath('/admin/products')
     revalidatePath(`/admin/products/${id}/edit`)

@@ -35,6 +35,7 @@ import {
   Activity,
   Scale,
   FileText,
+  History,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NAV_ICON_SIZE, NAV_ICON_STROKE } from '@/components/common/nav-icon'
@@ -78,6 +79,7 @@ const frontendNav: NavItem[] = [
 const systemNav: NavItem[] = [
   { label: '설정',          href: '/admin/settings', icon: Settings },
   { label: '모니터링 로그', href: '/admin/logs',     icon: Activity },
+  { label: '작업 기록',     href: '/admin/activity', icon: History },
 ]
 
 /** 그룹 3개 — 라벨·항목·순서는 기존 그대로. 세 그룹 모두 접을 수 있다 */

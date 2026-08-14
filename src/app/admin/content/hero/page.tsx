@@ -9,6 +9,7 @@ import HeroEditor from './HeroEditor'
 import PageContainer from '@/components/common/PageContainer'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 import { HERO_DEFAULTS } from '@/lib/front-defaults'
+import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/adminActivityLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,15 @@ async function saveHero(data: Record<string, string>): Promise<AdminActionResult
   const denied = await guardAdmin()
   if (denied) return denied
   const adminClient = createAdminClient()
+
+  // 감사 기록용 전값 — 조회 실패해도 저장은 진행
+  const beforeMap = new Map<string, string>()
+  try {
+    const { data: beforeRows } = await adminClient
+      .from('front_content').select('key, value').in('key', heroKeys)
+    ;(beforeRows ?? []).forEach((r) => beforeMap.set(r.key, r.value ?? ''))
+  } catch { /* 전값 없이 기록 */ }
+
   const rows = Object.entries(data).map(([key, value]) => ({
     key: `hero_${key}`,
     value,
@@ -35,6 +45,29 @@ async function saveHero(data: Record<string, string>): Promise<AdminActionResult
     .from('front_content')
     .upsert(rows, { onConflict: 'key' })
   if (error) return dbFailure('히어로 저장', error)
+
+  // 감사 기록 — 실제로 바뀐 키만(짧은 값은 전/후 그대로, 긴 값은 앞부분+글자 수 요약)
+  const changed = rows
+    .filter((r) => (beforeMap.get(r.key) ?? '') !== r.value)
+    .map((r) => {
+      const from = beforeMap.get(r.key) ?? ''
+      return from.length <= 80 && r.value.length <= 80
+        ? { key: r.key, from, to: r.value }
+        : { key: r.key, from: summarizeForLog(from), to: summarizeForLog(r.value) }
+    })
+  if (changed.length > 0) {
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'content.hero_update',
+        targetType: 'front_content',
+        targetId: 'hero',
+        detail: { changed },
+      })
+    }
+  }
+
   revalidatePath('/admin/content/hero')
   revalidatePath('/')
   return { status: 'ok' }

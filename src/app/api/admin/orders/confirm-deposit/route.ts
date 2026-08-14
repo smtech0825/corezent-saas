@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 export async function POST(request: Request) {
   try {
@@ -43,6 +44,15 @@ export async function POST(request: Request) {
       console.error('[confirm-deposit] update error:', updErr)
       return NextResponse.json({ error: '확인 처리에 실패했습니다.' }, { status: 500 })
     }
+
+    // 감사 기록(실패해도 본 처리는 이미 성공 — 헬퍼가 조용히 넘어감)
+    await logAdminActivity({
+      adminUserId: gate.userId,
+      action: 'order.confirm_deposit',
+      targetType: 'order',
+      targetId: orderId,
+      detail: { from: order.status, to: 'paid' },
+    })
 
     revalidatePath('/admin/orders')
     return NextResponse.json({ ok: true })

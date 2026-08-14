@@ -13,16 +13,18 @@ import { revalidatePath } from 'next/cache'
 import { convertReferrerCommissions, redeemStoreCredit } from '@/lib/affiliate-commission'
 import { createLsDiscount, generateSerialKey } from '@/lib/lemonsqueezy'
 import { formatKRW } from '@/lib/money'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 import type { AffiliateConfigInput } from './types'
 
-/** 현재 요청 사용자가 관리자인지 검증 — 아니면 throw(관리자 전용 보장) */
-async function assertAdmin(): Promise<void> {
+/** 현재 요청 사용자가 관리자인지 검증 — 아니면 throw. 통과 시 관리자 id 반환(감사 기록용) */
+async function assertAdmin(): Promise<string> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('인증이 필요합니다.')
   const admin = createAdminClient()
   const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
   if (me?.role !== 'admin') throw new Error('관리자 권한이 필요합니다.')
+  return user.id
 }
 
 /** 정수 정규화(최소값 clamp) */
@@ -35,13 +37,21 @@ function clampInt(v: unknown, min: number): number {
 export async function convertCommissionsAction(
   referrerId: string,
 ): Promise<{ ok: boolean; message: string }> {
-  await assertAdmin()
+  const adminUserId = await assertAdmin()
   if (!referrerId) return { ok: false, message: '대상이 없습니다.' }
 
   const r = await convertReferrerCommissions(referrerId)
   revalidatePath('/admin/affiliates')
 
   if (r.ok) {
+    // 감사 기록(실패해도 전환은 이미 성공 — 헬퍼가 조용히 넘어감)
+    await logAdminActivity({
+      adminUserId,
+      action: 'affiliate.convert',
+      targetType: 'user',
+      targetId: referrerId,
+      detail: { count: r.count ?? 0, amountCents: r.amount ?? 0 },
+    })
     return { ok: true, message: `전환 완료: ${r.count ?? 0}건 · ${formatKRW(r.amount ?? 0)} 크레딧 적립` }
   }
   if (r.reason === 'below_min') {
@@ -54,8 +64,18 @@ export async function convertCommissionsAction(
 export async function updateAffiliateConfigAction(
   values: AffiliateConfigInput,
 ): Promise<{ ok: boolean; message: string }> {
-  await assertAdmin()
+  const adminUserId = await assertAdmin()
   const admin = createAdminClient()
+
+  // 감사 기록용 전값 — 조회 실패해도 저장은 진행
+  let before: Record<string, unknown> | null = null
+  try {
+    const { data: b } = await admin.from('affiliate_program_config').select('*').eq('id', true).maybeSingle()
+    if (b) {
+      const { id: _id, updated_at: _u, ...rest } = b as Record<string, unknown>
+      before = rest
+    }
+  } catch { /* 전값 없이 기록 */ }
 
   const payload = {
     program_enabled:       !!values.program_enabled,
@@ -77,6 +97,16 @@ export async function updateAffiliateConfigAction(
     console.error('[affiliates] 설정 저장 실패:', error.message)
     return { ok: false, message: '설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
   }
+  // 감사 기록 — 규칙값 전/후(전부 짧은 숫자·불리언). 실패해도 저장은 이미 성공.
+  const { updated_at: _ua, ...after } = payload
+  await logAdminActivity({
+    adminUserId,
+    action: 'affiliate.config_update',
+    targetType: 'affiliate_config',
+    targetId: 'affiliate_program_config',
+    detail: { from: before, to: after },
+  })
+
   revalidatePath('/admin/affiliates')
   return { ok: true, message: '설정이 저장되었습니다.' }
 }
@@ -90,7 +120,7 @@ export async function issueCreditDiscountAction(
   userId: string,
   amountCents: number,
 ): Promise<{ ok: boolean; message: string; code?: string }> {
-  await assertAdmin()
+  const adminUserId = await assertAdmin()
   if (!userId || !Number.isInteger(amountCents) || amountCents <= 0) {
     return { ok: false, message: '유효하지 않은 입력입니다.' }
   }
@@ -108,6 +138,16 @@ export async function issueCreditDiscountAction(
 
   // 2) LS 할인 자동 생성(차감은 이미 기록됨 — 실패 시 수동 폴백)
   const disc = await createLsDiscount({ code, name: `Store credit ${code}`, amountCents })
+
+  // 감사 기록 — 차감 금액과 LS 자동 발급 성공 여부(할인 코드는 1회용 공개 코드라 비밀값 아님)
+  await logAdminActivity({
+    adminUserId,
+    action: 'affiliate.credit_discount',
+    targetType: 'user',
+    targetId: userId,
+    detail: { amountCents, code, lsCreated: disc.ok },
+  })
+
   revalidatePath('/admin/affiliates')
 
   if (disc.ok) {
@@ -122,7 +162,7 @@ export async function issueCreditDiscountAction(
 
 /** 환불 클로백 검토 플래그 해제 */
 export async function resolveReviewAction(commissionId: string): Promise<{ ok: boolean }> {
-  await assertAdmin()
+  const adminUserId = await assertAdmin()
   if (!commissionId) return { ok: false }
   const admin = createAdminClient()
   const { error } = await admin
@@ -130,6 +170,16 @@ export async function resolveReviewAction(commissionId: string): Promise<{ ok: b
     .update({ needs_admin_review: false })
     .eq('id', commissionId)
   if (error) return { ok: false }
+
+  // 감사 기록 — 검토 플래그 해제(전값은 항상 true인 단방향 동작)
+  await logAdminActivity({
+    adminUserId,
+    action: 'affiliate.review_resolve',
+    targetType: 'affiliate_commission',
+    targetId: commissionId,
+    detail: { from: { needs_admin_review: true }, to: { needs_admin_review: false } },
+  })
+
   revalidatePath('/admin/affiliates')
   return { ok: true }
 }

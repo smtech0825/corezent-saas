@@ -8,6 +8,7 @@ import { requireAdmin } from '@/lib/require-admin'
 import { isNonEmptyString } from '@/lib/validate'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,16 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient()
 
+    // 감사 기록용 전 순서 — 조회 실패해도 저장은 진행
+    let beforeOrder: string[] = []
+    try {
+      const { data: beforeRows } = await adminClient
+        .from('products')
+        .select('id')
+        .order('order_index', { ascending: true })
+      beforeOrder = (beforeRows ?? []).map((r) => r.id as string)
+    } catch { /* 전값 없이 기록 */ }
+
     const results = await Promise.all(
       ordered.map((id, idx) =>
         adminClient
@@ -41,6 +52,15 @@ export async function POST(request: Request) {
       console.error('[products/reorder] errors:', failed.map((f) => f.error))
       throw new Error('Some order updates failed')
     }
+
+    // 감사 기록 — 순서의 전/후(상품 id 목록). 실패해도 본 처리는 이미 성공.
+    await logAdminActivity({
+      adminUserId: gate.userId,
+      action: 'product.reorder',
+      targetType: 'product',
+      targetId: 'order_index',
+      detail: { from: beforeOrder, to: ordered },
+    })
 
     // 제품 페이지 + 가격 페이지 캐시 무효화
     revalidatePath('/product', 'layout')

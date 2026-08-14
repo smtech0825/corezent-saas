@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 import ProductForm, { type ProductFormData } from '../ProductForm'
 import PageContainer from '@/components/common/PageContainer'
 
@@ -131,6 +132,15 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
       }
     }
   }
+
+  // 감사 기록 — 새 제품 생성 사실(이름·slug·가격 행 수만. 설명 전문은 남기지 않음)
+  await logAdminActivity({
+    adminUserId: gate.userId,
+    action: 'product.create',
+    targetType: 'product',
+    targetId: product.id,
+    detail: { name: data.name, slug: data.slug, priceCount: data.prices.filter((p) => p.price !== '').length },
+  })
 
   revalidatePath('/admin/products')
   return {}

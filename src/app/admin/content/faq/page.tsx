@@ -10,6 +10,7 @@ import FaqManager from './FaqManager'
 import PageContainer from '@/components/common/PageContainer'
 import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/adminActivityLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,21 @@ async function createFaq(question: string, answer: string): Promise<AdminActionR
   // 답변은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
   const { data, error } = await adminClient.from('front_faqs').insert({ question, answer: sanitizeRichHtml(answer), order_index: nextIndex, is_published: true }).select('id, question, answer, is_published, order_index').single()
   if (error) return dbFailure('FAQ 추가', error)
+
+  // 감사 기록 — 질문·답변(리치 HTML)은 요약만 남긴다
+  {
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'content.faq_create',
+        targetType: 'front_faq',
+        targetId: (data as FaqRow).id,
+        detail: { question: summarizeForLog(question), answer: summarizeForLog(data.answer) },
+      })
+    }
+  }
+
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
@@ -42,8 +58,35 @@ async function updateFaq(id: string, question: string, answer: string): Promise<
   const denied = await guardAdmin()
   if (denied) return denied
   const adminClient = createAdminClient()
-  const { error } = await adminClient.from('front_faqs').update({ question, answer: sanitizeRichHtml(answer) }).eq('id', id)
+
+  // 감사 기록용 전값 — 조회 실패해도 저장은 진행
+  let before: { question?: string; answer?: string } | null = null
+  try {
+    const { data: b } = await adminClient.from('front_faqs').select('question, answer').eq('id', id).maybeSingle()
+    before = b ?? null
+  } catch { /* 전값 없이 기록 */ }
+
+  const cleanAnswer = sanitizeRichHtml(answer)
+  const { error } = await adminClient.from('front_faqs').update({ question, answer: cleanAnswer }).eq('id', id)
   if (error) return dbFailure('FAQ 수정', error)
+
+  // 감사 기록 — 질문·답변 모두 요약만(전문 금지)
+  {
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'content.faq_update',
+        targetType: 'front_faq',
+        targetId: id,
+        detail: {
+          from: before ? { question: summarizeForLog(before.question ?? ''), answer: summarizeForLog(before.answer ?? '') } : null,
+          to: { question: summarizeForLog(question), answer: summarizeForLog(cleanAnswer) },
+        },
+      })
+    }
+  }
+
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
@@ -55,8 +98,31 @@ async function deleteFaq(id: string): Promise<AdminActionResult> {
   const denied = await guardAdmin()
   if (denied) return denied
   const adminClient = createAdminClient()
+
+  // 감사 기록용 — 지우기 전에 무엇이었는지 확보(조회 실패해도 삭제는 진행)
+  let before: { question?: string } | null = null
+  try {
+    const { data: b } = await adminClient.from('front_faqs').select('question').eq('id', id).maybeSingle()
+    before = b ?? null
+  } catch { /* 전값 없이 기록 */ }
+
   const { error } = await adminClient.from('front_faqs').delete().eq('id', id)
   if (error) return dbFailure('FAQ 삭제', error)
+
+  // 감사 기록 — 삭제된 질문 요약
+  {
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'content.faq_delete',
+        targetType: 'front_faq',
+        targetId: id,
+        detail: { question: summarizeForLog(before?.question ?? '') },
+      })
+    }
+  }
+
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')
@@ -68,8 +134,31 @@ async function toggleFaqPublish(id: string, published: boolean): Promise<AdminAc
   const denied = await guardAdmin()
   if (denied) return denied
   const adminClient = createAdminClient()
+
+  // 감사 기록용 전값 — 조회 실패해도 저장은 진행
+  let beforePublished: boolean | null = null
+  try {
+    const { data: b } = await adminClient.from('front_faqs').select('is_published').eq('id', id).maybeSingle()
+    beforePublished = (b?.is_published as boolean | undefined) ?? null
+  } catch { /* 전값 없이 기록 */ }
+
   const { error } = await adminClient.from('front_faqs').update({ is_published: published }).eq('id', id)
   if (error) return dbFailure('FAQ 게시 상태 변경', error)
+
+  // 감사 기록 — 게시 상태의 전/후
+  {
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'content.faq_toggle',
+        targetType: 'front_faq',
+        targetId: id,
+        detail: { from: beforePublished, to: published },
+      })
+    }
+  }
+
   revalidatePath('/admin/content/faq')
   revalidatePath('/faq')
   revalidatePath('/')

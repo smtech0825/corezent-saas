@@ -8,7 +8,6 @@
  *        ★ 이 화면은 읽기 전용이다 — 로그 행을 지우거나 고치는 코드가 없어야 한다.
  */
 
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import { parsePageParam } from '@/lib/validate'
@@ -16,6 +15,8 @@ import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import Pagination from '@/components/common/Pagination'
 import ErrorSummary, { type ErrorRow } from './ErrorSummary'
+// 필터 pill·주소 조립·시각 표기·중복 파라미터 방어는 작업 기록 화면과 공용(사본 금지)
+import { FilterPills, makeListHref, firstParam as first, fmtLogDateTime as fmtDateTime } from '@/app/admin/_components/ListFilterParts'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,13 +47,6 @@ const DAYS_OPTIONS = [
   { value: '30', label: '30일' },
 ]
 
-/** 시각 표기 — 연도 포함(로그는 몇 달치가 쌓이므로 연도가 없으면 시점을 특정할 수 없다) */
-function fmtDateTime(d: string): string {
-  return new Date(d).toLocaleString('ko-KR', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-  })
-}
-
 interface LogRow {
   id: string
   kind: string
@@ -63,55 +57,11 @@ interface LogRow {
   created_at: string
 }
 
-/** 현재 필터를 유지한 채 일부 파라미터만 바꾼 주소를 만든다(페이지 이동·필터 전환 공용) */
+const BASE_PATH = '/admin/logs'
+
+/** 현재 필터를 유지한 채 일부 파라미터만 바꾼 주소(공용 makeListHref의 이 화면 경로 고정판) */
 function makeHref(params: Record<string, string>, patch: Record<string, string>): string {
-  const merged = { ...params, ...patch }
-  const qs = Object.entries(merged)
-    .filter(([, v]) => v !== '')
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-    .join('&')
-  return qs ? `/admin/logs?${qs}` : '/admin/logs'
-}
-
-/** 필터 pill 한 묶음(종류·상태·기간 공용) — 링크 방식이라 서버 컴포넌트에서 동작 */
-function FilterPills({
-  label, options, current, paramKey, params,
-}: {
-  label: string
-  options: { value: string; label: string }[]
-  current: string
-  paramKey: string
-  params: Record<string, string>
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-ink-soft shrink-0">{label}</span>
-      <div className="flex items-center gap-1">
-        {options.map((opt) => {
-          const active = current === opt.value
-          return (
-            <Link
-              key={opt.value || 'all'}
-              // 필터를 바꾸면 1페이지부터 다시 본다
-              href={makeHref(params, { [paramKey]: opt.value, page: '' })}
-              className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
-                active
-                  ? 'bg-mark/10 text-mark border-mark/40 font-semibold'
-                  : 'text-ink-soft border-rule hover:text-ink hover:border-mark/40'
-              }`}
-            >
-              {opt.label}
-            </Link>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/** 같은 파라미터가 두 번 온 주소(?q=a&q=b)에서도 죽지 않게 첫 값만 취한다 */
-function first(v: string | string[] | undefined): string {
-  return (Array.isArray(v) ? v[0] : v) ?? ''
+  return makeListHref(BASE_PATH, params, patch)
 }
 
 export default async function LogsPage({
@@ -186,9 +136,9 @@ export default async function LogsPage({
           {/* 필터 — 기본값은 전부 '전체'(실패 로그가 기본 화면에서 가려지지 않게).
               조회가 실패해도 항상 렌더 — 문제를 일으킨 검색어·페이지에서 화면만으로 빠져나올 수 있게 */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
-            <FilterPills label="종류" options={KIND_OPTIONS} current={kind} paramKey="kind" params={params} />
-            <FilterPills label="상태" options={STATUS_OPTIONS} current={status} paramKey="status" params={params} />
-            <FilterPills label="기간" options={DAYS_OPTIONS} current={days} paramKey="days" params={params} />
+            <FilterPills basePath={BASE_PATH} label="종류" options={KIND_OPTIONS} current={kind} paramKey="kind" params={params} />
+            <FilterPills basePath={BASE_PATH} label="상태" options={STATUS_OPTIONS} current={status} paramKey="status" params={params} />
+            <FilterPills basePath={BASE_PATH} label="기간" options={DAYS_OPTIONS} current={days} paramKey="days" params={params} />
             {/* 검색 — GET 폼이라 서버 컴포넌트에서 동작. 메시지·대상·이벤트 안 글자로 찾는다 */}
             <form action="/admin/logs" method="get" className="flex items-center gap-1.5">
               {kind && <input type="hidden" name="kind" value={kind} />}

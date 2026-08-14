@@ -1,131 +1,17 @@
 /**
  * @파일: admin/content/about/page.tsx
- * @설명: About 페이지 콘텐츠 관리 — Hero, 통계 카드, 콘텐츠 블록(텍스트+이미지)
+ * @설명: About 페이지 콘텐츠 관리 — Hero, 통계 카드, 콘텐츠 블록(텍스트+이미지).
+ *        서버 액션(히어로 저장·통계·블록 CRUD)은 actions.ts로 분리(감사 기록 추가로
+ *        300줄을 넘겨 분리 — 동작 불변).
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { revalidatePath } from 'next/cache'
-import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import AboutManager from './AboutManager'
 import PageContainer from '@/components/common/PageContainer'
 import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton'
-import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import { updateHero, createStat, updateStat, deleteStat, createBlock, updateBlock, deleteBlock } from './actions'
 
 export const dynamic = 'force-dynamic'
-
-/** 추가된 통계·블록 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
-type StatRow = { id: string; icon: string; value: string; label: string; order_index: number; is_published: boolean }
-type BlockRow = { id: string; title: string; description: string; images: string[]; order_index: number; is_published: boolean }
-
-// ─── Hero (front_content key-value) ─────────────────────────
-
-async function updateHero(title: string, description: string): Promise<AdminActionResult> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(콘텐츠 블록·제품 설명과 동일 규칙)
-  const cleanDescription = sanitizeRichHtml(description)
-  const results = await Promise.all([
-    c.from('front_content').upsert({ key: 'about_title', value: title }),
-    c.from('front_content').upsert({ key: 'about_description', value: cleanDescription }),
-  ])
-  const failed = results.find((r) => r.error)
-  if (failed?.error) return dbFailure('소개 히어로 저장', failed.error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok' }
-}
-
-// ─── Stats CRUD ─────────────────────────────────────────────
-
-type StatData = { icon: string; value: string; label: string }
-
-async function createStat(data: StatData): Promise<AdminActionResult<StatRow>> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  const { data: maxRow } = await c.from('front_about_stats').select('order_index').order('order_index', { ascending: false }).limit(1).single()
-  const idx = (maxRow?.order_index ?? -1) + 1
-  const { data: created, error } = await c.from('front_about_stats').insert({ ...data, order_index: idx, is_published: true }).select('id, icon, value, label, order_index, is_published').single()
-  if (error) return dbFailure('통계 추가', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok', created: created as StatRow }
-}
-
-async function updateStat(id: string, data: StatData): Promise<AdminActionResult> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  const { error } = await c.from('front_about_stats').update(data).eq('id', id)
-  if (error) return dbFailure('통계 수정', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok' }
-}
-
-async function deleteStat(id: string): Promise<AdminActionResult> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  const { error } = await c.from('front_about_stats').delete().eq('id', id)
-  if (error) return dbFailure('통계 삭제', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok' }
-}
-
-// ─── Blocks CRUD ────────────────────────────────────────────
-
-type BlockData = { title: string; description: string; images: string[] }
-
-async function createBlock(data: BlockData): Promise<AdminActionResult<BlockRow>> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
-  const clean = { ...data, description: sanitizeRichHtml(data.description) }
-  const { data: maxRow } = await c.from('front_about_blocks').select('order_index').order('order_index', { ascending: false }).limit(1).single()
-  const idx = (maxRow?.order_index ?? -1) + 1
-  const { data: created, error } = await c.from('front_about_blocks').insert({ ...clean, order_index: idx, is_published: true }).select('id, title, description, images, order_index, is_published').single()
-  if (error) return dbFailure('블록 추가', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok', created: created as BlockRow }
-}
-
-async function updateBlock(id: string, data: BlockData): Promise<AdminActionResult> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  // 설명은 리치 HTML — 저장 시점에 서버측 sanitize(제품 설명과 동일 규칙)
-  const clean = { ...data, description: sanitizeRichHtml(data.description) }
-  const { error } = await c.from('front_about_blocks').update(clean).eq('id', id)
-  if (error) return dbFailure('블록 수정', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok' }
-}
-
-async function deleteBlock(id: string): Promise<AdminActionResult> {
-  'use server'
-  const denied = await guardAdmin()
-  if (denied) return denied
-  const c = createAdminClient()
-  const { error } = await c.from('front_about_blocks').delete().eq('id', id)
-  if (error) return dbFailure('블록 삭제', error)
-  revalidatePath('/admin/content/about')
-  revalidatePath('/about')
-  return { status: 'ok' }
-}
-
-// ─── Page ───────────────────────────────────────────────────
 
 export default async function AboutAdminPage() {
   const c = createAdminClient()

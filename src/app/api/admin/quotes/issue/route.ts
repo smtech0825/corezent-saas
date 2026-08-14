@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { buildQuotationPdf } from '@/lib/quotation-pdf'
+import { logAdminActivity } from '@/lib/adminActivityLog'
 
 // 공급자 설정 키 ↔ 견적서 항목 이름(빈 항목 안내용)
 const COMPANY_KEYS: [string, string][] = [
@@ -181,6 +182,16 @@ export async function POST(request: Request) {
     if (updErr) {
       console.error('[quotes/issue] 상태 갱신 실패(문서는 발급됨 — 목록 상태만 접수됨으로 남음):', updErr)
     }
+
+    // 감사 기록 — 발급 사실(번호·구성·수량). 금액·수신 기관은 quote_issues 스냅샷에 이미
+    // 있으므로 중복으로 담지 않는다. 실패해도 발급은 이미 성공(헬퍼가 조용히 넘어감).
+    await logAdminActivity({
+      adminUserId: gate.userId,
+      action: 'quote.issue',
+      targetType: 'quote_request',
+      targetId: req.id,
+      detail: { quoteNo: issue.quote_no, spec, quantity },
+    })
 
     return new NextResponse(new Uint8Array(pdf), {
       headers: {

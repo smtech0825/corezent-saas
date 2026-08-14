@@ -16,6 +16,7 @@ import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import { supportCategoryLabel } from '@/lib/support-categories'
 import { safeDownloadName } from '@/lib/attachment'
+import { logAdminActivity, currentUserIdForLog } from '@/lib/adminActivityLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -153,6 +154,15 @@ export default async function TicketDetailPage({
     if (statusErr) {
       console.error('[support] 티켓 상태 변경 실패:', statusErr.message)
       // 여기서 중단하지 않는다. 상태 표시가 틀린 것보다, 답변이 고객에게 안 가는 것이 더 나쁘다.
+    } else if (currentUser?.id) {
+      // 감사 기록 — 상태 변경 사실만 남긴다(답변 본문은 절대 남기지 않음)
+      await logAdminActivity({
+        adminUserId: currentUser.id,
+        action: 'support.status_change',
+        targetType: 'support_ticket',
+        targetId: id,
+        detail: { from: ticket?.status ?? null, to: close ? 'closed' : 'answered', via: 'reply' },
+      })
     }
 
     // 사용자에게 답변 알림 이메일 발송.
@@ -199,6 +209,17 @@ export default async function TicketDetailPage({
     const client = createAdminClient()
     const { error } = await client.from('support_tickets').update({ status: 'closed' }).eq('id', id)
     if (error) return dbFailure('티켓 닫기', error)
+    // 감사 기록 — 상태 변경만(조회·기록이 실패해도 닫기는 이미 성공, 조용히 넘어감)
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'support.status_change',
+        targetType: 'support_ticket',
+        targetId: id,
+        detail: { from: ticket?.status ?? null, to: 'closed' },
+      })
+    }
     revalidatePath(`/admin/support/${id}`)
     return { status: 'ok' }
   }
@@ -215,6 +236,17 @@ export default async function TicketDetailPage({
     const client = createAdminClient()
     const { error } = await client.from('support_tickets').update({ status: 'open' }).eq('id', id)
     if (error) return dbFailure('티켓 다시 열기', error)
+    // 감사 기록 — 상태 변경만(조회·기록이 실패해도 다시 열기는 이미 성공, 조용히 넘어감)
+    const actor = await currentUserIdForLog()
+    if (actor) {
+      await logAdminActivity({
+        adminUserId: actor,
+        action: 'support.status_change',
+        targetType: 'support_ticket',
+        targetId: id,
+        detail: { from: ticket?.status ?? null, to: 'open' },
+      })
+    }
     revalidatePath(`/admin/support/${id}`)
     return { status: 'ok' }
   }
