@@ -263,6 +263,13 @@ export async function calculateComprehensiveTax(
       status: 'skipped',
       reason: '직전 연도 총세액을 입력하지 않아 세부담 상한을 적용하지 않았습니다. 상한은 세액을 낮추는 장치라 실제 고지서는 이보다 낮을 수 있습니다.',
     }
+  } else if (input.prevTotalTax === 0) {
+    // 0은 미입력과 동일하게 미적용 — 상한액 0원 = 종부세·농특세 0원이 정상 결과처럼
+    // 보이는 함정(룰 값의 0 거부와 같은 취지의 사용자 입력 방어)
+    burdenCap = {
+      status: 'skipped',
+      reason: '직전 연도 총세액이 0원이면 상한 기준을 만들 수 없어 상한을 적용하지 않았습니다. 작년 부과가 없었던 경우(신축 취득 등)의 상한 산정 방식은 이 계산기가 반영하지 못합니다.',
+    }
   } else {
     const burden = parsePropertyBurdenCap(burdenRule.rule_value, burdenRule.rule_key)
     if (!burden.ok) return burden

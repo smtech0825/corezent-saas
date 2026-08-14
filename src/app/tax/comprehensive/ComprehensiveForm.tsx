@@ -188,7 +188,7 @@ export default function ComprehensiveForm() {
           {advancedOpen && (
             <div className="mt-4 space-y-4">
               <Field label="직전 연도 총세액 (원)" htmlFor="cp-prev"
-                hint="작년에 이 주택(들)에 부과된 재산세와 종합부동산세를 더한 금액. 입력하면 세부담 상한이 적용됩니다.">
+                hint="작년에 이 주택(들)에 부과된 재산세와 종합부동산세를 더한 금액. 입력하면 세부담 상한이 적용됩니다. 작년 부과가 없었다면 0 대신 비워 두세요.">
                 <Input id="cp-prev" type="number" min={0} step={1} value={prevTotalTax}
                   onChange={(e) => setPrevTotalTax(e.target.value)} placeholder="예: 3000000" />
                 <WonPreview value={prevTotalTax} />

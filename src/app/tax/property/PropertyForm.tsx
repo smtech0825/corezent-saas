@@ -143,13 +143,13 @@ export default function PropertyForm() {
                 hint="아파트는 대부분 해당합니다. 해당하지 않으면 체크를 해제하세요 — 도시지역분이 제외됩니다."
                 checked={isUrbanArea} onChange={setIsUrbanArea} />
               <Field label="직전 연도 과세표준 (원)" htmlFor="pr-prev-base"
-                hint="작년 재산세 고지서의 과세표준. 입력하면 과세표준 상한이 적용됩니다.">
+                hint="작년 재산세 고지서의 과세표준. 입력하면 과세표준 상한이 적용됩니다. 작년 부과가 없었다면(신축 취득 등) 0 대신 비워 두세요.">
                 <Input id="pr-prev-base" type="number" min={0} step={1} value={prevTaxBase}
                   onChange={(e) => setPrevTaxBase(e.target.value)} placeholder="예: 250000000" />
                 <WonPreview value={prevTaxBase} />
               </Field>
               <Field label="직전 연도 재산세액 (본세, 원)" htmlFor="pr-prev-amount"
-                hint="작년 고지서의 재산세 본세(도시지역분·지방교육세 제외). 입력하면 세부담 상한이 적용됩니다.">
+                hint="작년 고지서의 재산세 본세(도시지역분·지방교육세 제외). 입력하면 세부담 상한이 적용됩니다. 작년 부과가 없었다면 0 대신 비워 두세요.">
                 <Input id="pr-prev-amount" type="number" min={0} step={1} value={prevTaxAmount}
                   onChange={(e) => setPrevTaxAmount(e.target.value)} placeholder="예: 400000" />
                 <WonPreview value={prevTaxAmount} />
