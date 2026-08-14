@@ -1,6 +1,6 @@
 # CoreZent SaaS — 프로젝트 구조 & 데이터 흐름
 
-> 마지막 업데이트: 2026-08-13
+> 마지막 업데이트: 2026-08-14
 > 이 문서는 작업 완료 시마다 함께 업데이트됩니다. 변경 시 해당 섹션만 수정하세요.
 
 CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이트**입니다. 자체 개발한 데스크톱/웹 앱(GeniePost 등)을 최종 사용자에게 직접 판매합니다 — B2B SaaS 도구가 아닙니다. 결제는 **Lemon Squeezy**, 데이터는 **Supabase**, 라이선스는 **제품별로 분리**(GeniePost=Google Sheets, GenieStock·GenieWork=각각 별도 Supabase 프로젝트)되어 본체 DB와 동기화됩니다.
@@ -33,7 +33,7 @@ CoreZent는 Next.js 15 App Router 기반의 **소프트웨어 판매 웹사이�
 CoreZent_SaaS/
 ├── CLAUDE.md                  # AI 컨텍스트 가이드 (디자인 토큰·작업 규칙)
 ├── PROJECT_STRUCTURE.md       # 이 파일
-├── next.config.ts             # withBotId 래핑
+├── next.config.ts             # withBotId 래핑 + (수정) `experimental.serverActions.bodySizeLimit` '6mb'(⭐신규 첨부 업로드 대응)
 ├── middleware.ts (src/)       # Supabase 세션 갱신 + /dashboard, /admin 보호
 ├── .env.example               # 환경변수 템플릿
 │
@@ -55,14 +55,14 @@ CoreZent_SaaS/
 │   │   ├── dashboard/         # 사용자 영역 (로그인 필수)
 │   │   │   ├── page.tsx       # 대시보드 홈
 │   │   │   ├── licenses/      # 보유 라이선스 목록 (페이지네이션)
-│   │   │   ├── billing/       # 구독/결제 내역 + 다운로드 버튼
-│   │   │   ├── settings/      # 프로필·알림·계정 관리
-│   │   │   ├── support/       # 고객지원 티켓
+│   │   │   ├── billing/       # 구독/결제 내역 + 다운로드 버튼 + PaymentMethodButton.tsx(⭐신규 결제수단 변경)
+│   │   │   ├── settings/      # 프로필·알림·계정 관리 + EmailChangeSection.tsx·settings-ui.tsx(⭐신규 이메일 변경 섹션 분리)
+│   │   │   ├── support/       # 고객지원 티켓 + TicketForm.tsx(⭐신규 첨부·유형 폼)
 │   │   │   └── _components/   # DashboardShell, DashboardSidebar
 │   │   │
 │   │   ├── admin/             # 관리자 영역 (role='admin' 필수)
 │   │   │   ├── page.tsx       # 관리자 홈 + ChurnAnalysis
-│   │   │   ├── users/         # 사용자 목록 + RoleSelect
+│   │   │   ├── users/         # 사용자 목록 + RoleSelect + query.ts·CsvExportButton.tsx(⭐신규 조회 단일 출처·서버 페이지네이션·CSV 내보내기)
 │   │   │   ├── orders/        # 주문 테이블 + [id]/OrgInfoSection.tsx(⭐신규 기관 구매 정보 4칸 편집)
 │   │   │   ├── quotes/        # ⭐신규 견적 요청 목록(quote_requests) + IssueQuoteForm.tsx(견적서 PDF 발급)
 │   │   │   ├── products/      # 상품 CRUD + Changelog 관리
@@ -86,6 +86,7 @@ CoreZent_SaaS/
 │   │   │   ├── contact/            # 비회원 문의 (rate limit + honeypot + BotID)
 │   │   │   ├── quote/               # ⭐신규 기관 견적 요청 접수 — BotID + rate limit(contact와 공유) + honeypot, quote_requests 저장
 │   │   │   ├── subscriptions/cancel/  # LS 구독 취소
+│   │   │   ├── subscriptions/portal/  # ⭐신규 결제수단 변경(update_payment_method) 서명 주소 발급 — 24시간 유효, 매 호출 재발급(저장 안 함)
 │   │   │   ├── webhooks/lemonsqueezy/ # LS 결제 이벤트 핸들러 (8종)
 │   │   │   ├── license/            # ⭐ 데스크톱 앱이 호출 — product로 분기
 │   │   │   │   ├── _lib.ts         # GeniePost(Google Sheets): findByKey, patchCell, isStopped/isExpired
@@ -133,7 +134,7 @@ CoreZent_SaaS/
 │   │   │   ├── FAQSection.tsx
 │   │   │   ├── CTASection.tsx
 │   │   │   └── MetricsSection.tsx
-│   │   ├── common/            # Toast, Pagination 등 공통 컴포넌트
+│   │   ├── common/            # Toast, Pagination 등 공통 컴포넌트 + AttachmentField.tsx(⭐신규 첨부 UI — 비회원·고객 문의 공유)
 │   │   ├── Navbar.tsx, Footer.tsx     # Navbar: fixed→sticky 전환, 페이퍼 테마 적용
 │   │   ├── DynamicIcon.tsx    # lucide/tabler/radix 동적 import + 캐시
 │   │   ├── Analytics.tsx      # GA/GTM 등 외부 스크립트 로더
@@ -154,6 +155,8 @@ CoreZent_SaaS/
 │   │   ├── quotation-pdf.tsx  # ⭐신규 견적서 PDF 생성(@react-pdf/renderer, 서버 전용) — 나눔고딕 임베드 + 도장 PNG 합성
 │   │   ├── cookies.ts         # UTM 데이터 read/write
 │   │   ├── countries.ts       # 국가 목록
+│   │   ├── attachment.ts      # ⭐신규 첨부 공용 상수·헬퍼 — `MAX_ATTACHMENT_SIZE`·`ALLOWED_ATTACHMENT_EXTENSIONS`·`safeDownloadName` 등. 중립 모듈('use client' 금지 — 서버가 값을 import해야 함)
+│   │   ├── support-categories.ts # ⭐신규 고객지원 문의 유형 6종 단일 출처(`SUPPORT_CATEGORIES`) — 폼·관리자 화면·062 CHECK 제약이 공유
 │   │   ├── products.ts        # 카테고리·뱃지 색상 상수 (다크용 + ⭐PRODUCT_BADGE_COLORS_PAPER/CATEGORY_BADGE_PAPER 페이퍼 전용 추가)
 │   │   ├── site.ts            # ⭐신규 사이트 표준(canonical) URL 단일 출처 — `getSiteUrl()`/`SITE_URL`, apex→www 정규화. robots·sitemap·색인 제출이 공통 사용
 │   │   └── seo/
@@ -171,7 +174,7 @@ CoreZent_SaaS/
 │   └── middleware.ts          # 세션 갱신 + 보호 라우트
 │
 ├── supabase/
-│   └── migrations/            # 001 ~ 061 (60개, 039 결번) — ⭐신규 060_quote_requests.sql·061_orders_org_info.sql
+│   └── migrations/            # 001 ~ 062 (61개, 039 결번) — ⭐신규 062_support_attachments_category.sql(대표님 적용 대기, 060·061은 이전 라운드)
 │
 ├── public/                    # 정적 자산 (favicon, og 이미지 등)
 │   └── 5ae2e03853bc47f8a8569d00d31788d4.txt  # ⭐신규 IndexNow 키 소유 증명 파일 (내용=키값 그대로)
@@ -192,6 +195,8 @@ CoreZent_SaaS/
 | 비밀번호 재설정 요청 | [src/app/auth/reset-password/ResetPasswordForm.tsx](src/app/auth/reset-password/ResetPasswordForm.tsx) |
 | 새 비밀번호 입력 | [src/app/auth/update-password/UpdatePasswordForm.tsx](src/app/auth/update-password/UpdatePasswordForm.tsx) |
 | 회원가입 전 이메일 검증 | [src/app/api/auth/check-email/route.ts](src/app/api/auth/check-email/route.ts) — `profiles.status='inactive'` 차단 + BotID |
+| 이메일 변경 확인 콜백 (수정) ⭐신규 | [src/app/auth/callback/route.ts](src/app/auth/callback/route.ts) — `type` 유니언에 `email_change` 추가. 처리 로직(`verifyOtp`)은 기존 그대로이며 타입만 확장, 대시보드 설정의 이메일 변경 확인 링크를 이 라우트가 그대로 받음 |
+| 인증 오류 판정 확장 (수정) ⭐신규 | [src/lib/auth-error.ts](src/lib/auth-error.ts) — `isEmailInUse()` 추가. `EmailChangeSection`이 "이미 사용 중인 이메일" 오류를 원문(영문) 없이 한국어로 판정할 때 사용(§2.4) |
 
 ### 2.2 랜딩 페이지 (DB 동적 렌더)
 
@@ -214,7 +219,9 @@ CoreZent_SaaS/
 |---|---|
 | 레이아웃 + 권한 검증 | [src/app/admin/layout.tsx](src/app/admin/layout.tsx) — `profiles.role='admin'` 검증 (admin 클라이언트 사용) |
 | 관리자 홈 | [src/app/admin/page.tsx](src/app/admin/page.tsx) + [ChurnAnalysis.tsx](src/app/admin/ChurnAnalysis.tsx) |
-| 사용자 관리 | [src/app/admin/users/page.tsx](src/app/admin/users/page.tsx) + [UserTable.tsx](src/app/admin/users/UserTable.tsx) + [RoleSelect.tsx](src/app/admin/users/RoleSelect.tsx) |
+| 사용자 관리 (수정 — 서버 페이지네이션 전환) | [src/app/admin/users/page.tsx](src/app/admin/users/page.tsx) — 20명/page 서버 페이지네이션(query.ts 사용) + [UserTable.tsx](src/app/admin/users/UserTable.tsx) + [RoleSelect.tsx](src/app/admin/users/RoleSelect.tsx) |
+| 사용자 목록 조회 단일 출처 ⭐신규 | [src/app/admin/users/query.ts](src/app/admin/users/query.ts) — `fetchUserList()`. 목록 화면(page.tsx)과 CSV 내보내기(actions.ts)가 같은 검색(이름 ilike + 이메일 부분일치 합집합)·정렬 조건을 공유(서버 전용, 클라이언트 import 금지). 이메일은 `auth.admin.listUsers` 1페이지(1000명)까지만 |
+| 사용자 목록 CSV 내보내기 ⭐신규 | [src/app/admin/users/CsvExportButton.tsx](src/app/admin/users/CsvExportButton.tsx) + [actions.ts](src/app/admin/users/actions.ts)의 `exportUsersCsv()` — 확인 모달(개인정보 반출 재확인) → `admin_activity_log`에 반출 기록이 먼저 성공해야만 CSV 생성(기록 실패 시 내보내기 자체를 거부). 칸은 이름·이메일·역할·상태·가입일 5개뿐(비밀번호·토큰·정산 계좌 제외), UTF-8 BOM + 엑셀 수식 인젝션 방어(`=,+,-,@` 시작 값에 `'` 접두), 조회 상한(기본 1,000행)에 걸리면 잘라 내보내지 않고 거부 |
 | 주문 | [src/app/admin/orders/page.tsx](src/app/admin/orders/page.tsx) + [OrderTable.tsx](src/app/admin/orders/OrderTable.tsx) |
 | 주문 상세 — 기관 구매 정보 ⭐신규 | [src/app/admin/orders/[id]/OrgInfoSection.tsx](src/app/admin/orders/[id]/OrgInfoSection.tsx) — 기관명·사업자등록번호·담당자·세금계산서 발급번호 4칸(전부 선택 입력) 편집. API: [src/app/api/admin/orders/org-info/route.ts](src/app/api/admin/orders/org-info/route.ts) (`requireAdmin`, `orders` 4컬럼만 UPDATE, 061 미적용은 원인 구분 안내) |
 | 견적 요청 목록·PDF 발급 ⭐신규 | [src/app/admin/quotes/page.tsx](src/app/admin/quotes/page.tsx) — `quote_requests` 아코디언 목록(문의 목록과 동일 UI 패턴) + [IssueQuoteForm.tsx](src/app/admin/quotes/IssueQuoteForm.tsx)(상품 옵션·수량 선택 후 발급). API: [src/app/api/admin/quotes/issue/route.ts](src/app/api/admin/quotes/issue/route.ts) — 공급자 정보 7항목 검증 → `@react-pdf/renderer`로 PDF 생성 → `quote_issues` 채번 저장 → 요청 상태 `quoted` 갱신 |
@@ -222,6 +229,7 @@ CoreZent_SaaS/
 | Changelog | [src/app/admin/products/ChangelogSection.tsx](src/app/admin/products/ChangelogSection.tsx) + [changelog-actions.ts](src/app/admin/products/changelog-actions.ts) — 버전·다운로드 URL·릴리스 노트 4분류 |
 | 라이선스 관리 | [src/app/admin/licenses/LicenseTable.tsx](src/app/admin/licenses/LicenseTable.tsx) — 검색/필터/Revoke (DB + Sheets + LS 동시 비활성화) |
 | 문의 답변 | [src/app/admin/support/[id]/ReplyForm.tsx](src/app/admin/support/[id]/ReplyForm.tsx) |
+| 문의 목록·상세 — 유형·첨부 (수정) ⭐신규 | [src/app/admin/support/page.tsx](src/app/admin/support/page.tsx) · [\[id\]/page.tsx](src/app/admin/support/[id]/page.tsx) — 목록·상세에 문의 유형(`supportCategoryLabel`, [lib/support-categories.ts](src/lib/support-categories.ts)) 표시. 상세 화면은 답글 첨부를 1시간 유효 서명 URL(`createSignedUrl`, 다운로드 파일명은 `safeDownloadName`)로 제공. `category`/`attachment_*` 칸이 없는 구DB(062 미적용)에서는 칸 없이 자동 폴백 조회 |
 | **콘텐츠 CMS** | [src/app/admin/content/](src/app/admin/content/) — 10+ 섹션 인라인 편집기 (Hero/CTA/Features/Testimonials/FAQ/About/HowItWorks/Announcement/Sections/Partners/Pages/Tools) |
 | 검색엔진 색인 재요청 | [src/app/admin/settings/ReindexPanel.tsx](src/app/admin/settings/ReindexPanel.tsx) — `admin/settings` 페이지에서 SettingsClient 아래 렌더, 버튼 클릭 시 sitemap 전체(또는 지정) URL을 IndexNow+Google Indexing에 제출. API: [src/app/api/admin/seo/reindex/route.ts](src/app/api/admin/seo/reindex/route.ts) (`requireAdmin` + [src/lib/seo/indexing.ts](src/lib/seo/indexing.ts)) |
 | 시스템 설정 — 견적서 공급자 정보·알림 스위치 ⭐신규 | [src/app/admin/settings/SettingsClient.tsx](src/app/admin/settings/SettingsClient.tsx) — 기존 `/api/admin/settings`(공용 key-value 저장 API, 신규 라우트 아님) 그대로 사용해 섹션만 2개 추가: `company`(견적서에 인쇄되는 공급자 정보 7종 — 상호·사업자번호·대표자·주소·업태·종목·전화, 하나라도 비면 견적서 발급이 차단됨) · `notify`(`notify_new_order`/`notify_new_ticket` 관리자 알림 켬/끔, 미설정 시 기본 켜짐) |
@@ -234,9 +242,12 @@ CoreZent_SaaS/
 | 대시보드 홈 | [src/app/dashboard/page.tsx](src/app/dashboard/page.tsx) |
 | 라이선스 목록 | [src/app/dashboard/licenses/page.tsx](src/app/dashboard/licenses/page.tsx) — 서버 페이지네이션 (10개/page), 구독 만료일은 `subscriptions.current_period_end` 우선 |
 | 라이선스 키 복사 (정정 — `LicenseCopyButton`은 삭제됨, 공용 `CopyButton`으로 통합) | [src/components/common/CopyButton.tsx](src/components/common/CopyButton.tsx) — `dashboard/licenses/page.tsx`가 사용, 앞 8자만 표시하고 전체 키는 복사 버튼으로만 제공 |
-| 결제/구독 | [src/app/dashboard/billing/page.tsx](src/app/dashboard/billing/page.tsx) + [BillingSubscriptionSection.tsx](src/app/dashboard/billing/BillingSubscriptionSection.tsx) + [DownloadButton.tsx](src/app/dashboard/billing/DownloadButton.tsx) |
-| 설정 | [src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx) — 프로필·국가·탈퇴 |
-| 고객지원 | [src/app/dashboard/support/page.tsx](src/app/dashboard/support/page.tsx) + [TicketList.tsx](src/app/dashboard/support/TicketList.tsx) — 티켓 생성 시 `notifyNewTicket()`(`lib/admin-notify.ts`) 호출, 같은 계정 30분 내 반복 제출은 알림 억제 |
+| 결제/구독 (수정) | [src/app/dashboard/billing/page.tsx](src/app/dashboard/billing/page.tsx) + [BillingSubscriptionSection.tsx](src/app/dashboard/billing/BillingSubscriptionSection.tsx) + [DownloadButton.tsx](src/app/dashboard/billing/DownloadButton.tsx) + [BillingTable.tsx](src/app/dashboard/billing/BillingTable.tsx)(`lsSubscriptionId` 있으면 상태 무관 결제수단 변경 버튼 노출) |
+| 결제수단 변경 ⭐신규 | [src/app/dashboard/billing/PaymentMethodButton.tsx](src/app/dashboard/billing/PaymentMethodButton.tsx) — 클릭마다 `/api/subscriptions/portal`에서 새 서명 주소를 받아 같은 탭에서 결제사 화면으로 이동(§2.6) |
+| 설정 (수정) | [src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx) — 프로필·국가·탈퇴, 이메일 변경 칸을 제거하고 `EmailChangeSection`으로 분리 배치 |
+| 이메일 변경 ⭐신규 | [src/app/dashboard/settings/EmailChangeSection.tsx](src/app/dashboard/settings/EmailChangeSection.tsx) — Supabase Auth `updateUser({email})` 확인 메일 방식(링크를 눌러야 실제 반영, 즉시 변경 아님), 확인 대기 중 주소 표시, LS(결제사) 등록 주소는 여기서 못 바꾼다는 안내 포함. 공용 서브 컴포넌트 [settings-ui.tsx](src/app/dashboard/settings/settings-ui.tsx)(`FormField`/`SubmitButton`/`inputCls`)를 page.tsx 하단에서 분리해 공유(설정 화면 계열 전용, 전역 공용 아님) |
+| 고객지원 (수정) | [src/app/dashboard/support/page.tsx](src/app/dashboard/support/page.tsx) + [TicketList.tsx](src/app/dashboard/support/TicketList.tsx) — `submitTicket()` 서버 액션이 첨부 업로드→티켓 INSERT→본문(첫 답글) INSERT 순으로 처리(업로드 실패는 조기 반환, 본문 저장 실패 시 방금 만든 티켓·업로드 파일을 보상 삭제), 티켓 생성 시 `notifyNewTicket()`(`lib/admin-notify.ts`)을 `after()`로 호출, 같은 계정 30분 내 반복 제출은 알림 억제 |
+| 문의 폼 (첨부·유형) ⭐신규 | [src/app/dashboard/support/TicketForm.tsx](src/app/dashboard/support/TicketForm.tsx) — 제목·문의 유형(`SUPPORT_CATEGORIES`)·우선순위·내용·첨부(공용 [AttachmentField](src/components/common/AttachmentField.tsx), 5MB + 허용 확장자만) 폼. 서버 액션 결과값으로 실패 사유를 화면에 표시(기존엔 실패해도 무음). 첨부 실체는 비공개 버킷 `support-attachments`(062 필요 — 미적용 DB에서는 유형 저장 생략·첨부는 실패 안내로 우아하게 폴백) |
 
 ### 2.5 라이선스 시스템 (⭐ 핵심)
 
@@ -286,6 +297,7 @@ CoreZent_SaaS/
 | 헬퍼 | [src/lib/lemonsqueezy.ts](src/lib/lemonsqueezy.ts) — `verifyLSWebhook` (HMAC-SHA256), `buildCheckoutUrl` (custom_data 주입), `generateSerialKey`, `fetchLsLicenseKey`, 타입 정의 |
 | 웹훅 핸들러 | [src/app/api/webhooks/lemonsqueezy/route.ts](src/app/api/webhooks/lemonsqueezy/route.ts) — 8개 이벤트 처리, `order_created`(카드) 시 `notifyNewOrder` 호출 |
 | 구독 취소 | [src/app/api/subscriptions/cancel/route.ts](src/app/api/subscriptions/cancel/route.ts) — LS API PATCH + DB 동기화 |
+| 결제수단 변경 ⭐신규 | [src/app/api/subscriptions/portal/route.ts](src/app/api/subscriptions/portal/route.ts) — LS `update_payment_method`(결제수단 변경 전용 화면) 서명 주소 발급. RLS 클라이언트로 본인 구독 조회 + `user_id` 이중 확인 → LS API `GET /v1/subscriptions/{id}`(`cache: 'no-store'`) → `attributes.urls.update_payment_method` 반환. 주소는 24시간만 유효해 DB에 저장하지 않고 매 호출 재발급. **고객 포털 전체(customer_portal)가 아닌 이 화면만 여는 이유**: 포털에서는 요금제 변경이 가능한데 웹훅이 플랜 변경을 반영하지 못해 결제사와 상태가 어긋나기 때문(플랜 변경 동기화는 별도 라운드) |
 | 관리자 새 주문 알림 ⭐신규(문서 반영) | [src/lib/admin-notify.ts](src/lib/admin-notify.ts) — `notifyNewOrder()`. 카드 결제는 위 웹훅에서, 계좌이체는 `api/orders/bank-transfer/route.ts`에서 호출(입금 확인·라이선스 수동 발급 필요 문구 포함). 받는 주소는 `front_settings.support_email`, 켬/끔은 `notify_new_order`(기본 켜짐), 같은 주문 재발송은 30분 억제 |
 | 기관 구매 정보 ⭐신규 | `orders.org_name`/`org_biz_reg_no`/`org_contact_name`/`tax_invoice_no`(전부 nullable) — 관리자 주문 상세에서만 입력(§2.3 참조), 결제·라이선스 발급 로직에는 영향 없음 |
 
@@ -303,7 +315,8 @@ CoreZent_SaaS/
 | 역할 | 파일 |
 |---|---|
 | API | [src/app/api/contact/route.ts](src/app/api/contact/route.ts) — BotID + Rate Limit (1분 3회 IP, Supabase RPC 공유 카운터) + Honeypot + 5MB 첨부 + DB 저장 + 이메일 발송 |
-| 폼 | [src/app/contact/ContactForm.tsx](src/app/contact/ContactForm.tsx) + [ContactFormWrapper.tsx](src/app/contact/ContactFormWrapper.tsx) |
+| 폼 (수정 — 첨부 UI 공용화) | [src/app/contact/ContactForm.tsx](src/app/contact/ContactForm.tsx) + [ContactFormWrapper.tsx](src/app/contact/ContactFormWrapper.tsx) — 첨부 칸을 공용 부품 `AttachmentField`로 교체(모양·문구·5MB 제한·동작 전부 동일, 무변화) |
+| 첨부 UI 공용화 ⭐신규 | [src/components/common/AttachmentField.tsx](src/components/common/AttachmentField.tsx) — 드래그&드롭 첨부 칸. 비회원 `ContactForm`에 있던 것을 추출해 대시보드 `TicketForm`(§2.4)과 공유(사본 금지). 상수·검증 헬퍼는 [src/lib/attachment.ts](src/lib/attachment.ts)(중립 모듈, `'use client'` 금지 — 서버가 값을 import해야 하므로). 파일 저장·형식 차단은 각 제출 경로의 서버가 담당(부품은 크기 검사만) |
 | 이메일 발송 | [src/lib/email.ts](src/lib/email.ts) — nodemailer SMTP + `inquiryEmailHtml` / `orderConfirmationEmailHtml` |
 | Rate Limit 단일 출처 ⭐신규 | [src/lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) — `isRateLimited()`를 `api/contact`에서 이 파일로 이동(로직 변화 없음), `/api/quote`와 IP별 분당 카운터를 공유(같은 IP 합산 분당 3회) |
 
@@ -450,11 +463,57 @@ POST /api/admin/quotes/issue { requestId, productPriceId, quantity }
 
 > ⚠️ 견적 요청·발급 어느 단계에서도 `orders`·`licenses`에는 어떤 행도 만들지 않는다 — 견적은 주문이 아니다.
 
+### 3.7 결제수단 변경 (셀프서비스) ⭐신규
+
+```
+[사용자: /dashboard/billing에서 "결제수단 변경" 클릭]
+   ↓ PaymentMethodButton
+POST /api/subscriptions/portal { subscriptionId }
+   ↓ 로그인 확인 → RLS 클라이언트로 본인 구독 조회 + user_id 이중 확인
+   ↓ lemon_squeezy_subscription_id 없음 → { code: 'NO_LS_SUBSCRIPTION' } (테스트/수동 데이터라 관리 화면 실체 없음)
+   ↓ LS API GET /v1/subscriptions/{id} (cache: 'no-store' — 캐시 금지)
+   ↓ attributes.urls.update_payment_method 추출 (customer_portal 미사용)
+   ↓ 200 { ok: true, url }
+   → window.location.href = url (같은 탭 이동, 주소는 24시간만 유효·저장 안 함·매번 재발급)
+```
+
+### 3.8 이메일 변경 (계정 셀프서비스) ⭐신규
+
+```
+[사용자: /dashboard/settings EmailChangeSection에서 새 이메일 입력·제출]
+   ↓
+supabase.auth.updateUser({ email }, { emailRedirectTo: `${SITE_URL}/auth/callback?redirect=/dashboard/settings` })
+   ↓ Supabase Auth가 새 주소로 확인 메일 발송 (Secure email change 켜져 있으면 기존 주소로도 발송)
+   ↓ 사용자가 메일의 확인 링크 클릭 (요청한 브라우저에서 열어야 함)
+GET /auth/callback?type=email_change&...
+   ↓ verifyOtp() 처리 (기존 로직 그대로, type 유니언만 확장) → auth.users.email 실제 반영
+   ↓ redirect → /dashboard/settings
+```
+
+> ⚠️ 결제사(Lemon Squeezy)에 등록된 결제 알림 수신 주소는 이 흐름으로 바뀌지 않는다 — 결제사 쪽 주소는 §3.7의 결제수단 변경 화면에서 별도로 관리.
+
+### 3.9 고객지원 문의 제출 + 첨부 ⭐신규
+
+```
+[사용자: /dashboard/support TicketForm 제출]
+   ↓ FormData(subject, category, priority, message, attachment?)
+submitTicket(formData) [서버 액션]
+   ↓ 로그인 확인
+   ↓ (첨부 있으면) 5MB 검사 + 확장자 정규화·허용목록(ALLOWED_ATTACHMENT_EXTENSIONS) 검증
+   ↓ storage.support-attachments 업로드 (경로: {user_id}/{uuid}.{ext}, 원본 파일명은 경로에 넣지 않음)
+   ↓ 업로드 실패 → 여기서 중단(아직 아무 행도 안 생김, 재시도 안전)
+   ↓ support_tickets INSERT (category 포함 시도 → 42703(칸 없음=062 미적용)이면 category 없이 폴백 재시도)
+   ↓ support_replies INSERT (본문 + 첨부 메타 3칸)
+   ↓ 실패 시 보상 삭제: 방금 만든 ticket DELETE(소유자 조건 이중 확인) + 업로드 파일 제거
+   ↓ after(): notifyNewTicket({...}) → 관리자 알림 (같은 계정 30분 내 반복 제출은 억제)
+   ↓ { ok: true } → 폼 초기화 + 성공 토스트 (실패는 { ok: false, reason } → 입력 보존, 화면에 사유 표시)
+```
+
 ---
 
 ## 4. 데이터베이스 (Supabase PostgreSQL)
 
-마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~061 (60개, 039 결번). ⚠️ 아래 4.1~4.5 표는 이번 견적서 라운드(060·061)와 과거 주요 변경만 반영한 요약이며, 028~059 구간의 모든 마이그레이션이 개별 서술되어 있지는 않음 — 정확한 컬럼은 항상 해당 `.sql` 파일을 1차 출처로 확인할 것.
+마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~062 (61개, 039 결번). ⚠️ 아래 4.1~4.5 표는 견적서 라운드(060·061)·문의 첨부/유형 라운드(062, 대표님 적용 대기)와 과거 주요 변경만 반영한 요약이며, 028~059 구간의 모든 마이그레이션이 개별 서술되어 있지는 않음 — 정확한 컬럼은 항상 해당 `.sql` 파일을 1차 출처로 확인할 것.
 
 ### 4.1 사용자 데이터
 
@@ -500,7 +559,8 @@ POST /api/admin/quotes/issue { requestId, productPriceId, quantity }
 
 | 테이블 | 용도 |
 |---|---|
-| `support_tickets` | 사용자 문의 티켓 + 답변 스레드 (004, 020) |
+| `support_tickets` | 사용자 문의 티켓 + 답변 스레드, **category**(⭐신규 문의 유형 6종 CHECK, nullable) (004, 020, 062) |
+| `support_replies`(첨부 칸 추가) ⭐신규 | 답글에 **attachment_path**/**attachment_name**/**attachment_size**(전부 nullable) 추가 — 파일 실체는 비공개 storage 버킷 `support-attachments`(public=false, 5MB 제한)에만 저장, `storage.objects`에 정책 추가 없음(=service_role 서버 전용 업로드·서명 URL 발급) (062, 대표님 적용 대기) |
 | `inquiries` | 비회원 문의 (`/api/contact`에서 INSERT, 022) |
 | `downloads` | 라이선스 다운로드 추적 (021) |
 | `affiliate_*` | 제휴 프로그램 (005) |
@@ -518,6 +578,8 @@ POST /api/admin/quotes/issue { requestId, productPriceId, quantity }
 | 브라우저 (RLS 적용) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | [client.ts](src/lib/supabase/client.ts) |
 | 서버 컴포넌트 (쿠키) | 동일 | [server.ts](src/lib/supabase/server.ts) |
 | **어드민 (RLS 우회)** | `SUPABASE_SERVICE_ROLE_KEY` | [admin.ts](src/lib/supabase/admin.ts) — 웹훅·관리자 라우트 전용 |
+
+> Storage 버킷 ⭐신규: `support-attachments`(비공개, public=false, 5MB) — 062 마이그레이션이 생성. 새 env 변수는 없음(admin 클라이언트가 그대로 사용). 업로드는 `dashboard/support/page.tsx`의 서버 액션, 서명 URL 발급은 `admin/support/[id]/page.tsx`가 담당 — 둘 다 service_role 경유(브라우저 직접 접근 불가).
 
 ### 5.2 Lemon Squeezy
 
@@ -614,7 +676,8 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 | `/admin/*` 진입 | `profiles.role='admin'` 검증 (RLS 재귀 회피 위해 admin client 사용) | [admin/layout.tsx](src/app/admin/layout.tsx) |
 | 쿠키 초기 동의 | `CookieConsentBanner` 표시 → 동의 시 GA/Pixel 활성화 | [CookieConsentBanner.tsx](src/components/CookieConsentBanner.tsx) |
 | 문의·견적 요청마다(정정 — in-memory Map 아님) | IP별 분당 3회 제한을 Supabase RPC(`check_contact_rate_limit`)로 원자적 카운트(다중 서버리스 인스턴스에도 안전, 별도 cleanup 불필요) | [lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) — `/api/contact`·`/api/quote` 공유 |
-| 새 주문·새 견적 요청 응답 후 | `after()`로 관리자 알림 메일 비동기 발송(본 처리 지연·실패 없음) | webhooks/lemonsqueezy, orders/bank-transfer, `api/quote` → [lib/admin-notify.ts](src/lib/admin-notify.ts) |
+| 새 주문·새 견적 요청·새 문의 티켓 응답 후 | `after()`로 관리자 알림 메일 비동기 발송(본 처리 지연·실패 없음) | webhooks/lemonsqueezy, orders/bank-transfer, `api/quote`, `dashboard/support/page.tsx`(`submitTicket`) → [lib/admin-notify.ts](src/lib/admin-notify.ts) |
+| 회원 목록 CSV 내보내기 시 ⭐신규 | 반출 기록(`admin_activity_log` INSERT)이 먼저 성공해야만 CSV를 생성 — 기록이 실패하면 반출 자체를 거부(누가 언제 무엇을 내보냈는지 없이는 개인정보 파일이 안 나감) | [admin/users/actions.ts](src/app/admin/users/actions.ts) `exportUsersCsv()` |
 
 ---
 
@@ -634,6 +697,7 @@ npm run lint   # ESLint
 - TypeScript: 동일 파일 내 `import dynamic from 'next/dynamic'`과 `export const dynamic`은 충돌 — `import lazy from 'next/dynamic'`로 alias
 - `src/app/page.tsx`는 `force-dynamic` (DB 데이터 SSR)
 - ⭐신규 견적서 PDF 자산(`src/assets/quotation/`)은 [next.config.ts](next.config.ts)의 `outputFileTracingIncludes['/api/admin/quotes/issue']`로 서버리스 번들에 명시 포함 — 이 설정이 빠지면 로컬에서는 되는데 Vercel 배포본에서만 폰트·도장 파일을 못 찾는 사고가 남
+- ⭐신규 서버 액션 첨부 업로드 한도: [next.config.ts](next.config.ts)의 `experimental.serverActions.bodySizeLimit`을 `'6mb'`로 설정(문의 티켓 첨부 5MB + 여유분) — 이 값보다 큰 요청은 서버 액션 자체가 거부됨(개별 코드의 5MB 검사와는 별개 계층)
 
 ---
 
@@ -653,6 +717,9 @@ npm run lint   # ESLint
 | 디자인 시스템 이원화 (GenieWork 재브랜딩) | 퍼블릭(페이퍼: `--color-paper`/`--color-ink` 등)과 `dashboard`·`admin`(다크: `--color-bg`/`--color-surface` 등)이 서로 다른 토큰·컴포넌트를 사용 | 새 컴포넌트 작성 시 대상 영역(퍼블릭 vs 대시보드/관리자) 확인 후 `src/components/ui/`(페이퍼 전용) 또는 기존 다크 스타일 중 맞는 쪽 사용. 양쪽에서 쓰이는 컴포넌트는 `.theme-paper` 조상 셀렉터로 분기 |
 | Google Indexing API 일일 할당량 | 기본 200건/일, 공식 지원 범위는 채용·라이브 구조화 데이터가 우선(그 외 URL은 승인이 보수적일 수 있음) | 대량 URL은 IndexNow(Bing·Naver 등, 별도 제한 없음)가 더 안정적 — 두 채널 모두 시도하되 부분 실패 허용 |
 | Google 서비스 계정 JSON 커밋 방지 | 리포지토리 루트에 다운로드한 `.json` 키 파일을 실수로 두는 사례 발생 | `.gitignore`에 `corezent-saas-*.json`·`*-service-account*.json`·`gcp-*.json` 패턴 추가 — 신규 서비스 계정 키 파일명도 이 패턴을 따를 것 |
+| 결제수단 변경 서명 주소 재사용 금지 ⭐신규 | LS가 내려주는 `update_payment_method` 주소는 24시간만 유효 | DB에 저장하지 않고 클릭마다 재발급(`cache: 'no-store'`) — 캐시·재사용 절대 금지 |
+| 062(문의 첨부·유형) 미적용 상태에서도 문의는 정상 동작 ⭐신규 | `support_tickets.category`·`support_replies.attachment_*` 칸과 `support-attachments` 버킷이 아직 없으면, 유형은 저장을 생략(42703 감지 후 폴백)하고 첨부는 업로드 단계에서 실패 안내만 표시 — 문의 접수 자체는 막히지 않음 | 대표님이 062를 Supabase SQL Editor에서 적용해야 유형·첨부 기능이 완전히 켜짐(비멱등 — 재실행 금지) |
+| 로그인 고객 문의 첨부 확장자 제한 vs 비회원 문의 무제한 ⭐신규 | 대시보드 `TicketForm`은 허용 목록(`ALLOWED_ATTACHMENT_EXTENSIONS` — 이미지·PDF·문서·압축 등)만 허용하지만, 비회원 `ContactForm`은 기존 동작 그대로 확장자 제한이 없음(동작 무변화 원칙으로 손대지 않음) | 두 폼이 같은 `AttachmentField` UI를 쓰지만 서버 쪽 검증 강도가 다르다는 점을 새 코드 작성 시 유의 |
 
 ---
 
@@ -664,6 +731,8 @@ npm run lint   # ESLint
 | 2026-07-07 | SEO 색인 자동화 — 표준 URL 단일 출처(`lib/site.ts`) 신규 도입해 `robots.ts`·`sitemap.ts`가 공통 사용(Host를 항상 www.corezent.com으로 정규화), IndexNow+Google Indexing API 제출 헬퍼(`lib/seo/indexing.ts`) 및 관리자 전용 재색인 API(`/api/admin/seo/reindex`)·설정 페이지 버튼(`ReindexPanel`) 추가, IndexNow 키 소유 증명 파일 배포, Google 서비스 계정 JSON `.gitignore` 패턴 추가 | 신규 5 · 수정 3(+.gitignore) |
 | 2026-07-23 | 국가(country) 필드 전면 제거 — 회원가입 국가 선택·저장 흐름, dashboard 설정·admin(사용자 목록/상세·주문 상세) 국가 표시 삭제, `profiles.country` 컬럼 DROP(052), 죽은 코드 `CountrySelect`·`lib/countries.ts` 삭제 | 삭제 2 · 수정 7 · 마이그레이션 1(052) |
 | 2026-08-13 | 기관 견적서 발급 시스템 — 견적 요청 접수(`/api/quote` + `/public-sector` QuoteForm, BotID·rate limit 공유·honeypot)와 관리자 목록·PDF 발급(`/admin/quotes` + IssueQuoteForm, `@react-pdf/renderer`로 나눔고딕·도장 합성) 신규, `quote_requests`/`quote_issues`(060, RLS 켜고 정책 없음=서버 전용) 및 `orders` 기관 정보 4컬럼(061) 마이그레이션 추가, 주문 상세 `OrgInfoSection`(기관명·사업자번호·담당자·세금계산서번호), 문의·견적 공용 rate limit을 `lib/contact-rate-limit.ts`로 분리(로직 변화 없음, 카운터 공유), `front_settings`에 `company_*` 7종(견적서 공급자 정보)·`notify_new_order`/`notify_new_ticket`(알림 스위치) 키 추가. 겸사 문서 반영: 이전 라운드에 배포된 관리자 알림 단일 창구(`lib/admin-notify.ts`)·랜딩 문구 예비값 단일 출처(`lib/front-defaults.ts`)를 최초로 §2·§6에 기재, §2.4의 삭제된 `LicenseCopyButton` 참조를 실제 공용 `CopyButton`으로 정정, 문의 Rate Limit 설명을 실제 구현(Supabase RPC)에 맞게 정정 | 신규 16 · 수정 6(+문서 정정 3곳) · 마이그레이션 2(060·061) |
+| 2026-08-14 | 계정 셀프서비스 — 결제수단 변경 전용 화면 서명 주소 발급(`/api/subscriptions/portal`, 24시간 유효라 매번 재발급, `update_payment_method`만 열어 요금제 변경 미동기화 위험 차단) + 이메일 변경(`EmailChangeSection`, Supabase Auth `updateUser` 확인 메일 방식). `BillingTable`은 `lsSubscriptionId` 있으면 상태 무관 버튼 노출, `auth/callback`은 `type` 유니언에 `email_change` 추가, `lib/auth-error.ts`에 `isEmailInUse()` 추가 | 신규 4 · 수정 4 |
+| 2026-08-14 | 문의 첨부 공용화·사용자 목록 CSV·문의 유형 — 비회원 문의 첨부 UI를 공용 부품(`AttachmentField`+중립 모듈 `lib/attachment.ts`)로 추출해 대시보드 `TicketForm`(문의 유형·첨부 포함, 서버 액션 결과값으로 실패 표시)과 공유, 관리자 사용자 목록을 서버 페이지네이션(`query.ts` 단일 출처)으로 전환하고 CSV 내보내기(`CsvExportButton`, `admin_activity_log` 반출 기록 선행) 추가, 관리자 문의 목록·상세에 유형 표시·첨부 서명 URL 제공, `support_tickets.category`(6종 CHECK)·`support_replies` 첨부 3칸 + 비공개 storage 버킷 `support-attachments`(062, 대표님 적용 대기) 추가, `next.config.ts`에 `serverActions.bodySizeLimit '6mb'` 설정 | 신규 7 · 수정 7 · 마이그레이션 1(062, 적용 대기) |
 
 ---
 
