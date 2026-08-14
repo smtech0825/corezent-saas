@@ -12,8 +12,11 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyNewTicket } from '@/lib/admin-notify'
-import { MAX_ATTACHMENT_SIZE } from '@/components/common/AttachmentField'
+// ★ 'use client'인 AttachmentField가 아니라 중립 모듈에서 가져온다 — 서버가 클라이언트
+//   모듈의 값을 import하면 검증이 깨진다(검증 도구 지적)
+import { MAX_ATTACHMENT_SIZE, normalizeAttachmentExt, isAllowedAttachment } from '@/lib/attachment'
 import { isSupportCategory } from '@/lib/support-categories'
+import { parsePageParam, isOneOf } from '@/lib/validate'
 import Pagination from '@/components/common/Pagination'
 import TicketList from './TicketList'
 import TicketForm, { type TicketSubmitResult } from './TicketForm'
@@ -31,19 +34,14 @@ const PAGE_SIZE = 5
 /** 첨부를 저장하는 비공개 버킷 이름(062 마이그레이션과 일치) */
 const ATTACHMENT_BUCKET = 'support-attachments'
 
-/** 보안상 첨부를 거부하는 실행 파일 계열 확장자(비회원 폼에는 차단이 없음 — 신규 경로에만 적용) */
-const BLOCKED_EXTENSIONS = [
-  'exe', 'msi', 'bat', 'cmd', 'com', 'scr', 'pif', 'cpl', 'jar',
-  'vbs', 'wsf', 'js', 'ps1', 'sh', 'hta', 'msc', 'lnk', 'dll',
-]
-
 export default async function SupportPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>
 }) {
   const { page: pageStr } = await searchParams
-  const page = Math.max(1, parseInt(pageStr ?? '1', 10))
+  // 공용 파서 — ?page=abc 같은 값이 NaN 조회로 번져 목록이 통째로 비지 않게(관리자 화면과 동일)
+  const page = parsePageParam(pageStr)
   const offset = (page - 1) * PAGE_SIZE
 
   const supabase = await createClient()
@@ -95,12 +93,17 @@ export default async function SupportPage({
       return { ok: false, reason: '로그인이 만료되었습니다. 새로고침 후 다시 시도해 주세요.' }
     }
 
-    const subject = (formData.get('subject') as string)?.trim()
-    const message = (formData.get('message') as string)?.trim()
-    const priority = (formData.get('priority') as string) || 'normal'
-    const rawCategory = (formData.get('category') as string) || ''
+    const rawSubject = formData.get('subject')
+    const rawMessage = formData.get('message')
+    const rawPriority = formData.get('priority')
+    const rawCategory = formData.get('category')
+    const subject = typeof rawSubject === 'string' ? rawSubject.trim() : ''
+    const message = typeof rawMessage === 'string' ? rawMessage.trim() : ''
+    // 우선순위는 허용값만 저장(CHECK 위반으로 접수가 통째로 실패하지 않게 보정)
+    const priority = typeof rawPriority === 'string' && isOneOf(rawPriority, ['low', 'normal', 'high', 'urgent'] as const)
+      ? rawPriority : 'normal'
     // 유형은 선택 입력 — 목록에 없는 값(변조 등)은 저장을 생략할 뿐 접수를 막지 않는다
-    const category = isSupportCategory(rawCategory) ? rawCategory : null
+    const category = typeof rawCategory === 'string' && isSupportCategory(rawCategory) ? rawCategory : null
 
     if (!subject || !message) {
       return { ok: false, reason: '제목과 내용을 입력해 주세요.' }
@@ -108,20 +111,21 @@ export default async function SupportPage({
 
     // ── 첨부 검증·업로드 (티켓 저장 전 — 실패 시 아무것도 남지 않게) ──────────
     const file = formData.get('attachment')
-    let attachment: { path: string; name: string; size: number } | null = null
+    let attachment: { path: string; name: string; size: number; ext: string } | null = null
+    const adminC = createAdminClient()
     if (file instanceof File && file.size > 0) {
       if (file.size > MAX_ATTACHMENT_SIZE) {
         return { ok: false, reason: '첨부 파일은 5MB 이하만 올릴 수 있습니다.' }
       }
-      const ext = file.name.includes('.') ? (file.name.split('.').pop() ?? '').toLowerCase() : ''
-      if (BLOCKED_EXTENSIONS.includes(ext)) {
-        return { ok: false, reason: '보안상 실행 파일 형식은 첨부할 수 없습니다. 화면 캡처(PNG·JPG)나 압축(ZIP) 파일로 올려 주세요.' }
+      // 확장자 정규화(후행 점·공백 우회 차단) + 허용 목록 — 실행 파일은 목록에 없어 저장 불가
+      const ext = normalizeAttachmentExt(file.name)
+      if (!ext || !isAllowedAttachment(ext)) {
+        return { ok: false, reason: '허용되지 않는 파일 형식입니다. 화면 캡처(PNG·JPG)·PDF·문서·압축(ZIP) 파일만 첨부할 수 있습니다.' }
       }
 
       // 저장 경로에는 원본 파일명을 넣지 않는다(특수문자·경로 조작 방지) — 원본명은 DB에만.
       // 경로 맨 앞이 본인 계정 id라 누가 올렸는지 경로만으로도 분명하다.
-      const objectPath = `${currentUser.id}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`
-      const adminC = createAdminClient()
+      const objectPath = `${currentUser.id}/${crypto.randomUUID()}.${ext}`
       const { error: uploadErr } = await adminC.storage
         .from(ATTACHMENT_BUCKET)
         .upload(objectPath, Buffer.from(await file.arrayBuffer()), {
@@ -132,10 +136,24 @@ export default async function SupportPage({
         console.error('[support] 첨부 업로드 실패:', uploadErr.message)
         return { ok: false, reason: '첨부 업로드에 실패했습니다. 첨부를 빼고 제출하시거나 잠시 후 다시 시도해 주세요.' }
       }
-      attachment = { path: objectPath, name: file.name, size: file.size }
+      attachment = { path: objectPath, name: file.name, size: file.size, ext }
     }
 
-    // ── 티켓 저장 — category 칸이 아직 없으면(062 미적용) 유형 없이 재시도 ────
+    /**
+     * @함수명: removeUploaded
+     * @설명: 접수가 실패로 끝날 때 방금 올린 첨부 객체를 지웁니다(고아 파일 방지).
+     *        삭제 실패는 접수 실패 흐름을 바꾸지 않고 기록만 남깁니다.
+     */
+    async function removeUploaded(): Promise<void> {
+      if (!attachment) return
+      try {
+        await adminC.storage.from(ATTACHMENT_BUCKET).remove([attachment.path])
+      } catch (err) {
+        console.error('[support] 첨부 정리 실패(고아 파일 잔존):', err instanceof Error ? err.message : String(err))
+      }
+    }
+
+    // ── 티켓 저장 — category 칸이 아직 없을 때(062 미적용, 오류 42703)만 유형 없이 재시도 ──
     let ticketId: string | null = null
     {
       const first = await supabaseServer
@@ -143,23 +161,29 @@ export default async function SupportPage({
         .insert({ user_id: currentUser.id, subject, status: 'open', priority, is_read: false, ...(category ? { category } : {}) })
         .select('id')
         .single()
-      if (first.error && category) {
+      if (first.error && category && first.error.code === '42703') {
+        // 42703 = 칸 없음(undefined_column) — 이때만 폴백. 다른 오류에 재시도하면 중복 위험.
+        console.error('[support] category 저장 생략(칸 없음 — 062 적용 필요):', first.error.message)
         const fallback = await supabaseServer
           .from('support_tickets')
           .insert({ user_id: currentUser.id, subject, status: 'open', priority, is_read: false })
           .select('id')
           .single()
+        if (fallback.error) console.error('[support] 티켓 저장 실패(폴백):', fallback.error.message)
         ticketId = fallback.data?.id ?? null
-        if (!fallback.error) console.error('[support] category 저장 생략(칸 없음 — 062 적용 필요):', first.error.message)
       } else {
+        if (first.error) console.error('[support] 티켓 저장 실패:', first.error.message)
         ticketId = first.data?.id ?? null
       }
     }
     if (!ticketId) {
+      await removeUploaded()
       return { ok: false, reason: '문의 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' }
     }
 
-    // ── 본문(첫 답글) 저장 — 실패하면 티켓을 지워 재시도를 안전하게 ──────────
+    // ── 본문(첫 답글) 저장 — 실패하면 티켓·첨부를 지워 재시도를 안전하게 ──────
+    // 첨부 칸 없이 저장하는 폴백은 두지 않는다: 업로드가 성공했다 = 버킷이 있다 = 062가
+    // 적용됐다 = 첨부 칸도 있다(같은 파일에서 칸이 버킷보다 먼저 만들어짐). 부분 적용은 없다.
     const replyInsert: Record<string, unknown> = {
       ticket_id: ticketId, user_id: currentUser.id, is_admin: false, message,
     }
@@ -168,17 +192,12 @@ export default async function SupportPage({
       replyInsert.attachment_name = attachment.name
       replyInsert.attachment_size = attachment.size
     }
-    let { error: replyErr } = await supabaseServer.from('support_replies').insert(replyInsert)
-    if (replyErr && attachment) {
-      // 첨부 칸이 없는 경우(부분 적용) — 본문만이라도 저장 시도, 첨부 유실은 기록
-      console.error('[support] 첨부 칸 저장 실패(062 적용 필요):', replyErr.message)
-      ;({ error: replyErr } = await supabaseServer
-        .from('support_replies')
-        .insert({ ticket_id: ticketId, user_id: currentUser.id, is_admin: false, message }))
-    }
+    const { error: replyErr } = await supabaseServer.from('support_replies').insert(replyInsert)
     if (replyErr) {
       console.error('[support] 본문 저장 실패:', replyErr.message)
-      await createAdminClient().from('support_tickets').delete().eq('id', ticketId)
+      // 보상 삭제 — RLS 우회(사용자 DELETE 정책 없음)이므로 소유자 조건을 이중으로 건다
+      await adminC.from('support_tickets').delete().eq('id', ticketId).eq('user_id', currentUser.id)
+      await removeUploaded()
       return { ok: false, reason: '문의 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' }
     }
 

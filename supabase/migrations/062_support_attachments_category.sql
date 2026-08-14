@@ -11,6 +11,8 @@
 --
 -- 적용 방법: 운영자가 Supabase SQL Editor에서 직접 실행.
 -- ⚠️ 비멱등 — 운영 재실행 금지 (기존 마이그레이션과 동일 관례).
+--    (①·②가 실패한 부분 적용 상태에서 다시 실행해도 ①에서 멈춰 ③ 버킷이 안 생긴다 —
+--     그 경우 실패 지점 아래 문장만 골라 실행할 것.)
 -- ⚠️ 적용 전에도 문의 화면은 정상 동작한다(유형은 저장 생략, 첨부는 실패 안내).
 -- ============================================================
 
@@ -21,7 +23,7 @@ ALTER TABLE support_tickets ADD COLUMN category text
 COMMENT ON COLUMN support_tickets.category IS '문의 유형(선택) — install_fail·key_auth·pc_change·receipt·ai_key·other';
 
 -- ② 답글 첨부 메타 — 파일 실체는 저장소 버킷에, 여기엔 경로·이름·크기만
-ALTER TABLE support_replies ADD COLUMN attachment_path text;   -- 버킷 안 객체 경로({ticket_id}/{uuid}-{파일명})
+ALTER TABLE support_replies ADD COLUMN attachment_path text;   -- 버킷 안 객체 경로({올린 회원 id}/{uuid}.{확장자} — 원본 파일명 미포함)
 ALTER TABLE support_replies ADD COLUMN attachment_name text;   -- 원래 파일명(화면 표시용)
 ALTER TABLE support_replies ADD COLUMN attachment_size integer; -- 바이트
 

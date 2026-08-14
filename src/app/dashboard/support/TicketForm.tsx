@@ -116,7 +116,7 @@ export default function TicketForm({ action }: {
 
       {/* 첨부 — 비회원 문의 폼과 같은 공용 부품(5MB) */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-ink-soft">
+        <label htmlFor="ticket-file-input" className="text-xs font-medium text-ink-soft">
           첨부파일 <span className="text-ink-faint font-normal">(선택, 최대 5MB — 오류 화면 캡처 등)</span>
         </label>
         <AttachmentField file={file} onChange={setFile} idPrefix="ticket" />

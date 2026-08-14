@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/admin/quotes/issue': ['./src/assets/quotation/**/*'],
   },
+  // 서버 액션 본문 한도 — 기본 1MB라 5MB 첨부(고객 문의)가 폼 안내와 달리 413으로 끊긴다.
+  // 5MB 파일 + 폼 오버헤드 여유로 6mb. (호스팅 자체 요청 한도는 비회원 폼과 동일한 기존 조건)
+  experimental: {
+    serverActions: { bodySizeLimit: '6mb' },
+  },
   images: {
     formats: ['image/webp'],
     remotePatterns: [

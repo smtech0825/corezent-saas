@@ -62,10 +62,12 @@ export async function fetchUserList(opts: {
     // LIKE 와일드카드(%·_·\)는 이스케이프해 글자 그대로 찾는다(관리자 로그 화면과 같은 규칙)
     const likeSafe = q.slice(0, 80).replace(/[\\%_]/g, (m) => `\\${m}`)
     const ids = new Set<string>()
-    const { data: nameRows } = await adminClient
+    const { data: nameRows, error: nameErr } = await adminClient
       .from('profiles')
       .select('id')
       .ilike('name', `%${likeSafe}%`)
+    // 오류를 삼키면 "검색 결과 없음"으로 위장된다 — 실패는 실패로 표면화(검증 도구 지적)
+    if (nameErr) throw new Error(`회원 이름 검색 실패: ${nameErr.message}`)
     ;(nameRows ?? []).forEach((r) => ids.add(r.id))
     const lowered = q.toLowerCase()
     for (const [id, email] of emailMap) {
@@ -87,18 +89,20 @@ export async function fetchUserList(opts: {
     const offset = (opts.page - 1) * opts.pageSize
     query = query.range(offset, offset + opts.pageSize - 1)
   }
-  const { data: profiles, count } = await query
+  const { data: profiles, count, error: listErr } = await query
+  if (listErr) throw new Error(`회원 목록 조회 실패: ${listErr.message}`)
   const rows = profiles ?? []
 
   // 주문 — 이번에 돌려줄 사용자 것만 조회(전 회원 주문을 통째로 받지 않는다)
   const ordersMap = new Map<string, UserOrderRow[]>()
   if (opts.withOrders && rows.length > 0) {
     const pageIds = rows.map((p) => p.id)
-    const { data: orders } = await adminClient
+    const { data: orders, error: ordersErr } = await adminClient
       .from('orders')
       .select('id, user_id, amount, status, created_at')
       .in('user_id', pageIds)
       .order('created_at', { ascending: false })
+    if (ordersErr) throw new Error(`회원 주문 조회 실패: ${ordersErr.message}`)
 
     // 구독 취소 사유 — 이 주문들 것만
     const orderIds = (orders ?? []).map((o) => o.id)
@@ -117,8 +121,9 @@ export async function fetchUserList(opts: {
     }
 
     ;(orders ?? []).forEach((o) => {
-      if (!ordersMap.has(o.user_id)) ordersMap.set(o.user_id, [])
-      ordersMap.get(o.user_id)!.push({ ...o, cancelReason: cancelReasonMap.get(o.id) ?? null })
+      const list = ordersMap.get(o.user_id) ?? []
+      list.push({ ...o, cancelReason: cancelReasonMap.get(o.id) ?? null })
+      ordersMap.set(o.user_id, list)
     })
   }
 

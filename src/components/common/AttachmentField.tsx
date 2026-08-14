@@ -11,21 +11,9 @@
 import { useRef, useState, type DragEvent, type ChangeEvent } from 'react'
 import { Upload, X, FileText } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
-
-/** 첨부 최대 크기 — 비회원 문의 폼과 동일한 5MB (새 값을 정하지 않는다) */
-export const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024
-
-/**
- * @함수명: formatFileSize
- * @설명: 바이트 수를 사람이 읽는 단위(B·KB·MB)로 바꿉니다.
- * @매개변수: bytes - 파일 크기(바이트)
- * @반환값: "1.2 MB" 형태의 문자열
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+// 상수·헬퍼는 중립 모듈(lib/attachment)에 있다 — 'use client'인 이 파일에서 재-export하면
+// 서버가 값을 못 읽는다(클라이언트 참조가 됨). 서버는 반드시 lib에서 직접 import할 것.
+import { MAX_ATTACHMENT_SIZE, formatFileSize } from '@/lib/attachment'
 
 export default function AttachmentField({ file, onChange, idPrefix = 'attach' }: {
   /** 현재 선택된 파일(없으면 null) — 부모가 상태를 소유한다 */
@@ -53,19 +41,23 @@ export default function AttachmentField({ file, onChange, idPrefix = 'attach' }:
     onChange(f)
   }
 
+  /** @함수명: onDragOver @설명: 드래그 진입 표시를 켭니다. */
   function onDragOver(e: DragEvent): void {
     e.preventDefault()
     setDragging(true)
   }
+  /** @함수명: onDragLeave @설명: 드래그 진입 표시를 끕니다. */
   function onDragLeave(e: DragEvent): void {
     e.preventDefault()
     setDragging(false)
   }
+  /** @함수명: onDrop @설명: 떨어뜨린 파일을 선택 처리합니다. */
   function onDrop(e: DragEvent): void {
     e.preventDefault()
     setDragging(false)
     handleFile(e.dataTransfer.files?.[0] ?? null)
   }
+  /** @함수명: onFileChange @설명: 파일 선택창에서 고른 파일을 선택 처리합니다. */
   function onFileChange(e: ChangeEvent<HTMLInputElement>): void {
     handleFile(e.target.files?.[0] ?? null)
   }

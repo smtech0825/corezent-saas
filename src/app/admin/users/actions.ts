@@ -87,7 +87,7 @@ export type ExportCsvResult =
  * @반환값: CSV에 그대로 넣을 문자열
  */
 function csvCell(v: string): string {
-  let s = v.replace(/\r?\n/g, ' ')
+  let s = v.replace(/[\r\n\t]+/g, ' ')
   if (/^[=+\-@]/.test(s)) s = `'${s}`
   return `"${s.replace(/"/g, '""')}"`
 }
@@ -115,11 +115,18 @@ export async function exportUsersCsv(input: { q?: string; sort?: string }): Prom
 
   // 화면과 같은 조건 전체(페이지 무관) — 조회 로직은 query.ts 단일 출처
   let users
+  let total = 0
   try {
-    ;({ users } = await fetchUserList({ q, sort }))
+    ;({ users, total } = await fetchUserList({ q, sort }))
   } catch (err) {
     console.error('[users] CSV 조회 실패:', err instanceof Error ? err.message : String(err))
     return { ok: false, reason: '회원 목록을 조회하지 못했습니다. 잠시 후 다시 시도해 주세요.' }
+  }
+
+  // 조회 상한(기본 1,000행)에 걸려 잘린 채 나가면 "전체를 내보냈다"는 착각을 만든다 —
+  // 자르지 않고 거부한다(검증 도구 지적). 그 규모가 되면 나눠 내보내는 기능이 따로 필요.
+  if (users.length < total) {
+    return { ok: false, reason: `회원이 ${total.toLocaleString('ko-KR')}명이라 한 번에 내보낼 수 없습니다(한 번에 ${users.length.toLocaleString('ko-KR')}명까지). 검색 조건으로 범위를 좁혀 주세요.` }
   }
 
   // ★ 반출 기록 먼저 — 실패하면 내보내지 않는다(best-effort 헬퍼가 아니라 직접 기록)
@@ -142,11 +149,12 @@ export async function exportUsersCsv(input: { q?: string; sort?: string }): Prom
   }
 
   const statusLabel: Record<string, string> = { active: '활성', inactive: '탈퇴' }
+  const roleLabel: Record<string, string> = { admin: '관리자', user: '회원' }
   const header = ['이름', '이메일', '역할', '상태', '가입일'].map(csvCell).join(',')
   const lines = users.map((u) => [
     u.name,
     u.email,
-    u.role,
+    roleLabel[u.role] ?? u.role,
     statusLabel[u.status] ?? u.status,
     new Date(u.created_at).toLocaleDateString('ko-KR'),
   ].map(csvCell).join(','))

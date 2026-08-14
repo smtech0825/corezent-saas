@@ -15,6 +15,7 @@ import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import { supportCategoryLabel } from '@/lib/support-categories'
+import { safeDownloadName } from '@/lib/attachment'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,17 +86,20 @@ export default async function TicketDetailPage({
     }
   }
 
-  // 첨부 서명 주소 — 비공개 버킷이라 이 주소로만 열린다(1시간 유효, 원본 파일명으로 내려받기).
+  // 첨부 서명 주소 — 비공개 버킷이라 이 주소로만 열린다(1시간 유효).
   // 관리자 화면 서버에서만 발급하므로 로그인 관리자 외에는 만들 수 없다.
+  // 내려받기 파일명은 서버가 재조립한다 — 원본명을 그대로 쓰면 특수문자(#·&)에 주소가
+  // 깨지고, 저장 시 확인된 확장자를 끝에 강제해 위장 파일명을 무력화한다(검증 도구 지적).
   const attachmentUrlMap = new Map<string, string>()
   for (const r of replies) {
     const path = r.attachment_path
     const name = r.attachment_name
     if (!path) continue
+    const ext = path.includes('.') ? (path.split('.').pop() ?? '') : ''
     try {
       const { data: signed } = await adminClient.storage
         .from('support-attachments')
-        .createSignedUrl(path, 3600, { download: name ?? true })
+        .createSignedUrl(path, 3600, { download: safeDownloadName(name ?? 'attachment', ext) })
       if (signed?.signedUrl) attachmentUrlMap.set(r.id, signed.signedUrl)
     } catch { /* 주소 발급 실패 시 파일명만 표시(아래 렌더) */ }
   }

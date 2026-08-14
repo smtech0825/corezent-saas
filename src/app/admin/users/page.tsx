@@ -6,11 +6,17 @@
  *        이 페이지는 현재 페이지 분량만 받아 넘긴다. 검색·정렬 조건은 주소(searchParams)에 담긴다.
  */
 
+import type { Metadata } from 'next'
 import { parsePageParam } from '@/lib/validate'
 import { fetchUserList, type UserSort } from './query'
 import UserTable from './UserTable'
 
 export const dynamic = 'force-dynamic'
+
+// 탭 제목 — 루트 title.template이 브랜드를 붙이므로 페이지명만 지정(자매 화면 관례)
+export const metadata: Metadata = {
+  title: '사용자 관리',
+}
 
 const PAGE_SIZE = 20
 

@@ -122,7 +122,7 @@ export default function ContactForm() {
 
       {/* 첨부파일 — 공용 부품(드래그&드롭·5MB 검사 동일) */}
       <div>
-        <label className="block text-sm font-medium text-ink mb-1.5">
+        <label htmlFor="contact-file-input" className="block text-sm font-medium text-ink mb-1.5">
           첨부파일 <span className="text-ink-faint font-normal">(선택, 최대 5MB)</span>
         </label>
         <AttachmentField file={file} onChange={setFile} idPrefix="contact" />
