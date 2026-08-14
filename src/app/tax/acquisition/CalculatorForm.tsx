@@ -79,6 +79,11 @@ export default function CalculatorForm() {
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
 
+  /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
+  function clearStaleResult() {
+    if (result) setResult(null)
+  }
+
   const sigunguList = sido ? (findSigunguList(sido) ?? []) : []
 
   /** 숫자 입력 문자열 → 숫자. 빈 값은 undefined, 잘못된 값은 NaN */
@@ -152,13 +157,14 @@ export default function CalculatorForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+      {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
+      <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         {/* 룰 모드 — 기본값: 확정된 법 */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <SegmentControl
             label="계산 기준"
             value={ruleMode}
-            onChange={(v) => setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed')}
+            onChange={(v) => { setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed'); clearStaleResult() }}
             options={[
               { value: 'confirmed', label: '확정된 법 기준' },
               { value: 'proposed', label: '개정안 포함' },
@@ -203,6 +209,7 @@ export default function CalculatorForm() {
           onChange={(v) => {
             const next = v === 'gift' ? 'gift' : 'sale'
             setCause(next)
+            clearStaleResult()
             // 증여 계산에 필요한 시가인정액·공시가격 등이 고급 항목에 있으므로 자동으로 펼친다
             if (next === 'gift') setAdvancedOpen(true)
           }}

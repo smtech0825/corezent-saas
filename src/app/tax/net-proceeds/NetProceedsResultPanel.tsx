@@ -14,6 +14,7 @@
 import { AlertTriangle, BadgeCheck, ExternalLink, ScrollText } from 'lucide-react'
 import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
+import CalcFailureNotice from '../_components/CalcFailureNotice'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -38,18 +39,8 @@ const UNRESOLVED_LABELS: Record<string, string> = {
 export default function NetProceedsResultPanel({ result }: { result: NetProceedsResult }) {
   // ── 계산 불가 — 0원 대신 사유를 명확히 안내 (다른 계산기와 동일 문구 체계) ──
   if (!result.ok) {
-    return (
-      <div className="bg-danger-soft border border-danger/30 rounded-lg p-6" role="alert">
-        <p className="flex items-center gap-2 font-serif font-bold text-danger mb-2">
-          <AlertTriangle size={18} />
-          계산할 수 없습니다
-        </p>
-        <p className="text-sm text-ink leading-relaxed">{result.message}</p>
-        <p className="text-xs text-ink-soft mt-3">
-          실수령액이 0원이라는 뜻이 아닙니다. 계산에 필요한 근거 또는 입력이 준비되지 않아 결과를 제공하지 않는 것입니다.
-        </p>
-      </div>
-    )
+    // 실패 원인(입력 부족·룰 미등록·근거 없음 등)별 안내는 공용 컴포넌트가 구분한다
+    return <CalcFailureNotice failure={result} amountNoun="실수령액" />
   }
 
   const b = result.breakdown
@@ -129,12 +120,14 @@ export default function NetProceedsResultPanel({ result }: { result: NetProceeds
             <dt className="text-ink-soft">− 중개수수료{brk.isCap ? ' (법정 상한 + 부가세 기준)' : ' (실제 입력액)'}</dt>
             <dd className="font-mono text-ink">{won(b.brokerageDeducted)}</dd>
           </div>
-          {b.otherCosts > 0 && (
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-ink-soft">− 그 밖의 비용</dt>
-              <dd className="font-mono text-ink">{won(b.otherCosts)}</dd>
-            </div>
-          )}
+          {/* 미입력(0)이어도 행을 없애지 않는다 — 계산에 안 들어갔다는 사실을 보여준다
+              (등기비용의 '입력하면 포함됩니다' 표시와 동일 원칙) */}
+          <div className="flex items-baseline justify-between gap-4">
+            <dt className="text-ink-soft">− 그 밖의 비용</dt>
+            <dd className={`font-mono ${b.otherCosts > 0 ? 'text-ink' : 'text-ink-faint text-sm'}`}>
+              {b.otherCosts > 0 ? won(b.otherCosts) : '입력하면 포함됩니다'}
+            </dd>
+          </div>
           <div className="flex items-baseline justify-between gap-4 pt-2 border-t border-rule">
             <dt className="font-serif font-bold text-ink">= 실수령액</dt>
             <dd className="font-mono text-xl font-bold text-pen">{won(b.netProceeds)}</dd>

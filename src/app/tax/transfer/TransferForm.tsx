@@ -91,6 +91,11 @@ export default function TransferForm({ graceDeadlineText }: {
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
 
+  /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
+  function clearStaleResult() {
+    if (result) setResult(null)
+  }
+
   const sigunguList = sido ? (findSigunguList(sido) ?? []) : []
 
   // 1주택 트랙 — 일시적 2주택도 1주택으로 보아 비과세·큰 표 판정을 받으므로
@@ -176,7 +181,8 @@ export default function TransferForm({ graceDeadlineText }: {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+      {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
+      <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="취득일" htmlFor="tr-acquired" required>
             <Input id="tr-acquired" type="date" value={acquiredAt}
@@ -223,7 +229,7 @@ export default function TransferForm({ graceDeadlineText }: {
         <SegmentControl
           label="양도 당시 1세대 보유 주택 수"
           value={String(houseCount)}
-          onChange={(v) => setHouseCount(v === '2' ? 2 : v === '3' ? 3 : 1)}
+          onChange={(v) => { setHouseCount(v === '2' ? 2 : v === '3' ? 3 : 1); clearStaleResult() }}
           options={[
             { value: '1', label: '1주택' },
             { value: '2', label: '2주택' },

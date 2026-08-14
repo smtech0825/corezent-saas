@@ -10,6 +10,7 @@
 
 import { AlertTriangle, BadgeCheck, ExternalLink, ScrollText } from 'lucide-react'
 import type { StampResult } from '@/lib/tax/engine-types'
+import CalcFailureNotice from '../_components/CalcFailureNotice'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -19,18 +20,8 @@ function won(amount: number): string {
 export default function StampResultPanel({ result }: { result: StampResult }) {
   // ── 계산 불가 — 0원 대신 사유를 명확히 안내 (취득세와 동일 문구 체계) ──────
   if (!result.ok) {
-    return (
-      <div className="bg-danger-soft border border-danger/30 rounded-lg p-6" role="alert">
-        <p className="flex items-center gap-2 font-serif font-bold text-danger mb-2">
-          <AlertTriangle size={18} />
-          계산할 수 없습니다
-        </p>
-        <p className="text-sm text-ink leading-relaxed">{result.message}</p>
-        <p className="text-xs text-ink-soft mt-3">
-          세액이 0원이라는 뜻이 아닙니다. 계산에 필요한 근거가 준비되지 않아 결과를 제공하지 않는 것입니다.
-        </p>
-      </div>
-    )
+    // 실패 원인(입력 부족·룰 미등록·근거 없음 등)별 안내는 공용 컴포넌트가 구분한다
+    return <CalcFailureNotice failure={result} amountNoun="세액" />
   }
 
   return (

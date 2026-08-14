@@ -90,6 +90,11 @@ export default function NetProceedsForm({ graceDeadlineText }: {
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
 
+  /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
+  function clearStaleResult() {
+    if (result) setResult(null)
+  }
+
   const sigunguList = sido ? (findSigunguList(sido) ?? []) : []
   // 1주택 트랙 — 양도세 폼과 동일 기준(엔진의 effectiveOneHouse와 같다)
   const oneHouseTrack = houseCount === 1 || (houseCount === 2 && temporaryTwo)
@@ -182,7 +187,8 @@ export default function NetProceedsForm({ graceDeadlineText }: {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+      {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
+      <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="취득일" htmlFor="np-acquired" required>
             <Input id="np-acquired" type="date" value={acquiredAt}
@@ -228,7 +234,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
         <SegmentControl
           label="양도 당시 1세대 보유 주택 수"
           value={String(houseCount)}
-          onChange={(v) => setHouseCount(v === '2' ? 2 : v === '3' ? 3 : 1)}
+          onChange={(v) => { setHouseCount(v === '2' ? 2 : v === '3' ? 3 : 1); clearStaleResult() }}
           options={[
             { value: '1', label: '1주택' },
             { value: '2', label: '2주택' },
@@ -295,7 +301,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
                 <WonPreview value={otherCosts} />
               </Field>
               <Field label="필요경비 (원)" htmlFor="np-expenses"
-                hint="양도소득세 계산용 — 취득세·자본적지출 등. 비우면 0으로 계산하며, 실제 세금은 이보다 낮을 수 있습니다.">
+                hint="취득세·중개수수료·자본적지출 등. 비우면 0으로 계산하며, 실제 세금은 이보다 낮을 수 있습니다.">
                 <Input id="np-expenses" type="number" min={0} step={1} value={expenses}
                   onChange={(e) => setExpenses(e.target.value)} placeholder="예: 20000000" />
                 <WonPreview value={expenses} />

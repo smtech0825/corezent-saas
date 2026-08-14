@@ -13,10 +13,22 @@
 import { AlertTriangle, ExternalLink, ScrollText } from 'lucide-react'
 import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { RegistrationResult } from '@/lib/tax/registration-types'
+import CalcFailureNotice from '../_components/CalcFailureNotice'
 
 /** 원화 표기 */
 function won(amount: number): string {
   return `${amount.toLocaleString('ko-KR')}원`
+}
+
+/** 미확정 조건 필드명 → 한국어 라벨 (취득세 패널과 동일 + 채권 조건 필드) */
+const UNRESOLVED_LABELS: Record<string, string> = {
+  area_sqm: '전용면적',
+  area_over_85: '전용면적',
+  official_price: '공시가격(시가표준액)',
+  is_metro: '수도권 여부',
+  market_value: '시가인정액',
+  price: '취득가액',
+  sido: '시·도',
 }
 
 /**
@@ -49,18 +61,8 @@ function ItemRow({ label, note, amount, notIncluded, exempt }: {
 export default function RegistrationResultPanel({ result }: { result: RegistrationResult }) {
   // ── 계산 불가 — 0원 대신 사유를 명확히 안내 (다른 계산기와 동일 문구 체계) ──
   if (!result.ok) {
-    return (
-      <div className="bg-danger-soft border border-danger/30 rounded-lg p-6" role="alert">
-        <p className="flex items-center gap-2 font-serif font-bold text-danger mb-2">
-          <AlertTriangle size={18} />
-          계산할 수 없습니다
-        </p>
-        <p className="text-sm text-ink leading-relaxed">{result.message}</p>
-        <p className="text-xs text-ink-soft mt-3">
-          비용이 0원이라는 뜻이 아닙니다. 계산에 필요한 근거 또는 입력이 준비되지 않아 결과를 제공하지 않는 것입니다.
-        </p>
-      </div>
-    )
+    // 실패 원인(입력 부족·룰 미등록·근거 없음 등)별 안내는 공용 컴포넌트가 구분한다
+    return <CalcFailureNotice failure={result} amountNoun="비용" />
   }
 
   const b = result.breakdown
@@ -75,8 +77,9 @@ export default function RegistrationResultPanel({ result }: { result: Registrati
             판정하지 못한 조건이 있습니다
           </p>
           <p className="text-sm text-ink leading-relaxed">
-            {result.unresolvedFields.join(', ')} — 해당 값을 입력하면 결과가 달라질 수 있습니다.
-            0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
+            {result.unresolvedFields.map((f) => UNRESOLVED_LABELS[f] ?? f).join(', ')} — 해당
+            값을 입력하면 결과가 달라질 수 있습니다. 0이나 &lsquo;아니오&rsquo;로 간주하지
+            않았습니다.
           </p>
         </div>
       )}

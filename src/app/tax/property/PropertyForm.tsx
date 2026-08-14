@@ -62,6 +62,11 @@ export default function PropertyForm() {
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
 
+  /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
+  function clearStaleResult() {
+    if (result) setResult(null)
+  }
+
   /**
    * @함수명: handleSubmit
    * @설명: 입력을 검증하고 서버 액션을 호출합니다. 서버 액션 예외는 잡아서
@@ -108,7 +113,8 @@ export default function PropertyForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+      {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다 */}
+      <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="과세연도" htmlFor="pr-year" required
             hint="세금을 계산할 연도입니다. 과세기준일은 등록된 룰로 자동 판정됩니다.">

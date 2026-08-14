@@ -46,6 +46,11 @@ export default function BrokerageForm() {
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
 
+  /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
+  function clearStaleResult() {
+    if (result) setResult(null)
+  }
+
   /**
    * @함수명: handleSubmit
    * @설명: 입력을 검증하고 서버 액션을 호출합니다. 서버 액션 예외는 잡아서
@@ -101,7 +106,8 @@ export default function BrokerageForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+      {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
+      <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <Field label="기준일 — 계약(예정)일" htmlFor="brokerage-date" required>
           <Input id="brokerage-date" type="date" value={baseDate}
             onChange={(e) => setBaseDate(e.target.value)} required />
@@ -110,7 +116,7 @@ export default function BrokerageForm() {
         <SegmentControl
           label="거래 유형"
           value={dealType}
-          onChange={(v) => setDealType(v === 'lease' ? 'lease' : 'sale_exchange')}
+          onChange={(v) => { setDealType(v === 'lease' ? 'lease' : 'sale_exchange'); clearStaleResult() }}
           options={[
             { value: 'sale_exchange', label: '매매·교환' },
             { value: 'lease', label: '임대차' },
