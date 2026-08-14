@@ -40,6 +40,23 @@ import {
   parseTransferShortTerm,
   parseTransferTemporaryTwoHouse,
 } from '@/lib/tax/transfer-rules'
+import {
+  PROPERTY_RULE_KEYS,
+  parsePropertyAssessmentDate,
+  parsePropertyAssessmentRatio,
+  parsePropertyAssessmentRatioOneHouse,
+  parsePropertyBaseCap,
+  parsePropertyBurdenCap,
+  parsePropertyRates,
+  parsePropertySurtax,
+} from '@/lib/tax/property-rules'
+import {
+  COMPREHENSIVE_RULE_KEYS,
+  parseComprehensiveBasicDeduction,
+  parseComprehensiveRates,
+  parseComprehensiveRuralSurtax,
+  parseComprehensiveTaxCredit,
+} from '@/lib/tax/comprehensive-rules'
 import { RULE_STATUSES, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
@@ -82,6 +99,23 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [TRANSFER_RULE_KEYS.localIncomeTax]: parseTransferLocalIncomeTax,
   [TRANSFER_RULE_KEYS.periodRule]: parseTransferPeriodRule,
   [TRANSFER_RULE_KEYS.rounding]: parseRounding,
+  [PROPERTY_RULE_KEYS.assessmentRatio]: parsePropertyAssessmentRatio,
+  [PROPERTY_RULE_KEYS.assessmentRatioOneHouse]: parsePropertyAssessmentRatioOneHouse,
+  [PROPERTY_RULE_KEYS.rates]: parsePropertyRates,
+  [PROPERTY_RULE_KEYS.surtax]: parsePropertySurtax,
+  [PROPERTY_RULE_KEYS.baseCap]: parsePropertyBaseCap,
+  [PROPERTY_RULE_KEYS.burdenCap]: parsePropertyBurdenCap,
+  [PROPERTY_RULE_KEYS.assessmentDate]: parsePropertyAssessmentDate,
+  [PROPERTY_RULE_KEYS.rounding]: parseRounding,
+  [COMPREHENSIVE_RULE_KEYS.basicDeduction]: parseComprehensiveBasicDeduction,
+  // 구조가 재산세와 동일한 3종(비율·기준일·세부담 상한 표)은 재산세 검증기를 공유한다
+  [COMPREHENSIVE_RULE_KEYS.assessmentRatio]: parsePropertyAssessmentRatio,
+  [COMPREHENSIVE_RULE_KEYS.rates]: parseComprehensiveRates,
+  [COMPREHENSIVE_RULE_KEYS.taxCredit]: parseComprehensiveTaxCredit,
+  [COMPREHENSIVE_RULE_KEYS.burdenCap]: parsePropertyBurdenCap,
+  [COMPREHENSIVE_RULE_KEYS.ruralSurtax]: parseComprehensiveRuralSurtax,
+  [COMPREHENSIVE_RULE_KEYS.assessmentDate]: parsePropertyAssessmentDate,
+  [COMPREHENSIVE_RULE_KEYS.rounding]: parseRounding,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 
@@ -116,6 +150,22 @@ const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
   [TRANSFER_RULE_KEYS.localIncomeTax]: 'transfer',
   [TRANSFER_RULE_KEYS.periodRule]: 'transfer',
   [TRANSFER_RULE_KEYS.rounding]: 'transfer',
+  [PROPERTY_RULE_KEYS.assessmentRatio]: 'property',
+  [PROPERTY_RULE_KEYS.assessmentRatioOneHouse]: 'property',
+  [PROPERTY_RULE_KEYS.rates]: 'property',
+  [PROPERTY_RULE_KEYS.surtax]: 'property',
+  [PROPERTY_RULE_KEYS.baseCap]: 'property',
+  [PROPERTY_RULE_KEYS.burdenCap]: 'property',
+  [PROPERTY_RULE_KEYS.assessmentDate]: 'property',
+  [PROPERTY_RULE_KEYS.rounding]: 'property',
+  [COMPREHENSIVE_RULE_KEYS.basicDeduction]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.assessmentRatio]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.rates]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.taxCredit]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.burdenCap]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.ruralSurtax]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.assessmentDate]: 'comprehensive',
+  [COMPREHENSIVE_RULE_KEYS.rounding]: 'comprehensive',
   [COMMON_RULE_KEYS.metroScope]: 'common',
 }
 

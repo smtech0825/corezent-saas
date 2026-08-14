@@ -11,8 +11,12 @@ import { ACQUISITION_RULE_KEYS } from '@/lib/tax/acquisition'
 import { STAMP_RULE_KEYS } from '@/lib/tax/stamp'
 import { BROKERAGE_RULE_KEYS } from '@/lib/tax/brokerage'
 import { TRANSFER_RULE_KEYS } from '@/lib/tax/transfer-rules'
+import { PROPERTY_RULE_KEYS } from '@/lib/tax/property-rules'
+import { COMPREHENSIVE_RULE_KEYS } from '@/lib/tax/comprehensive-rules'
 import { COMMON_RULE_KEYS } from '@/lib/tax/rule-store'
 import { TRANSFER_RULE_GUIDES } from './rule-guides-transfer'
+import { PROPERTY_RULE_GUIDES } from './rule-guides-property'
+import { COMPREHENSIVE_RULE_GUIDES } from './rule-guides-comprehensive'
 
 /** 룰 키 하나의 안내 */
 export interface RuleGuide {
@@ -220,6 +224,9 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
   },
   // 양도소득세 11종 — 분량이 커서 별도 파일(rule-guides-transfer.ts)에서 병합
   ...TRANSFER_RULE_GUIDES,
+  // 재산세 8종·종합부동산세 8종 — 같은 이유로 별도 파일에서 병합
+  ...PROPERTY_RULE_GUIDES,
+  ...COMPREHENSIVE_RULE_GUIDES,
   [COMMON_RULE_KEYS.metroScope]: {
     title: '수도권 범위 — 수도권으로 취급할 시·도 이름 목록. 세율표의 is_metro 조건이 이 목록으로 판정됩니다.',
     notes: [
@@ -249,6 +256,12 @@ export const KNOWN_BROKERAGE_KEYS: string[] = Object.values(BROKERAGE_RULE_KEYS)
 /** 양도소득세에서 선택할 수 있는 룰 키 목록 */
 export const KNOWN_TRANSFER_KEYS: string[] = Object.values(TRANSFER_RULE_KEYS)
 
+/** 재산세에서 선택할 수 있는 룰 키 목록 */
+export const KNOWN_PROPERTY_KEYS: string[] = Object.values(PROPERTY_RULE_KEYS)
+
+/** 종합부동산세에서 선택할 수 있는 룰 키 목록 */
+export const KNOWN_COMPREHENSIVE_KEYS: string[] = Object.values(COMPREHENSIVE_RULE_KEYS)
+
 /**
  * @함수명: knownKeysForTaxType
  * @설명: 세목별로 안내가 준비된 룰 키 목록을 돌려줍니다. 빈 배열이면 직접 입력만 가능합니다.
@@ -258,6 +271,8 @@ export function knownKeysForTaxType(taxType: string): string[] {
   if (taxType === 'stamp') return KNOWN_STAMP_KEYS
   if (taxType === 'brokerage') return KNOWN_BROKERAGE_KEYS
   if (taxType === 'transfer') return KNOWN_TRANSFER_KEYS
+  if (taxType === 'property') return KNOWN_PROPERTY_KEYS
+  if (taxType === 'comprehensive') return KNOWN_COMPREHENSIVE_KEYS
   if (taxType === 'common') return KNOWN_COMMON_KEYS
   return []
 }
