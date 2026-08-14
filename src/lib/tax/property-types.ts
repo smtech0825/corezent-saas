@@ -101,6 +101,15 @@ export interface PropertyAssessmentDateValue {
 
 // property.rounding은 취득세·양도세와 같은 RoundingValue(engine-types.ts)를 그대로 쓴다.
 
+/**
+ * 엔진 동작 옵션 — mainTaxOnly: 본세만 계산(종합부동산세의 재산세 상당액 공제용).
+ * 공제 계산은 본세만 쓰므로 이 모드에서는 부가 세목(property.surtax) 룰을 요구하지 않고
+ * 도시지역분·지방교육세를 0으로 둔다. 공개 재산세 계산기는 이 옵션을 쓰지 않는다.
+ */
+export interface PropertyEngineOptions {
+  mainTaxOnly?: boolean
+}
+
 // ─── 계산기 입력 ──────────────────────────────────────────────────────────────
 
 /**

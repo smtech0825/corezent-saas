@@ -25,7 +25,6 @@ import type { PropertyCapStatus } from './property-types'
 import { engineFail, fetchValidRules, isValidDateString, requireRule } from './rule-store'
 import { applyRounding, evaluateRateSpec, parseRounding, selectRateRow, selectRateRowOptional } from './rule-value'
 import {
-  PROPERTY_RULE_KEYS,
   parsePropertyAssessmentDate,
   parsePropertyAssessmentRatio,
   parsePropertyBurdenCap,
@@ -203,11 +202,13 @@ export async function calculateComprehensiveTax(
 
   // ── 재산세 상당액 공제 — 재산세 엔진 자동 호출 (사용자에게 묻지 않는다) ─────
   // 종부세 과세표준을 공시가격으로 넘기면: 재산세 일반 공정시장가액비율을 곱한 값에
-  // 일반(표준) 세율표를 적용한 본세 = 표준 산식의 재산세 상당액. 도시지역분·특례는 제외.
+  // 일반(표준) 세율표를 적용한 본세 = 표준 산식의 재산세 상당액. 본세만 모드라
+  // 부가 세목(property.surtax) 룰 없이도 계산되고, 특례·도시지역분은 제외된다.
   const propRes = await calculatePropertyTax(
     supabase,
     { taxYear: input.taxYear, officialPrice: taxBase, isOneHouse: false, isUrbanArea: false },
     mode,
+    { mainTaxOnly: true },
   )
   if (!propRes.ok) {
     return engineFail(
@@ -217,10 +218,9 @@ export async function calculateComprehensiveTax(
     )
   }
   const propertyDeduction = propRes.breakdown.mainTax
-  // 공제 계산에 실제 쓰인 재산세 룰을 근거에 포함한다 — 지방교육세·도시지역분 룰(surtax)은
-  // 공제 계산(본세)에 쓰이지 않으므로 제외해 근거 목록이 계산과 정확히 일치하게 한다.
+  // 공제 계산에 실제 쓰인 재산세 룰을 근거에 포함한다 — 본세만 모드라 부가 세목 룰은
+  // 애초에 사용되지 않으므로 근거 목록이 계산과 정확히 일치한다.
   for (const r of propRes.appliedRules) {
-    if (r.ruleKey === PROPERTY_RULE_KEYS.surtax) continue
     applied.set(r.id, r)
   }
   const afterProperty = Math.max(rawTax - propertyDeduction, 0)

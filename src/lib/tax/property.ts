@@ -17,8 +17,10 @@ import type { Json, TaxRule, TaxRuleMode } from './types'
 import type { AppliedRuleInfo, RateSpec, RoundingValue, TaxEngineFailure } from './engine-types'
 import type {
   PropertyCapStatus,
+  PropertyEngineOptions,
   PropertyInput,
   PropertyResult,
+  PropertySurtaxValue,
 } from './property-types'
 import { engineFail, fetchValidRules, isValidDateString, requireRule } from './rule-store'
 import { applyRounding, evaluateRateSpec, parseRounding, selectRateRow } from './rule-value'
@@ -77,12 +79,14 @@ function validateInput(input: PropertyInput): TaxEngineFailure | null {
  *        세율표를 왜 썼는지, 상한 2종이 각각 어떻게 처리됐는지를 전부 담습니다.
  *        룰이 하나라도 없으면 0원 대신 실패(한국어 안내)를 반환합니다.
  * @매개변수: supabase - Supabase 클라이언트(서버) / input - 계산 입력 / mode - 룰 모드
+ *            options - 엔진 옵션(mainTaxOnly: 본세만 계산 — 종부세 공제용, 부가 세목 룰 불요구)
  * @반환값: 성공(항목별 세액 + 근거) 또는 실패(한국어 안내)
  */
 export async function calculatePropertyTax(
   supabase: SupabaseClient,
   input: PropertyInput,
   mode: TaxRuleMode,
+  options?: PropertyEngineOptions,
 ): Promise<PropertyResult> {
   const inputError = validateInput(input)
   if (inputError) return inputError
@@ -262,11 +266,17 @@ export async function calculatePropertyTax(
   }
 
   // ── 지방교육세(본세 기준)·도시지역분(과세표준 기준) + 단수 처리 ─────────────
-  const surtaxRule = requireRule(rules, PROPERTY_RULE_KEYS.surtax, baseDate)
-  if (!surtaxRule.ok) return surtaxRule
-  const surtax = parsePropertySurtax(surtaxRule.rule.rule_value, surtaxRule.rule.rule_key)
-  if (!surtax.ok) return surtax
-  use(surtaxRule.rule)
+  // 본세만 모드(종부세의 재산세 상당액 공제용)에서는 부가 세목 룰을 요구하지 않는다 —
+  // 공제 계산은 본세만 쓰므로 surtax 룰 부재가 종부세 계산을 막으면 논리에 맞지 않다.
+  let surtaxValue: PropertySurtaxValue | null = null
+  if (!options?.mainTaxOnly) {
+    const surtaxRule = requireRule(rules, PROPERTY_RULE_KEYS.surtax, baseDate)
+    if (!surtaxRule.ok) return surtaxRule
+    const surtax = parsePropertySurtax(surtaxRule.rule.rule_value, surtaxRule.rule.rule_key)
+    if (!surtax.ok) return surtax
+    use(surtaxRule.rule)
+    surtaxValue = surtax.value
+  }
 
   let rounding: RoundingValue | null = null
   const roundingRule = rules.get(PROPERTY_RULE_KEYS.rounding)
@@ -278,8 +288,14 @@ export async function calculatePropertyTax(
   }
 
   const mainTax = applyRounding(mainAfterCap, rounding)
-  const urbanAreaTax = input.isUrbanArea ? applyRounding(evaluateRateSpec(surtax.value.urbanArea, taxBase), rounding) : 0
-  const localEducationTax = applyRounding(evaluateRateSpec(surtax.value.localEducation, mainTax), rounding)
+  // 지방교육세는 세부담 상한이 적용된 뒤의 본세를 기준으로 계산한다(법 구조와 일치).
+  // 도시지역분은 과세표준 기준이라 세부담 상한이 반영되지 않는다.
+  const urbanAreaTax = surtaxValue !== null && input.isUrbanArea
+    ? applyRounding(evaluateRateSpec(surtaxValue.urbanArea, taxBase), rounding)
+    : 0
+  const localEducationTax = surtaxValue !== null
+    ? applyRounding(evaluateRateSpec(surtaxValue.localEducation, mainTax), rounding)
+    : 0
   const total = mainTax + urbanAreaTax + localEducationTax
 
   const appliedRules = Array.from(applied.values())
