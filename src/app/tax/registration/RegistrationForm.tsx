@@ -206,8 +206,10 @@ export default function RegistrationForm() {
             <div className="mt-4 space-y-4">
               <Field label="국민주택채권 즉시매도 손실률 (%)" htmlFor="rg-bond-loss"
                 hint="채권을 사자마자 되팔 때의 손실 비율. 금리에 따라 매일 바뀌는 값이라 이 계산기가 정할 수 없습니다 — 주택도시기금 포털의 당일 고객부담금 조회에서 확인해 입력하세요. 비우면 채권 항목이 계산에서 빠집니다.">
+                {/* placeholder 없음 — 손실률은 매일 바뀌는 값이라 예시 숫자가 실제 값처럼
+                    입력될 위험이 있다(요율 예시는 승인 예외가 아님). 안내는 힌트 문구가 담당 */}
                 <Input id="rg-bond-loss" type="number" min={0} max={100} step="any" value={bondLossPercent}
-                  onChange={(e) => setBondLossPercent(e.target.value)} placeholder="예: 12.5" />
+                  onChange={(e) => setBondLossPercent(e.target.value)} />
               </Field>
               <Field label="법무사 보수 (원)" htmlFor="rg-judicial"
                 hint="자율 협의라 정해진 값이 없습니다. 견적받은 금액을 입력하세요 — 비우면 계산에서 빠집니다.">
