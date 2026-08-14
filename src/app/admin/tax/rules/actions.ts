@@ -57,6 +57,11 @@ import {
   parseComprehensiveRuralSurtax,
   parseComprehensiveTaxCredit,
 } from '@/lib/tax/comprehensive-rules'
+import {
+  REGISTRATION_RULE_KEYS,
+  parseRegistrationBond,
+  parseRegistrationFee,
+} from '@/lib/tax/registration-rules'
 import { RULE_STATUSES, RULE_TAX_TYPES, RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { Json, TaxRuleStatus, TaxRuleTaxType } from '@/lib/tax/types'
 
@@ -116,6 +121,8 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [COMPREHENSIVE_RULE_KEYS.ruralSurtax]: parseComprehensiveRuralSurtax,
   [COMPREHENSIVE_RULE_KEYS.assessmentDate]: parsePropertyAssessmentDate,
   [COMPREHENSIVE_RULE_KEYS.rounding]: parseRounding,
+  [REGISTRATION_RULE_KEYS.fee]: parseRegistrationFee,
+  [REGISTRATION_RULE_KEYS.bond]: parseRegistrationBond,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
 }
 
@@ -166,6 +173,8 @@ const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
   [COMPREHENSIVE_RULE_KEYS.ruralSurtax]: 'comprehensive',
   [COMPREHENSIVE_RULE_KEYS.assessmentDate]: 'comprehensive',
   [COMPREHENSIVE_RULE_KEYS.rounding]: 'comprehensive',
+  [REGISTRATION_RULE_KEYS.fee]: 'registration',
+  [REGISTRATION_RULE_KEYS.bond]: 'registration',
   [COMMON_RULE_KEYS.metroScope]: 'common',
 }
 

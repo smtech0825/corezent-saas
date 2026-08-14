@@ -13,10 +13,12 @@ import { BROKERAGE_RULE_KEYS } from '@/lib/tax/brokerage'
 import { TRANSFER_RULE_KEYS } from '@/lib/tax/transfer-rules'
 import { PROPERTY_RULE_KEYS } from '@/lib/tax/property-rules'
 import { COMPREHENSIVE_RULE_KEYS } from '@/lib/tax/comprehensive-rules'
+import { REGISTRATION_RULE_KEYS } from '@/lib/tax/registration-rules'
 import { COMMON_RULE_KEYS } from '@/lib/tax/rule-store'
 import { TRANSFER_RULE_GUIDES } from './rule-guides-transfer'
 import { PROPERTY_RULE_GUIDES } from './rule-guides-property'
 import { COMPREHENSIVE_RULE_GUIDES } from './rule-guides-comprehensive'
+import { REGISTRATION_RULE_GUIDES } from './rule-guides-registration'
 
 /** 룰 키 하나의 안내 */
 export interface RuleGuide {
@@ -227,6 +229,10 @@ export const RULE_GUIDES: Record<string, RuleGuide> = {
   // 재산세 8종·종합부동산세 8종 — 같은 이유로 별도 파일에서 병합
   ...PROPERTY_RULE_GUIDES,
   ...COMPREHENSIVE_RULE_GUIDES,
+  // 등기비용 2종 — 같은 이유로 별도 파일에서 병합.
+  // 매도 실수령액 계산기는 새 룰이 없다 — 양도소득세·중개수수료 세목의 룰을 그대로 쓰므로
+  // 그 계산 결과를 고치려면 해당 세목의 룰을 수정하면 된다(실수령액 전용 세목·룰 없음).
+  ...REGISTRATION_RULE_GUIDES,
   [COMMON_RULE_KEYS.metroScope]: {
     title: '수도권 범위 — 수도권으로 취급할 시·도 이름 목록. 세율표의 is_metro 조건이 이 목록으로 판정됩니다.',
     notes: [
@@ -262,6 +268,9 @@ export const KNOWN_PROPERTY_KEYS: string[] = Object.values(PROPERTY_RULE_KEYS)
 /** 종합부동산세에서 선택할 수 있는 룰 키 목록 */
 export const KNOWN_COMPREHENSIVE_KEYS: string[] = Object.values(COMPREHENSIVE_RULE_KEYS)
 
+/** 등기비용에서 선택할 수 있는 룰 키 목록 */
+export const KNOWN_REGISTRATION_KEYS: string[] = Object.values(REGISTRATION_RULE_KEYS)
+
 /**
  * @함수명: knownKeysForTaxType
  * @설명: 세목별로 안내가 준비된 룰 키 목록을 돌려줍니다. 빈 배열이면 직접 입력만 가능합니다.
@@ -273,6 +282,7 @@ export function knownKeysForTaxType(taxType: string): string[] {
   if (taxType === 'transfer') return KNOWN_TRANSFER_KEYS
   if (taxType === 'property') return KNOWN_PROPERTY_KEYS
   if (taxType === 'comprehensive') return KNOWN_COMPREHENSIVE_KEYS
+  if (taxType === 'registration') return KNOWN_REGISTRATION_KEYS
   if (taxType === 'common') return KNOWN_COMMON_KEYS
   return []
 }
