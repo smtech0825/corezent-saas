@@ -99,6 +99,25 @@ export const HWID_LIMITS: Record<string, number> = {
 }
 
 /**
+ * 실제로 발급·저장이 허용되는 tier 전체 목록 — license_keys의 DB CHECK
+ * (license-migrations/001) 및 웹훅의 normalizeTier와 같은 집합이다.
+ * 플랜 올리기 화면·요청 검증이 이 목록 밖의 tier(빈 값·'2pc' 같은 미등록 값)를
+ * 후보로 삼으면, 결제는 되는데 웹훅·DB에서 거부돼 반영이 영구 실패한다(검증 지적).
+ */
+export const KNOWN_TIERS = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc'] as const
+
+/**
+ * @함수명: isKnownTier
+ * @설명: 값이 발급·저장 가능한 tier인지 판정합니다(위 KNOWN_TIERS 기준).
+ * @매개변수: value - 검사할 값(옵션 행의 license_tier 등)
+ * @반환값: 허용 tier면 true
+ */
+export function isKnownTier(value: unknown): value is Tier {
+  const s = String(value ?? '').toLowerCase().trim()
+  return (KNOWN_TIERS as readonly string[]).includes(s)
+}
+
+/**
  * tier → 등록 가능한 PC 대수.
  *  - 'lite' | 'pro' | 'max'      : 위 표 그대로 (GenieStock 무변경)
  *  - '1pc' · '30pc' 처럼 숫자+pc : 그 숫자 (GenieWork — 계약마다 자유)

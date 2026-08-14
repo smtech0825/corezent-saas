@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2, ArrowUpCircle } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
 
@@ -55,6 +56,7 @@ export default function PlanUpgradeButton({ subscriptionId, currentLabel, option
   options: UpgradeOption[]
 }) {
   const { showToast } = useToast()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string>('')
   const [pending, setPending] = useState(false)
@@ -63,6 +65,7 @@ export default function PlanUpgradeButton({ subscriptionId, currentLabel, option
   /**
    * @함수명: handleConfirm
    * @설명: 선택한 상위 옵션으로의 변경을 서버에 요청합니다. 진행 중 재클릭은 잠깁니다.
+   * @반환값: 없음(결과는 모달 안 상태·토스트로 표시)
    */
   async function handleConfirm(): Promise<void> {
     if (pending || !selected) return
@@ -91,11 +94,18 @@ export default function PlanUpgradeButton({ subscriptionId, currentLabel, option
     }
   }
 
+  /**
+   * @함수명: closeModal
+   * @설명: 모달을 닫고 선택 상태를 초기화합니다(진행 중에는 닫히지 않음).
+   *        요청을 마친 뒤 닫을 때는 화면 데이터를 다시 받아 반영 여부를 보여줍니다.
+   */
   function closeModal(): void {
     if (pending) return
+    const wasDone = done
     setOpen(false)
     setSelected('')
     setDone(false)
+    if (wasDone) router.refresh()
   }
 
   return (
@@ -140,7 +150,7 @@ export default function PlanUpgradeButton({ subscriptionId, currentLabel, option
                   이 화면에는 금액이 표시되지 않습니다.
                 </p>
                 <p className="text-xs text-ink-faint leading-relaxed mb-5">
-                  사용 PC 대수는 결제사의 변경 통지를 받은 뒤 바뀝니다. 보통 잠시 안이지만
+                  사용 PC 대수는 결제사의 변경 통지를 받은 뒤 바뀝니다. 보통 곧 반영되지만
                   즉시가 아닐 수 있습니다.
                 </p>
 
@@ -158,7 +168,7 @@ export default function PlanUpgradeButton({ subscriptionId, currentLabel, option
                     className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-mark hover:brightness-95 rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                   >
                     {pending && <Loader2 size={14} className="animate-spin" aria-hidden />}
-                    {pending ? '요청 중...' : '변경 요청'}
+                    {pending ? '요청 중…' : '변경 요청'}
                   </button>
                 </div>
               </>

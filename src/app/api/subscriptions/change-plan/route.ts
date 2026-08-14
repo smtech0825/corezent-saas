@@ -12,7 +12,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { hwidLimitForTier } from '@/app/api/license/_lib_supabase'
+import { hwidLimitForTier, isKnownTier } from '@/app/api/license/_lib_supabase'
+import { logNotification } from '@/lib/notification-log'
+import { maskSecretsInText } from '@/lib/mask'
 
 /**
  * @함수명: POST
@@ -59,16 +61,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!lsSubId) {
       return NextResponse.json({ error: 'No Lemon Squeezy subscription', code: 'NO_LS_SUBSCRIPTION' }, { status: 400 })
     }
+    if (!subscription.product_price_id) {
+      // 옵션행이 연결되지 않은 구독(번들·레거시)은 무엇에서 무엇으로 바꾸는지 판정 불가
+      return NextResponse.json({ error: 'Plan option not found', code: 'PLAN_NOT_FOUND' }, { status: 404 })
+    }
 
     // 3. 현재·새 옵션행 조회(가격표는 공개 조회 대상) — 서버에서 다시 검증한다
     const { data: currentPP } = await supabase
       .from('product_prices')
-      .select('id, product_id, license_tier, option_axis1_label, lemon_squeezy_variant_id')
-      .eq('id', subscription.product_price_id ?? '')
+      .select('id, product_id, license_tier, interval, type, lemon_squeezy_variant_id')
+      .eq('id', subscription.product_price_id)
       .maybeSingle()
     const { data: newPP } = await supabase
       .from('product_prices')
-      .select('id, product_id, license_tier, option_axis1_label, lemon_squeezy_variant_id, is_active')
+      .select('id, product_id, license_tier, interval, type, lemon_squeezy_variant_id, is_active')
       .eq('id', newPriceId)
       .maybeSingle()
 
@@ -79,17 +85,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (newPP.product_id !== currentPP.product_id) {
       return NextResponse.json({ error: 'Different product', code: 'DIFFERENT_PRODUCT' }, { status: 400 })
     }
-    // 같은 결제 주기 안에서만 — 월↔연 전환은 이번 범위 밖
-    if ((newPP.option_axis1_label ?? '') !== (currentPP.option_axis1_label ?? '')) {
+    // 구독형 옵션 + 같은 결제 주기 안에서만 — 라벨이 아니라 정본 컬럼(type·interval)으로
+    // 비교한다(라벨은 자유 텍스트 — 검증 지적). 월↔연 전환·구매형 옵션은 이번 범위 밖.
+    if (newPP.type !== 'subscription' || newPP.interval !== currentPP.interval) {
       return NextResponse.json({ error: 'Different billing cycle', code: 'DIFFERENT_CYCLE' }, { status: 400 })
     }
     // 중복 요청(두 번 누름) — 이미 그 옵션이면 요청 자체를 만들지 않는다
     if (newPP.id === currentPP.id || newPP.lemon_squeezy_variant_id === currentPP.lemon_squeezy_variant_id) {
       return NextResponse.json({ error: 'Already on this plan', code: 'ALREADY_ON_PLAN' }, { status: 400 })
     }
+    // ★ tier를 모르는 옵션은 후보가 될 수 없다 — 빈 값이 한도 1로 폴백되면 내림이
+    //   '올리기'로 통과하고, 웹훅·전용 DB CHECK가 거부하는 값이면 반영이 영구
+    //   실패한다(검증 지적). 발급·저장 가능한 tier(단일 출처 KNOWN_TIERS)만 허용.
+    if (!isKnownTier(currentPP.license_tier) || !isKnownTier(newPP.license_tier)) {
+      return NextResponse.json({ error: 'Tier unknown', code: 'TIER_UNKNOWN' }, { status: 400 })
+    }
     // ★ 올리기만 — PC 한도 비교(기존 판정 함수 재사용, 금액 아님)
-    const curLimit = hwidLimitForTier(String(currentPP.license_tier ?? ''))
-    const newLimit = hwidLimitForTier(String(newPP.license_tier ?? ''))
+    const curLimit = hwidLimitForTier(String(currentPP.license_tier))
+    const newLimit = hwidLimitForTier(String(newPP.license_tier))
     if (!(newLimit > curLimit)) {
       return NextResponse.json({ error: 'Not an upgrade', code: 'NOT_UPGRADE' }, { status: 400 })
     }
@@ -123,18 +136,24 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (!lsRes.ok) {
       const body = await lsRes.text()
-      console.error('[subscriptions/change-plan] Lemon Squeezy API error:', lsRes.status, body)
+      console.error('[subscriptions/change-plan] Lemon Squeezy API error:', lsRes.status, maskSecretsInText(body))
       if (lsRes.status === 404) {
         return NextResponse.json({ error: 'Subscription not found on Lemon Squeezy', code: 'LS_NOT_FOUND' }, { status: 404 })
       }
       return NextResponse.json({ error: `Lemon Squeezy API error: ${lsRes.status}`, code: 'LS_API_ERROR' }, { status: 502 })
     }
 
-    // 성공 — 우리 DB는 건드리지 않는다. 반영은 결제사 통지(웹훅)가 한다.
+    // 성공 — 우리 DB의 구독·라이선스는 건드리지 않는다. 반영은 결제사 통지(웹훅)가 한다.
+    // 돈이 바뀌는 요청이므로 누가 언제 무엇으로 요청했는지 흔적을 남긴다(관리자 로그 조회용).
+    await logNotification({
+      kind: 'webhook', status: 'success',
+      event: '플랜 변경 요청(고객)',
+      target: `sub:${subscriptionId} → variant:${newVariantId} (user:${user.id})`,
+    })
     console.log(`[subscriptions/change-plan] 플랜 변경 요청 완료: ${subscriptionId} → price ${newPriceId} (variant ${newVariantId})`)
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[subscriptions/change-plan]', err)
+    console.error('[subscriptions/change-plan]', maskSecretsInText(String(err)))
     return NextResponse.json({ error: 'Failed to change plan', code: 'SERVER_ERROR' }, { status: 500 })
   }
 }

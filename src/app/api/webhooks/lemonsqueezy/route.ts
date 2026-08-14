@@ -872,35 +872,57 @@ async function syncPlanChangeIfNeeded(payload: LSWebhookPayload): Promise<void> 
   // 1) 우리 구독 행과 현재 옵션행 — 구독 미기록(수동 데이터 등)이면 판단 대상 아님
   const { data: sub } = await admin
     .from('subscriptions')
-    .select('id, order_id, product_price_id')
+    .select('id, order_id, product_price_id, bundle_id')
     .eq('lemon_squeezy_subscription_id', lsSubId)
     .maybeSingle()
   if (!sub) return
 
+  // 옵션행이 연결되지 않은 구독(번들·레거시)은 현재 variant를 알 수 없어 대조가 불가능하다.
+  // 이 상태는 재전송으로 치유되지 않으므로 throw하면 안 된다(기존에 정상 처리되던
+  // subscription_updated가 전부 500이 되는 회귀 — 검증 지적). 번들은 정상 상태라 조용히,
+  // 그 밖의 미연결만 관리자에게 표면화하고 넘어간다.
+  if (!sub.product_price_id) {
+    if (!sub.bundle_id) {
+      await logNotification({
+        kind: 'webhook', status: 'failure', event: '플랜 변경 대조 불가 — 옵션행 미연결',
+        target: `sub:${lsSubId}`,
+        error: `구독에 옵션행(product_price_id)이 연결돼 있지 않아 플랜 변경 여부를 대조하지 못했습니다(통지 variant ${newVariantId}). 필요 시 관리자에서 확인하세요.`,
+      })
+    }
+    return
+  }
+
   let currentVariantId: string | null = null
   let currentProductId: string | null = null
   let currentLabel = ''
-  if (sub.product_price_id) {
+  {
     const { data: cur } = await admin
       .from('product_prices')
       .select('lemon_squeezy_variant_id, product_id, option_axis1_label, option_axis2_label')
       .eq('id', sub.product_price_id)
       .maybeSingle()
-    currentVariantId = (cur?.lemon_squeezy_variant_id as string | null) ?? null
-    currentProductId = (cur?.product_id as string | null) ?? null
+    currentVariantId = cur?.lemon_squeezy_variant_id ?? null
+    currentProductId = cur?.product_id ?? null
     currentLabel = [cur?.option_axis1_label, cur?.option_axis2_label].filter(Boolean).join(' · ')
   }
 
   // 2) 멱등 판정 — 본체가 이미 새 variant를 가리키면 처리 완료 상태(재전송이어도 안전)
   if (currentVariantId === newVariantId) return
 
-  // 3) 새 variant의 옵션행 — 없으면 반영 불가. 옵션행을 등록하면 재전송 때 자가 치유되므로
-  //    발급의 license_tier_missing 전례처럼 알림 후 throw(웹훅 500 → LS 재전송).
-  const { data: ppRows } = await admin
+  // 3) 새 variant의 옵션행 — 조회 자체의 실패와 "행 없음"을 구분한다(검증 지적: 오류를
+  //    버리면 쿼리 실패가 '옵션 행 없음'으로 위장돼 원인을 오도한다). 정렬은 기존 조회
+  //    관례와 동일하게 활성 행 우선(비활성 중복 행이 허용되는 구조 — 042 부분 유니크).
+  //    행이 없으면 옵션행을 등록해야 반영되므로 발급의 license_tier_missing 전례처럼
+  //    알림 후 throw(웹훅 500 → LS 재전송 → 등록 후 자가 치유).
+  const { data: ppRows, error: ppErr } = await admin
     .from('product_prices')
-    .select('id, product_id, license_tier, option_axis1_label, option_axis2_label')
+    .select('id, product_id, license_tier, interval, option_axis1_label, option_axis2_label')
     .eq('lemon_squeezy_variant_id', newVariantId)
-    .order('created_at', { ascending: true })
+    .order('is_active', { ascending: false })
+    .order('id', { ascending: true })
+  if (ppErr) {
+    throw new Error(`플랜 변경 — 옵션 행 조회 실패: ${ppErr.message} (sub=${lsSubId}, variant=${newVariantId})`)
+  }
   const newPP = ppRows?.[0]
   if (!newPP) {
     await logNotification({
@@ -910,8 +932,8 @@ async function syncPlanChangeIfNeeded(payload: LSWebhookPayload): Promise<void> 
     })
     throw new Error(`플랜 변경 미반영 — variant ${newVariantId} 옵션 행 없음 (sub=${lsSubId})`)
   }
-  if ((ppRows?.length ?? 0) > 1) {
-    console.warn(`[LS Webhook] (plan) variant ${newVariantId}에 옵션 행 ${ppRows!.length}개 — 첫 행 사용 (sub=${lsSubId})`)
+  if (ppRows.length > 1) {
+    console.warn(`[LS Webhook] (plan) variant ${newVariantId}에 옵션 행 ${ppRows.length}개 — 활성 우선 첫 행 사용 (sub=${lsSubId})`)
   }
   const newLabel = [newPP.option_axis1_label, newPP.option_axis2_label].filter(Boolean).join(' · ')
 
@@ -932,7 +954,7 @@ async function syncPlanChangeIfNeeded(payload: LSWebhookPayload): Promise<void> 
     .select('slug')
     .eq('id', newPP.product_id)
     .maybeSingle()
-  const supaSlug = isSupabaseProduct(((prod?.slug as string) ?? '').toLowerCase())
+  const supaSlug = isSupabaseProduct((prod?.slug ?? '').toLowerCase())
 
   if (supaSlug) {
     const newTier = normalizeTier(newPP.license_tier)
@@ -955,25 +977,29 @@ async function syncPlanChangeIfNeeded(payload: LSWebhookPayload): Promise<void> 
         error: `플랜 변경 통지를 받았지만 이 구독에 연결된 라이선스가 없어 대수 변경 없이 옵션만 갱신했습니다.`,
       })
     } else {
+      // "어느 DB에 있는지 조회 후 선택" 방식은 조회가 조용히 실패하면(findLicenseInAnyDb가
+      // 오류를 삼키고 null) 시트 키로 오인해 tier를 영영 안 바꾸는 구멍이 있다(검증 지적).
+      // 대신 양쪽 DB에 UPDATE를 직접 보낸다 — 키가 없는 DB에서는 0행 갱신(무해)이고,
+      // DB 장애·실패는 throw로 그대로 전파돼 웹훅 500 → LS 재전송으로 수렴한다.
+      // 시트(GeniePost) 키는 양쪽 모두 0행이라 자연히 대상에서 빠진다.
       for (const lic of licInfo.licenses) {
-        const found = await supaFindLicenseInAnyDb(lic.serialKey)
-        if (found) {
-          const p = found.db === 'geniework' ? 'geniework' : 'geniestock'
-          // 실패는 throw로 전파 → 웹훅 500 → LS 재전송(같은 값 재UPDATE는 무해 — 수렴)
-          await supaUpdateLicenseTier(lic.serialKey, newTier, p)
-          console.log(`[LS Webhook] (plan) ${p} tier 변경: ${maskSecret(lic.serialKey, 8)} → ${newTier}`)
-        } else {
-          // 시트(GeniePost) 키 — tier 개념이 없어 대상 아님. 흔적만 남긴다.
-          console.warn(`[LS Webhook] (plan) 전용 DB에 없는 키 — tier 변경 생략: ${maskSecret(lic.serialKey, 8)}`)
-        }
+        await supaUpdateLicenseTier(lic.serialKey, newTier, 'geniework')
+        await supaUpdateLicenseTier(lic.serialKey, newTier, 'geniestock')
+        console.log(`[LS Webhook] (plan) tier 변경 반영: ${maskSecret(lic.serialKey, 8)} → ${newTier}`)
       }
     }
   }
 
-  // 5) 본체 갱신(멱등 판정 키) — 여기가 성공해야 "처리 완료"로 기록된다
+  // 5) 본체 갱신(멱등 판정 키) — 여기가 성공해야 "처리 완료"로 기록된다.
+  //    결제 주기 표시(billing_interval)도 새 옵션행 기준으로 맞춘다(월↔연 통지 대비).
+  const subUpdate: Record<string, unknown> = {
+    product_price_id: newPP.id,
+    updated_at: new Date().toISOString(),
+  }
+  if (newPP.interval) subUpdate.billing_interval = newPP.interval
   const { error: subErr } = await admin
     .from('subscriptions')
-    .update({ product_price_id: newPP.id, updated_at: new Date().toISOString() })
+    .update(subUpdate)
     .eq('id', sub.id)
   if (subErr) {
     throw new Error(`플랜 변경 — 구독 옵션행 갱신 실패: ${subErr.message}`)
