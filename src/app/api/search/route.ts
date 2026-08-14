@@ -31,6 +31,8 @@ export function GET(request: Request): Response {
   const results: SortedResult[] = []
 
   for (const page of source.getPages()) {
+    // hidden: true 문서(구버전 안내 등)는 검색 결과에서 제외 — 사이트맵과 같은 표식 사용
+    if (page.data.hidden === true) continue
     const url = page.url
     const title = page.data.title ?? ''
     const description = page.data.description ?? ''

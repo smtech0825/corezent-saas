@@ -79,7 +79,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let docsRoutes: MetadataRoute.Sitemap = []
   let blogRoutes: MetadataRoute.Sitemap = []
   try {
-    docsRoutes = source.getPages().map((p) => ({
+    // hidden: true 문서(구버전 안내 등)는 검색엔진에 알리지 않는다 — 사이드바 숨김과 별개 표식
+    docsRoutes = source.getPages().filter((p) => p.data.hidden !== true).map((p) => ({
       url: `${SITE_URL}${p.url}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,

@@ -13,9 +13,16 @@ import {
 } from 'fumadocs-mdx/config'
 import { z } from 'zod'
 
-// 매뉴얼(docs) 컬렉션 — 기본 frontmatter(title·description) + meta.json으로 섹션 순서 제어
+// 매뉴얼(docs) 컬렉션 — 기본 frontmatter(title·description) + meta.json으로 섹션 순서 제어.
+// hidden: true 문서는 사이트맵·매뉴얼 검색에서 제외된다(사이드바는 meta.json이 별도 제어).
+// 파일을 지우지 않고 되돌릴 수 있는 숨김 방식 — frontmatter 한 줄로 켜고 끈다.
 export const docs = defineDocs({
   dir: 'content/docs',
+  docs: {
+    schema: frontmatterSchema.extend({
+      hidden: z.boolean().optional(),
+    }),
+  },
 })
 
 // 블로그(blog) 컬렉션 — 목록/상세에 필요한 date·tags 프론트매터를 추가로 정의
