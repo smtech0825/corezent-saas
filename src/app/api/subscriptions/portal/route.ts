@@ -1,18 +1,27 @@
 /**
  * @파일: api/subscriptions/portal/route.ts
- * @설명: 결제사(Lemon Squeezy) 고객 관리 화면 주소 발급 API.
- *        소유권 검증 후 LS API에서 구독을 조회해 customer_portal 서명 주소를 돌려준다.
- *        ★ 서명 주소는 24시간만 유효하므로 DB에 저장된 값(customer_portal_url)을 쓰지 않고
- *        누를 때마다 새로 발급한다. 실패 사유는 취소 라우트와 같은 방식의 code로 구분한다.
- *        결제사 쪽 상태를 바꾸는 호출이 아니라 조회(GET)뿐이다 — 금액 계산·상태 변경 없음.
+ * @설명: 결제사(Lemon Squeezy) 결제수단 변경 화면 주소 발급 API.
+ *        소유권 검증 후 LS API에서 구독을 조회해 update_payment_method 서명 주소를 돌려준다.
+ *        ★ 고객 포털 전체(customer_portal)가 아니라 결제수단 변경 전용 화면만 연다 —
+ *        포털에서는 요금제 변경이 가능한데 우리 웹훅이 플랜 변경을 반영하지 못해
+ *        결제사와 상태가 어긋난다(플랜 변경은 별도 라운드).
+ *        ★ 서명 주소는 24시간만 유효하므로 DB에 저장된 값을 쓰지 않고 누를 때마다 새로 발급한다.
+ *        결제사 상태를 바꾸는 호출이 아니라 조회(GET)뿐이다 — 금액 계산·상태 변경·DB 쓰기 없음.
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import type { LSSubscriptionAttributes } from '@/lib/lemonsqueezy'
 
-export async function POST(request: Request) {
+/**
+ * @함수명: POST
+ * @설명: 로그인 사용자의 구독인지 확인한 뒤 결제수단 변경 화면의 새 서명 주소를 반환합니다.
+ *        조회는 쿠키 기반 클라이언트(RLS — 본인 구독만 보임)로 하고, 소유권 비교를
+ *        한 번 더 해 이중 방어합니다. 실패 사유는 취소 라우트와 같은 code 방식으로 구분합니다.
+ * @매개변수: request - { subscriptionId } JSON 본문
+ * @반환값: { ok, url } 또는 { error, code } JSON 응답
+ */
+export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { subscriptionId } = (await request.json()) as { subscriptionId?: string }
 
@@ -27,9 +36,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
     }
 
-    // 2. 구독 소유권 검증 (취소 라우트와 동일 관례)
-    const adminClient = createAdminClient()
-    const { data: subscription, error: fetchErr } = await adminClient
+    // 2. 구독 조회 — 쿠키 기반 클라이언트(RLS 적용: 본인 구독만 조회됨).
+    //    남의 구독 id를 넣으면 0행이라 NOT_FOUND로 떨어진다. user_id 비교는 이중 방어.
+    const { data: subscription, error: fetchErr } = await supabase
       .from('subscriptions')
       .select('id, user_id, lemon_squeezy_subscription_id')
       .eq('id', subscriptionId)
@@ -76,14 +85,15 @@ export async function POST(request: Request) {
     }
 
     const lsJson = (await lsRes.json()) as { data?: { attributes?: LSSubscriptionAttributes } }
-    const portalUrl = lsJson.data?.attributes?.urls?.customer_portal
+    // ★ update_payment_method만 반환 — customer_portal 폴백을 두면 요금제 변경 경로가 다시 열린다
+    const paymentUrl = lsJson.data?.attributes?.urls?.update_payment_method
 
-    if (!portalUrl) {
-      console.error('[subscriptions/portal] 응답에 customer_portal 주소 없음:', lsSubId)
-      return NextResponse.json({ error: 'No portal URL in response', code: 'LS_NO_PORTAL' }, { status: 502 })
+    if (!paymentUrl) {
+      console.error('[subscriptions/portal] 응답에 update_payment_method 주소 없음:', lsSubId)
+      return NextResponse.json({ error: 'No payment URL in response', code: 'LS_NO_PORTAL' }, { status: 502 })
     }
 
-    return NextResponse.json({ ok: true, url: portalUrl })
+    return NextResponse.json({ ok: true, url: paymentUrl })
   } catch (err) {
     console.error('[subscriptions/portal]', err)
     return NextResponse.json({ error: 'Failed to get portal URL', code: 'SERVER_ERROR' }, { status: 500 })

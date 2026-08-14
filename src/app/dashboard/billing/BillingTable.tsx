@@ -185,8 +185,9 @@ export default function BillingTable({ rows }: Props) {
               ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd })
               : null
             const isPureActive = derived === 'active'
-            // 결제수단 변경 — LS 구독 실체가 있고 해지·만료 전이면 노출(결제 실패도 active로 와 포함됨)
-            const showPayment = !!sub?.lsSubscriptionId && derived !== null && derived !== 'cancelled' && derived !== 'expired'
+            // 결제수단 변경 — LS 구독 실체가 있으면 상태 무관 노출. 결제 실패 웹훅이 상태를
+            // expired로 저장하므로 상태로 거르면 결제수단을 바꿔야 할 손님이 버튼을 못 본다.
+            const showPayment = !!sub?.lsSubscriptionId
             return (
               <div key={row.orderId} className={`grid ${gridCols} gap-4 items-center px-5 py-3 border-b border-rule last:border-0 hover:bg-paper-shade transition-colors`}>
                 {/* 제품 + 옵션 */}
@@ -241,8 +242,9 @@ export default function BillingTable({ rows }: Props) {
             ? deriveSubStatus({ status: sub.status, cancel_at_period_end: optimistic ? true : sub.cancelAtPeriodEnd, current_period_end: sub.currentPeriodEnd })
             : null
           const isPureActive = derived === 'active'
-          // 데스크톱 표와 같은 노출 규칙 — LS 구독 실체가 있고 해지·만료 전이면 결제수단 변경 노출
-          const showPayment = !!sub?.lsSubscriptionId && derived !== null && derived !== 'cancelled' && derived !== 'expired'
+          // 데스크톱 표와 같은 노출 규칙 — LS 구독 실체가 있으면 상태 무관 노출
+          // (결제 실패가 expired로 저장되므로 상태로 거르면 그 손님이 버튼을 못 본다)
+          const showPayment = !!sub?.lsSubscriptionId
           return (
             <div key={row.orderId} className="bg-paper-raised border border-rule rounded-card p-4">
               <div className="flex items-start justify-between gap-3">

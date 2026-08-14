@@ -2,7 +2,8 @@
 
 /**
  * @컴포넌트: PaymentMethodButton
- * @설명: 결제수단 변경 버튼 — 결제사(Lemon Squeezy) 고객 관리 화면으로 보낸다.
+ * @설명: 결제수단 변경 버튼 — 결제사(Lemon Squeezy)의 결제수단 변경 전용 화면으로 보낸다
+ *        (요금제 변경이 가능한 고객 포털 전체가 아니다 — 플랜 변경 미동기화 방지).
  *        누를 때마다 /api/subscriptions/portal 에서 새 서명 주소를 발급받아 이동한다
  *        (주소가 24시간만 유효해 저장값 재사용 금지). 발급 실패는 한국어 안내로 알린다.
  *        노출 여부(구독 있는 행만)는 부모(BillingTable)가 판단한다.
@@ -39,9 +40,11 @@ export default function PaymentMethodButton({ subscriptionId }: { subscriptionId
 
   /**
    * @함수명: handleOpen
-   * @설명: 새 포털 주소를 발급받아 결제사 화면으로 이동한다. 실패해도 입력·화면 상태는 유지된다.
+   * @설명: 결제수단 변경 화면의 새 주소를 발급받아 결제사 화면으로 이동한다.
+   *        실패는 전부 한국어 안내로 알리고, 성공해서 이동을 시작하면 loading을 유지해
+   *        이동 대기 중 버튼이 다시 눌리지 않게 한다.
    */
-  async function handleOpen() {
+  async function handleOpen(): Promise<void> {
     if (loading) return
     setLoading(true)
     try {
@@ -54,17 +57,23 @@ export default function PaymentMethodButton({ subscriptionId }: { subscriptionId
         })
       } catch {
         showToast('error', '네트워크 오류로 결제사 관리 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.')
+        setLoading(false)
         return
       }
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; code?: string; error?: string }
       if (!res.ok || !data.url) {
         console.error('[portal]', res.status, data.code, data.error)
         showToast('error', portalErrorMessage(data.code))
+        setLoading(false)
         return
       }
-      // 같은 탭 이동 — 팝업 차단에 걸리지 않고, 결제사 화면에서 상점으로 되돌아올 수 있다
+      // 같은 탭 이동 — 팝업 차단에 걸리지 않고, 결제사 화면에서 상점으로 되돌아올 수 있다.
+      // 이동이 시작되므로 loading은 유지한다(중복 클릭 방지).
       window.location.href = data.url
-    } finally {
+    } catch (err) {
+      // 예상 밖 예외도 무안내로 끝나지 않게 한다
+      console.error('[portal]', err)
+      showToast('error', '결제사 관리 화면을 여는 데 실패했습니다. 잠시 후 다시 시도해 주세요.')
       setLoading(false)
     }
   }
@@ -75,7 +84,7 @@ export default function PaymentMethodButton({ subscriptionId }: { subscriptionId
       disabled={loading}
       className="inline-flex items-center gap-1.5 text-xs text-ink-soft hover:text-ink border border-rule hover:border-mark/60 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
     >
-      {loading && <Loader2 size={11} className="animate-spin" />}
+      {loading && <Loader2 size={11} className="animate-spin" aria-hidden />}
       {loading ? '여는 중…' : '결제수단 변경'}
     </button>
   )

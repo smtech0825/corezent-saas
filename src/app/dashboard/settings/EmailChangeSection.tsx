@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/common/Toast'
 import { isEmailInUse, isRateLimited } from '@/lib/auth-error'
+import { SITE_URL } from '@/lib/site'
 import { FormField, SubmitButton, inputCls } from './settings-ui'
 
 export default function EmailChangeSection({ currentEmail, pendingEmail }: {
@@ -49,11 +50,20 @@ export default function EmailChangeSection({ currentEmail, pendingEmail }: {
     }
 
     setLoading(true)
-    const { error: updErr } = await supabase.auth.updateUser(
-      { email: next },
-      // 확인 링크를 누른 뒤 설정 화면으로 돌아온다 (가입 인증과 같은 콜백 경로)
-      { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirect=/dashboard/settings` },
-    )
+    let updErr: { message: string; code?: string } | null = null
+    try {
+      const { error } = await supabase.auth.updateUser(
+        { email: next },
+        // 확인 링크를 누른 뒤 설정 화면으로 돌아온다 (가입 인증과 같은 콜백 경로).
+        // 주소는 SITE_URL 단일 출처(폴백·www 정규화 포함)를 쓴다.
+        { emailRedirectTo: `${SITE_URL}/auth/callback?redirect=${encodeURIComponent('/dashboard/settings')}` },
+      )
+      updErr = error
+    } catch (err) {
+      // 반환값이 아니라 예외로 터지는 경우도 폼이 영구 비활성화되지 않게 한다
+      console.error('[settings] 이메일 변경 요청 예외:', err)
+      updErr = { message: '' }
+    }
     setLoading(false)
 
     if (updErr) {
@@ -80,6 +90,7 @@ export default function EmailChangeSection({ currentEmail, pendingEmail }: {
       <p className="text-sm text-ink-soft mb-5">
         새 주소로 확인 메일을 보내드립니다. 메일의 링크를 눌러야 실제로 바뀝니다.
         보안 설정에 따라 지금 주소로도 확인 메일이 갈 수 있습니다.
+        확인 링크는 <b className="text-ink">변경을 요청한 이 브라우저에서</b> 열어 주세요.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -106,7 +117,7 @@ export default function EmailChangeSection({ currentEmail, pendingEmail }: {
         </FormField>
 
         {error && (
-          <div className="flex items-center gap-2 text-sm text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-2.5">
+          <div role="alert" className="flex items-center gap-2 text-sm text-danger bg-danger-soft border border-danger/20 rounded-lg px-4 py-2.5">
             {error}
           </div>
         )}
