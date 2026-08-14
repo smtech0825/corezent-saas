@@ -170,28 +170,42 @@ export async function calculateRegistrationCost(
   if (!bondPicked.ok) return bondPicked
   bondPicked.unresolved.forEach((f) => unresolvedFields.add(f))
   applied.set(bondRule.rule.id, toAppliedInfo(bondRule.rule))
-  const bondPurchase = applyRounding(
-    (input.officialPrice * bondPicked.row.ratePercent) / 100,
-    bondValue.value.rounding ?? null,
-  )
 
   let bond: RegistrationBondDetail
   let bondLoss: RegistrationItemStatus
-  if (input.bondLossPercent === undefined) {
-    const reason =
-      '채권 즉시매도 손실률을 입력하지 않아 채권 손실액을 포함하지 않았습니다. 손실률은 매일 바뀌는 값이라 이 계산기가 정할 수 없습니다 — 입력하면 포함됩니다.'
-    bond = { status: 'not_included', reason }
-    bondLoss = { status: 'not_included', reason }
+  if (bondPicked.row.exempt === true) {
+    // 면제 행 — 0원이 아니라 '매입 대상 아님'. 손실률 입력과 무관하게 면제가 우선이다
+    const reason = '공시가격(시가표준액) 기준으로 국민주택채권 매입 대상이 아닙니다(면제).'
+    bond = { status: 'exempt', reason }
+    bondLoss = { status: 'exempt', reason }
   } else {
-    const lossAmount = Math.floor((bondPurchase * input.bondLossPercent) / 100)
-    bond = {
-      status: 'included',
-      purchaseAmount: bondPurchase,
-      ratePercent: bondPicked.row.ratePercent,
-      lossPercent: input.bondLossPercent,
-      lossAmount,
+    // 비면제 행의 ratePercent는 검증기가 보장하지만, 저장 경로 밖 값에 대한 이중 방어
+    const ratePercent = bondPicked.row.ratePercent
+    if (ratePercent === undefined) {
+      return engineFail('RULE_VALUE_INVALID',
+        `룰('${bondRule.rule.rule_key}')의 선택된 행에 ratePercent가 없습니다. 관리자 화면에서 룰 값을 수정해 주세요.`,
+        bondRule.rule.rule_key)
     }
-    bondLoss = { status: 'included', amount: lossAmount }
+    const bondPurchase = applyRounding(
+      (input.officialPrice * ratePercent) / 100,
+      bondValue.value.rounding ?? null,
+    )
+    if (input.bondLossPercent === undefined) {
+      const reason =
+        '채권 즉시매도 손실률을 입력하지 않아 채권 손실액을 포함하지 않았습니다. 손실률은 매일 바뀌는 값이라 이 계산기가 정할 수 없습니다 — 입력하면 포함됩니다.'
+      bond = { status: 'not_included', reason }
+      bondLoss = { status: 'not_included', reason }
+    } else {
+      const lossAmount = Math.floor((bondPurchase * input.bondLossPercent) / 100)
+      bond = {
+        status: 'included',
+        purchaseAmount: bondPurchase,
+        ratePercent,
+        lossPercent: input.bondLossPercent,
+        lossAmount,
+      }
+      bondLoss = { status: 'included', amount: lossAmount }
+    }
   }
 
   // ── 법무사 보수 — 자율 협의라 룰이 없다. 입력 없으면 '포함하지 않음' ────────

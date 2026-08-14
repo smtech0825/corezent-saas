@@ -29,9 +29,9 @@ function taxTypeLabelOf(ruleKey: string): string {
   return (TAX_TYPE_LABELS as Record<string, string>)[prefix] ?? '공통'
 }
 
-/** 항목 한 행 — 금액 또는 '입력하면 포함됩니다' 표시 */
-function ItemRow({ label, note, amount, notIncluded }: {
-  label: string; note?: string; amount?: number; notIncluded?: boolean
+/** 항목 한 행 — 금액, '입력하면 포함됩니다'(미포함), '면제'(대상 아님) 중 하나를 표시 */
+function ItemRow({ label, note, amount, notIncluded, exempt }: {
+  label: string; note?: string; amount?: number; notIncluded?: boolean; exempt?: boolean
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2 border-b border-rule last:border-b-0">
@@ -39,8 +39,8 @@ function ItemRow({ label, note, amount, notIncluded }: {
         {label}
         {note && <span className="block text-xs text-ink-faint mt-0.5">{note}</span>}
       </dt>
-      <dd className={`font-mono text-sm ${notIncluded ? 'text-ink-faint' : 'text-ink'}`}>
-        {notIncluded ? '입력하면 포함됩니다' : won(amount ?? 0)}
+      <dd className={`font-mono text-sm ${notIncluded ? 'text-ink-faint' : exempt ? 'text-ok' : 'text-ink'}`}>
+        {exempt ? '면제 — 매입 대상 아님' : notIncluded ? '입력하면 포함됩니다' : won(amount ?? 0)}
       </dd>
     </div>
   )
@@ -95,7 +95,8 @@ export default function RegistrationResultPanel({ result }: { result: Registrati
               ? `매입 의무액 ${won(result.bond.purchaseAmount)} (매입률 ${result.bond.ratePercent}%) × 손실률 ${result.bond.lossPercent}%`
               : undefined}
             amount={b.bondLoss.status === 'included' ? b.bondLoss.amount : undefined}
-            notIncluded={b.bondLoss.status === 'not_included'} />
+            notIncluded={b.bondLoss.status === 'not_included'}
+            exempt={b.bondLoss.status === 'exempt'} />
           <ItemRow label="법무사 보수"
             amount={b.judicialFee.status === 'included' ? b.judicialFee.amount : undefined}
             notIncluded={b.judicialFee.status === 'not_included'} />
@@ -146,6 +147,15 @@ export default function RegistrationResultPanel({ result }: { result: Registrati
           <div>
             <p className="text-sm font-semibold text-ink mb-1">국민주택채권 — 포함되지 않음</p>
             <p className="text-sm text-ink-soft leading-relaxed">{result.bond.reason}</p>
+          </div>
+        )}
+        {result.bond.status === 'exempt' && (
+          <div>
+            <p className="text-sm font-semibold text-ink mb-1">국민주택채권 — 매입 면제</p>
+            <p className="text-sm text-ink-soft leading-relaxed">
+              {result.bond.reason} 0원이 아니라 매입 의무 자체가 없다는 뜻입니다 — 손실률을
+              입력해도 이 항목은 계산에 들어가지 않습니다.
+            </p>
           </div>
         )}
         {b.judicialFee.status === 'not_included' && (

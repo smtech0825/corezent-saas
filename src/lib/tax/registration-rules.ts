@@ -80,8 +80,8 @@ export function parseRegistrationFee(
 /**
  * registration.bond 검증 — 국민주택채권 매입률 표 + 매입액 단수 처리(선택).
  * 매입률 0%는 채권 항목이 조용히 0원이 되는 함정이라 거부한다. 매입 면제 구간은
- * 행을 두지 않는 것이 아니라 — 조건에 맞는 행이 없으면 오류로 중단되므로 —
- * 면제 여부를 관리자가 안내(note)로 남기고 하한(min) 조건으로 표를 구성한다.
+ * "exempt": true 행으로 표현한다 — 그 행에는 ratePercent를 넣지 않으며(동시 존재는
+ * 저장 거부), 엔진·화면은 0원이 아니라 '면제(매입 대상 아님)'로 처리한다.
  */
 export function parseRegistrationBond(
   value: Json,
@@ -95,8 +95,16 @@ export function parseRegistrationBond(
     if (!isObj(row)) return invalid(ruleKey, `rows[${i}]가 객체가 아닙니다.`)
     if (!isObj(row.when)) return invalid(ruleKey, `rows[${i}].when이 객체가 아닙니다.`)
     if (row.priority !== undefined && !isNum(row.priority)) return invalid(ruleKey, `rows[${i}].priority가 숫자가 아닙니다.`)
-    if (!isNum(row.ratePercent) || row.ratePercent <= 0) {
-      return invalid(ruleKey, `rows[${i}].ratePercent가 0보다 큰 숫자(%)가 아닙니다. 매입률 0%는 등록할 수 없습니다.`)
+    if (row.exempt !== undefined && row.exempt !== true) {
+      return invalid(ruleKey, `rows[${i}].exempt는 true만 허용합니다(면제가 아니면 필드를 빼세요).`)
+    }
+    if (row.exempt === true) {
+      // 면제 행 — 매입률과 동시에 있으면 의미가 모순이라 저장 거부
+      if (row.ratePercent !== undefined) {
+        return invalid(ruleKey, `rows[${i}]는 면제 행("exempt": true)이므로 ratePercent를 함께 넣을 수 없습니다.`)
+      }
+    } else if (!isNum(row.ratePercent) || row.ratePercent <= 0) {
+      return invalid(ruleKey, `rows[${i}].ratePercent가 0보다 큰 숫자(%)가 아닙니다. 매입률 0%는 등록할 수 없습니다 — 면제 구간은 "exempt": true 행으로 표현하세요.`)
     }
   }
   let rounding: RoundingValue | undefined

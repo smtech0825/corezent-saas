@@ -31,11 +31,17 @@ export interface RegistrationFeeValue {
   rows: RegistrationFeeRow[]
 }
 
-/** registration.bond 행 — 국민주택채권 매입률(%). 조건은 official_price·sido 등 */
+/**
+ * registration.bond 행 — 국민주택채권 매입률(%) 또는 면제.
+ * 면제 구간(소액 등)은 exempt: true 행으로 표현한다 — 매입률 0%가 아니라 '매입 대상
+ * 아님'이며 화면도 0원이 아니라 '면제'로 표시한다. exempt 행에는 ratePercent를 넣지
+ * 않는다(함께 있으면 저장 거부 — 검증기가 강제).
+ */
 export interface RegistrationBondRow {
   when: Conditions
   priority?: number
-  ratePercent: number    // 매입률(%) — 관리자 입력
+  ratePercent?: number   // 매입률(%) — 관리자 입력. exempt 행에는 없다
+  exempt?: boolean       // true면 매입 면제 행 — ratePercent와 동시 사용 불가
 }
 
 /**
@@ -73,12 +79,14 @@ export interface RegistrationInput {
 // ─── 계산 결과 ────────────────────────────────────────────────────────────────
 
 /**
- * 선택 항목의 포함 상태 — '0원'과 '계산에 안 들어감'을 구분한다(이 구분이 이 계산기의 핵심).
- * not_included면 총액에 합산되지 않으며 화면이 "입력하면 포함됩니다"로 표시한다.
+ * 선택 항목의 포함 상태 — '0원'·'계산에 안 들어감'·'면제(대상 아님)'를 구분한다
+ * (이 구분이 이 계산기의 핵심). not_included면 총액에 합산되지 않으며 화면이
+ * "입력하면 포함됩니다"로, exempt면 '면제'로 표시한다(0원 표시 금지 — 둘은 다르다).
  */
 export type RegistrationItemStatus =
   | { status: 'included'; amount: number }
   | { status: 'not_included'; reason: string }
+  | { status: 'exempt'; reason: string }   // 면제 — 채권 매입 대상 아님(채권 항목 전용)
 
 /** 국민주택채권 상세 — 매입 의무액과 즉시매도 손실액을 함께 담는다(화면 표시용) */
 export type RegistrationBondDetail =
@@ -89,6 +97,7 @@ export type RegistrationBondDetail =
       lossPercent: number      // 즉시매도 손실률(%) — 사용자 입력
       lossAmount: number       // 손실액 (원) — 총액에 들어가는 금액
     }
+  | { status: 'exempt'; reason: string }   // 매입 면제 — 룰의 exempt 행이 선택됨
   | { status: 'not_included'; reason: string }
 
 /** 항목별 금액 분해 — 필수 항목은 금액, 선택 항목은 포함 상태 구조 */
