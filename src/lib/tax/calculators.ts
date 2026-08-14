@@ -89,6 +89,14 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     category: 'sell',
     available: true,
   },
+  {
+    slug: 'net-proceeds',
+    path: '/tax/net-proceeds',
+    name: '매도 실수령액',
+    description: '아파트를 팔면 실제로 손에 쥐는 돈을 세금·수수료를 빼고 계산합니다.',
+    category: 'sell',
+    available: false,
+  },
   // 전월세 전환 계산기는 만들지 않는다(2026-08-13 범위 조정) — 세금이 아니고
   // 아파트 매매와 무관해 서비스 목적에서 벗어남. '준비 중'으로도 표시하지 않는다.
 ]
