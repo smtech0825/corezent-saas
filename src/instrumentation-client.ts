@@ -17,6 +17,7 @@ initBotId({
     { path: '/tax/brokerage',        method: 'POST' },
     { path: '/tax/property',         method: 'POST' },
     { path: '/tax/comprehensive',    method: 'POST' },
+    { path: '/tax/registration',     method: 'POST' },
     { path: '/tax/transfer',         method: 'POST' },
   ],
 })
