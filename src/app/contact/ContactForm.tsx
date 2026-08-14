@@ -3,20 +3,14 @@
 /**
  * @컴포넌트: ContactForm
  * @설명: 비회원 문의 폼 — 제목, 이메일, 내용, 첨부파일(드래그&드롭)
- *        Honeypot 스팸 방지, 5MB 첨부 제한, Toast 알림
+ *        Honeypot 스팸 방지, 5MB 첨부 제한, Toast 알림.
+ *        첨부 칸은 공용 부품 AttachmentField(여기 있던 것을 추출)로 그린다 — 동작 동일.
  */
 
-import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
-import { Send, Upload, X, FileText, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Send, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+import AttachmentField from '@/components/common/AttachmentField'
 
 export default function ContactForm() {
   const { showToast } = useToast()
@@ -25,41 +19,7 @@ export default function ContactForm() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [file, setFile] = useState<File | null>(null)
-  const [dragging, setDragging] = useState(false)
   const [sending, setSending] = useState(false)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // 파일 선택 핸들러 (공통)
-  function handleFile(f: File | null) {
-    if (!f) return
-    if (f.size > MAX_FILE_SIZE) {
-      showToast('error', '파일 크기는 5MB 이하여야 합니다.')
-      return
-    }
-    setFile(f)
-  }
-
-  // 드래그 & 드롭
-  function onDragOver(e: DragEvent) {
-    e.preventDefault()
-    setDragging(true)
-  }
-  function onDragLeave(e: DragEvent) {
-    e.preventDefault()
-    setDragging(false)
-  }
-  function onDrop(e: DragEvent) {
-    e.preventDefault()
-    setDragging(false)
-    const f = e.dataTransfer.files?.[0]
-    handleFile(f ?? null)
-  }
-
-  // 파일 인풋 변경
-  function onFileChange(e: ChangeEvent<HTMLInputElement>) {
-    handleFile(e.target.files?.[0] ?? null)
-  }
 
   // 제출
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -160,54 +120,12 @@ export default function ContactForm() {
         <p className="text-right text-xs text-ink-faint mt-1">{message.length}/5,000</p>
       </div>
 
-      {/* 첨부파일 — 드래그 & 드롭 */}
+      {/* 첨부파일 — 공용 부품(드래그&드롭·5MB 검사 동일) */}
       <div>
         <label className="block text-sm font-medium text-ink mb-1.5">
           첨부파일 <span className="text-ink-faint font-normal">(선택, 최대 5MB)</span>
         </label>
-
-        {!file ? (
-          <div
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`relative cursor-pointer rounded-md border-2 border-dashed px-6 py-8 text-center transition-colors ${
-              dragging
-                ? 'border-pen bg-pen/5'
-                : 'border-rule hover:border-pen/40 bg-paper-shade/50'
-            }`}
-          >
-            <Upload size={24} className="mx-auto text-ink-faint mb-2" />
-            <p className="text-sm text-ink-soft">
-              파일을 여기에 끌어다 놓거나 <span className="text-pen underline underline-offset-2">찾아보기</span>
-            </p>
-            <p className="text-xs text-ink-faint mt-1">최대 5MB</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={onFileChange}
-              className="hidden"
-            />
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-paper border border-rule">
-            <div className="w-9 h-9 rounded-md bg-pen/10 border border-pen/20 flex items-center justify-center shrink-0">
-              <FileText size={16} className="text-pen" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-ink truncate">{file.name}</p>
-              <p className="text-xs text-ink-faint">{formatFileSize(file.size)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setFile(null)}
-              className="text-ink-faint hover:text-seal transition-colors p-1"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        )}
+        <AttachmentField file={file} onChange={setFile} idPrefix="contact" />
       </div>
 
       {/* 전송 버튼 */}

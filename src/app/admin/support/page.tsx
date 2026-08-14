@@ -9,6 +9,7 @@ import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import { parsePageParam } from '@/lib/validate'
+import { supportCategoryLabel } from '@/lib/support-categories'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,17 +43,43 @@ export default async function SupportPage({
 
   const adminClient = createAdminClient()
 
-  let query = adminClient
-    .from('support_tickets')
-    .select('id, user_id, subject, status, priority, is_read, created_at, updated_at', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + PAGE_SIZE - 1)
-
-  if (status && status !== 'all') {
-    query = query.eq('status', status)
+  /** 목록 행 공통 형태 — category는 062 적용 전이면 빠질 수 있어 선택 필드 */
+  type TicketRow = {
+    id: string; user_id: string; subject: string; status: string; priority: string
+    category?: string | null; is_read: boolean; created_at: string; updated_at: string
   }
 
-  const { data: tickets, count: total } = await query
+  /**
+   * @함수명: fetchTickets
+   * @설명: 티켓 목록을 조회합니다. category 칸 포함으로 먼저 시도하고, 칸이 아직
+   *        없으면(062 미적용) 빼고 재시도합니다 — 화면이 통째로 비지 않게.
+   *        select 문자열은 타입 파싱 때문에 리터럴이어야 해서 두 체인으로 나뉜다.
+   * @매개변수: withCategory - category 칸을 select에 포함할지
+   * @반환값: supabase 조회 결과 그대로
+   */
+  async function fetchTickets(withCategory: boolean) {
+    if (withCategory) {
+      let query = adminClient
+        .from('support_tickets')
+        .select('id, user_id, subject, status, priority, category, is_read, created_at, updated_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1)
+      if (status && status !== 'all') query = query.eq('status', status)
+      return query
+    }
+    let query = adminClient
+      .from('support_tickets')
+      .select('id, user_id, subject, status, priority, is_read, created_at, updated_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+    if (status && status !== 'all') query = query.eq('status', status)
+    return query
+  }
+
+  let res = await fetchTickets(true)
+  if (res.error) res = await fetchTickets(false)
+  const tickets = (res.data ?? []) as TicketRow[]
+  const total = res.count
 
   let emailMap: Map<string, string> = new Map()
   try {
@@ -60,8 +87,9 @@ export default async function SupportPage({
     emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']))
   } catch { /* 무시 */ }
 
-  const list = (tickets ?? []).map((t) => ({
+  const list = tickets.map((t) => ({
     ...t,
+    category: t.category ?? null,
     email: emailMap.get(t.user_id) ?? '—',
     shortId: t.id.slice(0, 8).toUpperCase(),
   }))
@@ -118,6 +146,7 @@ export default async function SupportPage({
                   <th className="text-left px-6 py-3 text-xs text-ink-faint font-medium">ID</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">제목</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">사용자</th>
+                  <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">유형</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">우선순위</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">상태</th>
                   <th className="text-left px-4 py-3 text-xs text-ink-faint font-medium">날짜</th>
@@ -142,6 +171,7 @@ export default async function SupportPage({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-ink-soft truncate max-w-[160px]">{t.email}</td>
+                    <td className="px-4 py-3 text-xs text-ink-soft whitespace-nowrap">{supportCategoryLabel(t.category)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-medium capitalize ${priorityColors[t.priority] ?? 'text-ink-soft'}`}>
                         {t.priority}

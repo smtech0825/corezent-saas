@@ -14,6 +14,7 @@ import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/
 import { sendEmail, supportReplyEmailHtml } from '@/lib/email'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import { supportCategoryLabel } from '@/lib/support-categories'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,22 +39,66 @@ export default async function TicketDetailPage({
   const { id } = await params
   const adminClient = createAdminClient()
 
-  const { data: ticket } = await adminClient
+  // category 칸 포함으로 먼저 조회 — 칸이 아직 없으면(062 미적용) 빼고 재시도
+  let { data: ticket } = await adminClient
     .from('support_tickets')
-    .select('id, user_id, subject, status, priority, created_at')
+    .select('id, user_id, subject, status, priority, category, created_at')
     .eq('id', id)
     .single()
+  if (!ticket) {
+    ;({ data: ticket } = await adminClient
+      .from('support_tickets')
+      .select('id, user_id, subject, status, priority, created_at')
+      .eq('id', id)
+      .single())
+  }
 
   if (!ticket) notFound()
+  const ticketCategory = (ticket as { category?: string | null }).category ?? null
 
   // 읽음 처리
   await adminClient.from('support_tickets').update({ is_read: true }).eq('id', id)
 
-  const { data: replies } = await adminClient
-    .from('support_replies')
-    .select('id, user_id, is_admin, message, created_at')
-    .eq('ticket_id', id)
-    .order('created_at', { ascending: true })
+  /** 답글 행 공통 형태 — 첨부 칸은 062 적용 전이면 빠질 수 있어 선택 필드 */
+  type ReplyRow = {
+    id: string; user_id: string | null; is_admin: boolean; message: string; created_at: string
+    attachment_path?: string | null; attachment_name?: string | null; attachment_size?: number | null
+  }
+
+  // 첨부 칸 포함으로 먼저 조회 — 칸이 아직 없으면(062 미적용) 빼고 재시도
+  let replies: ReplyRow[] = []
+  {
+    const first = await adminClient
+      .from('support_replies')
+      .select('id, user_id, is_admin, message, created_at, attachment_path, attachment_name, attachment_size')
+      .eq('ticket_id', id)
+      .order('created_at', { ascending: true })
+    if (first.error) {
+      const fallback = await adminClient
+        .from('support_replies')
+        .select('id, user_id, is_admin, message, created_at')
+        .eq('ticket_id', id)
+        .order('created_at', { ascending: true })
+      replies = (fallback.data ?? []) as ReplyRow[]
+    } else {
+      replies = (first.data ?? []) as ReplyRow[]
+    }
+  }
+
+  // 첨부 서명 주소 — 비공개 버킷이라 이 주소로만 열린다(1시간 유효, 원본 파일명으로 내려받기).
+  // 관리자 화면 서버에서만 발급하므로 로그인 관리자 외에는 만들 수 없다.
+  const attachmentUrlMap = new Map<string, string>()
+  for (const r of replies) {
+    const path = r.attachment_path
+    const name = r.attachment_name
+    if (!path) continue
+    try {
+      const { data: signed } = await adminClient.storage
+        .from('support-attachments')
+        .createSignedUrl(path, 3600, { download: name ?? true })
+      if (signed?.signedUrl) attachmentUrlMap.set(r.id, signed.signedUrl)
+    } catch { /* 주소 발급 실패 시 파일명만 표시(아래 렌더) */ }
+  }
 
   // 사용자 이메일 조회
   let userEmail = '—'
@@ -183,6 +228,7 @@ export default async function TicketDetailPage({
               <h1 className="text-xl font-bold text-ink font-serif">{ticket.subject}</h1>
               <p className="text-sm text-ink-soft mt-1">
                 보낸 사람 <span className="text-ink">{userEmail}</span> · {fmtDate(ticket.created_at)}
+                {ticketCategory && <> · 유형 <span className="text-ink">{supportCategoryLabel(ticketCategory)}</span></>}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -213,7 +259,7 @@ export default async function TicketDetailPage({
 
         {/* 메시지 스레드 */}
         <div className="space-y-3">
-          {(!replies || replies.length === 0) ? (
+          {replies.length === 0 ? (
             <EmptyState boxed message="아직 메시지가 없습니다." />
           ) : (
             replies.map((reply) => (
@@ -232,6 +278,24 @@ export default async function TicketDetailPage({
                   <span className="text-xs text-ink-faint">{fmtDate(reply.created_at)}</span>
                 </div>
                 <p className="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+                {/* 첨부 — 서명 주소가 있으면 내려받기 링크, 발급 실패 시 파일명만 */}
+                {(() => {
+                  const name = reply.attachment_name
+                  const size = reply.attachment_size
+                  if (!name) return null
+                  const url = attachmentUrlMap.get(reply.id)
+                  return (
+                    <p className="mt-3 text-xs">
+                      {url ? (
+                        <a href={url} className="inline-flex items-center gap-1.5 text-mark hover:text-ink border border-mark/30 hover:border-mark/60 px-2.5 py-1.5 rounded-lg transition-colors">
+                          📎 {name}{typeof size === 'number' ? ` (${(size / 1024).toFixed(0)} KB)` : ''}
+                        </a>
+                      ) : (
+                        <span className="text-ink-faint">📎 {name} — 내려받기 주소를 만들지 못했습니다. 새로고침해 주세요.</span>
+                      )}
+                    </p>
+                  )
+                })()}
               </div>
             ))
           )}
