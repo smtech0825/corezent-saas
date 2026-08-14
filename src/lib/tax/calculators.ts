@@ -74,6 +74,14 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     available: false,
   },
   {
+    slug: 'comprehensive',
+    path: '/tax/comprehensive',
+    name: '종합부동산세',
+    description: '공시가격 합계 기준으로 종합부동산세 과세 대상 여부와 세액을 계산합니다.',
+    category: 'hold',
+    available: false,
+  },
+  {
     slug: 'transfer',
     path: '/tax/transfer',
     name: '양도소득세',
