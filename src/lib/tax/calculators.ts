@@ -66,6 +66,14 @@ export const TAX_CALCULATORS: TaxCalculatorInfo[] = [
     available: false,
   },
   {
+    slug: 'property',
+    path: '/tax/property',
+    name: '재산세',
+    description: '아파트 보유 시 매년 내는 재산세를 지방교육세·도시지역분과 함께 계산합니다.',
+    category: 'hold',
+    available: false,
+  },
+  {
     slug: 'transfer',
     path: '/tax/transfer',
     name: '양도소득세',
