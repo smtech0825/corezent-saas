@@ -11,6 +11,7 @@
 
 import { useEffect } from 'react'
 import { EVENT, trackEvent } from '@/lib/analytics-events'
+import { whenGtagReady } from '@/lib/track-when-ready'
 
 interface Props {
   /** 중복 집계 방지 키(주문 id — 사건 값으로는 보내지 않음). 없으면 세션당 1회 */
@@ -21,12 +22,17 @@ interface Props {
 
 export default function PurchaseTracker({ dedupeKey, product }: Props) {
   useEffect(() => {
-    const key = `purchase_tracked_${dedupeKey ?? 'session'}`
-    try {
-      if (sessionStorage.getItem(key)) return
-      sessionStorage.setItem(key, '1')
-    } catch { /* 저장소 접근 불가(시크릿 등)면 중복 방지 없이 1회 전송 */ }
-    trackEvent(EVENT.PURCHASE, product ? { product } : undefined)
+    // 결제 완료 도착은 외부(결제사)에서 오는 전체 새 페이지라 측정 도구(gtag)가 아직
+    // 안 실려 있을 수 있다 — 준비를 기다렸다가 보낸다(먼저 보내면 조용히 유실 — 검증 지적).
+    const cleanup = whenGtagReady(() => {
+      const key = `purchase_tracked_${dedupeKey ?? 'session'}`
+      try {
+        if (sessionStorage.getItem(key)) return
+        sessionStorage.setItem(key, '1')
+      } catch { /* 저장소 접근 불가(시크릿 등)면 중복 방지 없이 1회 전송 */ }
+      trackEvent(EVENT.PURCHASE, product ? { product } : undefined)
+    })
+    return cleanup
   }, [dedupeKey, product])
 
   return null

@@ -18,6 +18,23 @@ export const SIGNUP_METHOD_COOKIE_MAX_AGE = 60
 /** 브라우저 1회 표식(localStorage 키) — 같은 브라우저에서 가입을 두 번 세지 않는 잠금 */
 export const SIGNUP_TRACKED_KEY = 'cz_signup_tracked'
 
+/** 표식 유효 시간 — 신규 판정 창(5분)을 덮는 10분만 잠근다. 영구로 잠그면 공용 PC에서
+ *  다음 사람의 진짜 가입이 영영 안 세진다(검증 지적) — 10분 뒤엔 표식이 무효가 된다 */
+export const SIGNUP_TRACKED_TTL_MS = 10 * 60 * 1000
+
+/**
+ * @함수명: isRecentlyTracked
+ * @설명: 표식 값(기록 시각)이 아직 유효한지 판정합니다. 숫자가 아니거나 10분이 지났으면
+ *        무효(false) — 다시 셀 수 있는 상태로 봅니다.
+ * @매개변수: raw - localStorage에 저장된 표식 값
+ * @반환값: 10분 안에 기록된 표식이면 true
+ */
+export function isRecentlyTracked(raw: string | null): boolean {
+  if (!raw) return false
+  const t = parseInt(raw, 10)
+  return Number.isFinite(t) && Date.now() - t < SIGNUP_TRACKED_TTL_MS
+}
+
 /** 측정에 담을 수 있는 소셜 방식 4종 — 하나라도 빠지면 실패(지시) */
 const KNOWN_SOCIAL_METHODS = ['kakao', 'github', 'google', 'naver'] as const
 
@@ -32,6 +49,7 @@ const KNOWN_SOCIAL_METHODS = ['kakao', 'github', 'google', 'naver'] as const
  */
 export function normalizeSignupMethod(provider: unknown): string | null {
   if (typeof provider !== 'string') return null
-  const p = provider.toLowerCase().replace(/^custom:/, '').trim()
+  // trim을 먼저 — 앞뒤 공백이 있으면 custom: 접두 제거가 빗나간다(검증 지적)
+  const p = provider.trim().toLowerCase().replace(/^custom:/, '')
   return (KNOWN_SOCIAL_METHODS as readonly string[]).includes(p) ? p : null
 }

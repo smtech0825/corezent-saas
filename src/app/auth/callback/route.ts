@@ -108,6 +108,7 @@ export async function GET(request: Request) {
             path: '/',
             sameSite: 'lax',
             httpOnly: false, // 브라우저 부품이 읽어야 한다(값은 방식 이름뿐 — 비밀 아님)
+            secure: process.env.NODE_ENV === 'production', // 미들웨어 쿠키와 같은 관례
           })
         }
       } catch { /* 측정 전달 실패는 무시 — 가입·로그인 정상 진행 */ }
