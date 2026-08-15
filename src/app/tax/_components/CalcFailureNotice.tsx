@@ -44,6 +44,32 @@ const FAILURE_GUIDES: Record<TaxEngineFailure['code'], { title: string; hint: st
   },
 }
 
+/**
+ * 엔진 message에 운영자 대상 지시("관리자 화면에서 룰 값을 수정/정리해 주세요")가 담기는
+ * 실패 코드 — 일반 사용자에게는 원문 대신 제목·대처 안내만 보여준다. 사용자가 할 수 있는
+ * 일이 없는데 관리자용 지시가 보이면 무엇을 해야 하는지 오해한다(원인은 서버 로그·관리자
+ * 화면에서 확인한다).
+ */
+const OPERATOR_ONLY_CODES: TaxEngineFailure['code'][] = [
+  'RULE_VALUE_INVALID',
+  'RULE_CONFLICT',
+  'AMBIGUOUS_RATE_ROW',
+]
+
+/**
+ * @함수명: userFacingFailureMessage
+ * @설명: 실패 사유를 사용자에게 보여줄 문장으로 바꿉니다 — 운영자 대상 지시가 담긴
+ *        코드는 짧은 사용자용 문구로 대체하고, 그 외에는 엔진 원문을 그대로 씁니다.
+ *        비교 카드처럼 좁은 자리에서도 같은 기준을 쓰기 위해 공개합니다.
+ * @매개변수: failure - 엔진 실패 결과
+ * @반환값: 화면에 그대로 보여줄 한국어 문장
+ */
+export function userFacingFailureMessage(failure: TaxEngineFailure): string {
+  return OPERATOR_ONLY_CODES.includes(failure.code)
+    ? '계산 근거에 문제가 있어 계산하지 못했습니다. 운영자가 확인 중이니 잠시 후 다시 시도해 주세요.'
+    : failure.message
+}
+
 export default function CalcFailureNotice({ failure, amountNoun }: {
   /** 엔진 실패 결과 — message는 화면에 그대로 표시할 한국어 사유 */
   failure: TaxEngineFailure
@@ -57,7 +83,7 @@ export default function CalcFailureNotice({ failure, amountNoun }: {
         <AlertTriangle size={18} />
         {guide.title}
       </p>
-      <p className="text-sm text-ink leading-relaxed">{failure.message}</p>
+      <p className="text-sm text-ink leading-relaxed">{userFacingFailureMessage(failure)}</p>
       <p className="text-xs text-ink-soft mt-3 leading-relaxed">
         {guide.hint.replace('{noun}', amountNoun)}
       </p>

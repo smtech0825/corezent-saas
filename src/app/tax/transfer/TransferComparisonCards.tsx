@@ -8,6 +8,7 @@
  */
 
 import YearComparisonSection, { type YearCardData } from '../_components/YearComparisonSection'
+import { userFacingFailureMessage } from '../_components/CalcFailureNotice'
 import type { YearComparison } from '@/lib/tax/year-comparison'
 import type { TransferSuccess } from '@/lib/tax/transfer-types'
 
@@ -67,7 +68,7 @@ export default function TransferComparisonCards({ comparison }: {
           ruleMode: e.ruleMode,
           isBaseYear: e.isBaseYear,
           ok: false,
-          failMessage: e.result.message,
+          failMessage: userFacingFailureMessage(e.result),
         },
   )
 
