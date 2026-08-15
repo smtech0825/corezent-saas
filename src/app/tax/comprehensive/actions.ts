@@ -6,7 +6,8 @@
  *        성공 시 tax_calculation_logs에 계산 이력을 기록한다.
  *        ⚠️ 개인식별정보(IP·이메일·이름)는 어떤 필드에도 기록하지 않는다.
  *        룰 조회는 공개 읽기(anon) 클라이언트, 이력 기록만 service_role 클라이언트를 쓴다.
- *        룰 모드는 확정법(confirmed) 고정 — 개편안(미확정)은 이 계산기의 제외 범위다.
+ *        룰 모드는 아직 확정법(confirmed) 고정 — 확정법/개정안 전환 UI는 다음 단계에서
+ *        붙는다(2026 세제개편안). 개정안 전용 입력 4종은 여기서 엔진으로 전달만 한다.
  *        재산세 상당액 공제는 엔진이 재산세 엔진을 호출해 자동 계산한다(입력 없음).
  */
 
@@ -29,6 +30,11 @@ export interface ComprehensiveCalcPayload {
   age?: number                          // 1세대 1주택 — 만 나이
   holdingYears?: number                 // 1세대 1주택 — 보유기간 (만 연수)
   prevTotalTax?: number                 // 직전 연도 총세액 (원) — 선택
+  // ── 개정안 모드 전용(2026 세제개편안) — 확정법 모드 화면은 보내지 않는다 ──
+  residenceYears?: number               // 1세대 1주택 — 거주기간 (만 연수)
+  isResiding?: boolean                  // 1세대 1주택 — 해당 주택 거주 여부
+  residingOfficialPrice?: number        // 다주택 — 거주 중인 주택의 공시가격 (비거주면 0)
+  hasRegulatedHouse?: boolean           // 조정대상지역 주택 보유 여부 (자기신고)
 }
 
 /**
@@ -57,6 +63,11 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
     age: payload.age,
     holdingYears: payload.holdingYears,
     prevTotalTax: payload.prevTotalTax,
+    // 개정안 전용 입력 — 타입·범위 검증은 엔진이 수행한다(다른 필드와 같은 관례)
+    residenceYears: payload.residenceYears,
+    isResiding: payload.isResiding,
+    residingOfficialPrice: payload.residingOfficialPrice,
+    hasRegulatedHouse: payload.hasRegulatedHouse,
   }
 
   const supabase = await createClient()
@@ -76,6 +87,7 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
           notTaxableReason: result.notTaxableReason,
           basicDeductionApplied: result.basicDeductionApplied,
           basicDeductionType: result.basicDeductionType,
+          basicDeductionLabel: result.basicDeductionLabel,
           taxBase: result.taxBase,
           heavyTableApplied: result.heavyTableApplied,
           taxCredit: result.taxCredit,
