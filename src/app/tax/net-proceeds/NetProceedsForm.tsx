@@ -86,6 +86,8 @@ export default function NetProceedsForm({ graceDeadlineText }: {
   const [graceContractDate, setGraceContractDate] = useState('')
   const [graceDeposit, setGraceDeposit] = useState(false)
   // ── 결과 ──────────────────────────────────────────────────────────────────
+  // 판정 근거 표시가 그 결과를 만든 값을 가리키게 — 제출 시점 취득일(양도세 폼과 같은 관례)
+  const [submittedAcquiredAt, setSubmittedAcquiredAt] = useState('')
   const [result, setResult] = useState<NetProceedsResult | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -135,10 +137,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
     if (otherNum !== undefined && (Number.isNaN(otherNum) || otherNum < 0)) {
       setFormError('그 밖의 비용을 0 이상 숫자(원)로 입력해 주세요.'); return
     }
-    if (oneHouseTrack && acquiredRegulated === '') {
-      setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
-      return
-    }
+    // 취득 당시 조정대상지역은 비워 두면 서버가 이력으로 자동 판정한다(못 하면 사유와 함께 요청)
     // 미래 날짜 차단 — 양도세 폼과 동일(엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
     if (houseCount === 2 && temporaryTwo && newHouseAcquiredAt && newHouseAcquiredAt > transferDate) {
@@ -179,6 +178,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
           otherCosts: otherNum,
         })
         setResult(res)
+        setSubmittedAcquiredAt(acquiredAt)
         scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
@@ -265,11 +265,11 @@ export default function NetProceedsForm({ graceDeadlineText }: {
               <Input id="np-residence" type="number" min={0} step={1} value={residenceYears}
                 onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
             </Field>
-            <Field label="취득 당시 조정대상지역이었는지" htmlFor="np-acq-regulated" required
-              hint="취득 시점의 지정 여부는 과거 이력이 시스템에 없어 자동 판정할 수 없습니다. 비과세 거주 요건 판정에만 쓰입니다.">
+            <Field label="취득 당시 조정대상지역 여부" htmlFor="np-acq-regulated"
+              hint="비워 두면 등록된 지정 이력으로 취득일 기준 자동 판정합니다(판정 결과와 근거를 결과에 표시합니다). 자동으로 판정할 수 없는 경우에는 이유와 함께 직접 선택을 요청합니다. 직접 선택하면 그 값이 자동 판정보다 우선합니다. 비과세 거주 요건 판정에만 쓰입니다.">
               <select id="np-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
                 onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
-                <option value="">선택</option>
+                <option value="">자동 판정 (권장)</option>
                 <option value="yes">예 — 취득 당시 조정대상지역</option>
                 <option value="no">아니요 — 취득 당시 비규제</option>
               </select>
@@ -356,7 +356,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
       <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
-          <NetProceedsResultPanel result={result} />
+          <NetProceedsResultPanel result={result} acquiredAt={submittedAcquiredAt} />
         </div>
       )}
       </CalcResultSlot>

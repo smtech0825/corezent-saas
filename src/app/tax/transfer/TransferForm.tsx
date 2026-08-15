@@ -96,6 +96,8 @@ export default function TransferForm({ graceDeadlineText }: {
   const [graceContractDate, setGraceContractDate] = useState('')
   const [graceDeposit, setGraceDeposit] = useState(false)
   // ── 결과 ──────────────────────────────────────────────────────────────────
+  // 판정 근거 표시가 지금 입력칸이 아니라 그 결과를 만든 값을 가리키게 — 제출 시점 취득일
+  const [submittedAcquiredAt, setSubmittedAcquiredAt] = useState('')
   const [result, setResult] = useState<TransferResult | null>(null)
   const [comparison, setComparison] = useState<YearComparison<TransferSuccess> | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -141,11 +143,7 @@ export default function TransferForm({ graceDeadlineText }: {
     if (resNum !== undefined && (Number.isNaN(resNum) || resNum < 0)) {
       setFormError('거주기간을 0 이상 숫자(만 연수)로 입력해 주세요.'); return
     }
-    // 1주택 트랙은 취득 당시 조정 여부가 비과세 판정에 필요하다 — 서버 오류로 떠넘기지 않고 폼에서 요구
-    if (oneHouseTrack && acquiredRegulated === '') {
-      setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
-      return
-    }
+    // 취득 당시 조정대상지역은 비워 두면 서버가 이력으로 자동 판정한다(못 하면 사유와 함께 요청)
     // 미래 날짜 차단 — 양도일보다 뒤인 날짜는 판정을 왜곡한다 (엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
     // 거주기간이 보유기간을 넘으면 차단 — 종부세 폼과 같은 취지, 엔진과 이중 방어.
@@ -195,6 +193,7 @@ export default function TransferForm({ graceDeadlineText }: {
           includeYearComparison: true,
         })
         setResult(res.result)
+        setSubmittedAcquiredAt(acquiredAt)
         setComparison(res.comparison ?? null)
         scrollResultIntoView(resultRef)
       } catch {
@@ -288,14 +287,15 @@ export default function TransferForm({ graceDeadlineText }: {
             onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
         </Field>
 
-        {/* 1주택 트랙(1주택 또는 일시적 2주택) — 비과세·장기보유특별공제 큰 표 판정용 입력 */}
+        {/* 1주택 트랙(1주택 또는 일시적 2주택) — 비과세·장기보유특별공제 큰 표 판정용 입력.
+            취득 당시 조정대상지역은 등록된 이력으로 자동 판정하되, 직접 지정하면 그 값이 우선한다 */}
         {oneHouseTrack && (
           <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <Field label="취득 당시 조정대상지역이었는지" htmlFor="tr-acq-regulated" required
-              hint="취득 시점의 지정 여부는 과거 이력이 시스템에 없어 자동 판정할 수 없습니다. 취득 당시 국토교통부 공고 또는 관할 시·군·구에서 확인 후 직접 선택하세요. 비과세 거주 요건 판정에만 쓰입니다.">
+            <Field label="취득 당시 조정대상지역 여부" htmlFor="tr-acq-regulated"
+              hint="비워 두면 등록된 지정 이력으로 취득일 기준 자동 판정합니다(판정 결과와 근거를 결과에 표시합니다). 자동으로 판정할 수 없는 경우에는 이유와 함께 직접 선택을 요청합니다. 직접 선택하면 그 값이 자동 판정보다 우선합니다. 비과세 거주 요건 판정에만 쓰입니다.">
               <select id="tr-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
                 onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
-                <option value="">선택</option>
+                <option value="">자동 판정 (권장)</option>
                 <option value="yes">예 — 취득 당시 조정대상지역</option>
                 <option value="no">아니요 — 취득 당시 비규제</option>
               </select>
@@ -327,7 +327,7 @@ export default function TransferForm({ graceDeadlineText }: {
       <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
-          <TransferResultPanel result={result} />
+          <TransferResultPanel result={result} acquiredAt={submittedAcquiredAt} />
         </div>
       )}
       </CalcResultSlot>

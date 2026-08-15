@@ -15,6 +15,7 @@ import { AlertTriangle, BadgeCheck, ExternalLink, ScrollText } from 'lucide-reac
 import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
+import { AcquiredRegulatedResult, AcquiredRegulatedUnavailable } from '../_components/AcquiredRegulatedNotice'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -36,11 +37,24 @@ const UNRESOLVED_LABELS: Record<string, string> = {
   sigungu: '시·군·구',
 }
 
-export default function NetProceedsResultPanel({ result }: { result: NetProceedsResult }) {
+export default function NetProceedsResultPanel({ result, acquiredAt }: {
+  result: NetProceedsResult
+  /** 제출 시점의 취득일(YYYY-MM-DD) — 취득 당시 조정대상지역 판정 표시에 쓴다 */
+  acquiredAt: string
+}) {
   // ── 계산 불가 — 0원 대신 사유를 명확히 안내 (다른 계산기와 동일 문구 체계) ──
   if (!result.ok) {
-    // 실패 원인(입력 부족·룰 미등록·근거 없음 등)별 안내는 공용 컴포넌트가 구분한다
-    return <CalcFailureNotice failure={result} amountNoun="실수령액" />
+    // 실패 원인(입력 부족·룰 미등록·근거 없음 등)별 안내는 공용 컴포넌트가 구분한다.
+    // 취득 당시 조정대상지역을 자동 판정하지 못한 경우에는 왜 직접 선택해야 하는지도 밝힌다
+    // (양도세 엔진을 그대로 쓰므로 같은 사유가 그대로 올라온다).
+    return (
+      <>
+        <CalcFailureNotice failure={result} amountNoun="실수령액" />
+        {result.acquiredRegulatedUnavailable && (
+          <AcquiredRegulatedUnavailable reason={result.acquiredRegulatedUnavailable} />
+        )}
+      </>
+    )
   }
 
   const b = result.breakdown
@@ -60,6 +74,11 @@ export default function NetProceedsResultPanel({ result }: { result: NetProceeds
             입력하면 결과가 달라질 수 있습니다. 0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
           </p>
         </div>
+      )}
+
+      {/* 취득 당시 조정대상지역 판정 — 양도세 엔진 결과를 그대로 표시(같은 판정을 쓴다) */}
+      {result.transfer.acquiredRegulated && (
+        <AcquiredRegulatedResult info={result.transfer.acquiredRegulated} acquiredAt={acquiredAt} />
       )}
 
       {/* 실제 입력한 중개수수료가 법정 상한을 넘는 경우 — 경고 */}

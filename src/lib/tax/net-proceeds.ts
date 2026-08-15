@@ -59,11 +59,18 @@ export async function calculateNetProceeds(
   // ── 양도소득세 — 기존 엔진 호출. 비과세(exempt)는 실패가 아니라 정상 결과다 ──
   const transferRes = await calculateTransferTax(supabase, input, mode)
   if (!transferRes.ok) {
-    return engineFail(
-      transferRes.code,
-      `양도소득세를 계산할 수 없어 실수령액 계산을 중단했습니다(0원으로 대체하지 않습니다). ${transferRes.message}`,
-      transferRes.ruleKey,
-    )
+    return {
+      ...engineFail(
+        transferRes.code,
+        `양도소득세를 계산할 수 없어 실수령액 계산을 중단했습니다(0원으로 대체하지 않습니다). ${transferRes.message}`,
+        transferRes.ruleKey,
+      ),
+      // 취득 당시 조정대상지역을 자동 판정하지 못한 사유는 그대로 옮긴다 — 감싸면서 잃으면
+      // 이 화면만 '왜 직접 선택해야 하는지'를 설명하지 못한다
+      ...(transferRes.acquiredRegulatedUnavailable
+        ? { acquiredRegulatedUnavailable: transferRes.acquiredRegulatedUnavailable }
+        : {}),
+    }
   }
   for (const r of transferRes.appliedRules) applied.set(r.id, r)
 
