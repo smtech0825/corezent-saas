@@ -13,14 +13,16 @@
  */
 
 import { useRef, useState, useTransition } from 'react'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
+import { fullYearsBetween } from '@/lib/tax/period'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import type { TransferHouseCount, TransferResult } from '@/lib/tax/transfer-types'
 import RuleModeSelector from '../_components/RuleModeSelector'
+import AdvancedFields from './AdvancedFields'
 import { calculateTransfer } from './actions'
 import TransferResultPanel from './TransferResultPanel'
 
@@ -134,15 +136,6 @@ export default function TransferForm({ graceDeadlineText }: {
     if (resNum !== undefined && (Number.isNaN(resNum) || resNum < 0)) {
       setFormError('거주기간을 0 이상 숫자(만 연수)로 입력해 주세요.'); return
     }
-    // 거주기간이 보유기간(취득일~양도일)을 넘으면 차단 — 종부세 폼과 같은 취지, 엔진과 이중 방어.
-    // 경계(정확히 같은 날)는 초일 산입 방식이 판정하므로 엔진에 맡긴다
-    if (resNum !== undefined && acquiredAt && transferDate) {
-      const acqPlus = new Date(`${acquiredAt}T00:00:00`)
-      acqPlus.setFullYear(acqPlus.getFullYear() + resNum)
-      if (acqPlus.getTime() > new Date(`${transferDate}T00:00:00`).getTime()) {
-        setFormError('거주기간이 보유기간보다 길 수 없습니다. 취득일·거주기간 입력을 확인해 주세요.'); return
-      }
-    }
     // 1주택 트랙은 취득 당시 조정 여부가 비과세 판정에 필요하다 — 서버 오류로 떠넘기지 않고 폼에서 요구
     if (oneHouseTrack && acquiredRegulated === '') {
       setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
@@ -150,6 +143,14 @@ export default function TransferForm({ graceDeadlineText }: {
     }
     // 미래 날짜 차단 — 양도일보다 뒤인 날짜는 판정을 왜곡한다 (엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
+    // 거주기간이 보유기간을 넘으면 차단 — 종부세 폼과 같은 취지, 엔진과 이중 방어.
+    // 연수 계산은 엔진과 같은 공용 함수(period.ts)를 쓰되, 초일 산입 방식은 룰 값이라
+    // 폼은 더 관대한 쪽(include_start)으로만 검사한다 — 경계·불산입 여부는 엔진이 판정한다.
+    // 상속 주택은 공제용 기산일이 상속개시일이라 이 가드를 건너뛴다(엔진이 판정).
+    if (resNum !== undefined && !inherited && acquiredAt &&
+        resNum > fullYearsBetween(acquiredAt, transferDate, 'include_start')) {
+      setFormError('거주기간이 보유기간보다 길 수 없습니다. 취득일·거주기간 입력을 확인해 주세요.'); return
+    }
     if (houseCount === 2 && temporaryTwo && newHouseAcquiredAt && newHouseAcquiredAt > transferDate) {
       setFormError('신규주택 취득일이 양도일보다 늦을 수 없습니다.'); return
     }
@@ -294,58 +295,17 @@ export default function TransferForm({ graceDeadlineText }: {
           </div>
         )}
 
-        {/* 고급 항목 — 기본 접힘 */}
-        <div className="border-t border-rule pt-4">
-          <button type="button" onClick={() => setAdvancedOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-ink transition-colors">
-            고급 항목
-            <ChevronDown size={15} className={`transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {advancedOpen && (
-            <div className="mt-4 space-y-4">
-              <Field label="필요경비 (원)" htmlFor="tr-expenses"
-                hint="취득세·중개수수료·자본적지출 등. 비우면 0으로 계산하며, 실제 세금은 이보다 낮을 수 있습니다.">
-                <Input id="tr-expenses" type="number" min={0} step={1} value={expenses}
-                  onChange={(e) => setExpenses(e.target.value)} placeholder="예: 20000000" />
-                <WonPreview value={expenses} />
-              </Field>
-
-              <CheckRow label="상속받은 주택" hint="보유기간 기산일이 달라집니다 — 세율용은 피상속인 취득일, 공제용은 상속개시일."
-                checked={inherited} onChange={setInherited} />
-              {inherited && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="상속개시일" htmlFor="tr-inherit-open" required>
-                    <Input id="tr-inherit-open" type="date" value={inheritanceOpenedAt}
-                      onChange={(e) => setInheritanceOpenedAt(e.target.value)} required />
-                  </Field>
-                  <Field label="피상속인 취득일" htmlFor="tr-decedent" required>
-                    <Input id="tr-decedent" type="date" value={decedentAcquiredAt}
-                      onChange={(e) => setDecedentAcquiredAt(e.target.value)} required />
-                  </Field>
-                </div>
-              )}
-
-              {/* 중과 경과조치 — 해당자가 지금도 있으므로 눈에 띄게 안내 */}
-              <div className="bg-caution-soft border border-caution/30 rounded-md p-4 space-y-3">
-                <p className="text-sm font-semibold text-caution">다주택 중과 경과조치</p>
-                <p className="text-xs text-ink leading-relaxed">
-                  {graceDeadlineText
-                    ? `${graceDeadlineText}까지 매매계약을 체결하고 계약금을 받았다면 아래에 입력하세요. `
-                    : '중과 유예 종료 전에 매매계약을 체결하고 계약금을 받았다면 아래에 입력하세요. '}
-                  계약일부터 일정 기간(지역별로 다름) 안에 양도하면 다주택 중과를 면할 수
-                  있습니다. 적용 기한·기간은 등록된 룰 기준으로 판정됩니다.
-                </p>
-                <Field label="매매계약 체결일" htmlFor="tr-grace-date">
-                  <Input id="tr-grace-date" type="date" value={graceContractDate}
-                    onChange={(e) => setGraceContractDate(e.target.value)} />
-                </Field>
-                {graceContractDate && (
-                  <CheckRow label="계약금을 받았습니다" checked={graceDeposit} onChange={setGraceDeposit} />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* 고급 항목 — 기본 접힘 (표시는 AdvancedFields로 분리 — 상태는 이 폼이 소유) */}
+        <AdvancedFields
+          open={advancedOpen} onToggle={() => setAdvancedOpen((v) => !v)}
+          expenses={expenses} onExpenses={setExpenses}
+          inherited={inherited} onInherited={setInherited}
+          inheritanceOpenedAt={inheritanceOpenedAt} onInheritanceOpenedAt={setInheritanceOpenedAt}
+          decedentAcquiredAt={decedentAcquiredAt} onDecedentAcquiredAt={setDecedentAcquiredAt}
+          graceContractDate={graceContractDate} onGraceContractDate={setGraceContractDate}
+          graceDeposit={graceDeposit} onGraceDeposit={setGraceDeposit}
+          graceDeadlineText={graceDeadlineText}
+        />
 
         {formError && <p className="text-sm font-medium text-seal" role="alert">{formError}</p>}
 

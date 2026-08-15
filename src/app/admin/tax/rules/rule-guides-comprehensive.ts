@@ -30,7 +30,8 @@ export const COMPREHENSIVE_RULE_GUIDES: Record<string, RuleGuide> = {
     notes: [
       '두 형식을 지원합니다. 확정법(구 형식): generalAmount(일반)·oneHouseAmount(1세대 1주택) 고정 금액 두 개 — 기존 확정법 룰은 재등록 없이 그대로 동작합니다. 개정안(신 형식): rows 행 조건별 금액 — 한 룰 행에는 한 형식만 쓸 수 있고 혼합은 저장이 거부됩니다.',
       '신 형식의 금액(deduction)은 두 가지입니다. 고정: { "type": "fixed", "amount": 금액 }. 산식: { "type": "base_plus_share", ... } — 금액 = baseAmount(기준액) + bonusAmount(가산액) × (numeratorField 값 ÷ denominatorField 값). 비중은 0~1로 잘라 적용합니다.',
-      '다주택 산식의 분자·분모는 필드명으로 지정합니다 — 예: 분자 residing_official_price(현재 거주 중인 주택의 공시가격, 거주하지 않으면 0 입력), 분모 total_official_price(공시가격 합계).',
+      '산식의 분자·분모는 필드명으로 지정합니다 — 예: 분자 residing_official_price(현재 거주 중인 주택의 공시가격, 거주하지 않으면 0 입력), 분모 total_official_price(공시가격 합계).',
+      '⚠️ 신 형식에는 모든 입력이 어느 한 행에는 맞도록 조건 없는 기본 행(priority 최소)을 반드시 두세요 — 산식 행을 기본 행으로 두면 1세대 1주택 행(높은 priority)이 아닌 모든 경우(주택 수 1이지만 1세대 1주택이 아닌 경우 포함)가 산식으로 계산됩니다. 조건을 좁게 걸면(예: house_count min 2) 빠진 조합이 계산 불가로 떨어집니다.',
       '신 형식 각 행의 label(선택)은 화면에 그대로 표시되는 한국어 라벨입니다 — 어느 기준의 공제인지 사용자에게 보여줍니다.',
       '금액·기준액·가산액 0 이하는 저장이 거부됩니다.',
       '이 계산기에서 사람들이 가장 궁금해하는 "나도 내는 건가"가 이 값으로 갈립니다 — 개정 시 반드시 시행일을 나눠 등록하세요. 국회 통과 전 개정안은 status를 proposed로 등록하면 확정법 계산은 흔들리지 않습니다.',
@@ -54,7 +55,7 @@ export const COMPREHENSIVE_RULE_GUIDES: Record<string, RuleGuide> = {
       "deduction": { "type": "fixed", "amount": «금액(원)» }
     },
     {
-      "when": { "house_count": { "min": 2 } },
+      "when": {},
       "priority": 0,
       "label": "«화면 표시용 라벨»",
       "deduction": {
