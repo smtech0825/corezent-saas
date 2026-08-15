@@ -30,8 +30,10 @@ import type {
   TransferRatePath,
   TransferResult,
   TransferSuccess,
+  TransferAcquiredRegulatedInfo,
 } from './transfer-types'
 import { COMMON_RULE_KEYS, engineFail, fetchValidRules, isRegulatedArea, isValidDateString, isValidRegionCode, requireRule } from './rule-store'
+import { resolveAcquiredRegulated } from './transfer-regulated'
 import { applyRounding, evaluateRateSpec, parseMetroScope, parseRounding, selectRateRow, selectRateRowOptional } from './rule-value'
 import type { RoundingValue } from './engine-types'
 import { fullYearsBetween, holdingYearsForLtsd, holdingYearsForRate, isOnOrBeforeAnniversary, isOnOrBeforeMonthsAfter } from './period'
@@ -231,6 +233,9 @@ export async function calculateTransferTax(
   let taxableRatio = 1
   let highPriceApplied = false
   let exemptionQualified = false
+  // 취득 당시 조정대상지역 판정 결과 — 판정이 필요 없던 경우(1주택 트랙 아님·보유 요건
+  // 미충족)에는 null로 남아 화면이 근거를 표시하지 않는다
+  let acquiredRegulated: TransferAcquiredRegulatedInfo | null = null
   if (effectiveOneHouse) {
     const exemptionRule = requireRule(rules, TRANSFER_RULE_KEYS.exemption, input.baseDate)
     if (!exemptionRule.ok) return exemptionRule
@@ -239,15 +244,30 @@ export async function calculateTransferTax(
     use(exemptionRule.rule)
 
     if (yearsForExemption >= exemption.value.minHoldingYears) {
-      // 취득 당시 조정대상지역 여부 — 과거 이력이 없어 자동 판정 불가, 사용자가 직접 선택 (④의 비과세 축)
-      if (input.acquiredInRegulatedArea === undefined) {
-        return engineFail(
-          'INVALID_INPUT',
-          '1세대 1주택 비과세 판정에는 취득 당시 조정대상지역 여부 선택이 필요합니다. 취득 시점의 지정 여부는 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.',
-        )
+      // 취득 당시 조정대상지역 여부 (④의 비과세 축) — 사용자 지정이 있으면 그것을 쓰고,
+      // 없으면 이력으로 자동 판정한다. 자동으로 정하지 못하면 그 이유와 함께 입력을 요구한다.
+      const resolved = await resolveAcquiredRegulated(
+        supabase, rules, input.regionCode, input.acquiredAt, input.acquiredInRegulatedArea,
+      )
+      if ('code' in resolved) return resolved   // DB·룰 오류
+      if (!resolved.ok) {
+        return {
+          ...engineFail(
+            'INVALID_INPUT',
+            '1세대 1주택 비과세 판정에는 취득 당시 조정대상지역 여부 선택이 필요합니다. 취득 시점의 지정 여부는 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.',
+          ),
+          acquiredRegulatedUnavailable: resolved.reason,
+        }
       }
+      acquiredRegulated = {
+        value: resolved.value,
+        source: resolved.source,
+        designatedFrom: resolved.designatedFrom,
+        sourceUrl: resolved.sourceUrl,
+      }
+
       let residenceOk = true
-      if (input.acquiredInRegulatedArea === true) {
+      if (resolved.value === true) {
         if (input.residenceYears === undefined) {
           return engineFail('INVALID_INPUT', '취득 당시 조정대상지역이었던 주택의 비과세 판정에는 거주기간 입력이 필요합니다.')
         }
@@ -264,7 +284,7 @@ export async function calculateTransferTax(
         const netProceeds = input.transferPrice - input.acquirePrice - expenses
         const reasonParts = [
           '1세대 1주택 비과세 요건(보유' +
-            (input.acquiredInRegulatedArea === true ? '·거주' : '') +
+            (acquiredRegulated?.value === true ? '·거주' : '') +
             ' 요건)을 충족하고,',
           `양도가액이 고가주택 기준(${threshold.toLocaleString('ko-KR')}원) 이하입니다.`,
           temporaryApplied ? '(일시적 2주택 요건 충족으로 1주택으로 보아 판정)' : '',
@@ -718,6 +738,7 @@ export async function calculateTransferTax(
       holdingYearsForLtsd: yearsForLtsd,
       residenceYearsUsed,
       regulatedAtTransfer,
+      acquiredRegulated,
       appliedRules,
       ruleMode: mode,
       containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),

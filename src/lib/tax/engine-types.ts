@@ -111,12 +111,26 @@ export type TaxEngineErrorCode =
   | 'AMBIGUOUS_RATE_ROW'   // 세율표에서 우선순위로도 행이 하나로 정해지지 않음
   | 'DB_ERROR'             // DB 조회 실패
 
+/**
+ * '취득 당시' 조정대상지역을 자동으로 판정하지 못한 이유 (065·커버리지 룰).
+ * 화면이 사용자에게 왜 직접 물어야 하는지 구분해 설명하는 데 쓴다.
+ *   no_coverage_rule — 이력 커버리지 시작일 룰이 등록되지 않음(자동 판정 자체가 꺼진 상태)
+ *   before_coverage  — 취득일이 이력이 갖춰진 시점보다 이르다(없다고 비규제로 볼 수 없음)
+ *   partial_area     — 그 구는 일부 동·읍·면만 지정돼 구 단위로 판정할 수 없음
+ */
+export type AcquiredRegulatedUnavailableReason = 'no_coverage_rule' | 'before_coverage' | 'partial_area'
+
 /** 엔진 실패 결과 — message는 화면에 그대로 보여줄 한국어 문장 */
 export interface TaxEngineFailure {
   ok: false
   code: TaxEngineErrorCode
   message: string
   ruleKey?: string
+  /**
+   * 취득 당시 조정대상지역 입력을 요구하는 실패일 때, 자동 판정이 불가능했던 이유.
+   * 화면은 이 값으로 "왜 물어보는지"를 구분해 안내한다(없으면 일반 입력 오류).
+   */
+  acquiredRegulatedUnavailable?: AcquiredRegulatedUnavailableReason
 }
 
 export type AcquisitionResult = AcquisitionSuccess | TaxEngineFailure

@@ -25,7 +25,7 @@ import type {
   StampRateRow,
   TaxEngineFailure,
 } from './engine-types'
-import { engineFail } from './rule-store'
+import { engineFail, isValidDateString } from './rule-store'
 
 /** 유한한 숫자인지 검사 */
 function isNum(v: unknown): v is number {
@@ -572,4 +572,24 @@ export function parseMetroScope(
     }
   }
   return { ok: true, value: { sidoNames: names as string[] } }
+}
+
+/**
+ * @함수명: parseRegulatedHistoryFrom
+ * @설명: 규제지역 이력 커버리지 시작일 rule_value({ from: 'YYYY-MM-DD' })를 검증해
+ *        반환합니다. 이 날짜 이후 시점만 '이력이 없다 = 그때 비규제였다'로 읽습니다.
+ *        날짜는 관리자가 입력한다 — 코드에 날짜를 넣지 않는다.
+ * @매개변수: value - rule_value / ruleKey - 안내문용 룰 키
+ * @반환값: { from } 또는 실패 결과
+ */
+export function parseRegulatedHistoryFrom(
+  value: Json,
+  ruleKey: string,
+): { ok: true; value: { from: string } } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const from = value.from
+  if (typeof from !== 'string' || !isValidDateString(from)) {
+    return invalid(ruleKey, 'from이 YYYY-MM-DD 형식의 날짜가 아닙니다.')
+  }
+  return { ok: true, value: { from } }
 }

@@ -230,6 +230,18 @@ export interface TransferFilingReliefNotice {
   currentPoints: number          // 현재 계산에 적용된 가산(%p)
 }
 
+/**
+ * '취득 당시' 조정대상지역 판정 결과 — 어떤 값을 어디서 얻었는지.
+ * source가 'auto'면 designatedFrom·sourceUrl로 근거를 보여주고(비규제로 판정된 경우
+ * 근거 이력이 없으므로 둘 다 null), 'user'면 사용자가 직접 지정한 값이다.
+ */
+export interface TransferAcquiredRegulatedInfo {
+  value: boolean
+  source: 'user' | 'auto'
+  designatedFrom: string | null
+  sourceUrl: string | null
+}
+
 /** 장기보유특별공제에 실제 사용된 표 */
 export type TransferLtsdTable = 'one_house' | 'general' | 'none'
 
@@ -276,6 +288,12 @@ export interface TransferSuccess {
    */
   residenceYearsUsed: number | null
   regulatedAtTransfer: boolean    // '양도 당시' 조정대상지역 여부 (이력 자동 판정)
+  /**
+   * '취득 당시' 조정대상지역 판정 — 비과세 거주 요건 판정에 쓴 값과 그 출처·근거.
+   * 판정이 필요 없던 경우(1주택 트랙이 아니거나 보유 요건 미충족)에는 null.
+   * 화면은 자동 판정이면 근거(지정일·공고)를 보여주고, 사용자가 고칠 수 있게 한다.
+   */
+  acquiredRegulated: TransferAcquiredRegulatedInfo | null
   appliedRules: AppliedRuleInfo[]
   ruleMode: TaxRuleMode
   containsProposedRule: boolean

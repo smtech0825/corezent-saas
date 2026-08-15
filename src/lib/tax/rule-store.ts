@@ -32,6 +32,13 @@ export function isValidRegionCode(value: string): boolean {
  */
 export const COMMON_RULE_KEYS = {
   metroScope: 'region.metro_scope',   // 수도권으로 취급할 시·도 이름 목록 (관리자 입력)
+  /**
+   * 규제지역 이력이 언제부터 완전한지(커버리지 시작일). 값 형식 { "from": "YYYY-MM-DD" }.
+   * 이 날짜 이후 시점만 '이력이 없다 = 그때 비규제였다'로 읽을 수 있다 — 그 전은
+   * 이력을 아직 넣지 않은 구간이라 없다고 비규제로 단정하면 안 된다.
+   * 룰이 없으면 자동 판정을 하지 않고 사용자에게 묻는다(값을 코드에 두지 않는다).
+   */
+  regulatedHistoryFrom: 'region.regulated_history_from',
 } as const
 
 /** 실패 결과 생성 헬퍼 */
@@ -170,6 +177,73 @@ export async function fetchProposedEffectiveYears(
   ].sort((a, b) => a - b)
 
   return { ok: true, years }
+}
+
+/** 규제지역 이력 한 건 — 자동 판정의 근거 표시에 필요한 값만 담는다 */
+export interface RegulatedAreaRecord {
+  designatedFrom: string
+  designatedTo: string | null
+  sourceUrl: string
+  /** 시·군·구 일부(동·읍·면)만 지정된 이력인지 (065) */
+  isPartial: boolean
+}
+
+/**
+ * @함수명: findRegulatedAreaRecord
+ * @설명: 규제지역 이력을 찾아 그 내용을 반환합니다 — isRegulatedArea가 boolean만
+ *        주는 것과 달리, 자동 판정에 필요한 지정일·공고 링크·부분 지정 여부를 담습니다.
+ *        조건은 isRegulatedArea와 같습니다(지정일 ≤ 기준일, 해제일 NULL 또는 기준일 이상,
+ *        applies_to에 해당 세목 또는 'all').
+ *        전체 지정(is_partial=false) 이력을 우선 반환합니다 — 같은 시점에 전체 지정
+ *        이력이 있으면 부분 지정 이력이 있어도 자동 판정이 가능하기 때문입니다.
+ * @매개변수: supabase - 클라이언트 / regionCode - 행정구역 코드 / baseDate - 판정 기준일 /
+ *            taxType - 세목 / areaType - 규제 구분
+ * @반환값: { record: 이력 또는 null(그 시점 지정 이력 없음) } 또는 실패 결과
+ */
+export async function findRegulatedAreaRecord(
+  supabase: SupabaseClient,
+  regionCode: string,
+  baseDate: string,
+  taxType: TaxType,
+  areaType: RegulatedAreaType,
+): Promise<{ ok: true; record: RegulatedAreaRecord | null } | TaxEngineFailure> {
+  if (!isValidDateString(baseDate)) {
+    return engineFail('INVALID_INPUT', '기준일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
+  }
+  if (!isValidRegionCode(regionCode)) {
+    return engineFail('INVALID_INPUT', '지역 코드 형식이 올바르지 않습니다.')
+  }
+
+  const { data, error } = await supabase
+    .from('tax_regulated_areas')
+    .select('designated_from, designated_to, source_url, is_partial')
+    .eq('region_code', regionCode)
+    .eq('area_type', areaType)
+    .lte('designated_from', baseDate)
+    .or(`designated_to.is.null,designated_to.gte.${baseDate}`)
+    .overlaps('applies_to', [taxType, 'all'])
+    .order('is_partial', { ascending: true })   // 전체 지정 이력을 먼저
+    .limit(1)
+
+  if (error) {
+    console.error('[tax] 규제지역 이력 조회 실패:', error.message)
+    return engineFail('DB_ERROR', '규제지역 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+  }
+
+  const row = (data ?? [])[0] as
+    | { designated_from: string; designated_to: string | null; source_url: string; is_partial: boolean }
+    | undefined
+  if (!row) return { ok: true, record: null }
+
+  return {
+    ok: true,
+    record: {
+      designatedFrom: row.designated_from,
+      designatedTo: row.designated_to,
+      sourceUrl: row.source_url,
+      isPartial: row.is_partial === true,
+    },
+  }
 }
 
 /**
