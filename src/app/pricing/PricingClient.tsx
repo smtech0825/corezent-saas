@@ -14,6 +14,7 @@ import { Check, ArrowRight, Zap, Sparkles } from 'lucide-react'
 import { CATEGORY_BADGE_PAPER, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import ProcurementBadge from '@/components/common/ProcurementBadge'
+import TrialApplyButton from '@/components/common/TrialApplyButton'
 
 // 전역 분석 도구 타입 선언
 declare global {
@@ -328,6 +329,12 @@ export default function PricingClient({ products }: Props) {
             })}
           </div>
         )}
+
+        {/* 무료 체험 신청 — 카드(구매 흐름)를 다 보고 망설이는 지점에 별도 영역으로.
+            카드 안 CTA(primary 채움)와 구분되는 outline 공용 부품, 체험 조건 문구 금지 */}
+        <div className="flex justify-center">
+          <TrialApplyButton placement="pricing" showNote />
+        </div>
 
       </div>
     </div>
