@@ -28,6 +28,11 @@ export interface RuleGuide {
   notes: string[]
   /** 복사해서 채워 넣는 JSON 스켈레톤 — «...» 자리표시자 포함 */
   skeleton: string
+  /**
+   * 두 번째 형식 스켈레톤 — 같은 키가 구·신 형식을 함께 지원할 때(예: 2026 세제개편안
+   * 신 형식). 한 룰 행에는 한 형식만 쓸 수 있고, 혼합은 저장이 거부된다.
+   */
+  altSkeleton?: { title: string; skeleton: string }
 }
 
 /** 세율표(rows) 공통 안내 문구 */

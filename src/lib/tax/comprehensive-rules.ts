@@ -12,13 +12,17 @@ import type { Json } from './types'
 import type { TaxEngineFailure } from './engine-types'
 import { engineFail } from './rule-store'
 import { checkRateSpec } from './rule-value'
+import { checkAmountSpec } from './amount-spec'
+import { parsePropertyAssessmentRatio, parsePropertyAssessmentRatioOneHouse } from './property-rules'
 import type {
-  ComprehensiveBasicDeductionValue,
+  ComprehensiveAssessmentRatioParsed,
+  ComprehensiveBasicDeductionParsed,
+  ComprehensiveBasicDeductionRow,
   ComprehensiveCreditRow,
   ComprehensiveRateRow,
   ComprehensiveRatesValue,
   ComprehensiveRuralSurtaxValue,
-  ComprehensiveTaxCreditValue,
+  ComprehensiveTaxCreditParsed,
 } from './comprehensive-types'
 
 /** 종합부동산세 룰 키 — 식별자일 뿐이며 값은 관리자가 DB에 등록한다 */
@@ -81,19 +85,71 @@ function checkRowShape(row: unknown, label: string): string | null {
   return null
 }
 
-/** comprehensive.basic_deduction 검증 — 두 기준 모두 0원 거부(공제 0원 함정 차단) */
+/**
+ * comprehensive.basic_deduction 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * 구 형식: 두 기준 모두 0원 거부(공제 0원 함정 차단).
+ * 신 형식(rows): 행 조건 + AmountSpec(고정 또는 기준액+가산액×비중 산식) + 선택 라벨.
+ * 확정법 룰은 재등록 없이 구 형식 그대로 동작해야 한다 — 구 형식 검사를 바꾸지 않는다.
+ */
 export function parseComprehensiveBasicDeduction(
   value: Json,
   ruleKey: string,
-): { ok: true; value: ComprehensiveBasicDeductionValue } | TaxEngineFailure {
+): { ok: true; value: ComprehensiveBasicDeductionParsed } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const hasRows = value.rows !== undefined
+  const hasFixedPair = value.generalAmount !== undefined || value.oneHouseAmount !== undefined
+  if (hasRows && hasFixedPair) {
+    return invalid(ruleKey, '구 형식(generalAmount·oneHouseAmount)과 신 형식(rows)을 한 룰에 섞을 수 없습니다.')
+  }
+  if (hasRows) {
+    const rows = value.rows
+    if (!Array.isArray(rows) || rows.length === 0) return invalid(ruleKey, 'rows가 비어 있지 않은 배열이 아닙니다.')
+    for (let i = 0; i < rows.length; i++) {
+      const shape = checkRowShape(rows[i], `rows[${i}]`)
+      if (shape) return invalid(ruleKey, shape)
+      const row = rows[i] as Record<string, unknown>
+      const reason = checkAmountSpec(row.deduction)
+      if (reason) return invalid(ruleKey, `rows[${i}].deduction — ${reason}`)
+      if (row.label !== undefined && (typeof row.label !== 'string' || row.label.trim() === '')) {
+        return invalid(ruleKey, `rows[${i}].label은 비어 있지 않은 문자열이어야 합니다(화면 표시용 라벨).`)
+      }
+    }
+    return { ok: true, value: { format: 'rows', rows: rows as unknown as ComprehensiveBasicDeductionRow[] } }
+  }
   if (!isNum(value.generalAmount) || value.generalAmount <= 0) {
     return invalid(ruleKey, 'generalAmount가 0보다 큰 숫자(원)가 아닙니다.')
   }
   if (!isNum(value.oneHouseAmount) || value.oneHouseAmount <= 0) {
     return invalid(ruleKey, 'oneHouseAmount가 0보다 큰 숫자(원)가 아닙니다.')
   }
-  return { ok: true, value: { generalAmount: value.generalAmount, oneHouseAmount: value.oneHouseAmount } }
+  return {
+    ok: true,
+    value: { format: 'fixed_pair', generalAmount: value.generalAmount, oneHouseAmount: value.oneHouseAmount },
+  }
+}
+
+/**
+ * comprehensive.assessment_ratio 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * 구 형식: { ratioPercent } 단일 — 재산세 일반 비율 검증기 공유.
+ * 신 형식: { rows: [{ when, ratioPercent }] } — 재산세 1주택 특례 비율과 같은 행 구조라
+ * 그 검증기를 공유한다(주택 수·조정대상지역 보유 등 조건은 엔진 컨텍스트가 판정).
+ */
+export function parseComprehensiveAssessmentRatio(
+  value: Json,
+  ruleKey: string,
+): { ok: true; value: ComprehensiveAssessmentRatioParsed } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  if (value.rows !== undefined) {
+    if (value.ratioPercent !== undefined) {
+      return invalid(ruleKey, '구 형식(ratioPercent 단일)과 신 형식(rows)을 한 룰에 섞을 수 없습니다.')
+    }
+    const parsed = parsePropertyAssessmentRatioOneHouse(value, ruleKey)
+    if (!parsed.ok) return parsed
+    return { ok: true, value: { format: 'rows', rows: parsed.value.rows } }
+  }
+  const single = parsePropertyAssessmentRatio(value, ruleKey)
+  if (!single.ok) return single
+  return { ok: true, value: { format: 'single', ratioPercent: single.value.ratioPercent } }
 }
 
 /** comprehensive.rates 검증 — heavy 표시는 boolean만 허용 */
@@ -129,14 +185,39 @@ function checkCreditRows(rows: unknown, ruleKey: string, field: string): TaxEngi
   return null
 }
 
-/** comprehensive.tax_credit 검증 — 연령·보유 표 + 합산 한도 */
+/**
+ * comprehensive.tax_credit 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * 구 형식: { ageRows, holdingRows, maxTotalPercent } — 연령분·보유분 합산 + % 한도.
+ * 신 형식: { ageRows, residenceRows, maxAmount } — 연령분·거주분 중 높은 쪽 + 공제액 한도(원).
+ */
 export function parseComprehensiveTaxCredit(
   value: Json,
   ruleKey: string,
-): { ok: true; value: ComprehensiveTaxCreditValue } | TaxEngineFailure {
+): { ok: true; value: ComprehensiveTaxCreditParsed } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const hasNew = value.residenceRows !== undefined || value.maxAmount !== undefined
+  const hasOld = value.holdingRows !== undefined || value.maxTotalPercent !== undefined
+  if (hasNew && hasOld) {
+    return invalid(ruleKey, '구 형식(holdingRows·maxTotalPercent)과 신 형식(residenceRows·maxAmount)을 한 룰에 섞을 수 없습니다.')
+  }
   const ageErr = checkCreditRows(value.ageRows, ruleKey, 'ageRows')
   if (ageErr) return ageErr
+  if (hasNew) {
+    const resErr = checkCreditRows(value.residenceRows, ruleKey, 'residenceRows')
+    if (resErr) return resErr
+    if (!isNum(value.maxAmount) || value.maxAmount <= 0) {
+      return invalid(ruleKey, 'maxAmount(공제액 한도·원)가 0보다 큰 숫자가 아닙니다.')
+    }
+    return {
+      ok: true,
+      value: {
+        format: 'max_residence',
+        ageRows: value.ageRows as unknown as ComprehensiveCreditRow[],
+        residenceRows: value.residenceRows as unknown as ComprehensiveCreditRow[],
+        maxAmount: value.maxAmount,
+      },
+    }
+  }
   const holdErr = checkCreditRows(value.holdingRows, ruleKey, 'holdingRows')
   if (holdErr) return holdErr
   if (!isNum(value.maxTotalPercent) || value.maxTotalPercent <= 0 || value.maxTotalPercent > 100) {
@@ -145,6 +226,7 @@ export function parseComprehensiveTaxCredit(
   return {
     ok: true,
     value: {
+      format: 'sum_holding',
       ageRows: value.ageRows as unknown as ComprehensiveCreditRow[],
       holdingRows: value.holdingRows as unknown as ComprehensiveCreditRow[],
       maxTotalPercent: value.maxTotalPercent,
@@ -164,7 +246,8 @@ export function parseComprehensiveRuralSurtax(
   return { ok: true, value: { ratePercent: value.ratePercent } }
 }
 
-// comprehensive.assessment_ratio → parsePropertyAssessmentRatio (property-rules.ts)
+// comprehensive.assessment_ratio → parseComprehensiveAssessmentRatio (이 파일 — 구/신 형식 판별,
+//                                   내부에서 재산세 검증기 2종을 형식별로 공유)
 // comprehensive.assessment_date  → parsePropertyAssessmentDate (property-rules.ts)
 // comprehensive.burden_cap       → parsePropertyBurdenCap (property-rules.ts)
 // comprehensive.rounding         → parseRounding (rule-value.ts)

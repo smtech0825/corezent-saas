@@ -176,6 +176,12 @@ export default function RuleForm({ initial, defaultTaxType, allRules, onDone }: 
           </ul>
           <p className="mt-2 mb-1 font-semibold text-ink">입력 형식 («...»는 법령 확인 후 실제 값으로 교체):</p>
           <pre className="bg-paper border border-rule rounded p-3 overflow-x-auto font-mono text-[11px] text-ink">{guide.skeleton}</pre>
+          {guide.altSkeleton && (
+            <>
+              <p className="mt-2 mb-1 font-semibold text-ink">{guide.altSkeleton.title}</p>
+              <pre className="bg-paper border border-rule rounded p-3 overflow-x-auto font-mono text-[11px] text-ink">{guide.altSkeleton.skeleton}</pre>
+            </>
+          )}
         </div>
       )}
 

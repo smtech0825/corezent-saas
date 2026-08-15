@@ -10,6 +10,9 @@
  *        0으로 처리하지 않고 종부세 계산 전체를 중단하고 그 사실을 알린다.
  *        공시가격 합계가 기본공제 이하면 0원만 반환하지 않고 왜 과세 대상이 아닌지 담는다.
  *        룰이 없으면 0원으로 계산하지 않고 RULE_NOT_REGISTERED를 반환한다.
+ *        ⚠️ 기본공제·공정시장가액비율·세액공제 3종은 구 형식(확정법)과 신 형식(2026 세제
+ *        개편안)을 모두 지원한다 — 계산 방식은 모드가 아니라 '집힌 룰의 값 형식'이 정하며,
+ *        확정법 룰은 재등록 없이 구 형식 그대로 동작한다(형식 정의는 comprehensive-types.ts).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -24,14 +27,15 @@ import type {
 import type { PropertyCapStatus } from './property-types'
 import { engineFail, fetchValidRules, isValidDateString, requireRule } from './rule-store'
 import { applyRounding, evaluateRateSpec, parseRounding, selectRateRow, selectRateRowOptional } from './rule-value'
+import { evaluateAmountSpec } from './amount-spec'
 import {
   parsePropertyAssessmentDate,
-  parsePropertyAssessmentRatio,
   parsePropertyBurdenCap,
 } from './property-rules'
 import { calculatePropertyTax } from './property'
 import {
   COMPREHENSIVE_RULE_KEYS,
+  parseComprehensiveAssessmentRatio,
   parseComprehensiveBasicDeduction,
   parseComprehensiveRates,
   parseComprehensiveRuralSurtax,
@@ -81,6 +85,25 @@ function validateInput(input: ComprehensiveInput): TaxEngineFailure | null {
   }
   if (input.prevTotalTax !== undefined && (!Number.isFinite(input.prevTotalTax) || input.prevTotalTax < 0)) {
     return engineFail('INVALID_INPUT', '직전 연도 총세액은 0 이상의 숫자여야 합니다.')
+  }
+  // ── 2026 세제개편안(신 형식 룰) 판정용 입력 — 전부 선택 입력이며, 실제 요구 여부는
+  //    엔진이 신 형식 룰을 읽은 시점에 형식별로 판단한다(여기서 존재를 강제하지 않는다)
+  if (input.residenceYears !== undefined && (!Number.isFinite(input.residenceYears) || input.residenceYears < 0)) {
+    return engineFail('INVALID_INPUT', '거주기간은 0 이상의 숫자(만 연수)여야 합니다.')
+  }
+  if (input.isResiding !== undefined && typeof input.isResiding !== 'boolean') {
+    return engineFail('INVALID_INPUT', '현재 거주 여부가 올바르지 않습니다.')
+  }
+  if (input.hasRegulatedHouse !== undefined && typeof input.hasRegulatedHouse !== 'boolean') {
+    return engineFail('INVALID_INPUT', '조정대상지역 주택 보유 여부가 올바르지 않습니다.')
+  }
+  if (input.residingOfficialPrice !== undefined) {
+    if (!Number.isFinite(input.residingOfficialPrice) || input.residingOfficialPrice < 0) {
+      return engineFail('INVALID_INPUT', '현재 거주 중인 주택의 공시가격은 0 이상의 숫자여야 합니다(거주하지 않으면 0).')
+    }
+    if (input.residingOfficialPrice > input.totalOfficialPrice) {
+      return engineFail('INVALID_INPUT', '현재 거주 중인 주택의 공시가격이 공시가격 합계를 넘을 수 없습니다.')
+    }
   }
   return null
 }
@@ -142,21 +165,48 @@ export async function calculateComprehensiveTax(
   }
   use(dateRule.rule)
 
+  // ── 과세표준 산출 전 판정 컨텍스트 — 기본공제·공정시장가액비율의 신 형식 행 조건과
+  //    금액 산식(AmountSpec)이 쓴다. tax_base는 아직 없다(과세표준 조건은 세율표 이후 컨텍스트에서만).
+  const baseContext: Record<string, Json | undefined> = {
+    house_count: input.houseCount,                        // 보유 주택 수 (3 = 3주택 이상)
+    is_one_house: input.isOneHouse,                       // 1세대 1주택 여부
+    total_official_price: input.totalOfficialPrice,       // 공시가격 합계 (원)
+    age: input.age,                                       // 만 나이 — 1세대 1주택이 아니면 미확정
+    holding_years: input.holdingYears,                    // 보유기간 (만 연수) — 1세대 1주택이 아니면 미확정
+    residence_years: input.residenceYears,                // 거주기간 (만 연수) — 신 형식 세액공제 판정, 미입력이면 미확정
+    is_residing: input.isResiding,                        // 현재 거주 여부 — 신 형식 기본공제 갈림, 미입력이면 미확정
+    residing_official_price: input.residingOfficialPrice, // 거주 주택 공시가격 (원) — 산식 분자, 미입력이면 미확정
+    has_regulated_house: input.hasRegulatedHouse,         // 조정대상지역 주택 보유 — 자동 판정 불가라 자기신고
+  }
+
   // ── 기본공제 — 이르지 않으면 '과세 대상 아님'을 사유와 함께 반환 ────────────
+  // 구 형식(확정법)은 1세대 1주택 여부 이지선다, 신 형식(개정안)은 행 조건 + AmountSpec 금액.
   const basicRule = requireRule(rules, COMPREHENSIVE_RULE_KEYS.basicDeduction, baseDate)
   if (!basicRule.ok) return basicRule
   const basic = parseComprehensiveBasicDeduction(basicRule.rule.rule_value, basicRule.rule.rule_key)
   if (!basic.ok) return basic
   use(basicRule.rule)
   const deductionType: 'one_house' | 'general' = input.isOneHouse ? 'one_house' : 'general'
-  const deduction = input.isOneHouse ? basic.value.oneHouseAmount : basic.value.generalAmount
+  let deduction: number
+  let deductionLabel: string | null = null
+  if (basic.value.format === 'fixed_pair') {
+    deduction = input.isOneHouse ? basic.value.oneHouseAmount : basic.value.generalAmount
+  } else {
+    const picked = selectRateRow(basic.value.rows, baseContext, basicRule.rule.rule_key)
+    if (!picked.ok) return picked
+    picked.unresolved.forEach((f) => unresolvedFields.add(f))
+    const amount = evaluateAmountSpec(picked.row.deduction, baseContext, basicRule.rule.rule_key)
+    if (!amount.ok) return amount
+    deduction = amount.amount
+    deductionLabel = picked.row.label ?? null
+  }
 
   if (input.totalOfficialPrice <= deduction) {
     return buildSuccess({
       taxable: false,
       notTaxableReason:
         `공시가격 합계 ${input.totalOfficialPrice.toLocaleString('ko-KR')}원이 기본공제 ` +
-        `${deduction.toLocaleString('ko-KR')}원(${deductionType === 'one_house' ? '1세대 1주택 기준' : '일반 기준'}) ` +
+        `${deduction.toLocaleString('ko-KR')}원(${deductionLabel ?? (deductionType === 'one_house' ? '1세대 1주택 기준' : '일반 기준')}) ` +
         `이하라 종합부동산세 과세 대상이 아닙니다. 재산세는 별도로 부과됩니다.`,
       taxBase: 0,
       heavyTableApplied: false,
@@ -168,21 +218,27 @@ export async function calculateComprehensiveTax(
   }
 
   // ── 과세표준 = (공시가격 합계 − 기본공제) × 공정시장가액비율 ────────────────
+  // 구 형식은 단일 비율, 신 형식은 행 조건(주택 수·조정대상지역 보유 등)별 비율.
   const ratioRule = requireRule(rules, COMPREHENSIVE_RULE_KEYS.assessmentRatio, baseDate)
   if (!ratioRule.ok) return ratioRule
-  const ratio = parsePropertyAssessmentRatio(ratioRule.rule.rule_value, ratioRule.rule.rule_key)
+  const ratio = parseComprehensiveAssessmentRatio(ratioRule.rule.rule_value, ratioRule.rule.rule_key)
   if (!ratio.ok) return ratio
   use(ratioRule.rule)
-  const taxBase = Math.floor(((input.totalOfficialPrice - deduction) * ratio.value.ratioPercent) / 100)
+  let ratioPercent: number
+  if (ratio.value.format === 'single') {
+    ratioPercent = ratio.value.ratioPercent
+  } else {
+    const picked = selectRateRow(ratio.value.rows, baseContext, ratioRule.rule.rule_key)
+    if (!picked.ok) return picked
+    picked.unresolved.forEach((f) => unresolvedFields.add(f))
+    ratioPercent = picked.row.ratioPercent
+  }
+  const taxBase = Math.floor(((input.totalOfficialPrice - deduction) * ratioPercent) / 100)
 
-  // 판정 컨텍스트 — 행(when) 조건은 이 필드들만 쓸 수 있다
+  // 판정 컨텍스트 — 행(when) 조건은 이 필드들만 쓸 수 있다 (과세표준 전 컨텍스트 + tax_base)
   const context: Record<string, Json | undefined> = {
-    house_count: input.houseCount,           // 보유 주택 수 (3 = 3주택 이상)
+    ...baseContext,
     tax_base: taxBase,                       // 과세표준 (원) — 중과 갈림 조건에 사용
-    is_one_house: input.isOneHouse,          // 1세대 1주택 여부
-    total_official_price: input.totalOfficialPrice,  // 공시가격 합계 (원)
-    age: input.age,                          // 만 나이 — 1세대 1주택이 아니면 미확정
-    holding_years: input.holdingYears,       // 보유기간 (만 연수) — 1세대 1주택이 아니면 미확정
   }
 
   // ── 세율 — 일반/중과는 관리자가 행 조건(주택 수·과세표준)과 heavy 표시로 정한다 ──
@@ -225,7 +281,8 @@ export async function calculateComprehensiveTax(
   }
   const afterProperty = Math.max(rawTax - propertyDeduction, 0)
 
-  // ── 1세대 1주택 세액공제 — 연령분·보유분 각각 판정, 합산 한도 적용 ──────────
+  // ── 1세대 1주택 세액공제 — 구 형식은 연령분·보유분 합산(% 한도), 신 형식은
+  //    연령분·거주분 중 높은 쪽 하나(공제액 한도·원). 형식은 룰 값이 정한다.
   let taxCredit: ComprehensiveTaxCreditDetail | null = null
   let afterCredit = afterProperty
   if (input.isOneHouse) {
@@ -236,19 +293,50 @@ export async function calculateComprehensiveTax(
     // 행 미매칭 = 그 축의 공제 없음(요건 미달)이 정상 의미 — selectRateRowOptional 사용
     const agePicked = selectRateRowOptional(credit.value.ageRows, context, creditRule.rule.rule_key)
     if (!agePicked.ok) return agePicked
-    const holdingPicked = selectRateRowOptional(credit.value.holdingRows, context, creditRule.rule.rule_key)
-    if (!holdingPicked.ok) return holdingPicked
-    agePicked.unresolved.forEach((f) => unresolvedFields.add(f))
-    holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
-    use(creditRule.rule)
     const agePercent = agePicked.row?.creditPercent ?? 0
-    const holdingPercent = holdingPicked.row?.creditPercent ?? 0
-    const sumPercent = agePercent + holdingPercent
-    const capReached = sumPercent > credit.value.maxTotalPercent
-    const totalPercentApplied = capReached ? credit.value.maxTotalPercent : sumPercent
-    const amount = Math.floor((afterProperty * totalPercentApplied) / 100)
-    taxCredit = { agePercent, holdingPercent, totalPercentApplied, capReached, amount }
-    afterCredit = afterProperty - amount
+    agePicked.unresolved.forEach((f) => unresolvedFields.add(f))
+    if (credit.value.format === 'sum_holding') {
+      const holdingPicked = selectRateRowOptional(credit.value.holdingRows, context, creditRule.rule.rule_key)
+      if (!holdingPicked.ok) return holdingPicked
+      holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
+      use(creditRule.rule)
+      const holdingPercent = holdingPicked.row?.creditPercent ?? 0
+      const sumPercent = agePercent + holdingPercent
+      const capReached = sumPercent > credit.value.maxTotalPercent
+      const totalPercentApplied = capReached ? credit.value.maxTotalPercent : sumPercent
+      const amount = Math.floor((afterProperty * totalPercentApplied) / 100)
+      taxCredit = { agePercent, holdingPercent, totalPercentApplied, capReached, amount }
+    } else {
+      // 신 형식 — 거주기간이 판정 기준이므로 미입력을 공제 0으로 간주하지 않고 입력을 요구한다
+      if (input.residenceYears === undefined) {
+        return engineFail(
+          'INVALID_INPUT',
+          '이 시점의 세액공제 룰은 거주기간 기준입니다 — 1세대 1주택 세액공제 판정에는 거주기간(만 연수) 입력이 필요합니다.',
+        )
+      }
+      const residencePicked = selectRateRowOptional(credit.value.residenceRows, context, creditRule.rule.rule_key)
+      if (!residencePicked.ok) return residencePicked
+      residencePicked.unresolved.forEach((f) => unresolvedFields.add(f))
+      use(creditRule.rule)
+      const residencePercent = residencePicked.row?.creditPercent ?? 0
+      // 높은 쪽 하나만 적용 — 동률이면 연령분으로 표기(공제액은 동일)
+      const chosenAxis: 'age' | 'residence' = residencePercent > agePercent ? 'residence' : 'age'
+      const totalPercentApplied = Math.max(agePercent, residencePercent)
+      const rawAmount = Math.floor((afterProperty * totalPercentApplied) / 100)
+      const amountCapApplied = rawAmount > credit.value.maxAmount
+      const amount = amountCapApplied ? credit.value.maxAmount : rawAmount
+      taxCredit = {
+        agePercent,
+        holdingPercent: 0,
+        totalPercentApplied,
+        capReached: false,
+        amount,
+        residencePercent,
+        chosenAxis,
+        amountCapApplied,
+      }
+    }
+    afterCredit = afterProperty - taxCredit.amount
   }
 
   // ── 세부담 상한 — 직전 연도 총세액이 없으면 적용하지 않는다 (추정 금지) ─────
@@ -343,6 +431,7 @@ export async function calculateComprehensiveTax(
       baseDate,
       basicDeductionApplied: deduction,
       basicDeductionType: deductionType,
+      basicDeductionLabel: deductionLabel,
       appliedRules,
       ruleMode: mode,
       containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),

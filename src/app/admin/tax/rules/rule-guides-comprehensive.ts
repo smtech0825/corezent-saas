@@ -11,7 +11,8 @@ import type { RuleGuide } from './rule-guides'
 
 /** 종부세 표(rows) 공통 안내 */
 const COMPREHENSIVE_COMMON_NOTES = [
-  '쓸 수 있는 조건 필드: house_count(보유 주택 수 — 3은 3주택 이상), tax_base(과세표준·원), is_one_house(1세대 1주택 true/false), total_official_price(공시가격 합계·원), age(만 나이), holding_years(보유 만 연수)',
+  '쓸 수 있는 조건 필드: house_count(보유 주택 수 — 3은 3주택 이상), tax_base(과세표준·원), is_one_house(1세대 1주택 true/false), total_official_price(공시가격 합계·원), age(만 나이), holding_years(보유 만 연수), residence_years(거주 만 연수), is_residing(현재 거주 여부 true/false), residing_official_price(현재 거주 중인 주택의 공시가격·원 — 거주하지 않으면 0 입력), has_regulated_house(조정대상지역 내 주택 보유 true/false — 주소가 없어 자동 판정이 불가능하므로 사용자 자기신고)',
+  '⚠️ 기본공제·공정시장가액비율의 행 조건에는 tax_base(과세표준)를 쓸 수 없습니다 — 과세표준 계산 전에 적용되는 룰이라 그 시점에는 과세표준이 없습니다.',
   '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다. ⚠️ 금액·연수 구간은 max로 나누지 말고 min("○○ 이상") + priority 오름차순으로 표현하세요 — 경계에서 두 행이 동시에 맞아 오류로 중단되는 것을 막는 요령입니다(다른 세목과 동일). 조건 없는 행이 가장 낮은 구간(priority 최소)입니다.',
   '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류).',
 ]
@@ -27,18 +28,68 @@ export const COMPREHENSIVE_RULE_GUIDES: Record<string, RuleGuide> = {
   [COMPREHENSIVE_RULE_KEYS.basicDeduction]: {
     title: '기본공제 — 공시가격 합계에서 빼는 금액. 합계가 이 금액 이하면 "과세 대상 아님"으로 판정됩니다.',
     notes: [
-      'generalAmount: 일반 기본공제(원). oneHouseAmount: 1세대 1주택 기본공제(원). 둘 다 0 이하는 저장이 거부됩니다.',
-      '이 계산기에서 사람들이 가장 궁금해하는 "나도 내는 건가"가 이 값으로 갈립니다 — 개정 시 반드시 시행일을 나눠 등록하세요.',
+      '두 형식을 지원합니다. 확정법(구 형식): generalAmount(일반)·oneHouseAmount(1세대 1주택) 고정 금액 두 개 — 기존 확정법 룰은 재등록 없이 그대로 동작합니다. 개정안(신 형식): rows 행 조건별 금액 — 한 룰 행에는 한 형식만 쓸 수 있고 혼합은 저장이 거부됩니다.',
+      '신 형식의 금액(deduction)은 두 가지입니다. 고정: { "type": "fixed", "amount": 금액 }. 산식: { "type": "base_plus_share", ... } — 금액 = baseAmount(기준액) + bonusAmount(가산액) × (numeratorField 값 ÷ denominatorField 값). 비중은 0~1로 잘라 적용합니다.',
+      '다주택 산식의 분자·분모는 필드명으로 지정합니다 — 예: 분자 residing_official_price(현재 거주 중인 주택의 공시가격, 거주하지 않으면 0 입력), 분모 total_official_price(공시가격 합계).',
+      '신 형식 각 행의 label(선택)은 화면에 그대로 표시되는 한국어 라벨입니다 — 어느 기준의 공제인지 사용자에게 보여줍니다.',
+      '금액·기준액·가산액 0 이하는 저장이 거부됩니다.',
+      '이 계산기에서 사람들이 가장 궁금해하는 "나도 내는 건가"가 이 값으로 갈립니다 — 개정 시 반드시 시행일을 나눠 등록하세요. 국회 통과 전 개정안은 status를 proposed로 등록하면 확정법 계산은 흔들리지 않습니다.',
+      ...COMPREHENSIVE_COMMON_NOTES,
     ],
     skeleton: `{ "generalAmount": «금액(원)», "oneHouseAmount": «금액(원)» }`,
+    altSkeleton: {
+      title: '개정안(신 형식) 입력 형식 — 행 조건 + 금액(고정 또는 산식):',
+      skeleton: `{
+  "rows": [
+    {
+      "when": { "is_one_house": { "eq": true }, "is_residing": { "eq": true } },
+      "priority": 2,
+      "label": "«화면 표시용 라벨»",
+      "deduction": { "type": "fixed", "amount": «금액(원)» }
+    },
+    {
+      "when": { "is_one_house": { "eq": true }, "is_residing": { "eq": false } },
+      "priority": 1,
+      "label": "«화면 표시용 라벨»",
+      "deduction": { "type": "fixed", "amount": «금액(원)» }
+    },
+    {
+      "when": { "house_count": { "min": 2 } },
+      "priority": 0,
+      "label": "«화면 표시용 라벨»",
+      "deduction": {
+        "type": "base_plus_share",
+        "baseAmount": «기준액(원)»,
+        "bonusAmount": «가산액(원)»,
+        "numeratorField": "residing_official_price",
+        "denominatorField": "total_official_price"
+      }
+    }
+  ]
+}`,
+    },
   },
   [COMPREHENSIVE_RULE_KEYS.assessmentRatio]: {
     title: '공정시장가액비율 — 과세표준 = (공시가격 합계 − 기본공제) × 이 비율.',
     notes: [
-      'ratioPercent: 공정시장가액비율(%). 0 이하·100 초과는 저장이 거부됩니다.',
+      '두 형식을 지원합니다. 확정법(구 형식): ratioPercent 단일 값 — 기존 확정법 룰은 재등록 없이 그대로 동작합니다. 개정안(신 형식): rows 행 조건별 비율(예: 3주택 이상·조정대상지역 주택 보유자에게 다른 비율) — 혼합은 저장이 거부됩니다.',
+      '신 형식에는 모든 입력이 어느 한 행에는 맞도록 조건 없는 기본 행(priority 최소)을 반드시 두세요 — 맞는 행이 없으면 계산이 중단됩니다.',
+      'has_regulated_house(조정대상지역 내 주택 보유)는 주소가 없어 자동 판정이 불가능한 자기신고 입력입니다 — 이 조건을 쓰면 사용자가 선택하지 않은 경우 해당 행을 판정하지 못했다는 안내가 결과에 표시됩니다.',
+      'ratioPercent 0 이하·100 초과는 저장이 거부됩니다.',
       '재산세의 비율(property.assessment_ratio)과는 별개 룰입니다 — 값이 같아도 따로 등록하세요.',
+      ...COMPREHENSIVE_COMMON_NOTES,
     ],
     skeleton: `{ "ratioPercent": «비율%» }`,
+    altSkeleton: {
+      title: '개정안(신 형식) 입력 형식 — 행 조건별 비율:',
+      skeleton: `{
+  "rows": [
+    { "when": {}, "priority": 0, "ratioPercent": «비율%» },
+    { "when": { "house_count": { "min": 3 } }, "priority": 1, "ratioPercent": «비율%» },
+    { "when": { "has_regulated_house": { "eq": true } }, "priority": 2, "ratioPercent": «비율%» }
+  ]
+}`,
+    },
   },
   [COMPREHENSIVE_RULE_KEYS.rates]: {
     title: '종합부동산세 세율표 — 일반/중과를 행 조건(주택 수·과세표준)으로 나누고, 중과 행에는 heavy 표시를 답니다.',
@@ -79,14 +130,29 @@ export const COMPREHENSIVE_RULE_GUIDES: Record<string, RuleGuide> = {
 }`,
   },
   [COMPREHENSIVE_RULE_KEYS.taxCredit]: {
-    title: '1세대 1주택 세액공제 — 연령별·보유기간별 공제율과 합산 한도.',
+    title: '1세대 1주택 세액공제 — 확정법은 연령·보유 합산(% 한도), 개정안은 연령·거주 중 높은 쪽(금액 한도).',
     notes: [
-      'ageRows: 만 나이 조건별 공제율. holdingRows: 보유 만 연수 조건별 공제율. 각각 min + priority 오름차순으로 구간을 표현하세요.',
-      '요건에 못 미치는 나이·연수는 행을 두지 않으면 자동으로 그 축의 공제가 0이 됩니다 — 0% 행은 저장이 거부됩니다.',
-      'maxTotalPercent: 두 공제율 합의 상한(%). 합이 이를 넘으면 한도까지만 적용되고 결과에 "합산 한도 도달"로 표시됩니다.',
+      '두 형식을 지원합니다. 확정법(구 형식): ageRows + holdingRows + maxTotalPercent — 연령분·보유분을 합산하되 % 한도를 넘지 못합니다. 기존 확정법 룰은 재등록 없이 그대로 동작합니다.',
+      '개정안(신 형식): ageRows + residenceRows + maxAmount — 연령분·거주분(residence_years 조건) 중 높은 쪽 하나만 적용하고, 공제액이 maxAmount(원)를 넘으면 한도까지만 적용됩니다. 혼합은 저장이 거부됩니다.',
+      '각 표는 min + priority 오름차순으로 구간을 표현하세요. 요건에 못 미치는 나이·연수는 행을 두지 않으면 자동으로 그 축의 공제가 0이 됩니다 — 0% 행은 저장이 거부됩니다.',
+      '신 형식 룰이 유효한 시점에는 계산기에 거주기간(만 연수) 입력이 필요해집니다 — 미입력이면 공제 0으로 계산하지 않고 입력을 요구합니다.',
       '공제액은 재산세 상당액을 뺀 뒤의 종부세액에 곱합니다.',
       ...COMPREHENSIVE_COMMON_NOTES,
     ],
+    altSkeleton: {
+      title: '개정안(신 형식) 입력 형식 — 연령·거주 중 높은 쪽 + 공제액 한도(원):',
+      skeleton: `{
+  "ageRows": [
+    { "when": { "age": { "min": «나이(만)» } }, "priority": 0, "creditPercent": «공제율%» },
+    { "when": { "age": { "min": «더 높은 나이(만)» } }, "priority": 1, "creditPercent": «공제율%» }
+  ],
+  "residenceRows": [
+    { "when": { "residence_years": { "min": «연수» } }, "priority": 0, "creditPercent": «공제율%» },
+    { "when": { "residence_years": { "min": «더 긴 연수» } }, "priority": 1, "creditPercent": «공제율%» }
+  ],
+  "maxAmount": «공제액 한도(원)»
+}`,
+    },
     skeleton: `{
   "ageRows": [
     { "when": { "age": { "min": «나이(만)» } }, "priority": 0, "creditPercent": «공제율%» },

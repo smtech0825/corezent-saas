@@ -52,6 +52,7 @@ import {
 } from '@/lib/tax/property-rules'
 import {
   COMPREHENSIVE_RULE_KEYS,
+  parseComprehensiveAssessmentRatio,
   parseComprehensiveBasicDeduction,
   parseComprehensiveRates,
   parseComprehensiveRuralSurtax,
@@ -113,8 +114,8 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [PROPERTY_RULE_KEYS.assessmentDate]: parsePropertyAssessmentDate,
   [PROPERTY_RULE_KEYS.rounding]: parseRounding,
   [COMPREHENSIVE_RULE_KEYS.basicDeduction]: parseComprehensiveBasicDeduction,
-  // 구조가 재산세와 동일한 3종(비율·기준일·세부담 상한 표)은 재산세 검증기를 공유한다
-  [COMPREHENSIVE_RULE_KEYS.assessmentRatio]: parsePropertyAssessmentRatio,
+  // 비율은 구(단일)/신(행 조건) 형식을 판별하는 전용 검증기 — 기준일·세부담 상한은 재산세 검증기 공유
+  [COMPREHENSIVE_RULE_KEYS.assessmentRatio]: parseComprehensiveAssessmentRatio,
   [COMPREHENSIVE_RULE_KEYS.rates]: parseComprehensiveRates,
   [COMPREHENSIVE_RULE_KEYS.taxCredit]: parseComprehensiveTaxCredit,
   [COMPREHENSIVE_RULE_KEYS.burdenCap]: parsePropertyBurdenCap,
