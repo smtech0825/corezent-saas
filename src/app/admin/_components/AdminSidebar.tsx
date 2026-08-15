@@ -18,6 +18,7 @@ import {
   Gift,
   MessageSquare,
   Inbox,
+  Landmark,
   Settings,
   LogOut,
   X,
@@ -61,6 +62,9 @@ const mainNav: NavItem[] = [
   { label: '고객지원',   href: '/admin/support',   icon: MessageSquare },
   { label: '문의',       href: '/admin/inquiries', icon: Inbox },
   { label: '견적 요청',  href: '/admin/quotes',    icon: FileText },
+  // 기관 발급 — 견적 요청 다음(견적→계약→발급 흐름). 운영 도구가 아닌 업무 화면이라
+  // 시스템 그룹이 아니라 관리자 그룹에 둔다.
+  { label: '기관 발급',  href: '/admin/org-license', icon: Landmark },
 ]
 
 const frontendNav: NavItem[] = [
