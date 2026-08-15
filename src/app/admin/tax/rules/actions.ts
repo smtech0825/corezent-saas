@@ -20,6 +20,7 @@ import {
   parseGiftHeavy,
   parseGiftTaxBase,
   parseMetroScope,
+  parseRegulatedHistoryFrom,
   parseRateTable,
   parseRounding,
   parseStampRates,
@@ -127,6 +128,7 @@ const VALUE_VALIDATORS: Record<string, (value: Json, ruleKey: string) => { ok: t
   [REGISTRATION_RULE_KEYS.fee]: parseRegistrationFee,
   [REGISTRATION_RULE_KEYS.bond]: parseRegistrationBond,
   [COMMON_RULE_KEYS.metroScope]: parseMetroScope,
+  [COMMON_RULE_KEYS.regulatedHistoryFrom]: parseRegulatedHistoryFrom,
 }
 
 /** 실패 결과 생성 헬퍼 */
@@ -180,6 +182,7 @@ const KEY_REQUIRED_TAX_TYPE: Record<string, TaxRuleTaxType> = {
   [REGISTRATION_RULE_KEYS.fee]: 'registration',
   [REGISTRATION_RULE_KEYS.bond]: 'registration',
   [COMMON_RULE_KEYS.metroScope]: 'common',
+  [COMMON_RULE_KEYS.regulatedHistoryFrom]: 'common',
 }
 
 /**
