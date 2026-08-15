@@ -80,8 +80,10 @@ export default async function RuleBasisBanner({ taxTypes }: {
         hasProposed ? 'bg-caution-soft border-caution/40' : 'bg-paper-raised border-rule'
       }`}
     >
+      {/* 넓은 화면에서 배너가 통폭이라 한 줄이 지나치게 길어진다 — 글줄을 읽기 좋은
+          길이(max-w-2xl)로 제한한다(계산 섹션의 판단 한계 안내와 같은 기준) */}
       <summary className="cursor-pointer select-none list-none">
-        <span className="flex items-start gap-2.5">
+        <span className="flex items-start gap-2.5 max-w-2xl">
           {hasProposed
             ? <TriangleAlert size={18} className="text-caution shrink-0 mt-0.5" aria-hidden />
             : <CalendarClock size={18} className="text-pen shrink-0 mt-0.5" aria-hidden />}
@@ -99,7 +101,7 @@ export default async function RuleBasisBanner({ taxTypes }: {
           </span>
         </span>
       </summary>
-      <ul className="mt-3 pt-3 border-t border-rule space-y-2">
+      <ul className="mt-3 pt-3 border-t border-rule space-y-2 max-w-4xl">
         {rules.map((r) => (
           <li key={`${r.rule_key}-${r.effective_from}`} className="text-xs leading-relaxed">
             <span className="font-mono text-ink-soft">{r.rule_key}</span>

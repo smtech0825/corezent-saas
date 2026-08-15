@@ -12,7 +12,9 @@ export default function ApartmentOnlyNotice() {
   return (
     <div className="mb-6 bg-caution-soft border border-caution/30 rounded-lg p-4 flex items-start gap-2.5">
       <Building2 size={18} className="text-caution shrink-0 mt-0.5" aria-hidden />
-      <p className="text-sm text-ink leading-relaxed">
+      {/* 글줄은 max-w-2xl로 제한 — 넓은 화면에서 배너가 통폭이라 한 줄이 지나치게 길어진다
+          (기준일 배너와 같은 기준) */}
+      <p className="text-sm text-ink leading-relaxed max-w-2xl">
         <strong className="font-semibold">이 계산기는 아파트를 기준으로 합니다.</strong>{' '}
         오피스텔·상가·토지·단독주택 등은 적용되는 세율·요율 체계가 달라 결과가 맞지
         않을 수 있습니다.
