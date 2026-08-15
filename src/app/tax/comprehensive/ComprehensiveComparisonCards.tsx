@@ -19,6 +19,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import YearComparisonSection, { type YearCardData } from '../_components/YearComparisonSection'
+import { userFacingFailureMessage } from '../_components/CalcFailureNotice'
 import {
   RegulatedSelect,
   ResidenceYearsField,
@@ -75,7 +76,7 @@ function toCards(comparison: YearComparison<ComprehensiveSuccess>, pendingInput:
           ruleMode: e.ruleMode,
           isBaseYear: e.isBaseYear,
           ok: false,
-          failMessage: e.result.message,
+          failMessage: userFacingFailureMessage(e.result),
           // 입력 대기 중이면 실패 원문(예: 산식 필드명) 대신 무엇을 하면 되는지 알린다
           pendingInput: pendingInput && !e.isBaseYear && INPUT_FIXABLE_CODES.includes(e.result.code),
         },
@@ -161,6 +162,26 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
     })
   }
 
+  /**
+   * @함수명: inputSummary
+   * @설명: 비교에 쓴 개편안 기준 입력을 한 줄로 요약합니다 — 계산이 끝나 입력칸이 접힌
+   *        뒤에도 어떤 값으로 나온 결과인지 화면에 남기기 위한 것입니다.
+   * @반환값: '거주 중 · 거주기간 10년 · 조정대상지역 주택 없음' 형태의 한국어 요약
+   */
+  function inputSummary(): string {
+    const parts: string[] = []
+    if (oneHouseTrack) {
+      if (isResiding !== '') parts.push(isResiding === 'yes' ? '거주 중' : '거주하지 않음')
+      if (residenceYears !== '') parts.push(`거주기간 ${residenceYears}년`)
+    } else if (residingPrice !== '') {
+      parts.push(`거주 주택 공시가격 ${Number(residingPrice).toLocaleString('ko-KR')}원`)
+    }
+    if (hasRegulated !== '') {
+      parts.push(hasRegulated === 'yes' ? '조정대상지역 주택 있음' : '조정대상지역 주택 없음')
+    }
+    return parts.length > 0 ? parts.join(' · ') : '입력한 값'
+  }
+
   // 이 비교의 한계 — 차이를 전부 '개정안 때문'으로 읽지 않도록 근거를 밝힌다
   const notes: string[] = [
     '나이·보유기간·거주기간과 직전 연도 총세액은 과세연도가 바뀌어도 그대로 둡니다 — 실제로는 해마다 나이와 기간이 늘어 세액공제가 더 커질 수 있습니다.',
@@ -185,33 +206,47 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
       cards={toCards(current, awaitingFirstInput)}
     >
       {/* 개편안 해를 계산하려면 확정법 화면에 없는 값이 필요하다 — 그 값만 여기서 받는다
-          (폼 본문 입력은 늘리지 않는다). 카드는 아래에 그대로 두어 올해 결과는 계속 보인다 */}
-      {needsInput && (
-        <div className="bg-paper-raised border border-rule rounded-lg p-5 space-y-4 mb-4">
-          <div>
-            <p className="text-sm font-semibold text-ink mb-1">개편안 기준으로 비교하려면 아래를 입력하세요</p>
-            <p className="text-xs text-ink-soft leading-relaxed">
-              개편안은 지금 확정된 법에는 없는 조건(거주 여부 등)으로 공제를 정합니다. 그래서
-              확정된 법 기준 계산에 필요 없던 값이 비교에는 필요합니다. 아래를 채우면 개편안
-              시행 연도의 세액을 계산해 나란히 보여드립니다 — 위에 나온 계산 결과는 바뀌지 않습니다.
-              다만 개편안은 아직 국회 통과 전이라 그 세액은 확정이 아닙니다.
-            </p>
+          (폼 본문 입력은 늘리지 않는다). 카드는 아래에 그대로 두어 올해 결과는 계속 보인다.
+          계산이 끝나면 접힌 채로 남아 어떤 값으로 나온 결과인지 보여주고, 눌러서 고칠 수 있다 */}
+      {(needsInput || recalculated !== null) && (
+        <details open={needsInput} className="bg-paper-raised border border-rule rounded-lg p-5 mb-4">
+          <summary className="cursor-pointer select-none list-none">
+            <span className="block text-sm font-semibold text-ink mb-1">
+              {needsInput ? '개편안 기준으로 비교하려면 아래를 입력하세요' : '개편안 기준 입력값'}
+            </span>
+            <span className="block text-xs text-ink-soft leading-relaxed max-w-2xl">
+              {needsInput ? (
+                <>
+                  개편안은 지금 확정된 법에는 없는 조건(거주 여부 등)으로 공제를 정합니다. 그래서
+                  확정된 법 기준 계산에 필요 없던 값이 비교에는 필요합니다. 아래를 채우면 개편안
+                  시행 연도의 세액을 계산해 나란히 보여드립니다 — 위에 나온 계산 결과는 바뀌지 않습니다.
+                  다만 개편안은 아직 국회 통과 전이라 그 세액은 확정이 아닙니다.
+                </>
+              ) : (
+                <>
+                  {inputSummary()} 기준으로 계산한 비교입니다.
+                  <span className="text-ink-faint"> · 눌러서 값 고치기</span>
+                </>
+              )}
+            </span>
+          </summary>
+          <div className="mt-4 space-y-4">
+            {oneHouseTrack ? (
+              <>
+                <ResidingSelect value={isResiding} onChange={setIsResiding} />
+                <ResidenceYearsField value={residenceYears} onChange={setResidenceYears} />
+              </>
+            ) : (
+              <ResidingPriceField value={residingPrice} onChange={setResidingPrice} />
+            )}
+            <RegulatedSelect value={hasRegulated} onChange={setHasRegulated} />
+            {inputError && <p className="text-sm font-medium text-seal" role="alert">{inputError}</p>}
+            <Button type="button" onClick={handleApply} disabled={isPending}>
+              {isPending && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+              {isPending ? '비교 계산 중…' : needsInput ? '연도별 비교 계산하기' : '이 값으로 다시 계산하기'}
+            </Button>
           </div>
-          {oneHouseTrack ? (
-            <>
-              <ResidingSelect value={isResiding} onChange={setIsResiding} />
-              <ResidenceYearsField value={residenceYears} onChange={setResidenceYears} />
-            </>
-          ) : (
-            <ResidingPriceField value={residingPrice} onChange={setResidingPrice} />
-          )}
-          <RegulatedSelect value={hasRegulated} onChange={setHasRegulated} />
-          {inputError && <p className="text-sm font-medium text-seal" role="alert">{inputError}</p>}
-          <Button type="button" onClick={handleApply} disabled={isPending}>
-            {isPending && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
-            {isPending ? '비교 계산 중…' : '연도별 비교 계산하기'}
-          </Button>
-        </div>
+        </details>
       )}
     </YearComparisonSection>
   )
