@@ -13,11 +13,11 @@ import { fetchManualFileUrl } from '@/lib/manual'
 
 export const dynamic = 'force-dynamic'
 
-/** 파일이 없거나 못 읽을 때의 안내 화면(내용이 짧아 문자열로 유지) */
+/** 파일이 없거나 못 읽을 때의 안내 화면(내용이 짧아 문자열로 유지 — 색 지정 없음, 기본색) */
 const NOT_READY_HTML = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><title>사용설명서</title></head>
 <body style="font-family:sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0">
-<p style="color:#444">사용설명서를 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.</p>
+<p>사용설명서를 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.</p>
 </body></html>`
 
 /**
@@ -26,7 +26,11 @@ const NOT_READY_HTML = `<!doctype html>
  * @반환값: text/html 응답 — 설명서 원문 또는 준비 중 안내(404)
  */
 export async function GET() {
-  const url = await fetchManualFileUrl(createAdminClient())
+  // 클라이언트 생성 실패(환경 변수 누락 등)도 500 대신 준비 중 안내로 — 손님 화면은 깨지지 않는다
+  let url = ''
+  try {
+    url = await fetchManualFileUrl(createAdminClient())
+  } catch { /* url '' → 아래 안내 */ }
   if (!url) {
     return new Response(NOT_READY_HTML, {
       status: 404,
@@ -35,16 +39,22 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(url, { cache: 'no-store' })
+    // 리다이렉트 금지(검증한 주소 밖으로 새는 것 차단) + 10초 제한(저장소가 멈추면 안내로)
+    const res = await fetch(url, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(10_000) })
     if (!res.ok) throw new Error(`storage ${res.status}`)
-    // 바이트 그대로 전달 — 내용 무수정. 문자셋만 응답 머리에 명시(한글 깨짐 방지)
+    // 바이트 그대로 전달 — 내용 무수정. 문자셋은 문서 안의 <meta charset>이 결정하도록
+    // 헤더에는 형식만 적는다(헤더 문자셋이 문서 선언을 덮어써 깨지는 일 방지)
     const body = await res.arrayBuffer()
     return new Response(body, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Type': 'text/html',
         // 브라우저·CDN 5분 기억 — 900KB를 매번 다시 받지 않는다. 파일 교체는 5분 안에 반영
-        'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, max-age=300, s-maxage=300',
+        // 심층 방어 — 설명서는 스크립트 없는 정적 문서(실측)라 sandbox를 걸어도 그대로 보이고,
+        // 만에 하나 악성 HTML이 올라와도 스크립트 실행·쿠키 접근이 원천 차단된다
+        'Content-Security-Policy': 'sandbox',
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (err) {

@@ -189,7 +189,12 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
     if (uploadErr) {
       // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
       console.error('[settings] 설명서 업로드 실패:', uploadErr.message)
-      setManualUploadError('파일 업로드에 실패했습니다. HTML 파일인지 확인한 뒤 다시 시도해 주세요.')
+      // 가장 흔한 두 원인은 문구로 구분 — 보관함 미생성(064 SQL 미실행)과 그 외
+      setManualUploadError(
+        /bucket not found/i.test(uploadErr.message)
+          ? '설명서 보관함이 아직 만들어지지 않았습니다. 064 SQL을 먼저 실행해 주세요.'
+          : '파일 업로드에 실패했습니다. HTML 파일(5MB 이하)인지 확인한 뒤 다시 시도해 주세요.',
+      )
       setManualUploading(false)
       if (manualFileRef.current) manualFileRef.current.value = ''
       return
@@ -303,7 +308,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
               <input
                 ref={manualFileRef}
                 type="file"
-                accept=".html,text/html"
+                accept=".html,.htm,text/html"
                 onChange={handleManualUpload}
                 disabled={manualUploading}
                 className="hidden"

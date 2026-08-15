@@ -13,6 +13,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /** front_settings 키 — 관리자 → 설정 → 일반 설정에서 파일을 올리면 채워진다 */
 export const MANUAL_FILE_URL_KEY = 'manual_file_url'
 
+/** 설명서가 속한 제품 slug — 버튼은 이 제품의 라이선스 행에만 나온다(단일 출처, 사본 금지) */
+export const MANUAL_PRODUCT_SLUG = 'geniework'
+
 /**
  * @함수명: isAllowedManualUrl
  * @설명: 설명서 주소가 우리 저장소의 공개 파일 주소인지 확인합니다.
@@ -23,7 +26,16 @@ export const MANUAL_FILE_URL_KEY = 'manual_file_url'
 export function isAllowedManualUrl(url: string): boolean {
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')
   if (!base) return false
-  return url.startsWith(`${base}/storage/v1/object/public/`)
+  // 문자열 비교가 아니라 주소를 실제로 해석해 비교 — 인코딩(..%2f 등) 우회 차단
+  try {
+    const parsed = new URL(url)
+    const allowed = new URL(base)
+    return parsed.origin === allowed.origin
+      && parsed.pathname.startsWith('/storage/v1/object/public/')
+      && !parsed.pathname.includes('..')
+  } catch {
+    return false
+  }
 }
 
 /**

@@ -6,7 +6,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { fetchManualFileUrl } from '@/lib/manual'
+import { fetchManualFileUrl, MANUAL_PRODUCT_SLUG } from '@/lib/manual'
 import Link from 'next/link'
 import { Key, BookOpen } from 'lucide-react'
 import CopyButton from '@/components/common/CopyButton'
@@ -115,12 +115,20 @@ export default async function LicensesPage({
 
   // 사용설명서 파일 주소 — 관리자 설정(front_settings)에서 읽는다. 설정 테이블은 일반
   // 로그인 사용자가 못 읽으므로(RLS) 서버 전용 admin 클라이언트로 읽어 값만 쓴다.
-  // 비어 있으면 「사용설명서 보기」 버튼을 아예 그리지 않는다.
-  const manualUrl = await fetchManualFileUrl(createAdminClient())
+  // 비어 있으면 「사용설명서 보기」 버튼을 아예 그리지 않는다. 조회가 실패해도
+  // 라이선스 화면(본 기능)은 그대로 열려야 하므로 실패는 버튼 숨김으로만 흡수한다.
+  let manualUrl = ''
+  try {
+    manualUrl = await fetchManualFileUrl(createAdminClient())
+  } catch { /* 버튼만 숨김 */ }
+  // 설명서 버튼이 나올 행이 하나라도 있는지 — 다운로드 열 표시 조건에 합류
+  const hasManualRow = manualUrl !== '' && (licenses ?? []).some(
+    (l: any) => l.products?.slug === MANUAL_PRODUCT_SLUG,
+  )
 
-  // "다운로드" 열은 이 페이지의 라이선스 중 하나라도 릴리스(설치파일/노트) 데이터가 있을 때만 표시.
-  // 전부 없으면 열 자체를 숨겨 빈 "—" 열이 남지 않게 한다.
-  const showDownloadCol = (licenses ?? []).some(
+  // "다운로드" 열은 이 페이지의 라이선스 중 하나라도 릴리스(설치파일/노트) 데이터가 있거나
+  // 사용설명서 버튼이 나올 행이 있을 때 표시. 전부 없으면 열 자체를 숨겨 빈 "—" 열이 남지 않게 한다.
+  const showDownloadCol = hasManualRow || (licenses ?? []).some(
     (l: any) => l.product_id && changelogMap.has(l.product_id as string),
   )
   // 그리드 템플릿 — 다운로드 열 유무에 따라 컬럼 수를 바꾼다(Tailwind가 리터럴을 찾도록 전체 문자열로 기술)
@@ -221,12 +229,16 @@ export default async function LicensesPage({
                     )}
                   </div>
 
-                  {/* 다운로드 — 이 페이지에 릴리스 데이터가 하나라도 있을 때만 열을 렌더 */}
-                  {showDownloadCol && (
+                  {/* 다운로드 — 릴리스 데이터 또는 사용설명서 버튼이 나올 행이 있을 때 열을 렌더 */}
+                  {showDownloadCol && (() => {
+                    // 사용설명서 버튼 — 릴리스(변경 이력) 유무와 무관하게, 설명서 제품의 행이면 표시
+                    // (릴리스를 아직 등록 안 한 상태에서도 설명서는 열려야 한다 — 검증 지적 반영)
+                    const showManual = manualUrl !== '' && lic.products?.slug === MANUAL_PRODUCT_SLUG
+                    return (
                     <div>
-                      {changelog ? (
+                      {(changelog || showManual) ? (
                         <div className="flex flex-col items-start gap-1">
-                          {hasDownload && lic.product_id ? (
+                          {changelog && (hasDownload && lic.product_id ? (
                             <DownloadButton
                               productId={lic.product_id}
                               version={changelog.version}
@@ -237,11 +249,10 @@ export default async function LicensesPage({
                             /* 릴리스는 등록됐지만 설치파일 주소가 아직 없는 상태.
                                버튼만 조용히 사라지면 "내 화면만 안 보이나" 싶으므로 이유를 남긴다. */
                             <span className="text-[11px] text-ink-faint">설치파일 준비 중</span>
-                          )}
+                          ))}
                           {/* 사용설명서 보기 — 다운로드(강조색 테두리)와 구분되는 회색 테두리+책 아이콘.
-                              설명서는 지니워크 것 하나뿐이라 지니워크 라이선스에만, 주소가 비면 미표시.
                               /manual 중계로 새 창에서 연다(터치 영역 44px 확보) */}
-                          {manualUrl && lic.products?.slug === 'geniework' && (
+                          {showManual && (
                             <a
                               href="/manual"
                               target="_blank"
@@ -252,7 +263,7 @@ export default async function LicensesPage({
                               사용설명서 보기
                             </a>
                           )}
-                          {lic.products?.slug && (
+                          {changelog && lic.products?.slug && (
                             <Link
                               href={`/changelog?product=${lic.products.slug}`}
                               className="text-[11px] text-ink-faint hover:text-ink-soft transition-colors"
@@ -265,7 +276,8 @@ export default async function LicensesPage({
                         <span className="text-xs text-ink-faint">—</span>
                       )}
                     </div>
-                  )}
+                    )
+                  })()}
                 </div>
               )
             })}
