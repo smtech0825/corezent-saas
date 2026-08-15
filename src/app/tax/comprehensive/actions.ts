@@ -121,12 +121,14 @@ export async function calculateComprehensiveComparison(
   }
 
   const comparisonInput = buildComparisonInput(payload)
+  const ruleMode: TaxRuleMode = payload.ruleMode === 'proposed' ? 'proposed' : 'confirmed'
   const supabase = await createClient()
   try {
     const comparison = await runYearComparison<ComprehensiveSuccess>(
       supabase,
       'comprehensive',
       comparisonInput.taxYear,
+      ruleMode,
       (year, mode) => calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
     )
     return comparison ? { comparison } : {}
@@ -202,8 +204,12 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
     try {
       const comparisonInput = buildComparisonInput(payload)
       comparison =
-        (await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', input.taxYear, (year, mode) =>
-          calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
+        (await runYearComparison<ComprehensiveSuccess>(
+          supabase,
+          'comprehensive',
+          input.taxYear,
+          ruleMode,
+          (year, mode) => calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
         )) ?? undefined
     } catch (err) {
       console.error('[tax] 종합부동산세 연도별 비교 실패(본 결과만 반환):', err instanceof Error ? err.message : String(err))

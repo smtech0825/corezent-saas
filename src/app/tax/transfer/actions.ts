@@ -157,13 +157,18 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
     try {
       const inputYear = Number(input.baseDate.slice(0, 4))
       comparison =
-        (await runYearComparison<TransferSuccess>(supabase, 'transfer', inputYear, (year, mode) => {
-          // 연도만 치환하면 없는 날짜가 될 수 있다(윤년 2월 29일) — 사용자 입력은 정상이므로
-          // 엔진의 '형식 오류' 문구 대신 비교 전용 안내로 그 해만 접는다
+        (await runYearComparison<TransferSuccess>(supabase, 'transfer', inputYear, ruleMode, (year, mode) => {
+          // 연도만 치환하면 계산할 수 없는 양도일이 될 수 있다 — 사용자 입력은 정상이므로
+          // 엔진의 입력 오류 문구 대신 비교 전용 안내로 그 해만 접는다
           const baseDate = replaceDateYear(input.baseDate, year)
           if (!isValidDateString(baseDate)) {
             return Promise.resolve(
               engineFail('INVALID_INPUT', '이 해에는 입력하신 월·일이 없어(윤년 날짜) 비교하지 못했습니다.'),
+            )
+          }
+          if (baseDate < input.acquiredAt) {
+            return Promise.resolve(
+              engineFail('INVALID_INPUT', '취득일보다 앞선 해라 비교하지 않습니다.'),
             )
           }
           return calculateTransferTax(supabase, { ...input, baseDate }, mode)

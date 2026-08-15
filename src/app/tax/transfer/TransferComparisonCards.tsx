@@ -38,9 +38,10 @@ export default function TransferComparisonCards({ comparison }: {
   const notes: string[] = [
     '취득일은 입력하신 그대로 두고 양도 연도만 바꿉니다 — 뒤 연도일수록 보유기간이 길어지므로, 차이에는 법 개정뿐 아니라 보유기간이 늘어난 영향도 함께 들어 있습니다.',
   ]
-  if (!comparison.entries.some((e) => e.year === comparison.inputYear)) {
+  // 연도가 같아도 계산 기준(확정법/개정안)이 다르면 위 결과와 카드 금액이 다르다 — 그것까지 알린다
+  if (!comparison.entries.some((e) => e.year === comparison.inputYear && e.ruleMode === comparison.inputRuleMode)) {
     notes.push(
-      `위에서 계산한 ${comparison.inputYear}년은 이 비교에 없습니다 — 비교는 올해와 개편안 시행 연도만 보여드립니다.`,
+      `위에서 계산한 결과(${comparison.inputYear}년)와 같은 조건의 카드는 이 비교에 없습니다 — 비교는 올해를 확정된 법으로, 나머지 해를 개정안으로 계산합니다.`,
     )
   }
 
@@ -66,7 +67,7 @@ export default function TransferComparisonCards({ comparison }: {
 
   return (
     <YearComparisonSection
-      subtitle="같은 조건으로 양도 연도만 바꿔 다시 계산한 결과입니다. 올해는 확정된 법, 나머지 해는 개정안 기준입니다."
+      subtitle="입력하신 내용에서 양도 연도만 바꿔 다시 계산한 결과입니다. 올해는 확정된 법, 나머지 해는 개정안 기준입니다."
       notes={notes}
       cards={cards}
     />

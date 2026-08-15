@@ -140,13 +140,12 @@ export default function YearComparisonSection({ subtitle, notes, cards, children
 
       {notes && notes.length > 0 && (
         <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-ink-soft leading-relaxed">
-          {notes.map((n) => <li key={n}>{n}</li>)}
+          {notes.map((n, i) => <li key={i}>{n}</li>)}
         </ul>
       )}
 
-      {children}
-
-      {/* 개정안 경고 — 날짜·수치를 문구에 넣지 않는다(연도·세액은 카드가 데이터에서 표시) */}
+      {/* 개정안 경고 — 날짜·수치를 문구에 넣지 않는다(연도·세액은 카드가 데이터에서 표시).
+          입력 패널(children)보다 먼저 둔다 — 값을 넣기 전에 확정이 아님을 먼저 읽어야 한다 */}
       <div className="bg-caution-soft border-2 border-caution/40 rounded-lg p-4 mb-4" role="alert">
         <p className="flex items-center gap-2 text-sm font-semibold text-caution mb-1">
           <AlertTriangle size={15} aria-hidden="true" /> 개정안 연도의 세액은 확정이 아닙니다
@@ -158,6 +157,8 @@ export default function YearComparisonSection({ subtitle, notes, cards, children
           하세요.
         </p>
       </div>
+
+      {children}
 
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${xlCols} gap-3`}>
         {cards.map((c) => (

@@ -15,7 +15,7 @@
  *        건드리지 않는다(재계산은 비교 전용 액션 — 이력 미기록).
  */
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import YearComparisonSection, { type YearCardData } from '../_components/YearComparisonSection'
@@ -34,6 +34,13 @@ import type { TaxEngineErrorCode } from '@/lib/tax/engine-types'
 
 /** 값을 더 받으면 풀릴 수 있는 실패 코드 — 룰 미등록·DB 오류 등은 입력으로 해결되지 않는다 */
 const INPUT_FIXABLE_CODES: TaxEngineErrorCode[] = ['INVALID_INPUT', 'NO_MATCHING_RATE_ROW']
+
+/**
+ * 이 패널이 실제로 받을 수 있는 판정 컨텍스트 필드 — 엔진의 미확정 필드가 이 목록에
+ * 들어야만 입력을 요청한다. 그러지 않으면 패널로 못 채우는 조건(나이·보유기간 등)까지
+ * 입력을 요구해, 채워도 사라지지 않는 안내가 남는다.
+ */
+const PANEL_FIXABLE_FIELDS = ['residence_years', 'is_residing', 'residing_official_price', 'has_regulated_house']
 
 /** 그 해의 결과가 왜 이 값인지 한 줄 — 비과세면 사유, 과세면 공제·중과 요약 */
 function reasonLine(r: ComprehensiveSuccess): string {
@@ -96,8 +103,10 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
     setPrevComparison(comparison)
     setRecalculated(null)
     setInputError(null)
-    requestSeq.current += 1   // 진행 중이던 재계산 응답을 무효화
   }
+  // 진행 중이던 재계산 응답 무효화는 커밋 후에 한다 — 렌더 중 ref를 바꾸면 폐기된 렌더에서도
+  // 번호가 올라가 정상 요청이 조용히 버려질 수 있다(동시성 렌더)
+  useEffect(() => { requestSeq.current += 1 }, [comparison])
 
   const current = recalculated ?? comparison
   const oneHouseTrack = payload.isOneHouse === true
@@ -109,8 +118,13 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
     current.entries.some(
       (e) =>
         !e.isBaseYear &&
-        (e.result.ok ? e.result.unresolvedFields.length > 0 : INPUT_FIXABLE_CODES.includes(e.result.code)),
+        (e.result.ok
+          ? e.result.unresolvedFields.some((f) => PANEL_FIXABLE_FIELDS.includes(f))
+          : INPUT_FIXABLE_CODES.includes(e.result.code)),
     )
+  // 아직 한 번도 입력받지 못한 상태에서만 '입력하면 계산됩니다' 카드를 쓴다 —
+  // 재계산까지 했는데도 실패했다면 그 사유를 그대로 보여줘야 한다(원인을 감추지 않는다)
+  const awaitingFirstInput = needsInput && recalculated === null
 
   /**
    * @함수명: handleApply
@@ -149,19 +163,20 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
 
   // 이 비교의 한계 — 차이를 전부 '개정안 때문'으로 읽지 않도록 근거를 밝힌다
   const notes: string[] = [
-    '나이·보유기간·직전 연도 총세액은 입력하신 값을 그대로 두고 과세연도만 바꿉니다 — 실제로는 해마다 나이와 보유기간이 늘어 세액공제가 더 커질 수 있습니다.',
+    '나이·보유기간·거주기간과 직전 연도 총세액은 과세연도가 바뀌어도 그대로 둡니다 — 실제로는 해마다 나이와 기간이 늘어 세액공제가 더 커질 수 있습니다.',
   ]
-  if (!current.entries.some((e) => e.year === current.inputYear)) {
+  // 연도가 같아도 계산 기준(확정법/개정안)이 다르면 위 결과와 카드 금액이 다르다 — 그것까지 알린다
+  if (!current.entries.some((e) => e.year === current.inputYear && e.ruleMode === current.inputRuleMode)) {
     notes.push(
-      `위에서 계산한 ${current.inputYear}년은 이 비교에 없습니다 — 비교는 올해와 개편안 시행 연도만 보여드립니다.`,
+      `위에서 계산한 결과(${current.inputYear}년)와 같은 조건의 카드는 이 비교에 없습니다 — 비교는 올해를 확정된 법으로, 나머지 해를 개정안으로 계산합니다.`,
     )
   }
 
   return (
     <YearComparisonSection
-      subtitle="같은 조건으로 과세연도만 바꿔 다시 계산한 결과입니다. 올해는 확정된 법, 나머지 해는 개정안 기준입니다."
+      subtitle="입력하신 내용에서 과세연도만 바꿔 다시 계산한 결과입니다. 올해는 확정된 법, 나머지 해는 개정안 기준입니다."
       notes={notes}
-      cards={toCards(current, needsInput)}
+      cards={toCards(current, awaitingFirstInput)}
     >
       {/* 개편안 해를 계산하려면 확정법 화면에 없는 값이 필요하다 — 그 값만 여기서 받는다
           (폼 본문 입력은 늘리지 않는다). 카드는 아래에 그대로 두어 올해 결과는 계속 보인다 */}
