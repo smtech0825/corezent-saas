@@ -9,11 +9,14 @@
  *           → 바깥 여백이 필요하면 래퍼 div가 아니라 이 부품의 className으로 준다.
  *             (래퍼로 감싸면 값이 없을 때 그 여백만 남아 화면이 달라진다)
  *
- *        색은 기존 페이퍼 토큰만 사용한다: 배경 paper-shade · 테두리 rule · 라벨 ink-soft
- *        · 번호 ink · 왼쪽 세로선 pen. 새 색상값을 만들지 않는다.
- *        ⚠️ 라벨은 ink-faint(#8B8F98)가 아니라 ink-soft(#565C66)를 쓴다 — paper-shade(#F1EFE7) 위에서
- *           ink-faint는 대비 약 2.8:1로 WCAG AA(4.5:1) 미달이고, ink-soft는 약 5.9:1로 통과한다.
- *           공공기관 담당자가 보는 화면이라 접근성 기준을 지킨다(둘 다 기존 토큰이라 새 색은 없다).
+ *        색은 기존 페이퍼 토큰만 사용한다: 배경 paper-shade · 테두리 rule · 항목명 ink-soft
+ *        · 라벨 pen · 번호 ink · 왼쪽 세로선 pen. 새 색상값을 만들지 않는다.
+ *        대비(paper-shade #F1EFE7 위, 실측 계산 2026-08-16):
+ *          라벨 '조달청 등록' pen(#1D3FB0) = 7.63:1 (AA 4.5:1은 물론 AAA 7:1도 통과)
+ *          번호 ink(#23272E) = 13.02:1 · 항목명 ink-soft(#565C66) = 5.85:1 — 전부 AA 통과
+ *          (ink-faint 2.81:1은 미달이라 쓰지 않는다. 공공기관 담당자가 보는 화면)
+ *        2026-08-16 개선 — 눈에 안 띈다는 지적: 라벨을 pen+굵게, 번호를 반굵게+한 단계 큰
+ *        글자로. 구조·자리·빈 값 숨김은 그대로다.
  */
 
 interface Props {
@@ -34,11 +37,11 @@ interface Props {
  * @매개변수: label - 항목 이름, value - 번호 값
  * @반환값: 항목 노드
  */
-function Entry({ label, value }: { label: string; value: string }) {
+function Entry({ label, value, numberCls }: { label: string; value: string; numberCls: string }) {
   return (
     <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
       <span>{label}</span>
-      <span className="font-mono text-ink">{value}</span>
+      <span className={`font-mono text-ink font-semibold ${numberCls}`}>{value}</span>
     </span>
   )
 }
@@ -66,6 +69,8 @@ export default function ProcurementBadge({
   const sizeCls = sm
     ? 'gap-x-1.5 gap-y-0.5 px-2 py-1 text-[11px] border-l-2'
     : 'gap-x-2 gap-y-1 px-2.5 py-1.5 text-xs border-l-[3px]'
+  // 번호는 항목명보다 한 단계 큰 글자 — 담당자가 찾는 값이 먼저 읽히게 한다
+  const numberCls = sm ? 'text-xs' : 'text-sm'
 
   return (
     // flex-wrap + max-w-full — 좁은 곳에서는 줄이 접히고, 가로 스크롤이 생기지 않는다.
@@ -74,10 +79,10 @@ export default function ProcurementBadge({
     <div
       className={`flex w-fit flex-wrap items-baseline max-w-full rounded border border-rule border-l-pen bg-paper-shade text-ink-soft ${sizeCls} ${className}`}
     >
-      <span className="whitespace-nowrap">조달청 등록</span>
-      {cls && <Entry label="물품분류번호" value={cls} />}
+      <span className="whitespace-nowrap font-bold text-pen">조달청 등록</span>
+      {cls && <Entry label="물품분류번호" value={cls} numberCls={numberCls} />}
       {cls && item && <span aria-hidden className="whitespace-nowrap">·</span>}
-      {item && <Entry label="물품식별번호" value={item} />}
+      {item && <Entry label="물품식별번호" value={item} numberCls={numberCls} />}
     </div>
   )
 }
