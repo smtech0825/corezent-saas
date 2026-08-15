@@ -42,10 +42,12 @@ export const REQUIRED_FIELDS = [
 ] as const
 
 // ─── 원본의 기초 함수들(그대로) ──────────────────────────────────────────────
-function v(input: OrgLicenseInput, key: keyof OrgLicenseInput): string {
+/** 원본 v() — 입력값을 앞뒤 공백 제거한 문자열로 읽는다 */
+export function v(input: OrgLicenseInput, key: keyof OrgLicenseInput): string {
   return (input[key] ?? '').trim()
 }
-function n(input: OrgLicenseInput, key: keyof OrgLicenseInput): number {
+/** 원본 n() — 숫자로 읽는다(빈 값·숫자 아님 → 0). SQL·계산·발급이 전부 이 규칙을 공유한다 */
+export function n(input: OrgLicenseInput, key: keyof OrgLicenseInput): number {
   const x = parseFloat(v(input, key))
   return isNaN(x) ? 0 : x
 }
@@ -57,6 +59,7 @@ export function won(x: number): string {
 function q(s: string): string {
   return "'" + String(s).replace(/'/g, "''") + "'"
 }
+/** 원본 p2() — 한 자리 수를 두 자리로(8 → '08') */
 function p2(x: number): string { return (x < 10 ? '0' : '') + x }
 /** 원본 ymd() — 반드시 이 PC(한국) 기준. toISOString은 하루 어긋난다(원본 주석) */
 export function ymd(d: Date): string {

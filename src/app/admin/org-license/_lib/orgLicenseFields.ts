@@ -19,7 +19,7 @@ export interface FieldChip {
     | { type: 'syncMonth' }
 }
 
-/** 입력 칸 한 개의 표시 정의 */
+/** 입력 칸 한 개의 표시 정의 — min/max/step은 정본 input 속성 그대로(브라우저 단 가드) */
 export interface FieldDef {
   key: keyof OrgLicenseInput
   label: string
@@ -27,6 +27,9 @@ export interface FieldDef {
   type?: 'text' | 'number' | 'date'
   placeholder?: string
   hint?: string
+  min?: number
+  max?: number
+  step?: number
   chips?: FieldChip[]
 }
 
@@ -49,7 +52,7 @@ export const FIELD_SECTIONS: { title: string; fields: FieldDef[] }[] = [
   {
     title: '2. 계약',
     fields: [
-      { key: 'pc_count', label: 'PC 수', required: true, type: 'number',
+      { key: 'pc_count', label: 'PC 수', required: true, type: 'number', min: 1, max: 9999, step: 1,
         hint: '1 ~ 9,999 · 이 값으로 등록 대수가 자동으로 정해집니다',
         chips: [
           { label: '10', action: { type: 'set', value: '10' } },
@@ -70,7 +73,7 @@ export const FIELD_SECTIONS: { title: string; fields: FieldDef[] }[] = [
   {
     title: '3. 크레딧',
     fields: [
-      { key: 'base_package_krw', label: '기본 패키지 연 총액', required: true, type: 'number',
+      { key: 'base_package_krw', label: '기본 패키지 연 총액', required: true, type: 'number', min: 0, step: 100000,
         hint: '숫자만 · 쉼표와 "원"을 넣지 마십시오. 월 금액이 아니라 연 총액입니다',
         chips: [
           { label: '100만', action: { type: 'set', value: '1000000' } },
@@ -78,13 +81,13 @@ export const FIELD_SECTIONS: { title: string; fields: FieldDef[] }[] = [
           { label: '500만', action: { type: 'set', value: '5000000' } },
           { label: '1,000만', action: { type: 'set', value: '10000000' } },
         ] },
-      { key: 'extra_package_krw', label: '추가 패키지 총액', required: true, type: 'number', hint: '없으면 0' },
-      { key: 'extra_months_left', label: '추가분 남은 개월', required: true, type: 'number',
+      { key: 'extra_package_krw', label: '추가 패키지 총액', required: true, type: 'number', min: 0, step: 100000, hint: '없으면 0' },
+      { key: 'extra_months_left', label: '추가분 남은 개월', required: true, type: 'number', min: 0, step: 1,
         hint: '없으면 0 · 기준 달은 등록 시점으로 자동 기록됩니다' },
-      { key: 'fx_krw_per_usd', label: '환율 (원/달러)', required: true, type: 'number',
+      { key: 'fx_krw_per_usd', label: '환율 (원/달러)', required: true, type: 'number', min: 1, step: 10,
         hint: '비우거나 0을 넣으면 등록이 거부됩니다' },
       { key: 'ai_workspace_id', label: 'AI 워크스페이스 ID', placeholder: 'wrkspc_xxx' },
-      { key: 'workspace_limit_usd', label: '워크스페이스에 건 한도 (달러)', type: 'number', placeholder: '200' },
+      { key: 'workspace_limit_usd', label: '워크스페이스에 건 한도 (달러)', type: 'number', min: 0, step: 10, placeholder: '200' },
     ],
   },
 ]
