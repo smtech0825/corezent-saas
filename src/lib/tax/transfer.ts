@@ -271,8 +271,14 @@ export async function calculateTransferTax(
       // 요건 적용 여부를 좌우하는데 근거 목록에 없으면 무엇이 판정했는지 추적할 수 없다
       if (resolved.coverageRule) use(resolved.coverageRule)
 
+      // 이 거주 요건은 부칙이 정한 날짜 이후에 취득한 주택부터 적용된다 — 그 전 취득분은
+      // 조정대상지역이었어도 보유 요건만으로 비과세다. 룰에 날짜가 없으면 취득일과 무관하게
+      // 적용한다(날짜는 코드가 아니라 룰에서 온다).
+      const residenceFrom = exemption.value.residenceIfAcquiredRegulated.appliesToAcquiredFrom
+      const residenceRequired = resolved.value === true
+        && (residenceFrom === undefined || input.acquiredAt >= residenceFrom)
       let residenceOk = true
-      if (resolved.value === true) {
+      if (residenceRequired) {
         if (input.residenceYears === undefined) {
           // 자동 판정으로 규제라고 본 경우에는 그 근거도 함께 알린다 — 사용자가 고르지 않은
           // 값 때문에 입력을 더 요구받는 상황이라 누가 그렇게 판단했는지 밝혀야 한다

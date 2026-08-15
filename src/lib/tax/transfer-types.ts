@@ -136,10 +136,12 @@ export type TransferBasicDeductionParsed =
  * transfer.exemption — 1세대 1주택 비과세 요건과 고가주택 기준.
  * residenceIfAcquiredRegulated: '취득 당시' 조정대상지역이었던 경우에만 적용되는
  * 거주 요건(연수) — 장기보유특별공제 큰 표의 거주 요건(항상 적용)과 다르다. 혼용 금지.
+ * appliesToAcquiredFrom: 그 거주 요건이 적용되기 시작하는 취득일(부칙). 선택 필드로,
+ * 없으면 취득일과 무관하게 적용한다. 날짜는 룰에서만 온다.
  */
 export interface TransferExemptionValue {
   minHoldingYears: number
-  residenceIfAcquiredRegulated: { minYears: number }
+  residenceIfAcquiredRegulated: { minYears: number; appliesToAcquiredFrom?: string }
   highPriceThreshold: number    // 고가주택 기준(양도가액, 원) — 초과분 비율만 과세
 }
 

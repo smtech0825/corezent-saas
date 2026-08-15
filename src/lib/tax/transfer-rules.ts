@@ -317,6 +317,12 @@ export function parseTransferExemption(
   if (!isObj(res) || !isNum(res.minYears) || res.minYears <= 0) {
     return invalid(ruleKey, 'residenceIfAcquiredRegulated.minYears가 0보다 큰 숫자(년)가 아닙니다.')
   }
+  // 거주 요건이 '언제 취득한 주택부터' 적용되는지(부칙) — 선택 필드. 없으면 취득일과
+  // 무관하게 적용한다(기존 동작). 날짜 값 자체는 관리자가 근거와 함께 입력한다.
+  if (res.appliesToAcquiredFrom !== undefined
+    && (typeof res.appliesToAcquiredFrom !== 'string' || !isValidDateString(res.appliesToAcquiredFrom))) {
+    return invalid(ruleKey, 'residenceIfAcquiredRegulated.appliesToAcquiredFrom이 YYYY-MM-DD 형식이 아닙니다.')
+  }
   if (!isNum(value.highPriceThreshold) || value.highPriceThreshold <= 0) {
     return invalid(ruleKey, 'highPriceThreshold가 0보다 큰 숫자(원)가 아닙니다.')
   }
@@ -324,7 +330,10 @@ export function parseTransferExemption(
     ok: true,
     value: {
       minHoldingYears: value.minHoldingYears,
-      residenceIfAcquiredRegulated: { minYears: res.minYears },
+      residenceIfAcquiredRegulated: {
+        minYears: res.minYears,
+        appliesToAcquiredFrom: typeof res.appliesToAcquiredFrom === 'string' ? res.appliesToAcquiredFrom : undefined,
+      },
       highPriceThreshold: value.highPriceThreshold,
     },
   }
