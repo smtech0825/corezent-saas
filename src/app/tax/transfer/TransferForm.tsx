@@ -189,7 +189,7 @@ export default function TransferForm({ graceDeadlineText }: {
           graceContractDate: graceContractDate || undefined,
           graceDepositReceived: graceContractDate ? graceDeposit : undefined,
         })
-        setResult(res)
+        setResult(res.result)
         requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')

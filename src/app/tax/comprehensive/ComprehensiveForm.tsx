@@ -163,7 +163,7 @@ export default function ComprehensiveForm() {
           residingOfficialPrice: proposedMode && !oneHouseTrack ? residingPriceNum : undefined,
           hasRegulatedHouse: proposedMode && hasRegulated !== '' ? hasRegulated === 'yes' : undefined,
         })
-        setSubmitted({ result: res, totalOfficialPrice: priceNum })
+        setSubmitted({ result: res.result, totalOfficialPrice: priceNum })
         requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
