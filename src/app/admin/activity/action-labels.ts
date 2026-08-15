@@ -46,6 +46,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'product.deactivate':          '제품 비활성화',
   'product.toggle_active':       '제품 활성/비활성',
   'product.reorder':             '제품 순서 변경',
+  'org_license.issue':           '기관 라이선스 발급',
   'changelog.create':            '변경 이력 추가',
   'changelog.update':            '변경 이력 수정',
   'changelog.delete':            '변경 이력 삭제',

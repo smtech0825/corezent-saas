@@ -17,6 +17,7 @@ import {
   won, ymd, genKey, nextMonthFirst, oneYearEnd,
 } from './_lib/orgLicenseSql'
 import { FIELD_SECTIONS, DEFAULT_INPUT, MISTAKES, type FieldChip } from './_lib/orgLicenseFields'
+import IssuePanel from './IssuePanel'
 
 /** 입력값 브라우저 저장 키(원본 파일과 별개 키 — 서로 간섭하지 않게) */
 const STORAGE_KEY = 'corezent_admin_org_issue_v1'
@@ -152,6 +153,9 @@ export default function OrgIssueClient() {
 
       {/* SQL 세 벌 — 복사만 제공(자동 실행 없음) */}
       <SqlBox title="4. 등록 SQL" desc="지니워크 라이선스 프로젝트(ecltbezstxufivhbhsjp)의 SQL Editor에 붙여넣어 실행하십시오" copyLabel="등록 SQL 복사" value={sqlRegister} rows={18} />
+
+      {/* 바로 발급(Wave 2) — 같은 계산·같은 입력으로 서버가 직접 등록(미리보기→확인→발급) */}
+      <IssuePanel input={input} preview={pv} errCount={errCount} />
       <SqlBox title="5. 등록 직후 확인 SQL" desc="숫자가 계약서와 맞는지 눈으로 봅니다 · 한도·1인당 몫은 위 검산과 같은 값이 나와야 합니다" copyLabel="확인 SQL 복사" value={sqlCheck} rows={9} />
       <SqlBox title="6. 나중에 추가 패키지를 팔 때 (충전)" desc="위 3번의 추가 패키지 총액과 남은 개월을 고쳐 넣고 아래를 복사하십시오. 기준 달은 자동으로 갱신됩니다" copyLabel="충전 SQL 복사" value={sqlTopup} rows={7} />
 

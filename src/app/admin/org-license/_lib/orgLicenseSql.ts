@@ -42,10 +42,10 @@ export const REQUIRED_FIELDS = [
 ] as const
 
 // ─── 원본의 기초 함수들(그대로) ──────────────────────────────────────────────
-function v(input: OrgLicenseInput, key: keyof OrgLicenseInput): string {
+export function v(input: OrgLicenseInput, key: keyof OrgLicenseInput): string {
   return (input[key] ?? '').trim()
 }
-function n(input: OrgLicenseInput, key: keyof OrgLicenseInput): number {
+export function n(input: OrgLicenseInput, key: keyof OrgLicenseInput): number {
   const x = parseFloat(v(input, key))
   return isNaN(x) ? 0 : x
 }
