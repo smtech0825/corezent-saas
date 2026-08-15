@@ -399,18 +399,24 @@ export async function calculateTransferTax(
         ltsdReason = `거주기간 미입력으로 1세대 1주택 큰 표(거주 ${one.value.minResidenceYears}년 이상) 적용 여부를 판정하지 못해 일반 표를 적용했습니다.`
       } else if (input.residenceYears >= one.value.minResidenceYears) {
         useOneHouseTable = true
-        const holdingPicked = selectRateRowOptional(one.value.holdingRows, context, oneRule.rule.rule_key)
-        if (!holdingPicked.ok) return holdingPicked
+        // 보유 축(holdingRows) 생략 = 그 시행기간의 보유 기준 공제 폐지 — 0%로 계산하고 사유에 명시
+        let holdPct = 0
+        if (one.value.holdingRows) {
+          const holdingPicked = selectRateRowOptional(one.value.holdingRows, context, oneRule.rule.rule_key)
+          if (!holdingPicked.ok) return holdingPicked
+          holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
+          holdPct = holdingPicked.row?.deductPercent ?? 0
+        }
         const residencePicked = selectRateRowOptional(one.value.residenceRows, context, oneRule.rule.rule_key)
         if (!residencePicked.ok) return residencePicked
-        holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
         residencePicked.unresolved.forEach((f) => unresolvedFields.add(f))
         use(oneRule.rule)
-        const holdPct = holdingPicked.row?.deductPercent ?? 0
         const resPct = residencePicked.row?.deductPercent ?? 0
         ltsdPercentTotal = holdPct + resPct
         ltsdTable = 'one_house'
-        ltsdReason = `1세대 1주택이고 거주 요건(${one.value.minResidenceYears}년 이상)을 충족해 큰 표 적용 — 보유분 ${holdPct}% + 거주분 ${resPct}%.`
+        ltsdReason = one.value.holdingRows
+          ? `1세대 1주택이고 거주 요건(${one.value.minResidenceYears}년 이상)을 충족해 큰 표 적용 — 보유분 ${holdPct}% + 거주분 ${resPct}%.`
+          : `1세대 1주택이고 거주 요건(${one.value.minResidenceYears}년 이상)을 충족해 큰 표 적용 — 거주분 ${resPct}% (이 시행기간의 큰 표에는 보유 기준 공제가 없습니다).`
       } else {
         ltsdReason = `거주기간이 ${one.value.minResidenceYears}년 미만이라 1세대 1주택 큰 표 대신 일반 표를 적용했습니다(큰 표의 거주 요건은 지역과 무관하게 항상 적용됩니다).`
       }
@@ -434,33 +440,46 @@ export async function calculateTransferTax(
           ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + `일반 표 적용 — 공제율 ${picked.row.deductPercent}%.`
         }
       } else {
-        // 신 형식(개정안) — 보유분·거주분 중 높은 쪽 하나만 적용
-        const holdingPicked = selectRateRowOptional(gen.value.holdingRows, context, genRule.rule.rule_key)
-        if (!holdingPicked.ok) return holdingPicked
+        // 신 형식(개정안) — 보유분·거주분 중 높은 쪽 하나만 적용.
+        // 보유 축(holdingRows) 생략 = 그 시행기간의 보유 기준 공제 폐지(거주 기준만).
+        let holdPct = 0
+        if (gen.value.holdingRows) {
+          const holdingPicked = selectRateRowOptional(gen.value.holdingRows, context, genRule.rule.rule_key)
+          if (!holdingPicked.ok) return holdingPicked
+          holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
+          holdPct = holdingPicked.row?.deductPercent ?? 0
+        }
         const residencePicked = selectRateRowOptional(gen.value.residenceRows, context, genRule.rule.rule_key)
         if (!residencePicked.ok) return residencePicked
-        holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
         residencePicked.unresolved.forEach((f) => unresolvedFields.add(f))
         use(genRule.rule)
-        const holdPct = holdingPicked.row?.deductPercent ?? 0
         const resPct = residencePicked.row?.deductPercent ?? 0
         if (input.residenceYears === undefined) {
-          // 거주기간 미입력 — 0으로 간주하지 않고 보유분만 적용한 사실을 명시한다
+          // 거주기간 미입력 — 0으로 간주하지 않고, 표의 구성에 맞는 사실을 명시한다
           ltsdPercentTotal = holdPct
           ltsdTable = holdPct > 0 ? 'general' : 'none'
-          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
-            `거주기간 미입력으로 일반 표(개정안)의 보유 기준 공제만 적용했습니다 — 보유분 ${holdPct}%. ` +
-            '거주기간을 입력하면 거주 기준 공제와 비교해 높은 쪽이 적용됩니다.'
+          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + (gen.value.holdingRows
+            ? `거주기간 미입력으로 일반 표(개정안)의 보유 기준 공제만 적용했습니다 — 보유분 ${holdPct}%. ` +
+              '거주기간을 입력하면 거주 기준 공제와 비교해 높은 쪽이 적용됩니다.'
+            : '거주기간 미입력으로 공제를 적용하지 못했습니다 — 이 시행기간의 일반 표는 거주 기준 공제만 있습니다. 거주기간을 입력하면 공제가 반영됩니다.')
         } else {
           if (residencePicked.row !== null) residenceYearsUsed = input.residenceYears
           ltsdPercentTotal = Math.max(holdPct, resPct)
           ltsdTable = ltsdPercentTotal > 0 ? 'general' : 'none'
-          // 동률이면 보유분으로 표기 — 공제액은 동일하다
-          const chosen = resPct > holdPct ? '거주분' : '보유분'
-          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
-            `일반 표(개정안) 적용 — 보유분 ${holdPct}%·거주분 ${resPct}% 중 높은 쪽인 ${chosen} ${ltsdPercentTotal}%를 적용했습니다(둘 중 하나만 적용).`
-          if (ltsdPercentTotal === 0) {
-            ltsdReason += ' 보유·거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'
+          if (gen.value.holdingRows) {
+            // 동률이면 보유분으로 표기 — 공제액은 동일하다
+            const chosen = resPct > holdPct ? '거주분' : '보유분'
+            ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
+              `일반 표(개정안) 적용 — 보유분 ${holdPct}%·거주분 ${resPct}% 중 높은 쪽인 ${chosen} ${ltsdPercentTotal}%를 적용했습니다(둘 중 하나만 적용).`
+            if (ltsdPercentTotal === 0) {
+              ltsdReason += ' 보유·거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'
+            }
+          } else {
+            ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
+              `일반 표(개정안) 적용 — 거주분 ${resPct}% (이 시행기간에는 보유 기준 공제가 없습니다).`
+            if (ltsdPercentTotal === 0) {
+              ltsdReason += ' 거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'
+            }
           }
         }
       }

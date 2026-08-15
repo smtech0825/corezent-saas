@@ -84,6 +84,7 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
     notes: [
       '두 형식을 지원합니다. 확정법(구 형식): rows — 보유 연수(holding_years_ltsd) 조건 단일 표. 기존 확정법 룰은 재등록 없이 그대로 동작합니다.',
       '개정안(신 형식): holdingRows + residenceRows — 보유분과 거주분(residence_years 조건) 중 높은 쪽 하나만 적용합니다. 혼합은 저장이 거부됩니다. 거주기간 미입력 계산은 보유분만 적용하고 그 사실이 결과에 표시됩니다.',
+      '⚠️ 보유 기준 공제가 폐지되는 시행기간은 holdingRows를 아예 빼고 등록하세요(거주 기준만 남음). 빈 배열·0% 행은 저장이 거부됩니다 — 폐지는 필드 생략으로만 표현합니다. residenceRows는 신 형식의 필수 필드입니다(보유 기준만 있는 표는 구 형식 rows로).',
       '조건 필드는 holding_years_ltsd(공제용 보유 만 연수 — §95④, 상속은 상속개시일 기산)입니다. 세율용 보유(holding_years)와 절대 혼용하지 마세요.',
       '연수별 행을 min + priority 오름차순으로 두세요 — priority를 연수와 같은 값으로 두면 간단합니다. 최소 연수 미만은 행이 없으면 자동으로 공제 0이 됩니다.',
       'deductPercent 0%는 저장이 거부됩니다(공제 없음은 행을 두지 않는 것으로 표현).',
@@ -113,6 +114,7 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
       '⚠️ minResidenceYears(이 표를 쓰기 위한 최소 거주 연수)는 지역과 무관하게 항상 적용됩니다 — 비과세의 거주 요건(취득 당시 조정대상지역인 경우만)과 다른 조문·다른 조건입니다. 혼동하지 마세요.',
       'holdingRows는 holding_years_ltsd 조건, residenceRows는 residence_years 조건으로 각각 min + priority 오름차순(연수와 같은 값 권장).',
       '두 표에서 각각 행을 찾아 공제율을 합산합니다. deductPercent 0%는 저장이 거부됩니다.',
+      '⚠️ 보유 기준 공제가 폐지되는 시행기간(개편안)은 holdingRows를 아예 빼고 등록하세요 — 거주분만 계산되고 결과에 "보유 기준 공제가 없습니다"로 표시됩니다. 빈 배열·0% 행은 저장이 거부됩니다.',
     ],
     skeleton: `{
   "minResidenceYears": «연수»,

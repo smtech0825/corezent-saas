@@ -82,11 +82,13 @@ export interface TransferHeavyValue {
  *   구 형식(확정법): { rows } — 보유 연수(holding_years_ltsd) 조건 단일 표
  *   신 형식(개정안): { holdingRows, residenceRows } — 보유분·거주분(residence_years 조건) 중
  *   높은 쪽 하나만 적용. 거주기간 미입력이면 보유분만 적용하고 그 사실을 안내한다.
+ *   신 형식에서 holdingRows 생략 = 보유 기준 공제 폐지(거주 기준만 — 2029년 단계 표현).
+ *   residenceRows는 신 형식의 필수 필드다(보유만 있는 표는 구 형식으로 등록).
  * 확정법 룰은 재등록 없이 구 형식 그대로 동작한다. 파서가 형식을 판별해 반환한다.
  */
 export type TransferLtsdGeneralParsed =
   | { format: 'holding_only'; rows: TransferLtsdRow[] }
-  | { format: 'max_residence'; holdingRows: TransferLtsdRow[]; residenceRows: TransferLtsdRow[] }
+  | { format: 'max_residence'; holdingRows?: TransferLtsdRow[]; residenceRows: TransferLtsdRow[] }
 
 /**
  * transfer.ltsd.cap — 장기보유특별공제 '물건별' 한도(원). 개정안 룰 — 기준일에 유효한
@@ -103,10 +105,13 @@ export interface TransferLtsdCapValue {
  * 보유분(holdingRows)·거주분(residenceRows)을 각각 찾아 합산한다.
  * minResidenceYears: 이 표를 쓰기 위한 최소 거주 연수 — 지역과 무관하게 항상 적용
  * (비과세의 거주 요건과 별개 조문·별개 조건이다. 절대 혼용 금지).
+ * ⚠️ holdingRows 생략 = 그 시행기간의 '보유 기준 공제 폐지'(2026 개편안의 2029년 단계
+ * 표현). 빈 배열·0% 행이 아니라 필드 생략으로 표현한다 — 엔진이 보유분 0%로 계산하고
+ * 사유에 폐지를 명시한다. 거주분(residenceRows)은 항상 필수다.
  */
 export interface TransferLtsdOneHouseValue {
   minResidenceYears: number
-  holdingRows: TransferLtsdRow[]     // 조건: holding_years_ltsd
+  holdingRows?: TransferLtsdRow[]    // 조건: holding_years_ltsd — 생략하면 보유 기준 공제 없음(폐지)
   residenceRows: TransferLtsdRow[]   // 조건: residence_years
 }
 

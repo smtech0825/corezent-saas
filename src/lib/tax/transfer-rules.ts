@@ -207,15 +207,22 @@ export function parseTransferLtsdGeneral(
     return invalid(ruleKey, '구 형식(rows)과 신 형식(holdingRows·residenceRows)을 한 룰에 섞을 수 없습니다.')
   }
   if (hasNew) {
-    const holdErr = checkLtsdRows(value.holdingRows, ruleKey, 'holdingRows')
-    if (holdErr) return holdErr
+    // residenceRows는 신 형식의 필수 필드 — 보유 기준만 있는 표는 구 형식(rows)으로 등록한다
+    if (value.residenceRows === undefined) {
+      return invalid(ruleKey, '신 형식에는 residenceRows(거주 기준 표)가 필요합니다. 보유 기준만 있는 표는 구 형식(rows)으로 등록하세요.')
+    }
     const resErr = checkLtsdRows(value.residenceRows, ruleKey, 'residenceRows')
     if (resErr) return resErr
+    // holdingRows 생략 = 보유 기준 공제 폐지(빈 배열·0% 행이 아니라 필드 생략으로 표현)
+    if (value.holdingRows !== undefined) {
+      const holdErr = checkLtsdRows(value.holdingRows, ruleKey, 'holdingRows')
+      if (holdErr) return holdErr
+    }
     return {
       ok: true,
       value: {
         format: 'max_residence',
-        holdingRows: value.holdingRows as unknown as TransferLtsdRow[],
+        holdingRows: value.holdingRows as unknown as TransferLtsdRow[] | undefined,
         residenceRows: value.residenceRows as unknown as TransferLtsdRow[],
       },
     }
@@ -237,7 +244,11 @@ export function parseTransferLtsdCap(
   return { ok: true, value: { perPropertyAmount: value.perPropertyAmount } }
 }
 
-/** transfer.ltsd.one_house 검증 — 보유분·거주분 표 + 거주 요건 연수 */
+/**
+ * transfer.ltsd.one_house 검증 — 보유분·거주분 표 + 거주 요건 연수.
+ * holdingRows 생략 = 그 시행기간의 보유 기준 공제 폐지(빈 배열·0% 행은 여전히 거부 —
+ * 폐지는 필드 생략으로만 표현한다). 거주분은 필수.
+ */
 export function parseTransferLtsdOneHouse(
   value: Json,
   ruleKey: string,
@@ -246,15 +257,17 @@ export function parseTransferLtsdOneHouse(
   if (!isNum(value.minResidenceYears) || value.minResidenceYears <= 0) {
     return invalid(ruleKey, 'minResidenceYears가 0보다 큰 숫자(년)가 아닙니다.')
   }
-  const holdErr = checkLtsdRows(value.holdingRows, ruleKey, 'holdingRows')
-  if (holdErr) return holdErr
+  if (value.holdingRows !== undefined) {
+    const holdErr = checkLtsdRows(value.holdingRows, ruleKey, 'holdingRows')
+    if (holdErr) return holdErr
+  }
   const resErr = checkLtsdRows(value.residenceRows, ruleKey, 'residenceRows')
   if (resErr) return resErr
   return {
     ok: true,
     value: {
       minResidenceYears: value.minResidenceYears,
-      holdingRows: value.holdingRows as unknown as TransferLtsdRow[],
+      holdingRows: value.holdingRows as unknown as TransferLtsdRow[] | undefined,
       residenceRows: value.residenceRows as unknown as TransferLtsdRow[],
     },
   }
