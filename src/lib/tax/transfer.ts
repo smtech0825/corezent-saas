@@ -377,13 +377,15 @@ export async function calculateTransferTax(
     }
   }
 
-  // ── 신고 시점 완화 특례 안내(개정안) — 중과가 적용된 경우, 양도일 이후에 시행되는
-  //    완화 룰(transfer.heavy·proposed)이 있고 양도일이 그 시행 직전 연도이면, 시행일
-  //    이후 예정·확정신고 시 완화 세율이 적용될 수 있다(개편안 원문 특례규정의
-  //    "'26년 양도분 ↔ '27.1.1. 시행"을 '시행 직전 연도의 양도분' 구조로 표현 —
-  //    2026-08-15 지시). 계산기는 신고 시점을 모르므로 자동 반영하지 않고 안내만 한다.
-  //    날짜·가산율은 전부 룰에서 읽고, 값을 읽지 못하면 날짜·수치 없는 일반 안내로
-  //    강등한다. 부가 안내라 조회 실패는 계산을 막지 않는다(세액과 무관).
+  // ── 신고 시점 완화 특례 안내(개정안) — 개편안 원문 특례규정("중과세율이 적용된
+  //    '26년 양도분도 '27.1.1. 이후 예정·확정신고 시 완화 세율 적용")의 안내.
+  //    특례는 완화 '제도 도입' 시점에만 붙는다 — 최초(effective_from 최소) proposed 완화
+  //    룰이 양도일보다 뒤에 시행되고, 양도일이 그 시행 직전 연도인 경우로 한정한다
+  //    (이후 단계 완화 룰로 일반화하지 않는다 — 2027년 양도분에는 특례 근거가 없다).
+  //    또 완화 가산이 현재 적용 가산보다 '작을 때만' 안내한다(커지는 방향은 완화가 아니다).
+  //    계산기는 신고 시점을 모르므로 자동 반영하지 않고 안내만 한다. 날짜·가산율은 전부
+  //    룰에서 읽고, 값을 읽지 못하면 날짜·수치 없는 일반 안내로 강등한다. 부가 안내라
+  //    조회 실패는 계산을 막지 않는다(세액과 무관 — 결과·근거 목록에 일절 반영되지 않음).
   if (heavyApplied) {
     try {
       const { data, error } = await supabase
@@ -392,12 +394,16 @@ export async function calculateTransferTax(
         .eq('tax_type', 'transfer')
         .eq('rule_key', TRANSFER_RULE_KEYS.heavy)
         .eq('status', 'proposed')
-        .gt('effective_from', input.baseDate)
         .order('effective_from', { ascending: true })
         .limit(1)
       if (error) throw new Error(error.message)
+      // 최초 완화 룰이 이미 시행 중(양도일 이하)이면 특례 안내 대상이 아니다
       const reliefRule = ((data ?? []) as TaxRule[])[0]
-      if (reliefRule && Number(input.baseDate.slice(0, 4)) === Number(reliefRule.effective_from.slice(0, 4)) - 1) {
+      if (
+        reliefRule &&
+        reliefRule.effective_from > input.baseDate &&
+        Number(input.baseDate.slice(0, 4)) === Number(reliefRule.effective_from.slice(0, 4)) - 1
+      ) {
         const parsed = parseTransferHeavy(reliefRule.rule_value, reliefRule.rule_key)
         if (!parsed.ok) {
           filingRelief = { effectiveFrom: null, reliefPoints: null, currentPoints: heavyPoints }
@@ -406,10 +412,13 @@ export async function calculateTransferTax(
           if (!picked.ok) {
             filingRelief = { effectiveFrom: null, reliefPoints: null, currentPoints: heavyPoints }
           } else if (picked.row !== null) {
-            filingRelief = {
-              effectiveFrom: reliefRule.effective_from,
-              reliefPoints: picked.row.addPercentPoints,
-              currentPoints: heavyPoints,
+            // 완화 방향일 때만 안내 — 가산이 같거나 커지면 특례가 유리하지 않다
+            if (picked.row.addPercentPoints < heavyPoints) {
+              filingRelief = {
+                effectiveFrom: reliefRule.effective_from,
+                reliefPoints: picked.row.addPercentPoints,
+                currentPoints: heavyPoints,
+              }
             }
           } else if (picked.unresolved.length > 0) {
             // 판정 불가(입력 미확정) — 수치 없는 일반 안내. 행 미매칭(요건 미충족)이면 안내 없음
