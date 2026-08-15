@@ -138,6 +138,41 @@ export function requireRule(
 }
 
 /**
+ * @함수명: fetchProposedEffectiveYears
+ * @설명: 등록된 개정안(proposed) 룰의 시행 연도 목록을 조회합니다(중복 제거·오름차순) —
+ *        연도별 비교 화면이 비교할 해를 코드가 아니라 데이터에서 알아내기 위한 조회입니다.
+ *        개정안이 국회를 통과해 proposed 룰이 confirmed로 전환·정리되면 이 목록이 자연히
+ *        줄어들고 비교 화면도 따라 접힙니다 — 코드 수정이 필요 없습니다.
+ * @매개변수: supabase - Supabase 클라이언트 / taxType - 세목
+ * @반환값: 시행 연도 오름차순 배열 또는 실패 결과
+ */
+export async function fetchProposedEffectiveYears(
+  supabase: SupabaseClient,
+  taxType: TaxType,
+): Promise<{ ok: true; years: number[] } | TaxEngineFailure> {
+  const { data, error } = await supabase
+    .from('tax_rules')
+    .select('effective_from')
+    .eq('tax_type', taxType)
+    .eq('status', 'proposed')
+
+  if (error) {
+    console.error('[tax] 개정안 시행 연도 조회 실패:', error.message)
+    return engineFail('DB_ERROR', '개정안 시행 연도 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+  }
+
+  const years = [
+    ...new Set(
+      ((data ?? []) as { effective_from: string }[])
+        .map((row) => Number(String(row.effective_from).slice(0, 4)))
+        .filter((y) => Number.isInteger(y) && y >= 1000 && y <= 9999),
+    ),
+  ].sort((a, b) => a - b)
+
+  return { ok: true, years }
+}
+
+/**
  * @함수명: isRegulatedArea
  * @설명: 규제지역 판정 — 지역코드·구분(area_type)·기준일로 tax_regulated_areas 이력을 찾습니다.
  *        지정일 ≤ 기준일이고 해제일이 NULL(현재 지정) 또는 기준일 이상이며,
