@@ -32,7 +32,7 @@ import {
   validateProposedInputs,
   type YesNo,
 } from './ProposedFields'
-import { calculateComprehensive } from './actions'
+import { calculateComprehensive, type ComprehensiveCalcPayload } from './actions'
 import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import ComprehensiveResultPanel from './ComprehensiveResultPanel'
 import ComprehensiveComparisonCards from './ComprehensiveComparisonCards'
@@ -91,7 +91,7 @@ export default function ComprehensiveForm() {
   // (입력을 바꿔도 이미 표시된 결과가 흔들리지 않게 — 결과·입력 쌍을 함께 저장)
   const [submitted, setSubmitted] = useState<{
     result: ComprehensiveResult
-    totalOfficialPrice: number
+    payload: ComprehensiveCalcPayload      // 결과 표시·비교 재계산이 제출 시점 입력을 그대로 쓴다
     comparison: YearComparison<ComprehensiveSuccess> | null
   } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -153,7 +153,7 @@ export default function ComprehensiveForm() {
 
     startTransition(async () => {
       try {
-        const res = await calculateComprehensive({
+        const payload: ComprehensiveCalcPayload = {
           ruleMode,
           taxYear: yearNum,
           houseCount,
@@ -169,8 +169,9 @@ export default function ComprehensiveForm() {
           residingOfficialPrice: proposedMode && !oneHouseTrack ? residingPriceNum : undefined,
           hasRegulatedHouse: proposedMode && hasRegulated !== '' ? hasRegulated === 'yes' : undefined,
           includeYearComparison: true,
-        })
-        setSubmitted({ result: res.result, totalOfficialPrice: priceNum, comparison: res.comparison ?? null })
+        }
+        const res = await calculateComprehensive(payload)
+        setSubmitted({ result: res.result, payload, comparison: res.comparison ?? null })
         requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
@@ -286,15 +287,14 @@ export default function ComprehensiveForm() {
       <CalcResultSlot>
       {submitted && (
         <div ref={resultRef} className="scroll-mt-24">
-          <ComprehensiveResultPanel result={submitted.result} totalOfficialPrice={submitted.totalOfficialPrice} />
+          <ComprehensiveResultPanel result={submitted.result} totalOfficialPrice={submitted.payload.totalOfficialPrice} />
         </div>
       )}
       </CalcResultSlot>
     </CalcColumns>
 
-    {/* 연도별 비교 — 2단 아래 통폭. 오른쪽 결과 열(≈620px)은 카드 여러 장을 담기에 좁아
-        CalcColumns 밖(CalcSection 통폭)에 둔다. 비교가 없으면 아무것도 그리지 않는다 */}
-    {submitted?.comparison && <ComprehensiveComparisonCards comparison={submitted.comparison} />}
+    {/* 연도별 비교 — 2단 아래 통폭(결과 열은 카드 여러 장에 좁다). 비교가 없으면 그리지 않는다 */}
+    {submitted?.comparison && <ComprehensiveComparisonCards payload={submitted.payload} comparison={submitted.comparison} />}
     </>
   )
 }

@@ -44,6 +44,20 @@ export interface ComprehensiveCalcPayload {
   hasRegulatedHouse?: boolean           // 조정대상지역 주택 보유 여부 (자기신고)
   /** 연도별 비교 요청 — 선택 필드(보내지 않으면 비교 없이 기존과 동일 동작) */
   includeYearComparison?: boolean
+  /**
+   * 연도별 비교(개정안 해)에만 쓰는 개정안 전용 입력 — 확정법 모드에서 비교 화면이
+   * 그 자리에서 받아 보낸다. ⚠️ 본 계산 입력에는 절대 얹지 않는다(확정법으로 계산한
+   * 사람의 결과가 이 값 때문에 달라지면 안 된다).
+   */
+  comparisonProposedInputs?: ComparisonProposedInputs
+}
+
+/** 비교 전용 개정안 입력 — 개정안 룰의 행 조건·금액 산식이 요구하는 값들 */
+export interface ComparisonProposedInputs {
+  residenceYears?: number
+  isResiding?: boolean
+  residingOfficialPrice?: number
+  hasRegulatedHouse?: boolean
 }
 
 /** 액션 응답 — 본 계산 결과 + (요청 시) 연도별 비교. 비교 실패는 본 결과 반환을 막지 않는다 */
@@ -51,6 +65,72 @@ export interface ComprehensiveCalcResponse {
   result: ComprehensiveResult
   /** includeYearComparison 요청·본 계산 성공·비교 성립(성공 1건 이상)일 때만 담긴다 */
   comparison?: YearComparison<ComprehensiveSuccess>
+}
+
+/**
+ * @함수명: buildInput
+ * @설명: 페이로드를 엔진 입력으로 변환합니다(본 계산용) — 타입·범위 검증은 엔진이 합니다.
+ * @매개변수: payload - 계산기 화면 입력
+ * @반환값: 엔진 입력
+ */
+function buildInput(payload: ComprehensiveCalcPayload): ComprehensiveInput {
+  return {
+    taxYear: payload.taxYear,
+    houseCount: payload.houseCount,
+    totalOfficialPrice: payload.totalOfficialPrice,
+    isOneHouse: payload.isOneHouse === true,
+    age: payload.age,
+    holdingYears: payload.holdingYears,
+    prevTotalTax: payload.prevTotalTax,
+    // 개정안 전용 입력 — 타입·범위 검증은 엔진이 수행한다(다른 필드와 같은 관례)
+    residenceYears: payload.residenceYears,
+    isResiding: payload.isResiding,
+    residingOfficialPrice: payload.residingOfficialPrice,
+    hasRegulatedHouse: payload.hasRegulatedHouse,
+  }
+}
+
+/**
+ * @함수명: buildComparisonInput
+ * @설명: 연도별 비교용 엔진 입력 — 본 계산 입력에 비교 전용 개정안 입력만 얹습니다.
+ *        본 계산은 이 값을 쓰지 않으므로 확정법 결과는 영향을 받지 않습니다.
+ * @매개변수: payload - 계산기 화면 입력
+ * @반환값: 비교용 엔진 입력
+ */
+function buildComparisonInput(payload: ComprehensiveCalcPayload): ComprehensiveInput {
+  const input = buildInput(payload)
+  return payload.comparisonProposedInputs ? { ...input, ...payload.comparisonProposedInputs } : input
+}
+
+/**
+ * @함수명: calculateComprehensiveComparison
+ * @설명: 연도별 비교만 다시 계산합니다 — 확정법 모드 비교 화면이 개정안 전용 입력을
+ *        받아 호출합니다. 본 계산은 하지 않고 이력도 남기지 않습니다(사용자가 실제로
+ *        누른 본 계산 1건만 기록한다는 원칙).
+ * @매개변수: payload - 본 계산에 쓴 페이로드 + comparisonProposedInputs
+ * @반환값: 연도별 비교(성립하지 않으면 comparison 없음)
+ */
+export async function calculateComprehensiveComparison(
+  payload: ComprehensiveCalcPayload,
+): Promise<{ comparison?: YearComparison<ComprehensiveSuccess> }> {
+  try {
+    const botCheck = await checkBotId()
+    if (botCheck.isBot) return {}
+  } catch (err) {
+    console.error('[tax] BotID 검증 실패(통과 처리):', err instanceof Error ? err.message : String(err))
+  }
+
+  const comparisonInput = buildComparisonInput(payload)
+  const supabase = await createClient()
+  try {
+    const comparison = await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', (year, mode) =>
+      calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
+    )
+    return comparison ? { comparison } : {}
+  } catch (err) {
+    console.error('[tax] 종합부동산세 비교 재계산 실패:', err instanceof Error ? err.message : String(err))
+    return {}
+  }
 }
 
 /**
@@ -72,20 +152,7 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
     console.error('[tax] BotID 검증 실패(통과 처리):', err instanceof Error ? err.message : String(err))
   }
 
-  const input: ComprehensiveInput = {
-    taxYear: payload.taxYear,
-    houseCount: payload.houseCount,
-    totalOfficialPrice: payload.totalOfficialPrice,
-    isOneHouse: payload.isOneHouse === true,
-    age: payload.age,
-    holdingYears: payload.holdingYears,
-    prevTotalTax: payload.prevTotalTax,
-    // 개정안 전용 입력 — 타입·범위 검증은 엔진이 수행한다(다른 필드와 같은 관례)
-    residenceYears: payload.residenceYears,
-    isResiding: payload.isResiding,
-    residingOfficialPrice: payload.residingOfficialPrice,
-    hasRegulatedHouse: payload.hasRegulatedHouse,
-  }
+  const input = buildInput(payload)
 
   // 알 수 없는 값은 확정법으로 강등 — 임의 문자열로 proposed가 열리는 것을 막는다(취득세와 동일)
   const ruleMode: TaxRuleMode = payload.ruleMode === 'proposed' ? 'proposed' : 'confirmed'
@@ -130,9 +197,10 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
   let comparison: YearComparison<ComprehensiveSuccess> | undefined
   if (payload.includeYearComparison === true && result.ok) {
     try {
+      const comparisonInput = buildComparisonInput(payload)
       comparison =
         (await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', (year, mode) =>
-          calculateComprehensiveTax(supabase, { ...input, taxYear: year }, mode),
+          calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
         )) ?? undefined
     } catch (err) {
       console.error('[tax] 종합부동산세 연도별 비교 실패(본 결과만 반환):', err instanceof Error ? err.message : String(err))
