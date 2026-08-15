@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import Button from '@/components/ui/Button'
+import { EVENT, trackEvent } from '@/lib/analytics-events'
 
 interface Props {
   /** 놓인 자리 — 흐름 측정용 구분값(개인정보 아님) */
@@ -37,7 +38,12 @@ export default function TrialApplyButton({ placement, showNote = false, classNam
   if (!url) return null
 
   return (
-    <span className={`inline-flex flex-col items-center gap-1.5 ${className}`}>
+    // 측정은 감싼 요소의 클릭(버블링)으로 — 공용 Button(외부 링크 분기)은 onClick을 받지
+    // 않으며 공용 부품은 고치지 않는다. 측정 실패해도 링크 이동(본 동작)은 그대로 진행된다.
+    <span
+      className={`inline-flex flex-col items-center gap-1.5 ${className}`}
+      onClick={() => trackEvent(EVENT.TRIAL_APPLY_CLICK, { placement })}
+    >
       <Button
         href={url}
         external

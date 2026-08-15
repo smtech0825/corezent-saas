@@ -15,21 +15,8 @@ import { CATEGORY_BADGE_PAPER, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products
 import { formatPrice } from '@/lib/price'
 import ProcurementBadge from '@/components/common/ProcurementBadge'
 import TrialApplyButton from '@/components/common/TrialApplyButton'
-
-// 전역 분석 도구 타입 선언
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void
-    posthog?: { capture: (event: string, props?: Record<string, unknown>) => void }
-    fbq?: (...args: unknown[]) => void
-  }
-}
-
-/** 통합 이벤트 트래킹 헬퍼 */
-function track(event: string, props?: Record<string, unknown>) {
-  window.gtag?.('event', event, props)
-  window.posthog?.capture(event, props)
-}
+// 측정 사건은 공용 단일 출처(lib/analytics-events)만 사용 — 로컬 track 사본 금지
+import { EVENT, trackEvent } from '@/lib/analytics-events'
 
 // ── DB에서 받는 제품 인터페이스 ──────────────────────────────────
 
@@ -133,7 +120,7 @@ export default function PricingClient({ products }: Props) {
           {hasAnyAnnualPlan && (
             <div className="inline-flex items-center border border-rule bg-paper-raised rounded-full p-1.5 gap-0.5">
               <button
-                onClick={() => { setAnnual(false); track('pricing_toggle', { plan: 'monthly' }) }}
+                onClick={() => { setAnnual(false); trackEvent(EVENT.PRICING_TOGGLE, { plan: 'monthly' }) }}
                 className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                   !annual ? 'bg-pen text-white' : 'text-ink-soft hover:text-ink'
                 }`}
@@ -141,7 +128,7 @@ export default function PricingClient({ products }: Props) {
                 월간
               </button>
               <button
-                onClick={() => { setAnnual(true); track('pricing_toggle', { plan: 'annual' }) }}
+                onClick={() => { setAnnual(true); trackEvent(EVENT.PRICING_TOGGLE, { plan: 'annual' }) }}
                 className={`whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                   annual ? 'bg-pen text-white' : 'text-ink-soft hover:text-ink'
                 }`}
@@ -316,7 +303,7 @@ export default function PricingClient({ products }: Props) {
                       />
                       <Link
                         href={`/product/${product.slug}`}
-                        onClick={() => track('view_product', { product: product.name, has_options: hasOptions })}
+                        onClick={() => trackEvent(EVENT.VIEW_PRODUCT, { product: product.name, has_options: hasOptions })}
                         className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] hover:-translate-y-0.5 transition-all duration-200"
                       >
                         자세히 보기

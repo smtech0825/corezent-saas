@@ -16,6 +16,7 @@ import QuantityStepper from '@/components/common/QuantityStepper'
 import ProcurementBadge from '@/components/common/ProcurementBadge'
 import Button from '@/components/ui/Button'
 import Section, { SectionHeader } from '@/components/ui/Section'
+import { EVENT, trackEvent } from '@/lib/analytics-events'
 
 export interface PricingSectionProduct {
   name: string
@@ -162,9 +163,16 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
             자세히 보기
           </Button>
         ) : (
-          <Button href={checkoutUrl} size="md" className="w-full">
-            시작하기
-          </Button>
+          // 결제 시작 측정 — 공용 Button(링크 분기)은 onClick을 받지 않으므로 감싼 요소의
+          // 클릭(버블링)으로 잡는다. 상품명·자리뿐, 개인정보 없음. 실패해도 이동은 진행
+          <span
+            className="block"
+            onClick={() => trackEvent(EVENT.BEGIN_CHECKOUT, { product: product.name, method: 'card', placement: 'home' })}
+          >
+            <Button href={checkoutUrl} size="md" className="w-full">
+              시작하기
+            </Button>
+          </span>
         )}
       </div>
     </div>

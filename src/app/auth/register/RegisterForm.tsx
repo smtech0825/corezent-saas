@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isRateLimited } from '@/lib/auth-error'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import AuthSocialButton from '../_components/AuthSocialButton'
+import { EVENT, trackEvent } from '@/lib/analytics-events'
 import AuthBrand from '../_components/AuthBrand'
 
 export default function RegisterForm() {
@@ -87,6 +88,9 @@ export default function RegisterForm() {
       setLoading(false)
       return
     }
+
+    // 가입 요청 성공 — 흐름 측정(개인정보 없이 방식만. 두 성공 경로의 공통 지점)
+    trackEvent(EVENT.SIGN_UP, { method: 'email' })
 
     // 이메일 확인이 비활성(대시보드 설정)이면 signUp이 즉시 세션을 반환한다 → 이미 로그인 상태.
     // 이 경우 코드 없는 인증 화면에 가두지 않고 바로 대시보드로 보낸다.
