@@ -282,7 +282,8 @@ export async function calculateComprehensiveTax(
   const afterProperty = Math.max(rawTax - propertyDeduction, 0)
 
   // ── 1세대 1주택 세액공제 — 구 형식은 연령분·보유분 합산(% 한도), 신 형식은
-  //    연령분·거주분 중 높은 쪽 하나(공제액 한도·원). 형식은 룰 값이 정한다.
+  //    연령분 합산(좌동) + 보유분·거주분 중 높은 쪽 + % 한도(좌동) + 금액 한도(신설).
+  //    형식은 룰 값이 정한다.
   let taxCredit: ComprehensiveTaxCreditDetail | null = null
   let afterCredit = afterProperty
   if (input.isOneHouse) {
@@ -307,33 +308,49 @@ export async function calculateComprehensiveTax(
       const amount = Math.floor((afterProperty * totalPercentApplied) / 100)
       taxCredit = { agePercent, holdingPercent, totalPercentApplied, capReached, amount }
     } else {
-      // 신 형식 — 거주기간이 판정 기준이므로 미입력을 공제 0으로 간주하지 않고 입력을 요구한다
+      // 신 형식 — 연령분은 그대로 합산(좌동)하고, 보유분·거주분 '둘 중에서만' 높은 쪽을
+      // 골라 더한 뒤 합산 % 한도(좌동) → 공제액 한도(원·신설) 순서로 자른다.
+      // 거주기간이 판정 기준이므로 미입력을 공제 0으로 간주하지 않고 입력을 요구한다
       if (input.residenceYears === undefined) {
         return engineFail(
           'INVALID_INPUT',
           '이 시점의 세액공제 룰은 거주기간 기준입니다 — 1세대 1주택 세액공제 판정에는 거주기간(만 연수) 입력이 필요합니다.',
         )
       }
+      // 보유 축(holdingRows) 생략 = 그 시행기간의 보유 기준 공제 폐지 — 0%로 계산하고 표시에 명시
+      const holdingAbolished = credit.value.holdingRows === undefined
+      let holdingPercent = 0
+      if (credit.value.holdingRows) {
+        const holdingPicked = selectRateRowOptional(credit.value.holdingRows, context, creditRule.rule.rule_key)
+        if (!holdingPicked.ok) return holdingPicked
+        holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
+        holdingPercent = holdingPicked.row?.creditPercent ?? 0
+      }
       const residencePicked = selectRateRowOptional(credit.value.residenceRows, context, creditRule.rule.rule_key)
       if (!residencePicked.ok) return residencePicked
       residencePicked.unresolved.forEach((f) => unresolvedFields.add(f))
       use(creditRule.rule)
       const residencePercent = residencePicked.row?.creditPercent ?? 0
-      // 높은 쪽 하나만 적용 — 동률이면 연령분으로 표기(공제액은 동일)
-      const chosenAxis: 'age' | 'residence' = residencePercent > agePercent ? 'residence' : 'age'
-      const totalPercentApplied = Math.max(agePercent, residencePercent)
+      // 보유분·거주분 중 높은 쪽 하나 — 동률이면 보유분으로 표기(공제액은 동일).
+      // 보유 폐지 기간에는 거주분이 유일한 축이다.
+      const chosenAxis: 'holding' | 'residence' =
+        holdingAbolished || residencePercent > holdingPercent ? 'residence' : 'holding'
+      const sumPercent = agePercent + Math.max(holdingPercent, residencePercent)
+      const capReached = sumPercent > credit.value.maxTotalPercent
+      const totalPercentApplied = capReached ? credit.value.maxTotalPercent : sumPercent
       const rawAmount = Math.floor((afterProperty * totalPercentApplied) / 100)
       const amountCapApplied = rawAmount > credit.value.maxAmount
       const amount = amountCapApplied ? credit.value.maxAmount : rawAmount
       taxCredit = {
         agePercent,
-        holdingPercent: 0,
+        holdingPercent,
         totalPercentApplied,
-        capReached: false,
+        capReached,
         amount,
         residencePercent,
         chosenAxis,
         amountCapApplied,
+        holdingAbolished,
       }
     }
     afterCredit = afterProperty - taxCredit.amount

@@ -130,26 +130,32 @@ export const COMPREHENSIVE_RULE_GUIDES: Record<string, RuleGuide> = {
 }`,
   },
   [COMPREHENSIVE_RULE_KEYS.taxCredit]: {
-    title: '1세대 1주택 세액공제 — 확정법은 연령·보유 합산(% 한도), 개정안은 연령·거주 중 높은 쪽(금액 한도).',
+    title: '1세대 1주택 세액공제 — 확정법은 연령·보유 합산(% 한도), 개정안은 연령(합산) + 보유·거주 중 높은 쪽(% 한도 + 금액 한도).',
     notes: [
       '두 형식을 지원합니다. 확정법(구 형식): ageRows + holdingRows + maxTotalPercent — 연령분·보유분을 합산하되 % 한도를 넘지 못합니다. 기존 확정법 룰은 재등록 없이 그대로 동작합니다.',
-      '개정안(신 형식): ageRows + residenceRows + maxAmount — 연령분·거주분(residence_years 조건) 중 높은 쪽 하나만 적용하고, 공제액이 maxAmount(원)를 넘으면 한도까지만 적용됩니다. 혼합은 저장이 거부됩니다.',
+      '개정안(신 형식): ageRows + holdingRows(선택) + residenceRows + maxTotalPercent + maxAmount — 연령분은 그대로 합산(좌동)하고, 보유분·거주분 둘 중에서만 높은 쪽 하나를 골라 더합니다. 합산이 maxTotalPercent(% 한도 — 좌동)를 넘으면 한도까지만, 그다음 공제액이 maxAmount(원 — 신설)를 넘으면 한도액까지만 적용됩니다.',
+      '신 형식은 residenceRows·maxAmount의 존재로 판별합니다(둘 다 필수). ⚠️ 보유 기준 공제가 폐지되는 시행기간은 holdingRows를 아예 빼고 등록하세요 — 빈 배열·0% 행은 저장이 거부됩니다(양도세 장특공제와 같은 표현).',
       '각 표는 min + priority 오름차순으로 구간을 표현하세요. 요건에 못 미치는 나이·연수는 행을 두지 않으면 자동으로 그 축의 공제가 0이 됩니다 — 0% 행은 저장이 거부됩니다.',
       '신 형식 룰이 유효한 시점에는 계산기에 거주기간(만 연수) 입력이 필요해집니다 — 미입력이면 공제 0으로 계산하지 않고 입력을 요구합니다.',
       '공제액은 재산세 상당액을 뺀 뒤의 종부세액에 곱합니다.',
       ...COMPREHENSIVE_COMMON_NOTES,
     ],
     altSkeleton: {
-      title: '개정안(신 형식) 입력 형식 — 연령·거주 중 높은 쪽 + 공제액 한도(원):',
+      title: '개정안(신 형식) 입력 형식 — 연령 합산 + 보유·거주 중 높은 쪽 + % 한도 + 금액 한도:',
       skeleton: `{
   "ageRows": [
     { "when": { "age": { "min": «나이(만)» } }, "priority": 0, "creditPercent": «공제율%» },
     { "when": { "age": { "min": «더 높은 나이(만)» } }, "priority": 1, "creditPercent": «공제율%» }
   ],
+  "holdingRows": [
+    { "when": { "holding_years": { "min": «연수» } }, "priority": 0, "creditPercent": «공제율%» },
+    { "when": { "holding_years": { "min": «더 긴 연수» } }, "priority": 1, "creditPercent": «공제율%» }
+  ],
   "residenceRows": [
     { "when": { "residence_years": { "min": «연수» } }, "priority": 0, "creditPercent": «공제율%» },
     { "when": { "residence_years": { "min": «더 긴 연수» } }, "priority": 1, "creditPercent": «공제율%» }
   ],
+  "maxTotalPercent": «합산 한도%»,
   "maxAmount": «공제액 한도(원)»
 }`,
     },

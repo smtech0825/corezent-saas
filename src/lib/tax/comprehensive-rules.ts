@@ -186,34 +186,46 @@ function checkCreditRows(rows: unknown, ruleKey: string, field: string): TaxEngi
 }
 
 /**
- * comprehensive.tax_credit 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * comprehensive.tax_credit 검증 — 구/신 형식을 판별해 반환한다.
  * 구 형식: { ageRows, holdingRows, maxTotalPercent } — 연령분·보유분 합산 + % 한도.
- * 신 형식: { ageRows, residenceRows, maxAmount } — 연령분·거주분 중 높은 쪽 + 공제액 한도(원).
+ * 신 형식: { ageRows, holdingRows?, residenceRows, maxTotalPercent, maxAmount } —
+ * 연령분 합산(좌동) + 보유분·거주분 중 높은 쪽 + % 한도(좌동) + 금액 한도(신설).
+ * residenceRows·maxAmount의 존재가 신 형식의 판별 기준이며(둘 다 필수), 신 형식의
+ * holdingRows 생략 = 보유 기준 공제 폐지(빈 배열·0% 행은 여전히 거부).
  */
 export function parseComprehensiveTaxCredit(
   value: Json,
   ruleKey: string,
 ): { ok: true; value: ComprehensiveTaxCreditParsed } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
-  const hasNew = value.residenceRows !== undefined || value.maxAmount !== undefined
-  const hasOld = value.holdingRows !== undefined || value.maxTotalPercent !== undefined
-  if (hasNew && hasOld) {
-    return invalid(ruleKey, '구 형식(holdingRows·maxTotalPercent)과 신 형식(residenceRows·maxAmount)을 한 룰에 섞을 수 없습니다.')
-  }
   const ageErr = checkCreditRows(value.ageRows, ruleKey, 'ageRows')
   if (ageErr) return ageErr
-  if (hasNew) {
+  const isNew = value.residenceRows !== undefined || value.maxAmount !== undefined
+  if (isNew) {
+    if (value.residenceRows === undefined) {
+      return invalid(ruleKey, '신 형식에는 residenceRows(거주 기준 표)가 필요합니다.')
+    }
     const resErr = checkCreditRows(value.residenceRows, ruleKey, 'residenceRows')
     if (resErr) return resErr
+    // holdingRows 생략 = 보유 기준 공제 폐지 — 있으면 구 형식과 같은 검사를 통과해야 한다
+    if (value.holdingRows !== undefined) {
+      const holdErr = checkCreditRows(value.holdingRows, ruleKey, 'holdingRows')
+      if (holdErr) return holdErr
+    }
+    if (!isNum(value.maxTotalPercent) || value.maxTotalPercent <= 0 || value.maxTotalPercent > 100) {
+      return invalid(ruleKey, 'maxTotalPercent(합산 한도)가 0보다 크고 100 이하인 숫자(%)가 아닙니다.')
+    }
     if (!isNum(value.maxAmount) || value.maxAmount <= 0) {
       return invalid(ruleKey, 'maxAmount(공제액 한도·원)가 0보다 큰 숫자가 아닙니다.')
     }
     return {
       ok: true,
       value: {
-        format: 'max_residence',
+        format: 'age_plus_max',
         ageRows: value.ageRows as unknown as ComprehensiveCreditRow[],
+        holdingRows: value.holdingRows as unknown as ComprehensiveCreditRow[] | undefined,
         residenceRows: value.residenceRows as unknown as ComprehensiveCreditRow[],
+        maxTotalPercent: value.maxTotalPercent,
         maxAmount: value.maxAmount,
       },
     }

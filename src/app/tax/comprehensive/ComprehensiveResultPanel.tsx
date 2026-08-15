@@ -7,9 +7,10 @@
  *        재산세는 별도로 부과된다는 안내를 붙인다.
  *        계산 과정(공시가격 합계 → 기본공제 → 과세표준 → 산출세액 → 재산세 공제 →
  *        세액공제 → 최종)을 단계별 금액으로 보여주고, 세액공제는 구 형식이면 연령분·
- *        보유기간분 합산(% 한도), 신 형식(2026 개편안)이면 연령분·거주분 중 채택된 축과
- *        공제액 한도 도달 여부를 표시한다. 기본공제는 신 형식 룰의 행 라벨(거주 1주택 /
- *        비거주 1주택 / 다주택 산식 등)을 그대로 보여준다. 상한 처리도 사유와 함께 담는다.
+ *        보유기간분 합산(% 한도), 신 형식(2026 개편안)이면 연령분(합산) + 보유분·거주분 중
+ *        채택된 축, % 한도·금액 한도 도달 여부를 각각 표시한다. 기본공제는 신 형식 룰의
+ *        행 라벨(거주 1주택 / 비거주 1주택 / 다주택 산식 등)을 그대로 보여준다.
+ *        상한 처리도 사유와 함께 담는다.
  */
 
 import { AlertTriangle, BadgeCheck, ExternalLink, ScrollText } from 'lucide-react'
@@ -194,16 +195,23 @@ export default function ComprehensiveResultPanel({ result, totalOfficialPrice }:
             <div>
               <p className="text-sm font-semibold text-ink mb-1">1세대 1주택 세액공제</p>
               {result.taxCredit.chosenAxis !== undefined ? (
-                // 신 형식(개정안) — 연령분·거주분 중 높은 쪽 하나만 적용, 공제액 한도(원)
+                // 신 형식(개정안) — 연령분 합산(좌동) + 보유분·거주분 중 높은 쪽,
+                // 합산 % 한도(좌동) → 공제액 한도(원·신설) 순서
                 <p className="text-sm text-ink-soft leading-relaxed">
-                  연령분 {result.taxCredit.agePercent}% · 거주분 {result.taxCredit.residencePercent ?? 0}% 중
-                  높은 쪽인 {result.taxCredit.chosenAxis === 'age' ? '연령분' : '거주분'}{' '}
-                  {result.taxCredit.totalPercentApplied}%를 적용했습니다(개정안 기준 — 둘 중 하나만 적용).{' '}
+                  연령분 {result.taxCredit.agePercent}% +{' '}
+                  {result.taxCredit.holdingAbolished
+                    ? `거주분 ${result.taxCredit.residencePercent ?? 0}% (이 시행기간에는 보유 기준 공제가 없습니다)`
+                    : `보유분 ${result.taxCredit.holdingPercent}%·거주분 ${result.taxCredit.residencePercent ?? 0}% 중 높은 쪽인 ${
+                        result.taxCredit.chosenAxis === 'holding' ? '보유분' : '거주분'
+                      } ${Math.max(result.taxCredit.holdingPercent, result.taxCredit.residencePercent ?? 0)}%`}
+                  {result.taxCredit.capReached
+                    ? ` — 합산이 한도를 넘어 ${result.taxCredit.totalPercentApplied}%만 적용했습니다.`
+                    : ` = ${result.taxCredit.totalPercentApplied}% 적용.`}{' '}
                   공제액 {won(result.taxCredit.amount)}.
                   {result.taxCredit.amountCapApplied &&
-                    ' 공제액이 한도를 넘어 한도액까지만 적용했습니다.'}
+                    ' 공제액이 금액 한도를 넘어 한도액까지만 적용했습니다.'}
                   {result.taxCredit.totalPercentApplied === 0 &&
-                    ' 연령·거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'}
+                    ' 연령·보유·거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'}
                 </p>
               ) : (
                 <p className="text-sm text-ink-soft leading-relaxed">

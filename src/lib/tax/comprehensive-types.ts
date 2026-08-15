@@ -75,10 +75,14 @@ export interface ComprehensiveRatesValue {
 }
 
 /**
- * comprehensive.tax_credit — 1세대 1주택 세액공제. 두 형식을 지원한다(같은 키에 혼합 금지):
- *   구 형식(확정법): { ageRows, holdingRows, maxTotalPercent } — 연령분·보유분 합산 + % 한도
- *   신 형식(개정안): { ageRows, residenceRows, maxAmount } — 연령분·거주분 중 높은 쪽 하나 +
- *   공제액 한도(원). 조건에 맞는 행이 없으면 그 축의 공제는 0(미매칭=공제 없음이 정상 의미).
+ * comprehensive.tax_credit — 1세대 1주택 세액공제. 두 형식을 지원한다:
+ *   구 형식(확정법): { ageRows, holdingRows, maxTotalPercent } — 연령분·보유분 합산 + % 한도.
+ *   신 형식(개정안): { ageRows, holdingRows?, residenceRows, maxTotalPercent, maxAmount } —
+ *   연령분은 그대로 합산(좌동)하고, 보유분·거주분 '둘 중에서만' 높은 쪽 하나를 골라 더한 뒤
+ *   합산 % 한도(좌동)로 자르고, 그다음 금액 한도(원·신설)로 자른다.
+ *   holdingRows 생략 = 그 시행기간의 보유 기준 공제 폐지(양도세 장특공제와 같은 표현 —
+ *   빈 배열·0% 행이 아니라 필드 생략). residenceRows·maxAmount 존재가 신 형식의 판별 기준이다.
+ *   조건에 맞는 행이 없으면 그 축의 공제는 0(미매칭=공제 없음이 정상 의미).
  */
 export type ComprehensiveTaxCreditParsed =
   | {
@@ -88,10 +92,12 @@ export type ComprehensiveTaxCreditParsed =
       maxTotalPercent: number                  // 합산 한도(%) — 관리자 입력
     }
   | {
-      format: 'max_residence'
-      ageRows: ComprehensiveCreditRow[]        // 조건: age (만 나이)
+      format: 'age_plus_max'
+      ageRows: ComprehensiveCreditRow[]        // 조건: age (만 나이) — 항상 합산
+      holdingRows?: ComprehensiveCreditRow[]   // 조건: holding_years — 생략하면 보유 기준 공제 없음(폐지)
       residenceRows: ComprehensiveCreditRow[]  // 조건: residence_years (만 연수)
-      maxAmount: number                        // 공제액 한도(원) — 관리자 입력
+      maxTotalPercent: number                  // 합산 한도(%) — 관리자 입력 (좌동)
+      maxAmount: number                        // 공제액 한도(원) — 관리자 입력 (신설)
     }
 
 /**
@@ -159,19 +165,22 @@ export interface ComprehensiveBreakdown {
 
 /**
  * 1세대 1주택 세액공제 상세.
- * 구 형식(확정법): 연령분+보유분 합산, capReached는 % 합산 한도 도달 여부.
- * 신 형식(개정안): 연령분·거주분 중 높은 쪽 하나(chosenAxis) — holdingPercent는 0,
- * residencePercent·amountCapApplied(공제액 한도 도달)가 함께 담긴다.
+ * 구 형식(확정법): 연령분+보유분 합산 — capReached는 % 합산 한도 도달 여부.
+ * 신 형식(개정안): 연령분(합산 유지) + 보유분·거주분 중 높은 쪽 하나(chosenAxis).
+ * 합산 % 한도(capReached — 좌동) 적용 후 공제액 한도(amountCapApplied — 신설) 순서로 자른다.
  */
 export interface ComprehensiveTaxCreditDetail {
-  agePercent: number            // 연령 공제율(%) — 미해당이면 0
-  holdingPercent: number        // 보유기간 공제율(%) — 미해당이면 0 (신 형식에서는 항상 0)
-  totalPercentApplied: number   // 실제 적용(%) — 구 형식은 합산(한도 반영), 신 형식은 높은 쪽
-  capReached: boolean           // 구 형식 — % 합산 한도에 걸렸는지 (신 형식에서는 항상 false)
-  amount: number                // 공제액(원)
+  agePercent: number            // 연령 공제율(%) — 미해당이면 0. 구·신 형식 모두 합산 대상
+  holdingPercent: number        // 보유기간 공제율(%) — 미해당·폐지면 0
+  totalPercentApplied: number   // 실제 적용 합산(%) — % 한도 반영 후
+  capReached: boolean           // % 합산 한도에 걸렸는지 (구·신 형식 공용)
+  amount: number                // 공제액(원) — 모든 한도 적용 후
   residencePercent?: number     // 신 형식 — 거주기간 공제율(%). 미해당이면 0
-  chosenAxis?: 'age' | 'residence'  // 신 형식 — 채택된 축 (동률이면 연령분으로 표기)
-  amountCapApplied?: boolean    // 신 형식 — 공제액 한도(원)로 잘렸는지
+  /** 신 형식 — 보유분·거주분 중 채택된 축 (동률이면 보유분으로 표기 — 공제액 동일) */
+  chosenAxis?: 'holding' | 'residence'
+  amountCapApplied?: boolean    // 신 형식 — 공제액 한도(원)로 잘렸는지 (% 한도 다음 순서)
+  /** 신 형식 — 룰에 보유 표(holdingRows)가 없는 시행기간(보유 기준 공제 폐지)인지 */
+  holdingAbolished?: boolean
 }
 
 /**
