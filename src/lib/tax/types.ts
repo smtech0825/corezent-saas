@@ -84,6 +84,12 @@ export interface TaxRegulatedArea {
   designated_to: string | null  // NULL이면 현재 지정 상태
   source_url: string            // 국토교통부 공고 링크
   note: string | null           // 메모 (059) — 적용 한계·일부 동·읍·면 한정 지정 등 기록
+  /**
+   * 시·군·구 일부(동·읍·면)만 지정된 이력인지 (065). true면 자동 판정에서 제외하고
+   * 사용자에게 직접 묻는다 — 구 전체를 지정으로 보면 비과세 거주 요건을 근거 없이
+   * 요구해 세금이 크게 나온다. 대상 범위는 note에 기록한다(엔진은 읽지 않는다).
+   */
+  is_partial: boolean
   created_at: string
   updated_at: string
 }

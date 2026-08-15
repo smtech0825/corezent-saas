@@ -31,6 +31,8 @@ export interface TaxAreaPayload {
   source_url: string
   /** 메모(선택, 059) — 적용 한계·일부 동·읍·면 한정 지정 등 행 단위 기록 */
   note: string | null
+  /** 시·군·구 일부(동·읍·면)만 지정됐는지 (065) — true면 자동 판정에서 제외된다 */
+  is_partial: boolean
 }
 
 /** 실패 결과 생성 헬퍼 */
@@ -83,6 +85,7 @@ export async function saveTaxArea(payload: TaxAreaPayload): Promise<AdminActionR
     designated_to: payload.designated_to,
     source_url: payload.source_url.trim(),
     note: payload.note?.trim() || null,   // 빈 문자열은 NULL로 — 룰 저장(saveTaxRule)과 같은 관례
+    is_partial: payload.is_partial === true,   // 기본은 전체 지정(false) — 065
   }
 
   const { error } = payload.id

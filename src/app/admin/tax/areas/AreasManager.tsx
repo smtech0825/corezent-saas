@@ -38,6 +38,8 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
   const [designatedTo, setDesignatedTo] = useState(initial?.designated_to ?? '')
   const [sourceUrl, setSourceUrl] = useState(initial?.source_url ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
+  // 065 — 시·군·구 일부만 지정된 이력. 기본은 전체 지정(false)
+  const [isPartial, setIsPartial] = useState(initial?.is_partial ?? false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -65,6 +67,7 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
         designated_to: designatedTo || null,
         source_url: sourceUrl,
         note: note || null,
+        is_partial: isPartial,
       })
       if (result.status === 'ok') onDone(true)
       else setError(result.reason)
@@ -139,8 +142,26 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
           onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://www.molit.go.kr/..." required />
       </Field>
 
+      {/* 065 — 부분 지정은 계산기의 '취득 당시' 자동 판정에서 제외된다(구 전체를 지정으로
+          보면 비과세 거주 요건을 근거 없이 요구해 세금이 크게 나온다) */}
+      <Field label="지정 범위" htmlFor="area-partial" required>
+        <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
+          <input id="area-partial" type="checkbox" checked={isPartial}
+            onChange={(e) => setIsPartial(e.target.checked)} className="mt-0.5 h-4 w-4 accent-pen" />
+          <span className="text-sm text-ink">
+            시·군·구 일부(동·읍·면)만 지정
+            <span className="block text-xs text-ink-faint mt-0.5 leading-relaxed">
+              체크하지 않으면 시·군·구 전체 지정입니다. 체크하면 이 이력은 계산기의
+              &lsquo;취득 당시 조정대상지역&rsquo; 자동 판정에서 제외되고, 사용자가 직접
+              선택하게 됩니다 — 구 전체를 지정으로 보면 실제보다 불리하게 계산되기 때문입니다.
+              어느 동·읍·면인지는 아래 메모에 적어 주세요.
+            </span>
+          </span>
+        </label>
+      </Field>
+
       <Field label="메모" htmlFor="area-note"
-        hint="이력의 적용 한계, 일부 동·읍·면만 지정된 경우의 범위 한정 등을 기록하세요.">
+        hint="이력의 적용 한계, 일부 동·읍·면만 지정된 경우의 대상 범위 등을 기록하세요. 계산기는 이 메모를 판정에 쓰지 않습니다 — 범위 한정은 위 '지정 범위'로 표시해야 반영됩니다.">
         <Textarea id="area-note" value={note} onChange={(e) => setNote(e.target.value)} className="min-h-20" />
       </Field>
 
@@ -208,6 +229,12 @@ export default function AreasManager({ areas }: { areas: TaxRegulatedArea[] }) {
                     {area.designated_to && (
                       <span className="px-1.5 py-0.5 rounded text-[11px] font-semibold bg-paper-shade text-ink-faint">
                         해제됨
+                      </span>
+                    )}
+                    {/* 065 — 자동 판정에서 빠지는 행은 목록에서 바로 구분되게 표시 */}
+                    {area.is_partial && (
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-semibold bg-caution-soft text-caution">
+                        일부 지역만 — 자동 판정 제외
                       </span>
                     )}
                   </div>
