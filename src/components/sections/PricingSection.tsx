@@ -42,6 +42,8 @@ export interface PricingSectionProduct {
 interface Props {
   products: PricingSectionProduct[]
   affiliateRef: string
+  /** 대표 제품 하나만 보여주는 모드일 때 true — 카드 아래에 「요금 보기」 버튼을 붙인다 */
+  showViewPricing?: boolean
 }
 
 interface CardProps {
@@ -169,7 +171,7 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
   )
 }
 
-export default function PricingSection({ products, affiliateRef }: Props) {
+export default function PricingSection({ products, affiliateRef, showViewPricing = false }: Props) {
   const [annual, setAnnual]   = useState(false)
   const [userId, setUserId]   = useState<string | null>(null)
 
@@ -235,6 +237,15 @@ export default function PricingSection({ products, affiliateRef }: Props) {
           />
         ))}
       </div>
+
+      {/* 대표 제품 모드에서만 — 전체 요금은 요금 페이지에서. 버튼은 기존 outline 방식 그대로 */}
+      {showViewPricing && (
+        <div className="flex justify-center mt-8">
+          <Button href="/pricing" variant="outline" size="md">
+            요금 보기
+          </Button>
+        </div>
+      )}
 
       <p className="text-center text-xs text-ink-faint mt-6">
         가입 시 신용카드가 필요하지 않습니다.

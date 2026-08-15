@@ -11,6 +11,7 @@ import HeroSection from '@/components/sections/HeroSection'
 // 타입만 import (런타임 코드 없음)
 import type { PricingSectionProduct } from '@/components/sections/PricingSection'
 import { lowestPriceRow } from '@/lib/product-pricing'
+import { fetchHomeFeaturedSlug, filterHomeFeatured } from '@/lib/home-featured'
 
 // Below-fold 섹션 — 별도 JS 청크로 분리 (초기 번들 절감)
 const ProductSection      = lazy(() => import('@/components/sections/ProductSection'))
@@ -74,7 +75,7 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef, homeFeaturedSlug] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
@@ -88,6 +89,8 @@ export default async function HomePage() {
       .order('order_index'),
     // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
     resolveCheckoutAffiliateRef(),
+    // 홈 대표 제품 slug(관리자 설정, 기본 geniework) — 홈에만 적용
+    fetchHomeFeaturedSlug(client),
   ])
 
   // DB 섹션과 기본값 병합 후 order_index 기준 정렬
@@ -112,7 +115,7 @@ export default async function HomePage() {
   const pricingRows = pricingRes.error
     ? (await client.from('products').select(PRICING_BASE_COLS).eq('is_active', true).order('order_index')).data
     : pricingRes.data
-  const featuredProducts: PricingSectionProduct[] = ((pricingRows ?? []) as Record<string, unknown>[]).map((pricingRaw) => {
+  const allPricingProducts: PricingSectionProduct[] = ((pricingRows ?? []) as Record<string, unknown>[]).map((pricingRaw) => {
     const prices = ((pricingRaw.product_prices ?? []) as PriceRow[]).filter((pr) => pr.is_active)
     // 대표가는 '첫 행'이 아니라 '최저가 행'으로 선택(고가 티어가 대표가로 노출되던 문제 방지)
     const monthly  = lowestPriceRow(prices, (pr) => pr.type === 'subscription' && pr.interval === 'monthly')
@@ -149,6 +152,10 @@ export default async function HomePage() {
     }
   })
 
+  // 홈 대표 제품만 남긴다(관리자 설정 home_featured_product) — 일치하는 활성 상품이
+  // 없으면 거르지 않고 전체 표시(폴백). 이 필터는 홈 요금 섹션에만 적용된다.
+  const { rows: featuredProducts, matched: homeFiltered } = filterHomeFeatured(allPricingProducts, homeFeaturedSlug)
+
   // front_content key-value 맵 생성
   const contentMap = Object.fromEntries((contentRes.data ?? []).map((c) => [c.key, c.value]))
 
@@ -180,7 +187,7 @@ export default async function HomePage() {
     product:      <ProductSection />,
     how_it_works: <HowItWorksSection steps={steps.length > 0 ? steps : undefined} />,
     features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
-    pricing:      <PricingSection products={featuredProducts} affiliateRef={affiliateRef} />,
+    pricing:      <PricingSection products={featuredProducts} affiliateRef={affiliateRef} showViewPricing={homeFiltered} />,
     testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
     faq:          <FAQSection faqs={faqs} />,
     cta:          <CTASection content={ctaContent} />,

@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS, PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { lowestPriceRow } from '@/lib/product-pricing'
+import { fetchHomeFeaturedSlug, filterHomeFeatured } from '@/lib/home-featured'
 import Section, { SectionHeader } from '@/components/ui/Section'
 import Button from '@/components/ui/Button'
 
@@ -107,9 +108,14 @@ export default async function ProductSection() {
     }
   })
 
+  // 홈 대표 제품만 남긴다(관리자 설정, 요금 섹션과 같은 규칙) — 일치하는 활성 상품이
+  // 없으면 거르지 않고 전체 표시(폴백). 이 섹션은 홈 전용이라 다른 페이지엔 영향 없음.
+  const featuredSlug = await fetchHomeFeaturedSlug(client)
+  const { rows: visibleCards } = filterHomeFeatured(dbCards, featuredSlug)
+
   // 활성 상품 + Coming Soon 플레이스홀더로 최소 3개 채우기
-  const neededPlaceholders = Math.max(0, 3 - dbCards.length)
-  const products = [...dbCards, ...COMING_SOON.slice(0, neededPlaceholders)]
+  const neededPlaceholders = Math.max(0, 3 - visibleCards.length)
+  const products = [...visibleCards, ...COMING_SOON.slice(0, neededPlaceholders)]
 
   return (
     <Section id="product" width="wide">

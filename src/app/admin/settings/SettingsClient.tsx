@@ -11,12 +11,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
+import { HOME_FEATURED_PRODUCT_DEFAULT } from '@/lib/front-defaults'
 
 type Settings = Record<string, string>
 type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'company'
 
 const SECTION_KEYS: Record<Section, string[]> = {
-  general: ['site_name', 'site_url', 'support_email', 'footer_copyright'],
+  // home_featured_product: 홈 대표 제품 slug — 홈의 요금·제품 소개 섹션에 이 제품만 보여준다.
+  // 비면 기본 geniework, 일치하는 활성 상품이 없으면 전체 표시(lib/home-featured.ts).
+  general: ['site_name', 'site_url', 'support_email', 'footer_copyright', 'home_featured_product'],
   // 조달청 등록번호는 공공 구매담당자가 가장 먼저 찾는 값이라 푸터·기관 도입 페이지에 노출한다.
   // front_settings는 key-value 구조라 컬럼 추가(마이그레이션) 없이 키만 늘리면 된다.
   footer:  ['footer_info', 'procurement_item_number', 'procurement_class_number'],
@@ -217,6 +220,18 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         </Field>
         <Field label="푸터 저작권">
           <input value={values.footer_copyright ?? ''} onChange={(e) => update('footer_copyright', e.target.value)} className={INPUT_CLS} />
+        </Field>
+        <Field label="홈 대표 제품 (제품 주소 이름)">
+          <input
+            value={values.home_featured_product ?? ''}
+            onChange={(e) => update('home_featured_product', e.target.value)}
+            placeholder={HOME_FEATURED_PRODUCT_DEFAULT}
+            className={INPUT_CLS}
+          />
+          <p className="text-xs text-ink-faint mt-1.5">
+            홈 화면에 이 제품 하나만 보여줍니다. 비워 두면 {HOME_FEATURED_PRODUCT_DEFAULT}, 해당 제품이 없거나
+            판매 중지 상태면 판매 중인 제품 전체가 보입니다. 요금 페이지·제품 목록에는 영향이 없습니다.
+          </p>
         </Field>
       </SectionCard>
 

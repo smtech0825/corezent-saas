@@ -44,3 +44,7 @@ export const BANNER_DEFAULTS = {
   link_url: '#product',
   visible: 'true',
 }
+
+/** 홈 대표 제품 기본 slug (lib/home-featured + admin/settings placeholder 공용) —
+ *  설정(front_settings.home_featured_product)이 비었을 때 홈이 이 제품만 보여준다 */
+export const HOME_FEATURED_PRODUCT_DEFAULT = 'geniework'
