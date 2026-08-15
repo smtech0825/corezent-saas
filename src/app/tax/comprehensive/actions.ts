@@ -123,8 +123,11 @@ export async function calculateComprehensiveComparison(
   const comparisonInput = buildComparisonInput(payload)
   const supabase = await createClient()
   try {
-    const comparison = await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', (year, mode) =>
-      calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
+    const comparison = await runYearComparison<ComprehensiveSuccess>(
+      supabase,
+      'comprehensive',
+      comparisonInput.taxYear,
+      (year, mode) => calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
     )
     return comparison ? { comparison } : {}
   } catch (err) {
@@ -199,7 +202,7 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
     try {
       const comparisonInput = buildComparisonInput(payload)
       comparison =
-        (await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', (year, mode) =>
+        (await runYearComparison<ComprehensiveSuccess>(supabase, 'comprehensive', input.taxYear, (year, mode) =>
           calculateComprehensiveTax(supabase, { ...comparisonInput, taxYear: year }, mode),
         )) ?? undefined
     } catch (err) {

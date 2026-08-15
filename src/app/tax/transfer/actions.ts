@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateTransferTax } from '@/lib/tax/transfer'
 import { buildRegionCode, isKnownRegion } from '@/lib/tax/regions'
+import { engineFail, isValidDateString } from '@/lib/tax/rule-store'
 import { replaceDateYear, runYearComparison } from '@/lib/tax/year-comparison'
 import type { YearComparison } from '@/lib/tax/year-comparison'
 import type { TaxRuleMode } from '@/lib/tax/types'
@@ -154,10 +155,19 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
   let comparison: YearComparison<TransferSuccess> | undefined
   if (payload.includeYearComparison === true && result.ok) {
     try {
+      const inputYear = Number(input.baseDate.slice(0, 4))
       comparison =
-        (await runYearComparison<TransferSuccess>(supabase, 'transfer', (year, mode) =>
-          calculateTransferTax(supabase, { ...input, baseDate: replaceDateYear(input.baseDate, year) }, mode),
-        )) ?? undefined
+        (await runYearComparison<TransferSuccess>(supabase, 'transfer', inputYear, (year, mode) => {
+          // 연도만 치환하면 없는 날짜가 될 수 있다(윤년 2월 29일) — 사용자 입력은 정상이므로
+          // 엔진의 '형식 오류' 문구 대신 비교 전용 안내로 그 해만 접는다
+          const baseDate = replaceDateYear(input.baseDate, year)
+          if (!isValidDateString(baseDate)) {
+            return Promise.resolve(
+              engineFail('INVALID_INPUT', '이 해에는 입력하신 월·일이 없어(윤년 날짜) 비교하지 못했습니다.'),
+            )
+          }
+          return calculateTransferTax(supabase, { ...input, baseDate }, mode)
+        })) ?? undefined
     } catch (err) {
       console.error('[tax] 양도소득세 연도별 비교 실패(본 결과만 반환):', err instanceof Error ? err.message : String(err))
     }

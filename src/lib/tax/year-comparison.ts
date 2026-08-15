@@ -35,6 +35,12 @@ export interface YearComparisonEntry<S extends { ok: true }> {
 /** 연도별 비교 묶음 — 서버 액션이 본 계산 결과에 곁들여 반환한다 */
 export interface YearComparison<S extends { ok: true }> {
   baseYear: number
+  /**
+   * 사용자가 실제로 계산한 연도(양도일·과세연도의 연도). 기준 연도(올해)와 다르면
+   * 위 결과가 비교 카드에 없을 수 있으므로 화면이 그 사실을 알린다 — 자기 계산이
+   * 카드에 있다고 오해하면 남의 조건 금액을 자기 세금으로 읽게 된다.
+   */
+  inputYear: number
   entries: YearComparisonEntry<S>[]
 }
 
@@ -80,12 +86,14 @@ export function buildComparisonYears(baseYear: number, proposedYears: number[]):
  *        비교가 성립하지 않으면(시행 연도 조회 실패·미래 해 없음·전 연도 실패) null —
  *        호출한 액션은 본 계산 결과만 반환하면 됩니다.
  * @매개변수: supabase - Supabase 클라이언트 / taxType - 세목 /
+ *            inputYear - 사용자가 실제로 계산한 연도(화면 안내용) /
  *            calc - 연도·모드를 받아 엔진을 부르는 콜백(입력 치환은 호출부 몫)
  * @반환값: 연도별 비교 묶음 또는 null(비교 불성립)
  */
 export async function runYearComparison<S extends { ok: true }>(
   supabase: SupabaseClient,
   taxType: TaxType,
+  inputYear: number,
   calc: (year: number, mode: TaxRuleMode) => Promise<S | TaxEngineFailure>,
 ): Promise<YearComparison<S> | null> {
   const fetched = await fetchProposedEffectiveYears(supabase, taxType)
@@ -113,5 +121,5 @@ export async function runYearComparison<S extends { ok: true }>(
   )
 
   if (!entries.some((e) => e.result.ok)) return null
-  return { baseYear, entries }
+  return { baseYear, inputYear, entries }
 }

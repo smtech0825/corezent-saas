@@ -12,6 +12,7 @@
  *        - 배치: 세로(모바일) → 2×2(sm) → 3~4열(xl, 카드 수에 맞춤) — 가로 스크롤 금지
  */
 
+import type { ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import type { TaxRuleMode } from '@/lib/tax/types'
 
@@ -31,6 +32,8 @@ export interface YearCardData {
   hasUnresolved?: boolean
   /** 실패 시 안내문(엔진의 한국어 메시지) */
   failMessage?: string
+  /** 실패했지만 값을 더 받으면 계산되는 해 — 실패 원문 대신 입력 안내를 보여준다 */
+  pendingInput?: boolean
 }
 
 /** 올해 대비 증감 한 줄 — 부호(▲▼)+금액+문구+비율. 색만으로 구분하지 않는다 */
@@ -88,11 +91,18 @@ function YearCard({ card, baseTotal }: { card: YearCardData; baseTotal: number |
             </p>
           )}
         </>
+      ) : card.pendingInput ? (
+        <>
+          <p className="text-sm font-semibold text-ink-soft">아직 계산하지 않았습니다</p>
+          <p className="text-xs text-ink-soft mt-1.5 leading-relaxed">
+            위에 개편안 기준 값을 입력하면 이 해의 세액이 계산됩니다.
+          </p>
+        </>
       ) : (
         <>
-          <p className="text-sm font-semibold text-ink-faint">이 해는 계산하지 못했습니다</p>
+          <p className="text-sm font-semibold text-ink-soft">이 해는 계산하지 못했습니다</p>
           {card.failMessage && (
-            <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">{card.failMessage}</p>
+            <p className="text-xs text-ink-soft mt-1.5 leading-relaxed break-words">{card.failMessage}</p>
           )}
         </>
       )}
@@ -100,11 +110,22 @@ function YearCard({ card, baseTotal }: { card: YearCardData; baseTotal: number |
   )
 }
 
-/** 비교 묶음 전체 — 제목·개정안 경고 박스·카드 그리드 */
-export default function YearComparisonSection({ subtitle, cards }: {
+/**
+ * @컴포넌트: YearComparisonSection
+ * @설명: 비교 묶음 전체 — 제목·부제·한계 안내·개정안 경고 박스·카드 그리드를 그립니다.
+ *        입력 패널 등 앞에 놓을 내용은 children으로 받아 같은 섹션 안에 담습니다
+ *        (제목·랜드마크가 두 번 나오지 않게 — 스크린리더 중복 방지).
+ * @매개변수: subtitle - 무엇을 어떻게 바꿔 비교했는지 / notes - 이 비교의 한계 안내 줄들 /
+ *            cards - 연도 카드 데이터 / children - 카드 위에 놓을 내용(선택)
+ * @반환값: 연도별 비교 섹션(카드가 없으면 아무것도 그리지 않음)
+ */
+export default function YearComparisonSection({ subtitle, notes, cards, children }: {
   /** 세목별 부제 — 무엇을 어떻게 바꿔 비교했는지(예: '양도 연도만 바꿔 다시 계산') */
   subtitle: string
+  /** 이 비교가 무엇을 그대로 두고 계산했는지 등 한계 안내 — 없으면 표시하지 않는다 */
+  notes?: string[]
   cards: YearCardData[]
+  children?: ReactNode
 }) {
   if (cards.length === 0) return null
   const base = cards.find((c) => c.isBaseYear && c.ok && typeof c.totalTax === 'number')
@@ -117,16 +138,24 @@ export default function YearComparisonSection({ subtitle, cards }: {
       <h2 className="font-serif font-bold text-ink mb-1">연도별 비교</h2>
       <p className="text-xs text-ink-soft mb-3 leading-relaxed">{subtitle}</p>
 
+      {notes && notes.length > 0 && (
+        <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-ink-soft leading-relaxed">
+          {notes.map((n) => <li key={n}>{n}</li>)}
+        </ul>
+      )}
+
+      {children}
+
       {/* 개정안 경고 — 날짜·수치를 문구에 넣지 않는다(연도·세액은 카드가 데이터에서 표시) */}
       <div className="bg-caution-soft border-2 border-caution/40 rounded-lg p-4 mb-4" role="alert">
         <p className="flex items-center gap-2 text-sm font-semibold text-caution mb-1">
-          <AlertTriangle size={15} /> 개정안 연도의 세액은 확정이 아닙니다
+          <AlertTriangle size={15} aria-hidden="true" /> 개정안 연도의 세액은 확정이 아닙니다
         </p>
-        <p className="text-xs text-caution/90 leading-relaxed">
-          2026년 세제개편안은 아직 국회 통과 전입니다. 심사 과정에서 내용이 바뀌거나 시행
-          시점이 미뤄질 수 있고, 항목별로 시행 시점이 달라 같은 개정안 안에서도 해마다
-          적용이 다릅니다. 참고용으로만 보시고, 실제 신고·납부는 그 시점의 확정된 법을
-          기준으로 하세요.
+        <p className="text-xs text-caution leading-relaxed">
+          개편안은 아직 국회 통과 전입니다. 심사 과정에서 내용이 바뀌거나 시행 시점이
+          미뤄질 수 있고, 항목별로 시행 시점이 달라 같은 개편안 안에서도 해마다 적용이
+          다릅니다. 참고용으로만 보시고, 실제 신고·납부는 그 시점의 확정된 법을 기준으로
+          하세요.
         </p>
       </div>
 
