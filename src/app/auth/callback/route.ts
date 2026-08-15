@@ -19,6 +19,11 @@ import {
   readProviderErrorDescription,
   type AuthCallbackReason,
 } from '@/lib/auth-callback-error'
+import {
+  SIGNUP_METHOD_COOKIE,
+  SIGNUP_METHOD_COOKIE_MAX_AGE,
+  normalizeSignupMethod,
+} from '@/lib/signup-tracking'
 
 // OAuth 신규 가입 판별 윈도우 — user.created_at가 콜백 직전 이 시간 이내면
 // '이번 인증으로 막 생성된 신규'로 본다. 기존 사용자는 created_at가 과거라 통과하지 않으므로
@@ -89,7 +94,24 @@ export async function GET(request: Request) {
           console.error('[callback] provider phone sync 실패:', err)
         }
       }
-      return withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
+      const res = withCookieCleared(NextResponse.redirect(`${origin}${redirect}`))
+      // 소셜 신규 가입 측정 전달 — 위 isFreshSignup(추천 귀속과 같은 판정, 기존 로그인은
+      // 절대 통과 못 함)일 때만 1회용 쿠키에 가입 방식 이름 하나를 담는다. 브라우저 부품
+      // (SignupTracker)이 읽어 sign_up 사건을 보내고 즉시 지운다. 이메일 provider는
+      // 가입 폼이 이미 세므로 심지 않는다(normalizeSignupMethod가 null 반환).
+      // 실패해도 가입·이동은 그대로다(측정은 덤 — try로 격리).
+      try {
+        const method = isFreshSignup ? normalizeSignupMethod(u?.app_metadata?.provider) : null
+        if (method) {
+          res.cookies.set(SIGNUP_METHOD_COOKIE, method, {
+            maxAge: SIGNUP_METHOD_COOKIE_MAX_AGE,
+            path: '/',
+            sameSite: 'lax',
+            httpOnly: false, // 브라우저 부품이 읽어야 한다(값은 방식 이름뿐 — 비밀 아님)
+          })
+        }
+      } catch { /* 측정 전달 실패는 무시 — 가입·로그인 정상 진행 */ }
+      return res
     }
     // 원문(영문)은 서버 기록에만 남긴다.
     console.error('[callback] 소셜 로그인 실패:', error.message)
