@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
-import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/adminActivityLog'
+import { logAdminActivity, summarizeForLog, buildChangeDetail, currentUserIdForLog } from '@/lib/adminActivityLog'
 
 /** 추가된 통계·블록 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
 export type StatRow = { id: string; icon: string; value: string; label: string; order_index: number; is_published: boolean }
@@ -57,7 +57,8 @@ export async function updateHero(title: string, description: string): Promise<Ad
   if (beforeDesc !== cleanDescription) {
     changed.push({ key: 'about_description', from: summarizeForLog(beforeDesc), to: summarizeForLog(cleanDescription) })
   }
-  if (changed.length > 0) {
+  // 최소 기록 원칙(2026-08-15): 바뀐 게 없어도 저장 사실 자체는 남긴다.
+  {
     const actor = await currentUserIdForLog()
     if (actor) {
       await logAdminActivity({
@@ -65,7 +66,7 @@ export async function updateHero(title: string, description: string): Promise<Ad
         action: 'content.about_hero_update',
         targetType: 'front_content',
         targetId: 'about_hero',
-        detail: { changed },
+        detail: buildChangeDetail(changed.length > 0, { changed }),
       })
     }
   }

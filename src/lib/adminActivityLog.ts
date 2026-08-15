@@ -31,6 +31,47 @@ export function summarizeForLog(text: unknown, max = 80): { preview: string; len
 }
 
 /**
+ * @함수명: diffKeyChanges
+ * @설명: key-value 저장 화면(히어로·공지 배너·CTA·사이트 설정)의 감사 기록용 전/후 비교를
+ *        한 벌로 만듭니다 — 같은 비교 블록이 화면마다 사본으로 늘어나던 것을 공용화(2026-08-15).
+ *        규칙은 기존과 동일: 짧은 값(80자 이하)은 전/후 그대로, 긴 값은 앞부분+글자 수 요약만.
+ * @매개변수: beforeMap - 저장 전 key→value / rows - 저장하려는 {key, value} 목록
+ *           maskKey - (선택) 비밀값 키 판별 함수. true면 값 없이 {key, changed: true}만 남긴다
+ * @반환값: 실제로 값이 바뀐 키만 담은 기록용 배열
+ */
+export function diffKeyChanges(
+  beforeMap: Map<string, string>,
+  rows: Array<{ key: string; value: string }>,
+  maskKey?: (key: string) => boolean,
+): Array<Record<string, unknown>> {
+  return rows
+    .filter((r) => (beforeMap.get(r.key) ?? '') !== r.value)
+    .map((r) => {
+      if (maskKey?.(r.key)) return { key: r.key, changed: true }
+      const from = beforeMap.get(r.key) ?? ''
+      return from.length <= 80 && r.value.length <= 80
+        ? { key: r.key, from, to: r.value }
+        : { key: r.key, from: summarizeForLog(from), to: summarizeForLog(r.value) }
+    })
+}
+
+/**
+ * @함수명: buildChangeDetail
+ * @설명: 감사 기록의 detail을 만듭니다 — 최소 기록 원칙(2026-08-15 결정).
+ *        변경이 하나도 감지되지 않아도 "누가 언제 저장했다"는 사실 자체는 반드시 남겨야 하므로,
+ *        감지 0건이면 그 사실을 한글 표시로 붙입니다(비교 목록에서 빠진 항목이 생겨도
+ *        저장 기록이 통째로 사라지는 일을 막는 안전망).
+ * @매개변수: hasChanges - 감지된 변경이 하나라도 있는지 / detail - 기록할 상세 내용
+ * @반환값: hasChanges면 detail 그대로, 아니면 '변경 감지 없음' 표시가 붙은 detail
+ */
+export function buildChangeDetail(
+  hasChanges: boolean,
+  detail: Record<string, unknown>,
+): Record<string, unknown> {
+  return hasChanges ? detail : { ...detail, note: '변경 감지 없음(저장만 실행됨)' }
+}
+
+/**
  * @함수명: currentUserIdForLog
  * @설명: 기록에 남길 현재 로그인 사용자 id를 best-effort로 조회합니다.
  *        권한 확인용이 아닙니다 — 권한은 각 기능의 가드(guardAdmin 등)가 이미 확인한 뒤에만

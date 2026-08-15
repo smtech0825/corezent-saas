@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { logAdminActivity, summarizeForLog } from '@/lib/adminActivityLog'
+import { logAdminActivity, diffKeyChanges, buildChangeDetail } from '@/lib/adminActivityLog'
 
 /** 값을 기록에 남기면 안 되는 설정 키(비밀값·민감값) — 바뀌었다는 사실만 남긴다.
  *  account=계좌번호·예금주, username=SMTP 계정, api_key=향후 추가될 키 대비.
@@ -60,25 +60,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save some settings' }, { status: 500 })
     }
 
-    // 감사 기록 — 실제로 값이 바뀐 키만. 비밀 키(password 등)는 값 없이 사실만,
-    // 긴 값은 앞부분+글자 수 요약, 짧은 값은 전/후 그대로(개인정보 전문 방지).
-    const changed = entries
-      .filter(([key, value]) => (beforeMap.get(key) ?? '') !== value)
-      .map(([key, value]) => {
-        if (SECRET_SETTING_KEY.test(key)) return { key, changed: true }
-        const before = beforeMap.get(key) ?? ''
-        if (before.length <= 80 && value.length <= 80) return { key, from: before, to: value }
-        return { key, from: summarizeForLog(before), to: summarizeForLog(value) }
-      })
-    if (changed.length > 0) {
-      await logAdminActivity({
-        adminUserId: gate.userId,
-        action: 'settings.update',
-        targetType: 'settings',
-        targetId: changed.map((c) => c.key).join(',').slice(0, 200),
-        detail: { changed },
-      })
-    }
+    // 감사 기록 — 비교는 공용 diffKeyChanges(짧은 값 전/후 그대로, 긴 값 요약,
+    // 비밀 키(password 등)는 값 없이 사실만 — 개인정보·비밀값 전문 방지).
+    // 최소 기록 원칙(2026-08-15): 값이 하나도 안 바뀌었어도 저장 사실 자체는 남긴다.
+    const changed = diffKeyChanges(
+      beforeMap,
+      entries.map(([key, value]) => ({ key, value })),
+      (key) => SECRET_SETTING_KEY.test(key),
+    )
+    const targetKeys = changed.length > 0 ? changed.map((c) => c.key as string) : entries.map(([k]) => k)
+    await logAdminActivity({
+      adminUserId: gate.userId,
+      action: 'settings.update',
+      targetType: 'settings',
+      targetId: targetKeys.join(',').slice(0, 200),
+      detail: buildChangeDetail(changed.length > 0, { changed }),
+    })
 
     // 메타데이터·푸터가 반영되도록 전체 레이아웃 재검증
     revalidatePath('/', 'layout')

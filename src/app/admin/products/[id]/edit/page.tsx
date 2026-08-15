@@ -10,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
 import { sanitizeRichHtml } from '@/lib/sanitize-html'
-import { logAdminActivity, summarizeForLog } from '@/lib/adminActivityLog'
+import { logAdminActivity, summarizeForLog, buildChangeDetail } from '@/lib/adminActivityLog'
 import ProductForm, { type ProductFormData, type PriceEntry } from '../../ProductForm'
 import ChangelogSection from '../../ChangelogSection'
 import PageContainer from '@/components/common/PageContainer'
@@ -331,28 +331,48 @@ export default async function EditProductPage({
           changed.push({ key: f, changed: true, fromCount: from.length, toCount: to.length })
         }
       }
-      // 가격(돈 경로)은 행별 전/후를 그대로 남긴다
-      const beforePriceMap = new Map(initialData.prices.filter((p) => p.id).map((p) => [p.id as string, p.price]))
-      const priceChanges = data.prices
-        .filter((p) => p.id && p.price !== '' && beforePriceMap.has(p.id as string)
-          && parseFloat(beforePriceMap.get(p.id as string)!) !== parseFloat(p.price))
-        .map((p) => ({ id: p.id, from: beforePriceMap.get(p.id as string), to: p.price }))
-
-      if (changed.length > 0 || priceChanges.length > 0 || toDeactivate.length > 0 || newPrices.length > 0) {
-        await logAdminActivity({
-          adminUserId: gate.userId,
-          action: 'product.update',
-          targetType: 'product',
-          targetId: id,
-          detail: {
-            changed,
-            priceChanges,
-            pricesDeactivated: toDeactivate.length,
-            pricesAdded: newPrices.length,
-          },
-        })
+      // 가격(돈 경로)은 행별로 전 속성의 전/후를 남긴다 — 금액만 비교하던 구멍으로 기록이
+      // 통째로 누락된 사고(2026-08-15)의 수정. 특히 라이선스 대수 구분(license_tier)은
+      // 잘못 바뀌면 1PC 손님이 10PC를 쓰게 되는 값이라 전/후를 반드시 남긴다.
+      // type·interval도 저장 대상이므로 함께 감시한다(무엇을 바꿔도 남아야 한다는 원칙).
+      const PRICE_ROW_FIELDS = ['price', 'type', 'interval', 'license_tier', 'option_axis1_label', 'option_axis2_label', 'sort_order', 'checkout_url', 'lemon_squeezy_variant_id'] as const
+      const beforePriceById = new Map(initialData.prices.filter((p) => p.id).map((p) => [p.id as string, p]))
+      const priceChanges: Array<Record<string, unknown>> = []
+      // 저장 루프와 같은 조건(id 있고 금액이 빈 값 아님)의 행만 비교 — 저장되지 않은 행은 기록 대상 아님
+      for (const p of data.prices.filter((pr) => pr.id && pr.price !== '' && beforePriceById.has(pr.id as string))) {
+        const b = beforePriceById.get(p.id as string)!
+        const row: Record<string, unknown> = {}
+        for (const f of PRICE_ROW_FIELDS) {
+          const from = String(b[f] ?? '')
+          const to = String(p[f] ?? '')
+          if (from === to) continue
+          // 금액은 표기 차이(예: "9900"과 "9900.0")가 오탐되지 않도록 숫자로 한 번 더 비교
+          if (f === 'price' && from !== '' && to !== '' && parseFloat(from) === parseFloat(to)) continue
+          row[f] = from.length <= 80 && to.length <= 80
+            ? { from, to }
+            : { from: summarizeForLog(from), to: summarizeForLog(to) }
+        }
+        if (Object.keys(row).length > 0) priceChanges.push({ id: p.id, ...row })
       }
-    } catch { /* 기록 실패는 저장을 막지 않는다 */ }
+
+      // 최소 기록 원칙(2026-08-15) — 감지 0건이어도 "누가 언제 이 상품을 저장했다"는 항상 남긴다
+      const hasChanges = changed.length > 0 || priceChanges.length > 0 || toDeactivate.length > 0 || newPrices.length > 0
+      await logAdminActivity({
+        adminUserId: gate.userId,
+        action: 'product.update',
+        targetType: 'product',
+        targetId: id,
+        detail: buildChangeDetail(hasChanges, {
+          changed,
+          priceChanges,
+          pricesDeactivated: toDeactivate.length,
+          pricesAdded: newPrices.length,
+        }),
+      })
+    } catch (err) {
+      // 기록 실패는 저장을 막지 않는다 — 단, 완전 무음이면 원인 추적이 불가능하므로 서버 기록은 남긴다
+      console.error('[products/edit] 감사 기록 실패(저장은 성공):', err instanceof Error ? err.message : String(err))
+    }
 
     revalidatePath('/admin/products')
     revalidatePath(`/admin/products/${id}/edit`)
