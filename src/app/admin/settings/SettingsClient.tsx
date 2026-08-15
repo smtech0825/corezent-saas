@@ -12,6 +12,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
 import { HOME_FEATURED_PRODUCT_DEFAULT } from '@/lib/front-defaults'
+import { TRIAL_APPLY_URL_DEFAULT } from '@/lib/trial'
 
 type Settings = Record<string, string>
 type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'company'
@@ -19,7 +20,9 @@ type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'comp
 const SECTION_KEYS: Record<Section, string[]> = {
   // home_featured_product: 홈 대표 제품 slug — 홈의 요금·제품 소개 섹션에 이 제품만 보여준다.
   // 비면 기본 geniework, 일치하는 활성 상품이 없으면 전체 표시(lib/home-featured.ts).
-  general: ['site_name', 'site_url', 'support_email', 'footer_copyright', 'home_featured_product'],
+  // trial_apply_url: 무료 체험 신청 버튼(상단 메뉴·요금 페이지)이 여는 주소 — 비면 기본
+  // 구글 폼(lib/trial.ts). ⚠️ 체험 기간·횟수 문구는 어디에도 적지 않는다(정해진 것 없음).
+  general: ['site_name', 'site_url', 'support_email', 'footer_copyright', 'home_featured_product', 'trial_apply_url'],
   // 조달청 등록번호는 공공 구매담당자가 가장 먼저 찾는 값이라 푸터·기관 도입 페이지에 노출한다.
   // front_settings는 key-value 구조라 컬럼 추가(마이그레이션) 없이 키만 늘리면 된다.
   footer:  ['footer_info', 'procurement_item_number', 'procurement_class_number'],
@@ -231,6 +234,19 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           <p className="text-xs text-ink-faint mt-1.5">
             홈 화면에 이 제품 하나만 보여줍니다. 비워 두면 {HOME_FEATURED_PRODUCT_DEFAULT}, 해당 제품이 없거나
             판매 중지 상태면 판매 중인 제품 전체가 보입니다. 요금 페이지·제품 목록에는 영향이 없습니다.
+          </p>
+        </Field>
+        <Field label="무료 체험 신청 주소">
+          <input
+            type="url"
+            value={values.trial_apply_url ?? ''}
+            onChange={(e) => update('trial_apply_url', e.target.value)}
+            placeholder={TRIAL_APPLY_URL_DEFAULT}
+            className={INPUT_CLS}
+          />
+          <p className="text-xs text-ink-faint mt-1.5">
+            상단 메뉴와 요금 페이지의 「무료 체험 신청」 버튼이 새 창으로 여는 주소입니다.
+            비워 두면 기본 구글 폼 주소로 연결됩니다. 바꾸면 1분 안에 사이트에 반영됩니다.
           </p>
         </Field>
       </SectionCard>
