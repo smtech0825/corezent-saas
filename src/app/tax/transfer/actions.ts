@@ -157,21 +157,24 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
     try {
       const inputYear = Number(input.baseDate.slice(0, 4))
       comparison =
-        (await runYearComparison<TransferSuccess>(supabase, 'transfer', inputYear, ruleMode, (year, mode) => {
+        (await runYearComparison<TransferSuccess>(supabase, 'transfer', inputYear, ruleMode, async (year, mode) => {
           // 연도만 치환하면 계산할 수 없는 양도일이 될 수 있다 — 사용자 입력은 정상이므로
           // 엔진의 입력 오류 문구 대신 비교 전용 안내로 그 해만 접는다
           const baseDate = replaceDateYear(input.baseDate, year)
           if (!isValidDateString(baseDate)) {
-            return Promise.resolve(
-              engineFail('INVALID_INPUT', '이 해에는 입력하신 월·일이 없어(윤년 날짜) 비교하지 못했습니다.'),
-            )
+            return engineFail('INVALID_INPUT', '이 해에는 입력하신 월·일이 없어(윤년 날짜) 비교하지 못했습니다.')
           }
           if (baseDate < input.acquiredAt) {
-            return Promise.resolve(
-              engineFail('INVALID_INPUT', '취득일보다 앞선 해라 비교하지 않습니다.'),
-            )
+            return engineFail('INVALID_INPUT', '취득일보다 앞선 해라 비교하지 않습니다.')
           }
-          return calculateTransferTax(supabase, { ...input, baseDate }, mode)
+          const res = await calculateTransferTax(supabase, { ...input, baseDate }, mode)
+          // 본 계산이 같은 검증을 이미 통과했으므로, 비교에서 나오는 입력 오류는 정의상
+          // '연도를 옮긴 탓'이다(신규주택 취득일·상속개시일 역전, 거주기간>보유기간 등).
+          // 사용자 입력이 잘못된 것처럼 읽히지 않도록 비교 전용 문구로 한 번에 감싼다.
+          if (!res.ok && res.code === 'INVALID_INPUT') {
+            return engineFail('INVALID_INPUT', '입력하신 조건으로는 이 해를 계산할 수 없어 비교하지 않습니다.')
+          }
+          return res
         })) ?? undefined
     } catch (err) {
       console.error('[tax] 양도소득세 연도별 비교 실패(본 결과만 반환):', err instanceof Error ? err.message : String(err))

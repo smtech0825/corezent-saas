@@ -165,10 +165,16 @@ export default function ComprehensiveComparisonCards({ payload, comparison }: {
   const notes: string[] = [
     '나이·보유기간·거주기간과 직전 연도 총세액은 과세연도가 바뀌어도 그대로 둡니다 — 실제로는 해마다 나이와 기간이 늘어 세액공제가 더 커질 수 있습니다.',
   ]
-  // 연도가 같아도 계산 기준(확정법/개정안)이 다르면 위 결과와 카드 금액이 다르다 — 그것까지 알린다
-  if (!current.entries.some((e) => e.year === current.inputYear && e.ruleMode === current.inputRuleMode)) {
+  // 위 결과와 카드가 어긋날 수 있는 두 경우를 구분해 알린다 — 같은 숫자가 아닌 이유를 모르면
+  // 사용자가 어느 쪽을 자기 세금으로 봐야 할지 알 수 없다
+  const sameYearCard = current.entries.find((e) => e.year === current.inputYear)
+  if (!sameYearCard) {
     notes.push(
-      `위에서 계산한 결과(${current.inputYear}년)와 같은 조건의 카드는 이 비교에 없습니다 — 비교는 올해를 확정된 법으로, 나머지 해를 개정안으로 계산합니다.`,
+      `위에서 계산한 ${current.inputYear}년은 이 비교에 없습니다 — 비교는 올해와 개편안 시행 연도만 보여드립니다.`,
+    )
+  } else if (sameYearCard.ruleMode !== current.inputRuleMode) {
+    notes.push(
+      `${current.inputYear}년 카드는 ${sameYearCard.ruleMode === 'confirmed' ? '확정된 법' : '개정안'} 기준이라 위 결과와 금액이 다를 수 있습니다.`,
     )
   }
 
