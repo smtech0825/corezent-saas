@@ -6,7 +6,8 @@
  *        엔진 호출, 성공 시 tax_calculation_logs에 계산 이력을 기록한다.
  *        ⚠️ 개인식별정보(IP·이메일·이름)는 어떤 필드에도 기록하지 않는다.
  *        룰 조회는 공개 읽기(anon) 클라이언트, 이력 기록만 service_role 클라이언트를 쓴다.
- *        룰 모드는 확정법(confirmed) 고정 — 개편안(미확정)은 이 계산기의 제외 범위다.
+ *        룰 모드는 화면이 선택한다(기본 확정법) — 개정안(proposed) 모드는 국회 통과 전
+ *        개편안 룰을 포함해 계산하며, 결과에 경고가 함께 표시된다(취득세와 같은 구조).
  */
 
 import { checkBotId } from 'botid/server'
@@ -14,10 +15,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateTransferTax } from '@/lib/tax/transfer'
 import { buildRegionCode, isKnownRegion } from '@/lib/tax/regions'
+import type { TaxRuleMode } from '@/lib/tax/types'
 import type { TransferHouseCount, TransferInput, TransferResult } from '@/lib/tax/transfer-types'
 
 /** 계산기 화면이 보내는 요청 — 소재지는 이름으로 받아 서버가 검증·조립한다 */
 export interface TransferCalcPayload {
+  /** 확정법(confirmed) / 개정안 포함(proposed). 비우면 확정법 — 이 페이로드를 재사용하는
+   *  실수령액 계산기(모드 전환 미제공, 확정법 고정)가 보내지 않기 때문이다 */
+  ruleMode?: TaxRuleMode
   transferDate: string            // 양도일 (YYYY-MM-DD)
   acquiredAt: string              // 취득일 (YYYY-MM-DD)
   sido: string
@@ -81,8 +86,10 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
     graceDepositReceived: payload.graceDepositReceived,
   }
 
+  // 알 수 없는 값은 확정법으로 강등 — 임의 문자열로 proposed가 열리는 것을 막는다(취득세와 동일)
+  const ruleMode: TaxRuleMode = payload.ruleMode === 'proposed' ? 'proposed' : 'confirmed'
   const supabase = await createClient()
-  const result = await calculateTransferTax(supabase, input, 'confirmed')
+  const result = await calculateTransferTax(supabase, input, ruleMode)
 
   if (result.ok) {
     // 계산 이력 기록 — 실패해도 계산 결과 반환은 막지 않는다 (다른 계산기와 같은 원칙)
@@ -91,7 +98,7 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
       const { error } = await admin.from('tax_calculation_logs').insert({
         tax_type: 'transfer',
         base_date: input.baseDate,
-        rule_mode: 'confirmed',
+        rule_mode: ruleMode,
         input,
         output: {
           exempt: result.exempt,

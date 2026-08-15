@@ -18,6 +18,7 @@ import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
+import type { TaxRuleMode } from '@/lib/tax/types'
 import type { TransferHouseCount, TransferResult } from '@/lib/tax/transfer-types'
 import { calculateTransfer } from './actions'
 import TransferResultPanel from './TransferResultPanel'
@@ -65,6 +66,8 @@ export default function TransferForm({ graceDeadlineText }: {
    *  넘긴다. 룰이 없거나 값을 못 읽으면 null — 날짜 없는 일반 문구로 표시한다. */
   graceDeadlineText?: string | null
 }) {
+  // ── 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) ──────────────────
+  const [ruleMode, setRuleMode] = useState<TaxRuleMode>('confirmed')
   // ── 기본 입력 ──────────────────────────────────────────────────────────────
   const [transferDate, setTransferDate] = useState(todayString())
   const [acquiredAt, setAcquiredAt] = useState('')
@@ -153,6 +156,7 @@ export default function TransferForm({ graceDeadlineText }: {
     startTransition(async () => {
       try {
         const res = await calculateTransfer({
+          ruleMode,
           transferDate,
           acquiredAt,
           sido,
@@ -185,6 +189,26 @@ export default function TransferForm({ graceDeadlineText }: {
     <div className="space-y-6">
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <SegmentControl
+            label="계산 기준"
+            value={ruleMode}
+            onChange={(v) => { setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed'); clearStaleResult() }}
+            options={[
+              { value: 'confirmed', label: '확정된 법 기준' },
+              { value: 'proposed', label: '개정안 포함' },
+            ]}
+          />
+          {ruleMode === 'proposed' && (
+            <p className="text-xs text-caution font-medium max-w-72 leading-relaxed">
+              개정안은 아직 국회 통과 전이라 확정이 아닙니다. 항목별 시행 시점이
+              2027·2028·2029년으로 나뉘어 양도일에 따라 적용이 달라집니다.
+              결과에 경고가 함께 표시됩니다.
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="취득일" htmlFor="tr-acquired" required>
             <Input id="tr-acquired" type="date" value={acquiredAt}

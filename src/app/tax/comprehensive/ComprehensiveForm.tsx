@@ -65,9 +65,9 @@ export default function ComprehensiveForm() {
   // ── 1세대 1주택 조건부 입력 ────────────────────────────────────────────────
   const [age, setAge] = useState('')
   const [holdingYears, setHoldingYears] = useState('')
-  // ── 룰 모드 — Wave 4에서 확정법/개정안 전환 UI가 붙는다. 그때까지 확정법 고정이라
-  //    아래 개정안 전용 입력 4종은 화면에 나타나지 않는 것이 정상이다.
-  const [ruleMode] = useState<TaxRuleMode>('confirmed')
+  // ── 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴). 개정안 모드에서만
+  //    아래 개정안 전용 입력 4종이 화면에 나타난다.
+  const [ruleMode, setRuleMode] = useState<TaxRuleMode>('confirmed')
   const proposedMode = ruleMode === 'proposed'
   // ── 개정안 모드 전용 입력 (2026 세제개편안 — 확정법 계산에는 쓰이지 않아 숨김) ──
   const [isResiding, setIsResiding] = useState<'' | 'yes' | 'no'>('')      // 1주택 — 거주 여부 (명시 선택)
@@ -159,6 +159,7 @@ export default function ComprehensiveForm() {
     startTransition(async () => {
       try {
         const res = await calculateComprehensive({
+          ruleMode,
           taxYear: yearNum,
           houseCount,
           totalOfficialPrice: priceNum,
@@ -184,6 +185,26 @@ export default function ComprehensiveForm() {
     <div className="space-y-6">
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
+        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <SegmentControl
+            label="계산 기준"
+            value={ruleMode}
+            onChange={(v) => { setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed'); clearStaleResult() }}
+            options={[
+              { value: 'confirmed', label: '확정된 법 기준' },
+              { value: 'proposed', label: '개정안 포함' },
+            ]}
+          />
+          {proposedMode && (
+            <p className="text-xs text-caution font-medium max-w-72 leading-relaxed">
+              개정안은 아직 국회 통과 전이라 확정이 아닙니다. 항목별 시행 시점이
+              2027·2028·2029년으로 나뉘어 과세연도에 따라 적용이 달라집니다.
+              결과에 경고가 함께 표시됩니다.
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="과세연도" htmlFor="cp-year" required
             hint="세금을 계산할 연도입니다. 과세기준일은 등록된 룰로 자동 판정됩니다.">

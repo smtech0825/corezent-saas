@@ -6,8 +6,8 @@
  *        성공 시 tax_calculation_logs에 계산 이력을 기록한다.
  *        ⚠️ 개인식별정보(IP·이메일·이름)는 어떤 필드에도 기록하지 않는다.
  *        룰 조회는 공개 읽기(anon) 클라이언트, 이력 기록만 service_role 클라이언트를 쓴다.
- *        룰 모드는 아직 확정법(confirmed) 고정 — 확정법/개정안 전환 UI는 다음 단계에서
- *        붙는다(2026 세제개편안). 개정안 전용 입력 4종은 여기서 엔진으로 전달만 한다.
+ *        룰 모드는 화면이 선택한다(기본 확정법) — 개정안(proposed) 모드는 국회 통과 전
+ *        개편안 룰을 포함해 계산하며, 개정안 전용 입력 4종도 그 모드에서만 전달된다.
  *        재산세 상당액 공제는 엔진이 재산세 엔진을 호출해 자동 계산한다(입력 없음).
  */
 
@@ -15,6 +15,7 @@ import { checkBotId } from 'botid/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateComprehensiveTax } from '@/lib/tax/comprehensive'
+import type { TaxRuleMode } from '@/lib/tax/types'
 import type {
   ComprehensiveHouseCount,
   ComprehensiveInput,
@@ -23,6 +24,7 @@ import type {
 
 /** 계산기 화면이 보내는 요청 — 주택 목록이 아니라 주택 수 + 공시가격 합계다 */
 export interface ComprehensiveCalcPayload {
+  ruleMode: TaxRuleMode                 // 확정법(confirmed) / 개정안 포함(proposed)
   taxYear: number                       // 과세연도 (YYYY)
   houseCount: ComprehensiveHouseCount   // 1 / 2 / 3(=3주택 이상)
   totalOfficialPrice: number            // 공시가격 합계 (원)
@@ -70,8 +72,10 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
     hasRegulatedHouse: payload.hasRegulatedHouse,
   }
 
+  // 알 수 없는 값은 확정법으로 강등 — 임의 문자열로 proposed가 열리는 것을 막는다(취득세와 동일)
+  const ruleMode: TaxRuleMode = payload.ruleMode === 'proposed' ? 'proposed' : 'confirmed'
   const supabase = await createClient()
-  const result = await calculateComprehensiveTax(supabase, input, 'confirmed')
+  const result = await calculateComprehensiveTax(supabase, input, ruleMode)
 
   if (result.ok) {
     // 계산 이력 기록 — 실패해도 계산 결과 반환은 막지 않는다 (다른 계산기와 같은 원칙)
@@ -80,7 +84,7 @@ export async function calculateComprehensive(payload: ComprehensiveCalcPayload):
       const { error } = await admin.from('tax_calculation_logs').insert({
         tax_type: 'comprehensive',
         base_date: result.baseDate,
-        rule_mode: 'confirmed',
+        rule_mode: ruleMode,
         input,
         output: {
           taxable: result.taxable,
