@@ -238,6 +238,11 @@ export async function calculateTransferTax(
   // 취득 당시 조정대상지역 판정 결과 — 판정이 필요 없던 경우(1주택 트랙 아님·보유 요건
   // 미충족)에는 null로 남아 화면이 근거를 표시하지 않는다
   let acquiredRegulated: TransferAcquiredRegulatedInfo | null = null
+  // 거주 요건을 실제로 걸었는지 — '취득 당시 규제였다'와 같은 뜻이 아니다(부칙 적용 시작
+  // 취득일 이전 취득분은 규제였어도 걸지 않는다). 비과세 사유 문구가 이 값을 따라야
+  // 검증하지 않은 요건을 충족했다고 쓰는 일이 없다.
+  let residenceRequired = false
+  let residenceWaivedNote = ''
   if (effectiveOneHouse) {
     const exemptionRule = requireRule(rules, TRANSFER_RULE_KEYS.exemption, input.baseDate)
     if (!exemptionRule.ok) return exemptionRule
@@ -271,12 +276,15 @@ export async function calculateTransferTax(
       // 요건 적용 여부를 좌우하는데 근거 목록에 없으면 무엇이 판정했는지 추적할 수 없다
       if (resolved.coverageRule) use(resolved.coverageRule)
 
-      // 이 거주 요건은 부칙이 정한 날짜 이후에 취득한 주택부터 적용된다 — 그 전 취득분은
-      // 조정대상지역이었어도 보유 요건만으로 비과세다. 룰에 날짜가 없으면 취득일과 무관하게
-      // 적용한다(날짜는 코드가 아니라 룰에서 온다).
+      // 이 거주 요건은 부칙이 정한 취득일부터 적용된다(그날 취득분 포함: 취득일 ≥ 적용
+      // 시작일). 그 전 취득분은 조정대상지역이었어도 보유 요건만으로 비과세다. 룰에 날짜가
+      // 없으면 취득일과 무관하게 적용한다(날짜는 코드가 아니라 룰에서 온다).
       const residenceFrom = exemption.value.residenceIfAcquiredRegulated.appliesToAcquiredFrom
-      const residenceRequired = resolved.value === true
+      residenceRequired = resolved.value === true
         && (residenceFrom === undefined || input.acquiredAt >= residenceFrom)
+      if (resolved.value === true && !residenceRequired && residenceFrom !== undefined) {
+        residenceWaivedNote = `취득 당시 조정대상지역이었지만 거주 요건이 적용되기 시작한 취득일(${residenceFrom}) 전에 취득해 보유 요건만으로 판정했습니다.`
+      }
       let residenceOk = true
       if (residenceRequired) {
         if (input.residenceYears === undefined) {
@@ -300,9 +308,10 @@ export async function calculateTransferTax(
         const netProceeds = input.transferPrice - input.acquirePrice - expenses
         const reasonParts = [
           '1세대 1주택 비과세 요건(보유' +
-            (acquiredRegulated?.value === true ? '·거주' : '') +
+            (residenceRequired ? '·거주' : '') +
             ' 요건)을 충족하고,',
           `양도가액이 고가주택 기준(${threshold.toLocaleString('ko-KR')}원) 이하입니다.`,
+          residenceWaivedNote,
           temporaryApplied ? '(일시적 2주택 요건 충족으로 1주택으로 보아 판정)' : '',
         ]
         return buildSuccess({

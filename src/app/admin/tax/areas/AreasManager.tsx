@@ -152,9 +152,11 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
           <span className="text-sm text-ink">
             시·군·구 일부(동·읍·면)만 지정
             <span className="block text-xs text-ink-faint mt-0.5 leading-relaxed">
-              체크하지 않으면 시·군·구 전체 지정입니다. 체크하면 이 이력은 계산기의
-              &lsquo;취득 당시 조정대상지역&rsquo; 자동 판정에서 제외되고, 사용자가 직접
-              선택하게 됩니다 — 구 전체를 지정으로 보면 실제보다 불리하게 계산되기 때문입니다.
+              체크하지 않으면 시·군·구 전체 지정입니다. 체크하면 양도소득세의
+              &lsquo;취득 당시 조정대상지역&rsquo; 자동 판정에서만 이 이력이 빠지고 사용자가
+              직접 선택하게 됩니다 — 구 전체를 지정으로 보면 실제보다 불리하게 계산되기
+              때문입니다. 취득세 중과와 양도 당시 중과는 구 단위로 판정하므로 이 이력을
+              그대로 규제지역으로 쓰되, 결과에 범위 한계를 경고로 표시합니다.
               어느 동·읍·면인지는 아래 메모에 적어 주세요.
             </span>
           </span>
@@ -236,12 +238,12 @@ export default function AreasManager({ areas }: { areas: TaxRegulatedArea[] }) {
                     {/* 065 — 자동 판정에서 빠지는 행은 목록에서 바로 구분되게 표시 */}
                     {area.is_partial && (
                       <span className="px-1.5 py-0.5 rounded text-[11px] font-semibold bg-caution-soft text-caution">
-                        일부 지역만 — 자동 판정 제외
+                        일부 지역만 — 취득 당시 자동 판정에서 제외
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-ink-soft mt-1">
-                    {area.designated_from} ~ {area.designated_to ?? '현재'}
+                    {area.designated_from} 지정{area.designated_to ? ` · ${area.designated_to} 해제(당일부터 비규제)` : ' · 현재까지'}
                     <span className="mx-2 text-rule">|</span>
                     적용: {appliesLabel(area.applies_to)}
                     <span className="mx-2 text-rule">|</span>

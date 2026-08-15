@@ -58,7 +58,11 @@ export async function saveTaxArea(payload: TaxAreaPayload): Promise<AdminActionR
   if (!isValidDateString(payload.designated_from)) return failed('지정일을 입력해 주세요. (YYYY-MM-DD)')
   if (payload.designated_to !== null) {
     if (!isValidDateString(payload.designated_to)) return failed('해제일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
-    if (payload.designated_to < payload.designated_from) return failed('해제일이 지정일보다 앞설 수 없습니다.')
+    // 해제일은 '그날부터 해제'라 지정일과 같은 날이면 규제였던 날이 하루도 없는 행이 된다
+    // — 목록에는 정상처럼 보이는데 계산에는 전혀 반영되지 않으므로 저장 단계에서 막는다
+    if (payload.designated_to <= payload.designated_from) {
+      return failed('해제일은 지정일보다 뒤여야 합니다. 해제일 당일은 이미 비규제로 보므로, 같은 날이면 지정된 기간이 없는 이력이 됩니다.')
+    }
   }
   if (!/^https?:\/\/.+/.test(payload.source_url.trim())) {
     return failed('국토교통부 공고 링크를 http(s) 주소로 입력해 주세요. 공고 근거 없는 이력은 저장할 수 없습니다.')

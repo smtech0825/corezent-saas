@@ -164,7 +164,8 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
     notes: [
       'minHoldingYears: 비과세 보유 요건(만 연수).',
       '⚠️ residenceIfAcquiredRegulated.minYears: 거주 요건(만 연수) — "취득 당시" 조정대상지역이었던 경우에만 적용됩니다. 장기보유특별공제 큰 표의 거주 요건(항상 적용)과 다른 조문입니다. 혼동하지 마세요.',
-      '⚠️ residenceIfAcquiredRegulated.appliesToAcquiredFrom: 그 거주 요건이 “언제 취득한 주택부터” 적용되는지(부칙의 적용 시작 취득일). 이 값을 비워 두면 취득일과 상관없이 거주 요건을 적용하므로, 부칙 시행 전에 취득한 주택이 비과세에서 빠지고 세금이 실제보다 많게 계산됩니다. 부칙 날짜를 근거와 함께 넣으세요.',
+      '⚠️ residenceIfAcquiredRegulated.appliesToAcquiredFrom (선택): 그 거주 요건이 “언제 취득한 주택부터” 적용되는지 — 부칙이 정한 적용 시작 취득일입니다. 그날 취득한 주택도 포함합니다(취득일 ≥ 이 날짜).',
+      '적용 시작을 정한 부칙이 있는데 이 필드를 비우면, 그 전에 취득한 주택까지 거주 요건에 걸려 비과세에서 빠지고 세금이 실제보다 많게 계산됩니다. 반대로 그런 부칙이 없는 조문이라면 이 줄을 통째로 빼세요 — 그러면 취득일과 무관하게 적용합니다.',
       'highPriceThreshold: 고가주택 기준(양도가액·원). 양도가액이 이를 넘으면 초과분 비율만 과세하며, 양도차익과 장기보유특별공제 양쪽에 같은 비율을 곱합니다.',
     ],
     skeleton: `{
