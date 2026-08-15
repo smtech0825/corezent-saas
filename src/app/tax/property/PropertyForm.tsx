@@ -16,6 +16,7 @@ import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import type { PropertyResult } from '@/lib/tax/property-types'
 import { calculateProperty } from './actions'
+import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import PropertyResultPanel from './PropertyResultPanel'
 
 /** 숫자 미리보기 한 줄 (다른 계산기 폼과 동일 관례) */
@@ -112,7 +113,7 @@ export default function PropertyForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다 */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -172,12 +173,14 @@ export default function PropertyForm() {
         </Button>
       </form>
 
-      {/* 결과 */}
+      {/* 결과 — 넓은 화면은 오른쪽 열, 계산 전·소멸 시 자리표시 (CalcResultSlot) */}
+      <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
           <PropertyResultPanel result={result} />
         </div>
       )}
-    </div>
+      </CalcResultSlot>
+    </CalcColumns>
   )
 }

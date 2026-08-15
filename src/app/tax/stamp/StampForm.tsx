@@ -14,6 +14,7 @@ import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import type { StampResult } from '@/lib/tax/engine-types'
 import { calculateStamp } from './actions'
+import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import StampResultPanel from './StampResultPanel'
 
 /** 오늘 날짜(로컬 기준) YYYY-MM-DD */
@@ -67,7 +68,7 @@ export default function StampForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         <Field label="계약일" htmlFor="stamp-date" required>
@@ -101,12 +102,14 @@ export default function StampForm() {
         </Button>
       </form>
 
-      {/* 결과 */}
+      {/* 결과 — 넓은 화면은 오른쪽 열, 계산 전·소멸 시 자리표시 (CalcResultSlot) */}
+      <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
           <StampResultPanel result={result} />
         </div>
       )}
-    </div>
+      </CalcResultSlot>
+    </CalcColumns>
   )
 }

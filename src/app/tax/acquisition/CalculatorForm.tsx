@@ -16,6 +16,7 @@ import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import type { AcquisitionCause, AcquisitionResult, DonorRelation, GiftTaxBasis } from '@/lib/tax/engine-types'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import { calculateAcquisition } from './actions'
+import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import ResultPanel from './ResultPanel'
 
 /** 과세표준 기준의 한국어 라벨 — 선택지 버튼과 안내에 사용 */
@@ -156,7 +157,7 @@ export default function CalculatorForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         {/* 룰 모드 — 기본값: 확정된 법 */}
@@ -297,7 +298,8 @@ export default function CalculatorForm() {
         </Button>
       </form>
 
-      {/* 결과 */}
+      {/* 결과 — 넓은 화면은 오른쪽 열, 계산 전·소멸 시 자리표시 (CalcResultSlot) */}
+      <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24 space-y-4">
           {/* 과세표준 기준 선택 — 엔진이 선택 가능(giftTaxBaseChoice)이라고 알려준 경우에만
@@ -327,6 +329,7 @@ export default function CalculatorForm() {
           <ResultPanel result={result} inputCause={resultCause} />
         </div>
       )}
-    </div>
+      </CalcResultSlot>
+    </CalcColumns>
   )
 }

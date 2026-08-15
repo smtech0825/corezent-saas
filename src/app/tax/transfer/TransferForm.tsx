@@ -24,6 +24,7 @@ import type { TransferHouseCount, TransferResult } from '@/lib/tax/transfer-type
 import RuleModeSelector from '../_components/RuleModeSelector'
 import AdvancedFields from './AdvancedFields'
 import { calculateTransfer } from './actions'
+import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import TransferResultPanel from './TransferResultPanel'
 
 /** Input과 톤을 맞춘 select 클래스 (취득세 폼과 동일 관례) */
@@ -197,7 +198,7 @@ export default function TransferForm({ graceDeadlineText }: {
   }
 
   return (
-    <div className="space-y-6">
+    <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
         {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴, 공용 컴포넌트) */}
@@ -315,12 +316,14 @@ export default function TransferForm({ graceDeadlineText }: {
         </Button>
       </form>
 
-      {/* 결과 */}
+      {/* 결과 — 넓은 화면은 오른쪽 열, 계산 전·소멸 시 자리표시 (CalcResultSlot) */}
+      <CalcResultSlot>
       {result && (
         <div ref={resultRef} className="scroll-mt-24">
           <TransferResultPanel result={result} />
         </div>
       )}
-    </div>
+      </CalcResultSlot>
+    </CalcColumns>
   )
 }

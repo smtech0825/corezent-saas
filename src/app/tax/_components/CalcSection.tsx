@@ -2,18 +2,18 @@
  * @파일: tax/_components/CalcSection.tsx
  * @설명: 계산 섹션 폭의 단일 출처 — 허브 + 계산기 8종이 공유한다(2026-08-16 PC 폭 확대
  *        지시). 폭·배치를 바꿀 때 이 파일만 고치면 전 계산기에 한 번에 적용된다.
- *        ⚠️ 이번 단계는 기존과 같은 폭(max-w-xl·576px) — 화면이 달라지지 않는 리팩터링.
- *        다음 단계에서 WIDTH_CLASS만 default→max-w-6xl(1152px)·wide→max-w-7xl(1280px —
- *        연도별 비교 등 넓은 화면용 옵션)로 켜고, 폼|결과 좌우 2단은 별도 래퍼
- *        (CalcColumns)가 담당한다. 모바일(lg 미만)은 어느 단계에서도 바뀌지 않는다.
+ *        폭: lg(1024px)부터만 넓어진다 — default=1152px(PC에서 폼|결과 2단),
+ *        wide=1280px(연도별 비교 등 더 넓은 화면용 옵션). lg 미만은 기존 그대로
+ *        max-w-xl(576px)이라 모바일·태블릿이 픽셀 단위로 무변경이다.
+ *        좌우 2단 배치는 CalcColumns가 담당한다.
  */
 
 import type { ReactNode } from 'react'
 
-/** 섹션 폭 옵션 — 폭 전환은 이 맵만 고친다 */
+/** 섹션 폭 옵션 — 폭 전환은 이 맵만 고친다 (lg 미만은 항상 기존 폭 유지) */
 const WIDTH_CLASS: Record<'default' | 'wide', string> = {
-  default: 'max-w-xl',
-  wide: 'max-w-xl',
+  default: 'max-w-xl lg:max-w-6xl',
+  wide: 'max-w-xl lg:max-w-7xl',
 }
 
 /** 계산 섹션 래퍼 — 기준일 배너·폼·결과·판단 한계를 담는 컨테이너 */
