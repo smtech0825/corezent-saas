@@ -15,6 +15,37 @@
 
 import type { ReactNode } from 'react'
 
+/** 2단 배치가 켜지는 최소 폭(px) — 아래 xl: 클래스의 전환점과 반드시 함께 움직인다 */
+const TWO_COLUMN_MIN_WIDTH = 1280
+
+/** 결과 DOM이 붙기를 기다리는 최대 시간 — 한 프레임(16ms) × 20회 ≈ 0.3초 */
+const SCROLL_RETRY_LIMIT = 20
+
+/**
+ * @함수명: scrollResultIntoView
+ * @설명: 계산 직후 결과 자리로 스크롤합니다 — 단, 결과가 폼 아래에 쌓이는 좁은 화면에서만.
+ *        2단이 켜진 넓은 화면에서는 결과가 폼 바로 옆에 나타나므로 화면을 움직이지
+ *        않습니다(계산 버튼을 누르면 화면이 위로 튀는 것처럼 보이던 문제).
+ *        결과 요소는 상태 반영(리렌더) 뒤에 붙으므로 ref를 받아 잠깐 기다립니다 —
+ *        한 프레임만 기다리면 아직 없어 스크롤이 조용히 건너뛰어질 수 있습니다.
+ * @매개변수: ref - 결과 영역 ref(내용이 채워지면 그 자리로 이동)
+ * @반환값: 없음
+ */
+export function scrollResultIntoView(ref: { current: HTMLElement | null }): void {
+  if (typeof window === 'undefined') return
+  if (window.matchMedia(`(min-width: ${TWO_COLUMN_MIN_WIDTH}px)`).matches) return
+  let tries = 0
+  const tick = () => {
+    const el = ref.current
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    if (++tries < SCROLL_RETRY_LIMIT) window.setTimeout(tick, 16)
+  }
+  tick()
+}
+
 /** 폼|결과 2단 그리드 — 첫 자식(폼)이 왼쪽 열, CalcResultSlot이 오른쪽 열 */
 export default function CalcColumns({ children }: { children: ReactNode }) {
   return (

@@ -18,7 +18,7 @@ import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import type { TransferHouseCount } from '@/lib/tax/transfer-types'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
 import { calculateNetProceedsAction } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import NetProceedsResultPanel from './NetProceedsResultPanel'
 
 /** Input과 톤을 맞춘 select 클래스 (양도세 폼과 동일 관례) */
@@ -179,7 +179,7 @@ export default function NetProceedsForm({ graceDeadlineText }: {
           otherCosts: otherNum,
         })
         setResult(res)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }

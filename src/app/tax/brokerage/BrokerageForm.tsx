@@ -16,7 +16,7 @@ import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS } from '@/lib/tax/regions'
 import type { BrokerageDealType, BrokerageResult } from '@/lib/tax/engine-types'
 import { calculateBrokerage } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import BrokerageResultPanel from './BrokerageResultPanel'
 
 /** Input과 톤을 맞춘 select 클래스 (취득세 폼과 동일 관례) */
@@ -98,7 +98,7 @@ export default function BrokerageForm() {
           monthlyRent: monthlyNum,
         })
         setResult(res)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }

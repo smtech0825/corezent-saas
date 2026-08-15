@@ -25,7 +25,7 @@ import type { YearComparison } from '@/lib/tax/year-comparison'
 import RuleModeSelector from '../_components/RuleModeSelector'
 import AdvancedFields from './AdvancedFields'
 import { calculateTransfer } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import TransferResultPanel from './TransferResultPanel'
 import TransferComparisonCards from './TransferComparisonCards'
 
@@ -196,7 +196,7 @@ export default function TransferForm({ graceDeadlineText }: {
         })
         setResult(res.result)
         setComparison(res.comparison ?? null)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }

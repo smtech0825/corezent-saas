@@ -16,7 +16,7 @@ import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import type { AcquisitionCause, AcquisitionResult, DonorRelation, GiftTaxBasis } from '@/lib/tax/engine-types'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import { calculateAcquisition } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import ResultPanel from './ResultPanel'
 
 /** 과세표준 기준의 한국어 라벨 — 선택지 버튼과 안내에 사용 */
@@ -144,7 +144,7 @@ export default function CalculatorForm() {
         })
         setResult(res)
         setResultCause(cause)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }

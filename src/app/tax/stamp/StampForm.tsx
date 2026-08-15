@@ -14,7 +14,7 @@ import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import type { StampResult } from '@/lib/tax/engine-types'
 import { calculateStamp } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import StampResultPanel from './StampResultPanel'
 
 /** 오늘 날짜(로컬 기준) YYYY-MM-DD */
@@ -60,7 +60,7 @@ export default function StampForm() {
           isHousing: isHousing === 'housing',
         })
         setResult(res)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }

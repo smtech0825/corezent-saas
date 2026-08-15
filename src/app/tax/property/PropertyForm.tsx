@@ -16,7 +16,7 @@ import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import type { PropertyResult } from '@/lib/tax/property-types'
 import { calculateProperty } from './actions'
-import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
+import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
 import PropertyResultPanel from './PropertyResultPanel'
 
 /** 숫자 미리보기 한 줄 (다른 계산기 폼과 동일 관례) */
@@ -105,7 +105,7 @@ export default function PropertyForm() {
           prevTaxAmount: prevAmountNum,
         })
         setResult(res)
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        scrollResultIntoView(resultRef)
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
       }
