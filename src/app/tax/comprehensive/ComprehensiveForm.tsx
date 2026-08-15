@@ -6,8 +6,9 @@
  *        - 항상: 과세연도·보유 주택 수·공시가격 합계·(주택 수 1일 때) 1세대 1주택 여부
  *        - 1세대 1주택 선택 시: 나이(만)·보유기간(만 연수) — 세액공제 판정에 필수
  *        - 고급(접힘): 직전 연도 총세액 — 비우면 세부담 상한 미적용(안내 부착)
- *        - 개정안 모드 전용(2026 세제개편안 — 확정법 모드에서는 숨김): 거주 여부(1주택),
- *          거주기간(1주택, 보유기간과 나란히), 거주 중인 주택의 공시가격(다주택 — 비거주면 0),
+ *        - 개정안 모드 전용(2026 세제개편안 — 확정법 모드에서는 숨김, 마크업·검증은
+ *          ProposedFields.tsx로 분리): 거주 여부(1주택), 거주기간(1주택, 보유기간과 나란히),
+ *          거주 중인 주택의 공시가격(1세대 1주택이 아닌 전부 — 비거주면 0),
  *          조정대상지역 주택 보유 여부(자기신고 — 주소를 받지 않아 자동 판정 불가)
  *        주택을 한 채씩 등록하는 목록 입력은 만들지 않는다 — 인별 합산 세목이라
  *        주택 수와 공시가격 합계면 계산된다.
@@ -21,12 +22,17 @@ import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import type { ComprehensiveHouseCount, ComprehensiveResult } from '@/lib/tax/comprehensive-types'
+import RuleModeSelector from '../_components/RuleModeSelector'
+import {
+  RegulatedSelect,
+  ResidenceYearsField,
+  ResidingPriceField,
+  ResidingSelect,
+  validateProposedInputs,
+  type YesNo,
+} from './ProposedFields'
 import { calculateComprehensive } from './actions'
 import ComprehensiveResultPanel from './ComprehensiveResultPanel'
-
-/** Input과 톤을 맞춘 select 클래스 (다른 계산기 폼과 동일 — 파일 분리로 인한 소형 중복) */
-const SELECT_CLS =
-  'w-full rounded-md border border-rule bg-paper-raised px-4 py-2.5 text-sm text-ink transition-colors focus:border-pen focus:ring-2 focus:ring-pen/15 focus:outline-none disabled:opacity-50'
 
 /** 숫자 미리보기 한 줄 (다른 계산기 폼과 동일 관례) */
 function WonPreview({ value }: { value: string }) {
@@ -70,10 +76,10 @@ export default function ComprehensiveForm() {
   const [ruleMode, setRuleMode] = useState<TaxRuleMode>('confirmed')
   const proposedMode = ruleMode === 'proposed'
   // ── 개정안 모드 전용 입력 (2026 세제개편안 — 확정법 계산에는 쓰이지 않아 숨김) ──
-  const [isResiding, setIsResiding] = useState<'' | 'yes' | 'no'>('')      // 1주택 — 거주 여부 (명시 선택)
-  const [residenceYears, setResidenceYears] = useState('')                 // 1주택 — 거주기간 (만 연수)
-  const [residingPrice, setResidingPrice] = useState('')                   // 다주택 — 거주 주택 공시가격
-  const [hasRegulated, setHasRegulated] = useState<'' | 'yes' | 'no'>('')  // 조정 보유 — 자기신고
+  const [isResiding, setIsResiding] = useState<YesNo>('')       // 1주택 — 거주 여부 (명시 선택)
+  const [residenceYears, setResidenceYears] = useState('')      // 1주택 — 거주기간 (만 연수)
+  const [residingPrice, setResidingPrice] = useState('')        // 1세대 1주택이 아닌 경우 — 거주 주택 공시가격
+  const [hasRegulated, setHasRegulated] = useState<YesNo>('')   // 조정 보유 — 자기신고
   // ── 고급 입력 (기본 접힘) ──────────────────────────────────────────────────
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [prevTotalTax, setPrevTotalTax] = useState('')
@@ -130,30 +136,12 @@ export default function ComprehensiveForm() {
     let residenceNum: number | undefined
     let residingPriceNum: number | undefined
     if (proposedMode) {
-      if (hasRegulated === '') {
-        setFormError('조정대상지역 내 주택 보유 여부를 선택해 주세요. 주소를 받지 않아 자동으로 판정할 수 없습니다.'); return
-      }
-      if (oneHouseTrack) {
-        if (isResiding === '') {
-          setFormError('이 주택에 현재 거주 중인지 선택해 주세요. 개정안 기본공제 판정에 필요합니다.'); return
-        }
-        residenceNum = toNum(residenceYears)
-        if (residenceNum === undefined || Number.isNaN(residenceNum) || residenceNum < 0) {
-          setFormError('개정안 세액공제 판정에는 거주기간(만 연수)을 입력해야 합니다.'); return
-        }
-        if (holdingNum !== undefined && residenceNum > holdingNum) {
-          setFormError('거주기간이 보유기간보다 길 수 없습니다. 입력을 확인해 주세요.'); return
-        }
-      }
-      if (houseCount >= 2) {
-        residingPriceNum = toNum(residingPrice)
-        if (residingPriceNum === undefined || Number.isNaN(residingPriceNum) || residingPriceNum < 0) {
-          setFormError('현재 거주 중인 주택의 공시가격을 입력해 주세요. 거주하지 않으면 0을 입력합니다.'); return
-        }
-        if (residingPriceNum > priceNum) {
-          setFormError('현재 거주 중인 주택의 공시가격이 공시가격 합계를 넘을 수 없습니다.'); return
-        }
-      }
+      const checked = validateProposedInputs({
+        oneHouseTrack, hasRegulated, isResiding, residenceYears, residingPrice, holdingNum, priceNum,
+      })
+      if (checked.error !== undefined) { setFormError(checked.error); return }
+      residenceNum = checked.residenceNum
+      residingPriceNum = checked.residingPriceNum
     }
 
     startTransition(async () => {
@@ -170,7 +158,8 @@ export default function ComprehensiveForm() {
           // 개정안 모드 전용 — 확정법 모드에서는 보내지 않는다(엔진도 그때만 요구)
           residenceYears: proposedMode && oneHouseTrack ? residenceNum : undefined,
           isResiding: proposedMode && oneHouseTrack ? isResiding === 'yes' : undefined,
-          residingOfficialPrice: proposedMode && houseCount >= 2 ? residingPriceNum : undefined,
+          // 산식 대상은 '1세대 1주택이 아닌 전부'(개편안 원문 ❷) — 주택 수 1이어도 보낸다
+          residingOfficialPrice: proposedMode && !oneHouseTrack ? residingPriceNum : undefined,
           hasRegulatedHouse: proposedMode && hasRegulated !== '' ? hasRegulated === 'yes' : undefined,
         })
         setSubmitted({ result: res, totalOfficialPrice: priceNum })
@@ -185,25 +174,9 @@ export default function ComprehensiveForm() {
     <div className="space-y-6">
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
-        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <SegmentControl
-            label="계산 기준"
-            value={ruleMode}
-            onChange={(v) => { setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed'); clearStaleResult() }}
-            options={[
-              { value: 'confirmed', label: '확정된 법 기준' },
-              { value: 'proposed', label: '개정안 포함' },
-            ]}
-          />
-          {proposedMode && (
-            <p className="text-xs text-caution font-medium max-w-72 leading-relaxed">
-              개정안은 아직 국회 통과 전이라 확정이 아닙니다. 항목별 시행 시점이
-              2027·2028·2029년으로 나뉘어 과세연도에 따라 적용이 달라집니다.
-              결과에 경고가 함께 표시됩니다.
-            </p>
-          )}
-        </div>
+        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴, 공용 컴포넌트) */}
+        <RuleModeSelector value={ruleMode} periodNoun="과세연도"
+          onChange={(m) => { setRuleMode(m); clearStaleResult() }} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="과세연도" htmlFor="cp-year" required
@@ -239,17 +212,7 @@ export default function ComprehensiveForm() {
             {isOneHouse && (
               <>
                 {/* 개정안 모드 — 거주 여부 (기본공제가 거주/비거주로 갈린다). 명시 선택을 요구한다 */}
-                {proposedMode && (
-                  <Field label="이 주택에 현재 거주 중인지" htmlFor="cp-residing" required
-                    hint="개정안 기본공제는 거주 여부로 갈립니다 — 실제 거주 기준으로 선택하세요.">
-                    <select id="cp-residing" className={SELECT_CLS} value={isResiding}
-                      onChange={(e) => setIsResiding(e.target.value as '' | 'yes' | 'no')}>
-                      <option value="">선택</option>
-                      <option value="yes">예 — 이 주택에 거주 중</option>
-                      <option value="no">아니요 — 거주하지 않음</option>
-                    </select>
-                  </Field>
-                )}
+                {proposedMode && <ResidingSelect value={isResiding} onChange={setIsResiding} />}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="나이 (만 나이)" htmlFor="cp-age" required
                     hint="과세기준일 현재 만 나이 — 연령 세액공제 판정용.">
@@ -264,43 +227,21 @@ export default function ComprehensiveForm() {
                       onChange={(e) => setHoldingYears(e.target.value)} placeholder="예: 7" required />
                   </Field>
                   {/* 개정안 모드 — 거주기간. 보유기간과 나란히 두어 확정법=보유·개정안=거주 구분을 보여준다 */}
-                  {proposedMode && (
-                    <Field label="거주기간 (만 연수)" htmlFor="cp-residence" required
-                      hint="해당 주택에 실제 거주한 만 연수 — 개정안(거주 기준) 세액공제 판정용. 확정법 계산에는 쓰이지 않습니다.">
-                      <Input id="cp-residence" type="number" min={0} step={1} value={residenceYears}
-                        onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 5" required />
-                    </Field>
-                  )}
+                  {proposedMode && <ResidenceYearsField value={residenceYears} onChange={setResidenceYears} />}
                 </div>
               </>
             )}
           </div>
         )}
 
-        {/* 개정안 모드 — 다주택 기본공제 산식용: 거주 중인 주택의 공시가격 (비거주면 0) */}
-        {proposedMode && houseCount >= 2 && (
-          <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <Field label="현재 거주 중인 주택의 공시가격 (원)" htmlFor="cp-residing-price" required
-              hint="개정안 다주택 기본공제 산식에 쓰입니다 — 거주 중인 주택의 공시가격 비중이 공제에 반영됩니다. 보유 주택 어디에도 거주하지 않으면 0을 입력하세요.">
-              <Input id="cp-residing-price" type="number" min={0} step={1} value={residingPrice}
-                onChange={(e) => setResidingPrice(e.target.value)} placeholder="예: 800000000" required />
-              <WonPreview value={residingPrice} />
-            </Field>
-          </div>
+        {/* 개정안 모드 — 거주 중인 주택의 공시가격. 대상은 '1세대 1주택이 아닌 전부'
+            (개편안 원문 ❷ — 주택 수 1이어도 1세대 1주택이 아니면 산식 대상) */}
+        {proposedMode && !oneHouseTrack && (
+          <ResidingPriceField value={residingPrice} onChange={setResidingPrice} />
         )}
 
         {/* 개정안 모드 — 조정대상지역 주택 보유 여부 (자기신고 — 주소를 받지 않아 자동 판정 불가) */}
-        {proposedMode && (
-          <Field label="조정대상지역 내 주택 보유 여부" htmlFor="cp-regulated" required
-            hint="개정안 공정시장가액비율 등의 판정에 쓰입니다. 이 계산기는 주택 주소를 받지 않아 지정 여부를 자동으로 판정할 수 없습니다 — 보유 주택 중 한 채라도 조정대상지역에 있으면 '예'를 선택하세요. 지정 현황은 국토교통부 공고에서 확인할 수 있습니다.">
-            <select id="cp-regulated" className={SELECT_CLS} value={hasRegulated}
-              onChange={(e) => setHasRegulated(e.target.value as '' | 'yes' | 'no')}>
-              <option value="">선택</option>
-              <option value="yes">예 — 조정대상지역 주택 보유</option>
-              <option value="no">아니요 — 없음</option>
-            </select>
-          </Field>
-        )}
+        {proposedMode && <RegulatedSelect value={hasRegulated} onChange={setHasRegulated} />}
 
         {/* 고급 항목 — 기본 접힘. 직전 연도 총세액은 세부담 상한 판정용 */}
         <div className="border-t border-rule pt-4">

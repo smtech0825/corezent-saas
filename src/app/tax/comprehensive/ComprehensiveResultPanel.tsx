@@ -23,6 +23,20 @@ function won(amount: number): string {
   return `${amount.toLocaleString('ko-KR')}원`
 }
 
+/** 미확정 조건 필드명 → 한국어 라벨 (등기비용·양도세 패널과 같은 방식) */
+const UNRESOLVED_LABELS: Record<string, string> = {
+  house_count: '보유 주택 수',
+  tax_base: '과세표준',
+  is_one_house: '1세대 1주택 여부',
+  total_official_price: '공시가격 합계',
+  age: '나이(만 나이)',
+  holding_years: '보유기간',
+  residence_years: '거주기간',
+  is_residing: '현재 거주 여부',
+  residing_official_price: '거주 중인 주택의 공시가격',
+  has_regulated_house: '조정대상지역 주택 보유 여부',
+}
+
 /** 상한 적용 상태 표시 (재산세 패널과 동일 관례 — 파일 분리로 인한 소형 중복) */
 function CapStatusBlock({ title, cap }: { title: string; cap: PropertyCapStatus }) {
   return (
@@ -63,8 +77,8 @@ export default function ComprehensiveResultPanel({ result, totalOfficialPrice }:
             판정하지 못한 조건이 있습니다
           </p>
           <p className="text-sm text-ink leading-relaxed">
-            {result.unresolvedFields.join(', ')} — 해당 값을 입력하면 결과가 달라질 수 있습니다.
-            0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
+            {result.unresolvedFields.map((f) => UNRESOLVED_LABELS[f] ?? f).join(', ')} — 해당 값을
+            입력하면 결과가 달라질 수 있습니다. 0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
           </p>
         </div>
       )}

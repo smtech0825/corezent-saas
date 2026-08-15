@@ -20,6 +20,7 @@ import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import type { TaxRuleMode } from '@/lib/tax/types'
 import type { TransferHouseCount, TransferResult } from '@/lib/tax/transfer-types'
+import RuleModeSelector from '../_components/RuleModeSelector'
 import { calculateTransfer } from './actions'
 import TransferResultPanel from './TransferResultPanel'
 
@@ -133,6 +134,15 @@ export default function TransferForm({ graceDeadlineText }: {
     if (resNum !== undefined && (Number.isNaN(resNum) || resNum < 0)) {
       setFormError('거주기간을 0 이상 숫자(만 연수)로 입력해 주세요.'); return
     }
+    // 거주기간이 보유기간(취득일~양도일)을 넘으면 차단 — 종부세 폼과 같은 취지, 엔진과 이중 방어.
+    // 경계(정확히 같은 날)는 초일 산입 방식이 판정하므로 엔진에 맡긴다
+    if (resNum !== undefined && acquiredAt && transferDate) {
+      const acqPlus = new Date(`${acquiredAt}T00:00:00`)
+      acqPlus.setFullYear(acqPlus.getFullYear() + resNum)
+      if (acqPlus.getTime() > new Date(`${transferDate}T00:00:00`).getTime()) {
+        setFormError('거주기간이 보유기간보다 길 수 없습니다. 취득일·거주기간 입력을 확인해 주세요.'); return
+      }
+    }
     // 1주택 트랙은 취득 당시 조정 여부가 비과세 판정에 필요하다 — 서버 오류로 떠넘기지 않고 폼에서 요구
     if (oneHouseTrack && acquiredRegulated === '') {
       setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
@@ -189,25 +199,9 @@ export default function TransferForm({ graceDeadlineText }: {
     <div className="space-y-6">
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
-        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <SegmentControl
-            label="계산 기준"
-            value={ruleMode}
-            onChange={(v) => { setRuleMode(v === 'proposed' ? 'proposed' : 'confirmed'); clearStaleResult() }}
-            options={[
-              { value: 'confirmed', label: '확정된 법 기준' },
-              { value: 'proposed', label: '개정안 포함' },
-            ]}
-          />
-          {ruleMode === 'proposed' && (
-            <p className="text-xs text-caution font-medium max-w-72 leading-relaxed">
-              개정안은 아직 국회 통과 전이라 확정이 아닙니다. 항목별 시행 시점이
-              2027·2028·2029년으로 나뉘어 양도일에 따라 적용이 달라집니다.
-              결과에 경고가 함께 표시됩니다.
-            </p>
-          )}
-        </div>
+        {/* 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴, 공용 컴포넌트) */}
+        <RuleModeSelector value={ruleMode} periodNoun="양도일"
+          onChange={(m) => { setRuleMode(m); clearStaleResult() }} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="취득일" htmlFor="tr-acquired" required>

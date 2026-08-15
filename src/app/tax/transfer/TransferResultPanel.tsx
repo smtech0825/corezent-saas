@@ -10,6 +10,7 @@
  */
 
 import { AlertTriangle, BadgeCheck, ExternalLink, ScrollText } from 'lucide-react'
+import { TRANSFER_RULE_KEYS } from '@/lib/tax/transfer-rules'
 import type { TransferResult } from '@/lib/tax/transfer-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
 
@@ -73,6 +74,23 @@ export default function TransferResultPanel({ result }: { result: TransferResult
               : '이 계산에 적용된 다주택 중과는 개정안의 특례규정에 따라 신고 시점에 따라 완화 세율이 적용될 수 있습니다. '}
             이 계산기는 신고 시점을 알 수 없어 자동으로 반영하지 않습니다 — 신고 전에 관할
             세무서 또는 세무 전문가와 확인하세요.
+          </p>
+        </div>
+      )}
+
+      {/* 지방소득세 개편안 미포함 — 다주택 중과에 개정안(완화) 룰이 실제 적용된 경우 특히 눈에 띄게.
+          개편안의 개정 대상 법률에 지방세법이 없어 지방소득세는 현행 기준 그대로다 */}
+      {result.heavyApplied &&
+        result.appliedRules.some((r) => r.ruleKey === TRANSFER_RULE_KEYS.heavy && r.status === 'proposed') && (
+        <div className="bg-caution-soft border-2 border-caution/40 rounded-lg p-4" role="alert">
+          <p className="flex items-center gap-2 text-sm font-semibold text-caution mb-1">
+            <AlertTriangle size={16} />
+            지방소득세에는 개편안이 적용되지 않았습니다
+          </p>
+          <p className="text-sm text-ink leading-relaxed">
+            다주택 중과 가산에는 개편안(완화) 기준이 적용됐지만, 이 개편안은 지방세법을
+            포함하지 않아 지방소득세는 현행 기준으로 계산됩니다 — 국세만 완화되고
+            지방소득세는 완화되지 않습니다.
           </p>
         </div>
       )}
@@ -205,6 +223,12 @@ export default function TransferResultPanel({ result }: { result: TransferResult
             이 결과는 거주기간 {result.residenceYearsUsed}년 입력을 근거로 판정했습니다. 거주기간
             산정의 초일 산입 방식은 법령·집행기준에서 확인되지 않아 보유기간과 같은 방식을
             전제로 했습니다. 경계에 걸리는 경우(요건 연수 직전·직후) 관할 세무서에 확인하세요.
+          </p>
+        )}
+        {/* 개정안 모드 공통 — 지방소득세는 개편안 대상이 아님(지방세법 미포함)을 밝힌다 */}
+        {result.ruleMode === 'proposed' && (
+          <p className="text-xs text-ink-soft leading-relaxed border-t border-rule pt-3">
+            이 개편안은 지방세법을 포함하지 않아 지방소득세는 현행 기준으로 계산됩니다.
           </p>
         )}
       </div>
