@@ -144,7 +144,7 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
 
       {/* 065 — 부분 지정은 계산기의 '취득 당시' 자동 판정에서 제외된다(구 전체를 지정으로
           보면 비과세 거주 요건을 근거 없이 요구해 세금이 크게 나온다) */}
-      <Field label="지정 범위" htmlFor="area-partial" required>
+      <Field label="지정 범위" htmlFor="area-partial">
         <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
           <input id="area-partial" type="checkbox" checked={isPartial}
             onChange={(e) => setIsPartial(e.target.checked)} className="mt-0.5 h-4 w-4 accent-pen" />
@@ -212,8 +212,9 @@ export default function AreasManager({ areas }: { areas: TaxRegulatedArea[] }) {
 
       {areas.length === 0 ? (
         <div className="bg-paper-raised border border-rule rounded-lg p-8 text-center text-sm text-ink-soft">
-          등록된 규제지역 이력이 없습니다. 이력이 없으면 모든 지역이 비규제로 판정됩니다.
-          국토교통부 공고를 근거로 직접 입력해 주세요.
+          등록된 규제지역 이력이 없습니다. 이력이 없으면 취득세·양도 당시 판정은 모든 지역을
+          비규제로 보고, 양도세의 &lsquo;취득 당시&rsquo; 판정은 자동으로 하지 않고 사용자에게
+          직접 선택을 요청합니다. 국토교통부 공고를 근거로 직접 입력해 주세요.
         </div>
       ) : (
         <ul className="space-y-2">

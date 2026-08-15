@@ -5,7 +5,7 @@
  * @설명: 양도소득세 계산기 입력 폼.
  *        - 항상: 취득일·양도일·취득가액·양도가액·주택 수·소재지(시·도→시·군·구)·
  *          거주기간(선택 — 1주택 판정과 개정안 거주 기준 장특공제에 사용, 전 주택 수 노출)
- *        - 1주택: '취득 당시' 조정대상지역 여부(과거 이력이 없어 직접 선택)
+ *        - 1주택: '취득 당시' 조정대상지역 여부(등록된 이력으로 자동 판정, 직접 지정이 우선)
  *        - 2주택: 일시적 2주택 여부 + 신규주택 취득일
  *        - 고급(접힘): 필요경비·상속 관련 날짜·중과 경과조치(계약 체결일·계약금 수령)
  *        '양도 당시' 조정대상지역은 서버가 이력으로 자동 판정한다 — 취득 당시와 혼동 금지.
@@ -26,6 +26,7 @@ import RuleModeSelector from '../_components/RuleModeSelector'
 import AdvancedFields from './AdvancedFields'
 import { calculateTransfer } from './actions'
 import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
+import AcquiredRegulatedField from '../_components/AcquiredRegulatedField'
 import TransferResultPanel from './TransferResultPanel'
 import TransferComparisonCards from './TransferComparisonCards'
 
@@ -67,10 +68,13 @@ function toNum(v: string): number | undefined {
   return Number(v)
 }
 
-export default function TransferForm({ graceDeadlineText }: {
+export default function TransferForm({ graceDeadlineText, autoRegulatedEnabled = false }: {
   /** 중과 경과조치 계약 마감일 안내 문구(예: '2026년 5월 9일') — 서버가 heavy 룰에서 읽어
    *  넘긴다. 룰이 없거나 값을 못 읽으면 null — 날짜 없는 일반 문구로 표시한다. */
   graceDeadlineText?: string | null
+  /** 취득 당시 조정대상지역 자동 판정이 켜져 있는지(커버리지 룰 등록 여부) — 꺼져 있으면
+   *  '자동 판정'을 기본값으로 둘 수 없다(첫 제출이 반드시 실패한다) */
+  autoRegulatedEnabled?: boolean
 }) {
   // ── 룰 모드 — 기본값: 확정된 법 (취득세와 같은 전환 패턴) ──────────────────
   const [ruleMode, setRuleMode] = useState<TaxRuleMode>('confirmed')
@@ -143,7 +147,11 @@ export default function TransferForm({ graceDeadlineText }: {
     if (resNum !== undefined && (Number.isNaN(resNum) || resNum < 0)) {
       setFormError('거주기간을 0 이상 숫자(만 연수)로 입력해 주세요.'); return
     }
-    // 취득 당시 조정대상지역은 비워 두면 서버가 이력으로 자동 판정한다(못 하면 사유와 함께 요청)
+    // 자동 판정이 꺼져 있으면 폼에서 선택을 요구한다(그대로 보내면 서버가 반드시 실패)
+    if (!autoRegulatedEnabled && oneHouseTrack && acquiredRegulated === '') {
+      setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
+      return
+    }
     // 미래 날짜 차단 — 양도일보다 뒤인 날짜는 판정을 왜곡한다 (엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
     // 거주기간이 보유기간을 넘으면 차단 — 종부세 폼과 같은 취지, 엔진과 이중 방어.
@@ -291,15 +299,8 @@ export default function TransferForm({ graceDeadlineText }: {
             취득 당시 조정대상지역은 등록된 이력으로 자동 판정하되, 직접 지정하면 그 값이 우선한다 */}
         {oneHouseTrack && (
           <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <Field label="취득 당시 조정대상지역 여부" htmlFor="tr-acq-regulated"
-              hint="비워 두면 등록된 지정 이력으로 취득일 기준 자동 판정합니다(판정 결과와 근거를 결과에 표시합니다). 자동으로 판정할 수 없는 경우에는 이유와 함께 직접 선택을 요청합니다. 직접 선택하면 그 값이 자동 판정보다 우선합니다. 비과세 거주 요건 판정에만 쓰입니다.">
-              <select id="tr-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
-                onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
-                <option value="">자동 판정 (권장)</option>
-                <option value="yes">예 — 취득 당시 조정대상지역</option>
-                <option value="no">아니요 — 취득 당시 비규제</option>
-              </select>
-            </Field>
+            <AcquiredRegulatedField id="tr-acq-regulated" value={acquiredRegulated}
+              onChange={setAcquiredRegulated} autoEnabled={autoRegulatedEnabled} />
           </div>
         )}
 

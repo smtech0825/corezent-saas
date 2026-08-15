@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
+import { fetchAutoRegulatedEnabled } from '../_components/coverage-rule'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import TransferForm from './TransferForm'
 
@@ -69,7 +70,10 @@ async function fetchGraceDeadlineText(): Promise<string | null> {
 }
 
 export default async function TransferTaxPage() {
-  const graceDeadlineText = await fetchGraceDeadlineText()
+  const [graceDeadlineText, autoRegulatedEnabled] = await Promise.all([
+    fetchGraceDeadlineText(),
+    fetchAutoRegulatedEnabled(),
+  ])
 
   return (
     <>
@@ -92,7 +96,7 @@ export default async function TransferTaxPage() {
       <CalcSection>
         <RuleBasisBanner taxTypes={['transfer', 'common']} />
         <ApartmentOnlyNotice />
-        <TransferForm graceDeadlineText={graceDeadlineText} />
+        <TransferForm graceDeadlineText={graceDeadlineText} autoRegulatedEnabled={autoRegulatedEnabled} />
 
         <CalcNotes>
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들(제외 특례 명시) */}
@@ -105,9 +109,10 @@ export default async function TransferTaxPage() {
               해당된다면 실제 세액이 달라질 수 있으니 세무 전문가와 확인하세요.
             </li>
             <li>
-              &lsquo;취득 당시&rsquo; 조정대상지역 여부는 과거 이력이 시스템에 없어 직접
-              선택해야 합니다(비과세 거주 요건 판정용). &lsquo;양도 당시&rsquo; 여부는
-              등록된 이력으로 자동 판정합니다.
+              &lsquo;취득 당시&rsquo;·&lsquo;양도 당시&rsquo; 조정대상지역 여부는 등록된 지정
+              이력으로 자동 판정하고 근거(지정일·공고)를 함께 보여드립니다. 이력이 갖춰지지
+              않은 시점이거나 시·군·구 일부만 지정된 곳이면 자동으로 판정하지 않고 이유와 함께
+              직접 선택을 요청합니다 — 직접 선택한 값이 자동 판정보다 우선합니다.
             </li>
             <li>
               거주기간 산정의 초일 산입 방식은 법령·집행기준에서 확인되지 않았습니다.

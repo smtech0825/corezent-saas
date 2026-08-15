@@ -189,8 +189,9 @@ export interface TransferInput {
   residenceYears?: number         // 거주기간(만 연수) — 1주택 비과세·장특공제 큰 표 판정용
   /**
    * '취득 당시' 조정대상지역이었는지 — 비과세 거주 요건 판정 전용.
-   * 과거 이력이 DB에 없어 자동 판정이 불가능하므로 사용자가 직접 선택한다.
-   * '양도 당시' 판정(중과)은 tax_regulated_areas 이력으로 자동 수행 — 혼용 금지.
+   * 비우면 등록된 이력으로 자동 판정하고(커버리지 룰·부분 지정 조건을 만족할 때만),
+   * 값이 있으면 그 값이 자동 판정보다 우선한다(사용자가 실제 사정을 더 잘 안다).
+   * '양도 당시' 판정(중과)은 양도일 기준으로 따로 수행 — 혼용 금지.
    */
   acquiredInRegulatedArea?: boolean
   isTemporaryTwoHouse?: boolean   // 2주택 — 일시적 2주택 여부
@@ -230,11 +231,7 @@ export interface TransferFilingReliefNotice {
   currentPoints: number          // 현재 계산에 적용된 가산(%p)
 }
 
-/**
- * '취득 당시' 조정대상지역 판정 결과 — 어떤 값을 어디서 얻었는지.
- * source가 'auto'면 designatedFrom·sourceUrl로 근거를 보여주고(비규제로 판정된 경우
- * 근거 이력이 없으므로 둘 다 null), 'user'면 사용자가 직접 지정한 값이다.
- */
+/** '취득 당시' 조정대상지역 판정 — 값·출처와 근거(자동 판정이고 규제일 때만 채워진다) */
 export interface TransferAcquiredRegulatedInfo {
   value: boolean
   source: 'user' | 'auto'
@@ -290,11 +287,7 @@ export interface TransferSuccess {
   regulatedAtTransfer: boolean    // '양도 당시' 조정대상지역 여부 (이력 자동 판정)
   /** 그 판정 근거가 일부 지역만 지정된 이력이면 그 범위 — 아니면 null (065) */
   regulatedAtTransferPartial: RegulatedPartialInfo | null
-  /**
-   * '취득 당시' 조정대상지역 판정 — 비과세 거주 요건 판정에 쓴 값과 그 출처·근거.
-   * 판정이 필요 없던 경우(1주택 트랙이 아니거나 보유 요건 미충족)에는 null.
-   * 화면은 자동 판정이면 근거(지정일·공고)를 보여주고, 사용자가 고칠 수 있게 한다.
-   */
+  /** '취득 당시' 판정 결과 — 비과세 거주 요건에 쓴 값·출처·근거. 판정이 없었으면 null */
   acquiredRegulated: TransferAcquiredRegulatedInfo | null
   appliedRules: AppliedRuleInfo[]
   ruleMode: TaxRuleMode

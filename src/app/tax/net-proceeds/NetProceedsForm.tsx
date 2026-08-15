@@ -19,6 +19,7 @@ import type { TransferHouseCount } from '@/lib/tax/transfer-types'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
 import { calculateNetProceedsAction } from './actions'
 import CalcColumns, { CalcResultSlot, scrollResultIntoView } from '../_components/CalcColumns'
+import AcquiredRegulatedField from '../_components/AcquiredRegulatedField'
 import NetProceedsResultPanel from './NetProceedsResultPanel'
 
 /** Input과 톤을 맞춘 select 클래스 (양도세 폼과 동일 관례) */
@@ -59,9 +60,11 @@ function toNum(v: string): number | undefined {
   return Number(v)
 }
 
-export default function NetProceedsForm({ graceDeadlineText }: {
+export default function NetProceedsForm({ graceDeadlineText, autoRegulatedEnabled = false }: {
   /** 중과 경과조치 계약 마감일 안내 문구 — 서버가 heavy 룰에서 읽어 넘긴다(양도세 폼과 동일) */
   graceDeadlineText?: string | null
+  /** 취득 당시 조정대상지역 자동 판정이 켜져 있는지 — 꺼져 있으면 폼에서 선택을 요구한다 */
+  autoRegulatedEnabled?: boolean
 }) {
   // ── 기본 입력 (양도세 폼과 동일) ───────────────────────────────────────────
   const [transferDate, setTransferDate] = useState(todayString())
@@ -137,7 +140,11 @@ export default function NetProceedsForm({ graceDeadlineText }: {
     if (otherNum !== undefined && (Number.isNaN(otherNum) || otherNum < 0)) {
       setFormError('그 밖의 비용을 0 이상 숫자(원)로 입력해 주세요.'); return
     }
-    // 취득 당시 조정대상지역은 비워 두면 서버가 이력으로 자동 판정한다(못 하면 사유와 함께 요청)
+    // 자동 판정이 꺼져 있으면(커버리지 룰 미등록) 예전처럼 폼에서 선택을 요구한다
+    if (!autoRegulatedEnabled && oneHouseTrack && acquiredRegulated === '') {
+      setFormError('취득 당시 조정대상지역 여부를 선택해 주세요. 모르면 취득 시점의 국토교통부 공고 또는 관할 시·군·구에서 확인할 수 있습니다.')
+      return
+    }
     // 미래 날짜 차단 — 양도세 폼과 동일(엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
     if (houseCount === 2 && temporaryTwo && newHouseAcquiredAt && newHouseAcquiredAt > transferDate) {
@@ -265,15 +272,8 @@ export default function NetProceedsForm({ graceDeadlineText }: {
               <Input id="np-residence" type="number" min={0} step={1} value={residenceYears}
                 onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
             </Field>
-            <Field label="취득 당시 조정대상지역 여부" htmlFor="np-acq-regulated"
-              hint="비워 두면 등록된 지정 이력으로 취득일 기준 자동 판정합니다(판정 결과와 근거를 결과에 표시합니다). 자동으로 판정할 수 없는 경우에는 이유와 함께 직접 선택을 요청합니다. 직접 선택하면 그 값이 자동 판정보다 우선합니다. 비과세 거주 요건 판정에만 쓰입니다.">
-              <select id="np-acq-regulated" className={SELECT_CLS} value={acquiredRegulated}
-                onChange={(e) => setAcquiredRegulated(e.target.value as '' | 'yes' | 'no')}>
-                <option value="">자동 판정 (권장)</option>
-                <option value="yes">예 — 취득 당시 조정대상지역</option>
-                <option value="no">아니요 — 취득 당시 비규제</option>
-              </select>
-            </Field>
+            <AcquiredRegulatedField id="np-acq-regulated" value={acquiredRegulated}
+              onChange={setAcquiredRegulated} autoEnabled={autoRegulatedEnabled} />
           </div>
         )}
 

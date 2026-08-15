@@ -25,8 +25,12 @@ const UNAVAILABLE_GUIDES: Record<AcquiredRegulatedUnavailableReason, string> = {
     '이 시·군·구는 일부 동·읍·면만 지정된 곳이라 구 전체를 기준으로 판정할 수 없습니다. 해당 주택의 주소가 지정 대상에 포함됐는지 취득 당시 공고에서 확인한 뒤 직접 선택해 주세요.',
 }
 
-/** YYYY-MM-DD → 'YYYY년 M월' (근거 표시는 월 단위로 충분하다) */
+/**
+ * YYYY-MM-DD → 'YYYY년 M월' (근거 표시는 월 단위로 충분하다).
+ * 형식이 아니면 빈 문자열 — 'NaN년' 같은 표기가 화면에 나가지 않게 한다.
+ */
 function toYearMonth(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return ''
   const [y, m] = date.split('-')
   return `${Number(y)}년 ${Number(m)}월`
 }
@@ -42,19 +46,21 @@ export function AcquiredRegulatedResult({ info, acquiredAt }: {
   acquiredAt: string
 }) {
   const auto = info.source === 'auto'
+  const yearMonth = toYearMonth(acquiredAt)
   return (
     <div className="bg-paper-raised border border-rule rounded-lg p-4">
       <p className="flex items-start gap-2 text-sm font-semibold text-ink mb-1">
         <BadgeCheck size={16} className="text-pen shrink-0 mt-0.5" aria-hidden="true" />
         <span>
-          취득 당시({toYearMonth(acquiredAt)} 기준) {info.value ? '조정대상지역이었습니다' : '조정대상지역이 아니었습니다'}
+          취득 당시{yearMonth && `(${yearMonth} 기준)`} {info.value ? '조정대상지역이었습니다' : '조정대상지역이 아니었습니다'}
         </span>
       </p>
       <p className="text-xs text-ink-soft leading-relaxed">
         {auto ? (
-          info.value && info.designatedFrom ? (
+          // 분기는 판정값 기준 — 근거 날짜·링크는 있을 때만 덧붙인다(제목과 본문이 어긋나지 않게)
+          info.value ? (
             <>
-              등록된 지정 이력({info.designatedFrom} 지정)으로 자동 판정했습니다.
+              등록된 지정 이력{info.designatedFrom && `(${info.designatedFrom} 지정)`}으로 자동 판정했습니다.
               {info.sourceUrl && (
                 <a href={info.sourceUrl} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-0.5 ml-1 text-pen underline underline-offset-2 hover:text-pen-dark">
@@ -87,7 +93,7 @@ export function AcquiredRegulatedUnavailable({ reason }: {
   reason: AcquiredRegulatedUnavailableReason
 }) {
   return (
-    <div className="mt-3 bg-paper-raised border border-rule rounded-lg p-4">
+    <div className="mt-3 bg-paper-raised border border-rule rounded-lg p-4" role="alert">
       <p className="flex items-start gap-2 text-sm font-semibold text-ink mb-1">
         <CircleHelp size={16} className="text-ink-soft shrink-0 mt-0.5" aria-hidden="true" />
         <span>왜 직접 선택해야 하나요?</span>

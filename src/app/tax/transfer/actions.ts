@@ -42,7 +42,7 @@ export interface TransferCalcPayload {
   expenses?: number               // 필요경비 (원) — 비우면 0
   houseCount: TransferHouseCount  // 1 / 2 / 3(=3주택 이상)
   residenceYears?: number         // 거주기간 (만 연수)
-  acquiredInRegulatedArea?: boolean   // '취득 당시' 조정대상지역 여부 — 사용자 직접 선택
+  acquiredInRegulatedArea?: boolean   // '취득 당시' 조정대상지역 — 비우면 이력으로 자동 판정, 값이 있으면 그것이 우선
   isTemporaryTwoHouse?: boolean
   newHouseAcquiredAt?: string
   inherited?: boolean
@@ -137,6 +137,10 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
           holdingYearsForRate: result.holdingYearsForRate,
           holdingYearsForLtsd: result.holdingYearsForLtsd,
           regulatedAtTransfer: result.regulatedAtTransfer,
+          regulatedAtTransferPartial: result.regulatedAtTransferPartial,
+          // 비과세 거주 요건을 가른 값과 그 출처·근거 — 자동 판정이면 입력에 남지 않으므로
+          // 이력에 담아야 나중에 "왜 이렇게 나왔는지"를 되짚을 수 있다
+          acquiredRegulated: result.acquiredRegulated,
           containsProposedRule: result.containsProposedRule,
           unresolvedFields: result.unresolvedFields,
         },

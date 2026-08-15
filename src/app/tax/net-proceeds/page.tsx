@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
+import { fetchAutoRegulatedEnabled } from '../_components/coverage-rule'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import NetProceedsForm from './NetProceedsForm'
 
@@ -70,7 +71,10 @@ async function fetchGraceDeadlineText(): Promise<string | null> {
 }
 
 export default async function NetProceedsPage() {
-  const graceDeadlineText = await fetchGraceDeadlineText()
+  const [graceDeadlineText, autoRegulatedEnabled] = await Promise.all([
+    fetchGraceDeadlineText(),
+    fetchAutoRegulatedEnabled(),
+  ])
 
   return (
     <>
@@ -93,7 +97,7 @@ export default async function NetProceedsPage() {
       <CalcSection>
         <RuleBasisBanner taxTypes={['transfer', 'brokerage', 'common']} />
         <ApartmentOnlyNotice />
-        <NetProceedsForm graceDeadlineText={graceDeadlineText} />
+        <NetProceedsForm graceDeadlineText={graceDeadlineText} autoRegulatedEnabled={autoRegulatedEnabled} />
 
         <CalcNotes>
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 명시 */}
@@ -103,8 +107,9 @@ export default async function NetProceedsPage() {
             <li>
               양도소득세 계산기의 판단 한계가 그대로 적용됩니다 — 상속주택 특례(보유기간
               기산 외), 동거봉양·혼인 합가, 상생임대주택, 고령자 감면, 등록임대주택 특례는
-              반영되지 않으며, &lsquo;취득 당시&rsquo; 조정대상지역 여부는 직접 선택해야
-              합니다.
+              반영되지 않습니다. &lsquo;취득 당시&rsquo; 조정대상지역 여부는 등록된 지정
+              이력으로 자동 판정하되, 판정할 수 없는 시점·지역은 이유와 함께 직접 선택을
+              요청합니다(직접 선택한 값이 우선합니다).
             </li>
             <li>
               중개보수 요율은 중개사무소 소재지의 시·도 조례를 따르는데, 이 계산기는 물건

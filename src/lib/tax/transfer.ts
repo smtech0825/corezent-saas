@@ -9,7 +9,7 @@
  *           (§95④, 상속은 상속개시일 기산)을 별도 함수·별도 기산일로 계산한다.
  *        ② 장기보유특별공제 표 2개 — 큰 표(1세대 1주택+거주 요건)·작은 표. 중과면 공제 없음.
  *        ③ 거주 요건 2종 — 비과세용(취득 당시 조정대상지역인 경우만)과 큰 표용(항상 적용).
- *        ④ 조정대상지역 판정 시점 2개 — 비과세=취득 당시(사용자 직접 선택),
+ *        ④ 조정대상지역 판정 시점 2개 — 비과세=취득 당시(이력 자동 판정, 직접 지정이 우선),
  *           중과=양도 당시(tax_regulated_areas 이력 자동 판정).
  *        중과 유예 기간은 transfer.heavy 룰의 시행기간 이력로 표현한다(날짜를 코드에 안 둔다).
  *        룰이 없으면 0원으로 계산하지 않고 RULE_NOT_REGISTERED를 반환한다.
@@ -267,11 +267,19 @@ export async function calculateTransferTax(
         designatedFrom: resolved.designatedFrom,
         sourceUrl: resolved.sourceUrl,
       }
+      // 자동 판정에 쓴 커버리지 룰도 '적용된 법령 근거'에 남긴다 — 이 룰이 비과세 거주
+      // 요건 적용 여부를 좌우하는데 근거 목록에 없으면 무엇이 판정했는지 추적할 수 없다
+      if (resolved.coverageRule) use(resolved.coverageRule)
 
       let residenceOk = true
       if (resolved.value === true) {
         if (input.residenceYears === undefined) {
-          return engineFail('INVALID_INPUT', '취득 당시 조정대상지역이었던 주택의 비과세 판정에는 거주기간 입력이 필요합니다.')
+          // 자동 판정으로 규제라고 본 경우에는 그 근거도 함께 알린다 — 사용자가 고르지 않은
+          // 값 때문에 입력을 더 요구받는 상황이라 누가 그렇게 판단했는지 밝혀야 한다
+          const basis = resolved.source === 'auto' && resolved.designatedFrom
+            ? ` 등록된 지정 이력(${resolved.designatedFrom} 지정)으로 취득 당시 조정대상지역으로 판정했습니다 — 실제와 다르면 취득 당시 조정대상지역 여부를 직접 선택하면 그 값이 우선합니다.`
+            : ''
+          return engineFail('INVALID_INPUT', `취득 당시 조정대상지역이었던 주택의 비과세 판정에는 거주기간 입력이 필요합니다.${basis}`)
         }
         residenceOk = input.residenceYears >= exemption.value.residenceIfAcquiredRegulated.minYears
         residenceYearsUsed = input.residenceYears

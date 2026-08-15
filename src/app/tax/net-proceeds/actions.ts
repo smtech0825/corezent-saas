@@ -89,6 +89,9 @@ export async function calculateNetProceedsAction(payload: NetProceedsCalcPayload
           transferExempt: result.transfer.exempt,
           transferExemptReason: result.transfer.exemptReason,
           heavyApplied: result.transfer.heavyApplied,
+          regulatedAtTransferPartial: result.transfer.regulatedAtTransferPartial,
+          // 비과세 거주 요건을 가른 값과 근거 — 양도세 이력과 같은 이유로 남긴다
+          acquiredRegulated: result.transfer.acquiredRegulated,
           containsProposedRule: result.containsProposedRule,
           unresolvedFields: result.unresolvedFields,
         },

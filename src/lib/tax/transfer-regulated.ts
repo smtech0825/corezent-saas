@@ -28,6 +28,11 @@ export interface AcquiredRegulatedResolved {
   /** 자동 판정이고 규제였을 때의 근거(지정일·공고 링크). 그 외에는 null */
   designatedFrom: string | null
   sourceUrl: string | null
+  /**
+   * 자동 판정에 실제로 쓴 커버리지 룰 — 호출부가 '적용된 법령 근거'에 넣는다.
+   * 사용자가 직접 지정한 경우에는 룰을 쓰지 않았으므로 null.
+   */
+  coverageRule: TaxRule | null
 }
 
 /** 판정 결과 — 자동으로 정하지 못했고 사용자 입력도 없을 때 */
@@ -54,7 +59,7 @@ export async function resolveAcquiredRegulated(
 ): Promise<AcquiredRegulatedResolved | AcquiredRegulatedUnresolved | TaxEngineFailure> {
   // 사용자 지정이 최우선 — 자동 판정을 시도하지 않는다
   if (userValue !== undefined) {
-    return { ok: true, value: userValue, source: 'user', designatedFrom: null, sourceUrl: null }
+    return { ok: true, value: userValue, source: 'user', designatedFrom: null, sourceUrl: null, coverageRule: null }
   }
 
   // ① 커버리지 룰 — 없으면 자동 판정 자체가 꺼진 상태
@@ -79,5 +84,6 @@ export async function resolveAcquiredRegulated(
     source: 'auto',
     designatedFrom: record?.designatedFrom ?? null,
     sourceUrl: record?.sourceUrl ?? null,
+    coverageRule,
   }
 }
