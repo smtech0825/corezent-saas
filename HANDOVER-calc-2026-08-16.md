@@ -1,276 +1,393 @@
-# HANDOVER — 부동산 세금계산기 (S1 취득세 ~ S6 등기비용·실수령액, 8종 전체 운영)
+# 부동산 계산기 인계서 — 2026-08-16 (최신본)
 
-> 작성: 2026-08-14 세션 종료 시점(S5·S6 완결 + 보류 6건 해소 반영). 다음 세션이 이 문서만
-> 읽고 이어서 작업할 수 있도록 작성함. 이전 인계서 `HANDOVER-calc-2026-08-14.md`를 대체한다.
-> 설계 문서: `prompts/feat-tax-s1-*` ~ `feat-tax-s6-registration-and-net-proceeds.md`
-> 값 지시서(원본): `prompts/중개수수료-룰-등록.md` · `양도소득세-룰-등록.md` ·
-> `재산세-종부세-룰-등록.md` · `등기비용-룰-등록.md` (취득세·인지세 값은 채팅 수령)
-
----
-
-## 0. 현재 상태 요약
-
-- **계산기 8종 전부 운영 중**(2026-08-14 개시 완료): 취득세·인지세·중개수수료·등기비용(살 때) /
-  재산세·종합부동산세(가지고 있을 때) / 양도소득세·매도 실수령액(팔 때).
-  전부 아파트 전용(공용 배너 고지). '준비 중' 항목 없음. 전월세 전환은 영구 취소.
-- **룰 38종 운영 등록**(§2): S1~S4 20종 + S5 16종 + S6 2종. 전부 confirmed. 검산 전부 통과
-  (인지세 5·중개 5·양도 5·재산/종부 7·등기/실수령 8건). 미등록: acquisition.gift.heavy.
-- 마이그레이션 055~059 운영 적용 완료(§4). S5·S6은 마이그레이션 없이 완결(세목 CHECK 기존 포함).
-- 보류 항목 6건 해소 배포됨(85a686c — §10-1). 마지막 확인: 결과 초기화·인지세 안내 실화면 검증 완료.
-- **⚠️ 병행 세션 다수 활동 중** — 이쪽 커밋이 병행 세션 푸시에 딸려 나간 전례가 이번 세션에만
-  3회 추가(누적 8회). "미푸시"라는 기억을 믿지 말고 반드시 fetch로 재확인(§9-4).
+> **이 문서가 부동산 계산기의 최신 인계서입니다.** `HANDOVER-calc-2026-08-16-final.md`를 비롯한
+> 이전 인계서를 모두 대체합니다. 내용이 충돌하면 이 문서를 따르세요.
+>
+> 기준 커밋: `d94593c` (origin/main, 배포됨) · 작성 시점: 2026-08-16
 
 ---
 
-## 1. 계산기 8종 — 파일·엔진·룰 키
+## 0. 5분 요약
 
-공통 구조(전 계산기 동일): 엔진 `src/lib/tax/<이름>.ts` + 타입 `<이름>-types.ts` +
-검증기 `<이름>-rules.ts`(엔진·관리자 공유) / 화면 `src/app/tax/<slug>/`에 page·폼·결과패널·
-actions(BotID→검증→엔진→이력) 4종 / 관리자 안내 `admin/tax/rules/rule-guides*.ts`.
+여덟 개 부동산 계산기가 `/tax/*`에서 돌아갑니다. **세율·금액·날짜를 코드에 넣지 않고 전부
+DB(`tax_rules`)에서 읽는 것**이 이 시스템의 유일한 설계 원칙입니다. 룰이 없으면 0원으로
+계산하지 않고 "근거 미등록"으로 멈춥니다.
 
-1. **취득세** `/tax/acquisition` — 엔진 acquisition.ts(352줄 승인 예외, 키 상수 포함).
-   룰 6종: onerous.rates·gift.tax_base·gift.rates·gift.heavy(미등록)·deemed_gift_threshold·rounding.
-   화면 CalculatorForm·ResultPanel. 유일하게 룰 모드(확정/개정안) 전환 UI 보유.
-2. **인지세** `/tax/stamp` — 엔진 stamp.ts(키 상수 포함). 룰 1종: stamp.rates(정액표+비과세 행).
-3. **중개수수료** `/tax/brokerage` — 엔진 brokerage.ts. 룰 2종: rates(+leaseConversion)·vat.
-   세금이 아니라 '법정 상한'. sido는 중개사무소 소재지 의미.
-4. **등기비용** `/tax/registration` (S6) — 엔진 registration.ts. 취득세·인지세를 **기존 엔진
-   호출**로 합산(재구현 없음·실패 시 전체 중단). 룰 2종: registration.fee(방법별 정액,
-   default 행 정확히 1개)·registration.bond(매입률 표+rounding, **exempt: true 행 = 매입 면제**
-   — 0%가 아니라 '면제'로 표시). 채권 손실률·법무사 보수는 룰이 아니라 사용자 입력이며
-   비우면 not_included('입력하면 포함됩니다')·총액 제외·someExcluded 경고.
-5. **재산세** `/tax/property` (S5) — 엔진 property.ts. 룰 8종(§2). 과세기준일도 룰
-   (assessment_date 월·일)이며 연초(달력 상수) 임시 조회→과세기준일 재조회 2단계 구조.
-   1주택 비율 특례는 **별도 키의 시행기간(종료일)** 으로 표현 — 만료 시 자동 일반 전환.
-   상한 2종(과세표준·세부담)은 직전 연도 값 입력 시에만 적용(applied/not_exceeded/skipped
-   3상태). 직전 연도 값 0 입력도 미적용 처리(0원 함정 방어). **mainTaxOnly 옵션**
-   (property.ts 4번째 인자) = 본세만 계산 — 종부세 공제용, surtax 룰 불요구.
-6. **종합부동산세** `/tax/comprehensive` (S5) — 엔진 comprehensive.ts(353줄 승인 예외).
-   룰 8종(§2). **재산세 엔진을 mainTaxOnly로 호출**해 재산세 상당액 자동 공제(실패 시 전체
-   중단). 입력은 주택 목록이 아니라 **주택 수+공시가격 합계**(대원칙). 기본공제 이하면
-   taxable:false+사유. 세율표는 한 표에 heavy:true 행으로 일반/중과 구분. 1주택 세액공제는
-   연령·보유 각각 %와 합산 한도(capReached) 표시.
-7. **양도소득세** `/tax/transfer` — 엔진 transfer.ts(552줄 승인 예외 — 나누지 말 것).
-   룰 11종. 4대 구분(보유 2종·공제 표 2개·거주 요건 2종·조정 판정 시점 2개)은 §5 참조.
-8. **매도 실수령액** `/tax/net-proceeds` (S6) — 엔진 net-proceeds.ts. **새 룰 없음** —
-   양도세·중개수수료를 기존 엔진 호출로 차감. 실제 수수료 미입력이면 상한액+부가세
-   (isCap 표시·actualExceedsCap 경고). 비과세는 정상 결과(사유 원문 전달). 중개사무소
-   소재지는 물건 소재지로 갈음(안내로 명시 — 승인된 설계). 이력은 tax_type='transfer' +
-   input.calculator='net_proceeds' 표시(별개 세목 아님 — 관리자 룰 화면에 실수령액 세목이
-   없는 것이 정상. rule-guides.ts 병합 주석 참조).
+가장 최근 작업은 **취득 당시 조정대상지역 자동 판정**입니다. 사용자가 직접 고르던 값을
+등록된 지정 이력 192행으로 자동 판정하고, 판정하지 못하면 이유를 밝히고 묻습니다.
 
-공용 컴포넌트(`src/app/tax/_components/`): TaxNav(전환 탭)·ApartmentOnlyNotice(아파트 배너)·
-RuleBasisBanner(기준일 배너 §8)·**CalcFailureNotice(실패 원인별 안내 §6 — 8종 공용)**.
-`src/instrumentation-client.ts`에 8계산기 POST 전부 BotID 등록.
-`src/app/sitemap.ts`는 available 계산기만 자동 포함.
+---
 
-## 2. 등록된 룰 38종 (전부 confirmed, 2026-08-14 등록·검산 기준)
+## 1. 계산기 8종과 파일 매핑
 
-**acquisition (5)**: onerous.rates(2026-06-01~) · gift.tax_base(2023-01-01~) ·
-gift.rates(2011-01-01~) · gift.deemed_gift_threshold(2026-06-01~) · rounding(2011-01-01~).
-gift.heavy는 의도적 미등록(등록해야 규제지역 증여 계산이 열림).
-**common (1)**: region.metro_scope(2008-03-21~) — is_metro 판정 유일 출처.
-**stamp (1)**: stamp.rates(2002-01-01~).
-**brokerage (2)**: brokerage.rates(2021-10-19~) · brokerage.vat(2021-10-19~).
-**transfer (11)**: base_rates·short_term_rates·ltsd.general·ltsd.one_house·basic_deduction·
-exemption·local_income_tax·period_rule·rounding(전부 2023-01-01~) ·
-temporary_two_house(2023-02-28~) · heavy(2026-05-10~ — 중과 재개일, 유예는 룰 부재로 표현.
-grace: 계약 마감 2026-05-09·강남/서초/송파/용산 4개월·그 외 6개월·최종 2026-11-09).
-**property (8)**: assessment_ratio(2023-01-01~) ·
-**assessment_ratio.one_house(2026-01-01~2026-12-31 ⚠️한시 특례 — 종료일 필수)** ·
-rates(2023-01-01~ — general+oneHouse 9억 기준) · surtax(2023-01-01~) · base_cap(2024-01-01~) ·
-**burden_cap(2023-01-01~2028-12-31 ⚠️경과조치 종료일)** · assessment_date(2010-01-01~ —
-6/1은 룰 값) · rounding(2010-01-01~ — 10원 버림).
-**comprehensive (8)**: basic_deduction(2023-01-01~) · assessment_ratio(2023-01-01~) ·
-rates(2023-01-01~ — heavy 행 포함 한 표) · tax_credit(2021-01-01~ — 합산 한도 80) ·
-burden_cap(2023-01-01~ — 일률 150) · rural_surtax(2010-01-01~) · assessment_date(2010-01-01~) ·
-rounding(2010-01-01~).
-**registration (2)**: fee(2025-08-01~ — 서면 default·e-Form·전자 3행) ·
-bond(2015-07-01~ — 전국 7행+특별·광역시 7행, exempt 행 2개, 만원 반올림 rounding).
+각 계산기는 `page.tsx`(서버) → `*Form.tsx`(클라이언트) → `actions.ts`(서버 액션) →
+`lib/tax/*.ts`(엔진) → `*ResultPanel.tsx`(결과) 구조가 같습니다.
 
-rule_value 형식의 단일 출처는 rule-guides*.ts(화면 안내)와 각 *-rules.ts(검증기)다. 공통 요지:
-행 조건 when은 eq/min/max/in(경계 포함)·priority 최고 1건(동률 오류)·모르는 필드 중단·
-미확정 값 조건은 미매칭+unresolved. **구간은 max 금지 — min("이상")+priority 오름차순**.
-누진(progressive)은 brackets minBase 오름차순. 0이 함정이 되는 값(요율·세율·공제율·수수료·
-매입률·기본공제 등)은 검증기가 저장 거부(재산세 base_cap increasePercent 0과 취득세 fixed
-0%는 정당해 허용). 구조가 같은 룰은 검증기 공유: comprehensive의 비율·기준일·세부담 상한 →
-property 검증기, rounding 전 세목 → parseRounding.
+| 계산기 | 경로 | 엔진 | 주요 룰 키 |
+|---|---|---|---|
+| 취득세 | `/tax/acquisition` | `lib/tax/acquisition.ts` (355줄) | `acquisition.onerous.rates` · `acquisition.gift.rates` · `acquisition.gift.tax_base` · `acquisition.gift.deemed_gift_threshold` · `acquisition.rounding` |
+| 인지세 | `/tax/stamp` | `lib/tax/stamp.ts` (95줄) | `stamp.rates` |
+| 중개수수료 | `/tax/brokerage` | `lib/tax/brokerage.ts` (150줄) | `brokerage.rates` · `brokerage.vat` |
+| 등기비용 | `/tax/registration` | `lib/tax/registration.ts` (273줄) | `registration.bond` · `registration.fee` (+ 취득세·인지세 엔진 재사용) |
+| 재산세 | `/tax/property` | `lib/tax/property.ts` (321줄) | `property.rates` · `property.assessment_ratio` · `property.assessment_ratio.one_house` · `property.base_cap` · `property.burden_cap` · `property.surtax` · `property.assessment_date` · `property.rounding` |
+| 종합부동산세 | `/tax/comprehensive` | `lib/tax/comprehensive.ts` (458줄) | `comprehensive.rates` · `comprehensive.basic_deduction` · `comprehensive.assessment_ratio` · `comprehensive.burden_cap` · `comprehensive.tax_credit` · `comprehensive.rural_surtax` · `comprehensive.assessment_date` · `comprehensive.rounding` |
+| 양도소득세 | `/tax/transfer` | `lib/tax/transfer.ts` (774줄) | `transfer.base_rates` · `transfer.short_term_rates` · `transfer.heavy` · `transfer.ltsd.general` · `transfer.ltsd.one_house` · `transfer.ltsd.cap` · `transfer.exemption` · `transfer.basic_deduction` · `transfer.period_rule` · `transfer.temporary_two_house` · `transfer.local_income_tax` · `transfer.rounding` |
+| 매도 실수령액 | `/tax/net-proceeds` | `lib/tax/net-proceeds.ts` (129줄) | 자체 룰 없음 — 양도세·중개수수료 엔진을 그대로 호출해 합산 |
 
-## 3. 커밋 이력 (시간순 요지)
+**공통 룰**(`tax_type='common'`, 모든 세목 조회에 실림): `region.metro_scope`(수도권 범위),
+`region.regulated_history_from`(규제지역 이력 커버리지 시작일).
 
-**S1~S4**: 구 인계서(HANDOVER-calc-2026-08-14.md, git 이력에 있음) §2 참조 — S1
-`ca30d39→…→f19668c` / S2 `84dfb56→…→0e90a1a` / S3 `b9dac85→…→48ee8f1` / S4
-`b5e5f00→…→8bcd9de`. S4 배포 확인 기록 `8b0809c`.
-**S5 재산세·종부세**: `6274b5a`(W1 재산세 엔진) → `c4a3cd2`(W2 화면) → `0e9f059`(W3 종부세
-엔진 — mainTaxOnly 호출) → `e88fe9e`(W4 화면) → `a6c2d6b`(W5 관리자 16키) → `9a753a8`(W6
-High: 직전 연도 0 입력 함정) → `fd98703`(Medium 2: 본세만 모드·상한 문구) → `d137aa0`(인계
-기록) → `641a697`(개시).
-**S6 등기·실수령액**: `ca4a78a`(W1 등기 엔진) → `a0dbb42`(W2 화면) → `448db13`(W3 실수령액
-엔진) → `d04b103`(W4 화면) → `5a3a72f`(W5 관리자 2키) → `48ea624`(W6 High: 손실률
-placeholder 제거) → `ff1eacc`(인계 기록) → `3c537ac`(**채권 exempt 행 지원**) → `5858889`(개시).
-**보류 해소**: `85a686c`(6건 일괄 — §10-1).
+### 공용 컴포넌트 (`src/app/tax/_components/`)
 
-## 4. DB — 테이블 5개, 마이그레이션 055~059 (전부 운영 적용 완료·비멱등·재실행 금지)
+| 파일 | 역할 |
+|---|---|
+| `TaxNav.tsx` | 계산기 8종 탭 |
+| `CalcSection.tsx` · `CalcColumns.tsx` | 레이아웃 단일 출처. xl(1280px)부터 2단. **`space-y` 금지** — 결과 열 폭이 깨짐 |
+| `RuleBasisBanner.tsx` | "적용된 법령 근거" 배너 |
+| `RuleModeSelector.tsx` | 확정법/개정안 모드 전환. 경고의 시행 연도 문구(2027·2028·2029)는 대표님 승인 문구 |
+| `CalcFailureNotice.tsx` | 엔진 실패 코드를 사용자 문구로 변환(`userFacingFailureMessage`) |
+| `YearComparisonSection.tsx` | 연도별 세액 비교 섹션 |
+| `AcquiredRegulatedField.tsx` | '취득 당시 조정대상지역' 입력칸 — 양도세·실수령액 공용 |
+| `AcquiredRegulatedNotice.tsx` | 자동 판정 결과와 근거, 판정 못 한 사유 |
+| `PartialAreaWarning.tsx` | 부분 지정 이력이 근거일 때 범위 한계 경고 |
+| `coverage-rule.ts` | 자동 판정이 켜져 있는지 조회. **서버 전용**(`@/lib/supabase/server` import) — 클라이언트에서 import 금지 |
+| `ApartmentOnlyNotice.tsx` | 아파트 전용 안내 |
 
-테이블(본체 Supabase): **tax_rules**(룰 저장소 — rule_value jsonb·시행기간·status·법령 근거
-NOT NULL·law_id/law_article_no·공개 SELECT) / **tax_regulated_areas**(규제지역 이력 —
-applies_to 세목 6종+all·note·공개 SELECT) / **tax_test_cases**(실행기 없음) /
-**tax_calculation_logs**(계산 이력·PII 금지·service_role 전용) / **tax_law_change_queue**(비어
-있음 — 법제처 감시용).
+---
 
-- 055: 테이블 5개+RLS+인덱스(applies_to CHECK 6종에 property·comprehensive 포함).
-- 056: EXCLUDE — 같은 (tax_type,rule_key,status) 시행기간 겹침 차단. ⚠️ 이 제약 때문에 한
-  키 안에서 특례만 따로 만료시킬 수 없다 — 한시 특례는 별도 키로(property one_house 전례).
-- 057: CHECK에 'common'+law_id·law_article_no.
-- 058: CHECK 확장 — tax_rules 11종·logs 10종(stamp·brokerage·jeonse_conversion·registration).
-  S5·S6에 필요한 세목이 전부 이미 포함돼 있어 추가 마이그레이션 불필요했음.
-- 059: tax_regulated_areas.note. 규제지역 40행(서울 25+경기 15)은
-  applies_to=['acquisition','transfer'] — 종부세가 조정 판정을 쓰게 되면 확장 필요.
+## 2. 등록된 룰 전체 (56행 = confirmed 39 + proposed 17)
 
-## 5. 조건 필드 전체와 의미 (세목별 판정 컨텍스트)
+### 2-1. confirmed (현행법)
 
-**취득세**: price·house_count·is_regulated·area_sqm·official_price·is_metro·first_home·
-temporary_two_home·donor_relation·tax_base(증여)·area_over_85(호환).
-**인지세**: price(계약금액)·is_housing.
-**중개수수료**: deal_type(sale_exchange/lease)·price(임대차는 환산액)·sido(⚠️중개사무소
-소재지 — 물건 아님. 실수령액은 물건 소재지로 갈음+안내).
-**양도세**: house_count(3=이상)·is_regulated(**양도 당시** — 이력 자동)·holding_years(세율용
-§104②)·holding_years_ltsd(공제용 §95④)·residence_years·sido·sigungu·is_metro.
-⚠️ 보유 2종(상속 기산일 상이)·거주 요건 2종(비과세=취득 당시 조정일 때만·큰 표=항상)·조정
-판정 시점 2개(비과세=취득 당시 사용자 선택·중과=양도 당시 자동) — 혼용 금지, transfer.ts를
-한 파일로 유지하는 이유.
-**재산세**: official_price·is_one_house.
-**종부세**: house_count·tax_base·is_one_house·total_official_price·age·holding_years.
-**등기비용(bond)**: official_price·price·sido·is_metro.
-초일 산입은 transfer.period_rule이 정함(include_start). 거주기간 산정은 미확인 — 보유 동일
-전제·residenceYearsUsed 조건부 안내.
+| 세목 | 룰 키 | 시행일 |
+|---|---|---|
+| acquisition | `acquisition.gift.rates` | 2011-01-01 |
+| acquisition | `acquisition.rounding` | 2011-01-01 |
+| acquisition | `acquisition.gift.tax_base` | 2023-01-01 |
+| acquisition | `acquisition.onerous.rates` | 2026-06-01 |
+| acquisition | `acquisition.gift.deemed_gift_threshold` | 2026-06-01 |
+| brokerage | `brokerage.rates` · `brokerage.vat` | 2021-10-19 |
+| common | `region.metro_scope` | 2008-03-21 |
+| common | `region.regulated_history_from` | 2016-11-03 |
+| comprehensive | `comprehensive.assessment_date` · `comprehensive.rounding` · `comprehensive.rural_surtax` | 2010-01-01 |
+| comprehensive | `comprehensive.tax_credit` | 2021-01-01 |
+| comprehensive | `comprehensive.assessment_ratio` · `comprehensive.basic_deduction` · `comprehensive.burden_cap` · `comprehensive.rates` | 2023-01-01 |
+| property | `property.assessment_date` · `property.rounding` | 2010-01-01 |
+| property | `property.assessment_ratio` · `property.rates` · `property.surtax` | 2023-01-01 |
+| property | **`property.burden_cap`** | **2023-01-01 ~ 2028-12-31 ★종료일 있음** |
+| property | `property.base_cap` | 2024-01-01 |
+| property | **`property.assessment_ratio.one_house`** | **2026-01-01 ~ 2026-12-31 ★종료일 있음** |
+| registration | `registration.bond` | 2015-07-01 |
+| registration | `registration.fee` | 2025-08-01 |
+| stamp | `stamp.rates` | 2002-01-01 |
+| transfer | `transfer.base_rates` · `transfer.basic_deduction` · `transfer.exemption` · `transfer.local_income_tax` · `transfer.ltsd.general` · `transfer.ltsd.one_house` · `transfer.period_rule` · `transfer.rounding` · `transfer.short_term_rates` | 2023-01-01 |
+| transfer | `transfer.temporary_two_house` | 2023-02-28 |
+| transfer | `transfer.heavy` | 2026-05-10 |
 
-## 6. 엔진 실패 코드 7종과 화면 표시
+### 2-2. proposed (2026 세제개편안) — 17행
 
-코드(engine-types.ts): INVALID_INPUT / RULE_NOT_REGISTERED(0원 금지의 핵심) / RULE_CONFLICT /
-RULE_VALUE_INVALID / NO_MATCHING_RATE_ROW / AMBIGUOUS_RATE_ROW / DB_ERROR. message는 화면에
-그대로 나가는 한국어. **하위 엔진 호출 실패(종부세→재산세, 등기→취득·인지, 실수령→양도·중개)는
-코드·ruleKey를 보존한 채 "…계산을 중단했습니다(0원으로 대체하지 않습니다)"로 래핑.**
+| 룰 키 | 기간 |
+|---|---|
+| `comprehensive.assessment_ratio` | **2027-01-01 ~ 2027-12-31 ★** |
+| `comprehensive.assessment_ratio` | 2028-01-01 ~ |
+| `comprehensive.basic_deduction` | 2027-01-01 ~ |
+| `comprehensive.burden_cap` | 2027-01-01 ~ |
+| `comprehensive.rates` | **2027-01-01 ~ 2027-12-31 ★** |
+| `comprehensive.rates` | 2028-01-01 ~ |
+| `comprehensive.tax_credit` | **2027-01-01 ~ 2027-12-31 ★** |
+| `comprehensive.tax_credit` | 2028-01-01 ~ |
+| `transfer.basic_deduction` | 2027-01-01 ~ |
+| `transfer.heavy` | **2027-01-01 ~ 2027-12-31 ★** |
+| `transfer.heavy` | **2028-01-01 ~ 2028-12-31 ★** |
+| `transfer.ltsd.cap` | **2028-01-01 ~ 2028-12-31 ★** |
+| `transfer.ltsd.cap` | 2029-01-01 ~ |
+| `transfer.ltsd.general` | **2028-01-01 ~ 2028-12-31 ★** |
+| `transfer.ltsd.general` | 2029-01-01 ~ |
+| `transfer.ltsd.one_house` | **2028-01-01 ~ 2028-12-31 ★** |
+| `transfer.ltsd.one_house` | 2029-01-01 ~ |
 
-화면 표시는 공용 `CalcFailureNotice`(8종 패널 공용)가 코드별로 제목·대처를 구분한다:
-INVALID_INPUT="입력을 확인해 주세요" / RULE_NOT_REGISTERED="이 시점의 계산 근거가 아직
-등록되지 않았습니다"(기준일 변경 힌트) / NO_MATCHING_RATE_ROW="입력 조건에 맞는 계산 근거가
-없습니다" / AMBIGUOUS·CONFLICT·VALUE_INVALID=운영자 정리 안내 / DB_ERROR=재시도 안내.
-"0원이 아니다" 문구의 명사는 계산기별(세액·상한·비용·실수령액). 문구 수정은 이 한 파일만.
+**★ 종료일이 있는 행이 중요한 이유**: 개편안이 단계적으로 바뀌는 항목은 한 해만 유효한 행과
+그 이후 행이 따로 있습니다. 종료일을 빼먹으면 같은 시점에 유효한 룰이 2건이 되어
+`RULE_CONFLICT`로 **그 세목 전체 계산이 멈춥니다**. 특히 `region.*` 공통 룰이 겹치면
+양도세뿐 아니라 취득세·인지세·중개수수료·종부세까지 전부 멈춥니다.
 
-## 7. 계산기 목록 관리 · 새 계산기 추가 절차
+### 2-3. 룰 값에 날짜를 담는 필드
 
-목록: `lib/tax/calculators.ts` 단일 출처 — 허브·전환 탭·사이트맵·noindex(각 page가 available
-파생)가 전부 이걸 읽음. 분류 5종(buy/hold/sell/inherit/rent — inherit·rent는 현재 빈 분류라
-허브에 안 그려짐). available:false = '준비 중'+링크·사이트맵 제외+noindex.
+`transfer.exemption.residenceIfAcquiredRegulated.appliesToAcquiredFrom` = `2017-08-03`
+(2026-08-16 대표님 승인 입력). 취득 당시 조정대상지역 주택의 거주 요건이 **그날 취득분부터**
+적용된다는 부칙을 표현합니다(소득세법 시행령 부칙 대통령령 제28293호 제2조). 이 필드가 비면
+취득일과 무관하게 거주 요건을 걸어 부칙 이전 취득분이 비과세에서 빠집니다. 선택 필드이므로
+그런 부칙이 없는 조문이면 줄을 통째로 뺍니다.
 
-추가 절차: ① rule_value 타입+검증기(별도 파일 — *-types.ts/*-rules.ts) ② 엔진(fetchValidRules·
-requireRule — 0원 금지. 기존 세목 재사용 계산이면 **기존 엔진 호출**, 재구현 금지 — 종부세·
-등기·실수령 전례) ③ 화면 4종(실패는 CalcFailureNotice·입력 변경 시 결과 초기화 패턴 포함)
-④ instrumentation-client.ts POST 등록 ⑤ 관리자: rule-guides 별도 파일+병합·knownKeysForTaxType·
-**VALUE_VALIDATORS·KEY_REQUIRED_TAX_TYPE**(빠뜨리면 "저장되는데 계산기는 룰 미등록" 함정)
-⑥ RuleBasisBanner taxTypes 지정 ⑦ available:true는 룰 등록·검산 후. 새 세목이 필요하면
-tax_rules·logs 두 CHECK 확장 마이그레이션(파생 계산기는 기존 세목으로 이력 기록 —
-실수령액=transfer+input.calculator 전례).
+---
 
-검산 요령: 로컬 서버 금지 — **tsx로 엔진+운영 클라이언트 직접 호출**(.env.local,
-`NODE_PATH=<프로젝트>/node_modules npx tsx <스크립트>`, 스크립트는 스크래치패드·검산 후 삭제).
-룰 등록도 같은 방식(service_role)으로 하며 사전 중복 확인+등록 후 jsonb 원본 대조 필수.
+## 3. 규제지역 이력 192행 (`tax_regulated_areas`)
 
-## 8. 기준일 배너 (RuleBasisBanner) 동작
+| 항목 | 값 |
+|---|---|
+| 총 행 | 192 |
+| 구분(`area_type`) | `adjustment`(조정대상지역) 단일 |
+| 적용 세목(`applies_to`) | `["acquisition","transfer"]` 단일 |
+| 전체 지정 | 150행 |
+| **부분 지정(`is_partial=true`)** | **42행** |
+| 해제일 있음 | 152행 |
+| 현재 지정 중 | 40행 (전부 전체 지정) |
 
-서버 컴포넌트+네이티브 details(기본 접힘). props.taxTypes(세목 배열)로 오늘(KST) 기준 유효한
-confirmed+proposed 룰을 집계 — 최근 시행일·마지막 갱신일·룰 N건 자동 산출(사람이 적는 값
-없음). proposed 섞이면 경고색. 룰 0건이면 그 사실 표시. 세목 지정: acquisition·transfer는
-['세목','common'], stamp·brokerage는 자기 세목만, property·comprehensive는 자기 세목만
-(종부세가 재산세 룰을 부품으로 쓰지만 과대 집계 방지 — 승인된 판단. 실제 쓰인 재산세 룰은
-결과 근거 목록에 나옴), **registration은 ['registration','acquisition','stamp','common'],
-net-proceeds는 ['transfer','brokerage','common']**(타 세목 계산이 본체라 포함 — 승인된 판단).
-한계: 세목 단위 집계라 실제 계산에 안 쓰는 룰도 세는 과대 표시 소지(§10 보류).
+### 3-1. 구간 규약 — 반열림 `[지정일, 해제일)`
 
-## 9. 다음 세션이 반드시 지켜야 할 원칙
+**해제일은 "그날부터 해제"입니다. 해제일 당일은 이미 비규제입니다.**
 
-1. **세율·공제율·비율·구간·금액·연수·날짜(과세기준일·연도 포함)를 코드·마이그레이션·안내
-   문구에 절대 넣지 않는다.** 학습 데이터로 기억하는 값도 금지. 값은 대표님 지시서로 받고
-   그대로 등록(수정 금지)+jsonb 원본 대조. 승인 예외: placeholder 예시 **금액**(요율·비율
-   예시는 불가 — S6 W6 High 전례), «...» 자리표시자, /100 환산, 달력 상수(월 1~12·일 1~31·
-   연도 4자리 형식·`${연도}-01-01` 임시 조회일), acquisition.ts `> 85`.
-2. **룰이 없으면 0원 금지**(RULE_NOT_REGISTERED 유지). 하위 엔진 실패도 조용한 0 금지 —
-   전체 중단+원인 보존. 미입력을 0·false로 간주 금지(unresolved 또는 not_included/skipped).
-   직전 연도 값 0 입력 = 미적용 처리(상한 0원 함정). 기존 세목 계산 재구현 금지 — 기존 엔진 호출.
-3. **Wave 방식**: Wave 끝마다 `npx tsc --noEmit`+`npm run build` → 변경 파일만 **개별 git
-   add**(`git add .` 금지) → 커밋 → 멈추고 보고. **푸시는 명시 승인 시만.** Critical·High는
-   수정 후 재검사, Medium 이하 보고만(+인계서 기록 지시 따름).
-4. **병행 세션**: 미커밋 변경·커밋 불가침. 같은 파일에 남의 변경이 섞이면 내 hunk만 선별
-   스테이징. 푸시 전 `git fetch` 후 `git log origin/main..HEAD`로 혼입 확인 — **이쪽 커밋이
-   병행 푸시에 딸려 나간 전례 8회**. 빌드 실패가 내 변경과 무관한 파일이면 병행 세션 미완성
-   상태일 수 있음(기다렸다 재시도). `.next` 공유 — 캐시 오류·경합 시 재빌드하되, **병행
-   세션이 빌드 중일 때 rm -rf .next는 서로를 깨뜨리는 악순환**(대기 후 rm 없이 재시도 권장).
-5. 검산·배포 확인: 운영 반복 curl 금지(429 전례) — Vercel MCP 배포 조회+브라우저 확인.
-   첫 클릭이 하이드레이션 전에 씹히는 증상 상존 — 재클릭. **브라우저 자동화의 form_input은
-   체크박스의 React 상태를 못 바꾼다 — 체크박스는 반드시 실제 클릭**(S5 스팟체크 전례).
-   레이아웃이 밀리면(미리보기 등장 등) 좌표를 스크린샷으로 재확인.
-6. transfer.ts(552줄)·comprehensive.ts(353줄)·acquisition.ts(352줄)·NetProceedsForm(356줄+α)은
-   승인 예외 — 나누지 말 것. TAX_TYPES(6종)와 RULE_TAX_TYPES(11종) 합치지 마라. 새 룰 키는
-   VALUE_VALIDATORS·KEY_REQUIRED_TAX_TYPE 양쪽에.
-7. `next lint` 불가(설정 없음) — tsc+build로 검증. 마이그레이션 비멱등 — 운영 재실행 금지.
-   CLAUDE.md 공통 규칙(한국어 JSDoc·any 금지·@theme 토큰·보고는 한국어·표 없이 문단) 준수.
+이것은 추측이 아니라 데이터로 검증한 사실입니다. 해제일 9종(2018-08-28 · 2018-12-31 ·
+2019-11-08 · 2020-06-19 · 2020-12-18 · 2022-07-05 · 2022-09-26 · 2022-11-14 · 2023-01-05)
+중 **6종이 같은 날 다른 구의 지정 시작일이기도 합니다**. 한 공고가 그날 발효되면서 일부는
+지정, 일부는 해제된 것이므로 해제된 구는 당일부터 비규제입니다. 또 앞 이력의 해제일과 뒤
+이력의 지정일이 같은 날인 전환 사례가 18건 있어, 닫힘 구간으로 보면 같은 날 두 상태가 되는
+모순이 생깁니다.
 
-## 10. 보류 목록
+조회 조건은 `designated_from <= 기준일 AND (designated_to IS NULL OR designated_to > 기준일)`
+이며 `rule-store.ts`의 `findRegulatedAreaRecord`·`isRegulatedArea` 두 곳에만 있습니다.
+관리자 저장은 `designated_to <= designated_from`을 거부합니다(같은 날이면 규제였던 날이
+하루도 없는 죽은 행이 되기 때문. 현재 데이터에 0건).
 
-### 10-1. 이번에 해소됨 (85a686c 배포 완료 — 목록에서 제거)
-실수령액 필요경비 힌트 불일치(S6 M③) · 등기 인지세 취득일 기준 안내(S6 M② — 안내로 해소,
-계약일 입력은 추가 안 함) · 실패 문구 일률(→ CalcFailureNotice 원인별 구분) · 입력 변경 후
-이전 결과 잔존(8종 폼 초기화 — 이월 항목 '취득세 stale 결과' 포함 해소) · 등기 unresolved
-영문 노출(S6 M⑤) · 실수령액 기타 비용 행 소멸(S6 M⑥). 채권 면제 표현 불가(→ exempt 행,
-3c537ac).
+### 3-2. 부분 지정 42건의 의미 — 축마다 다르게 다룹니다
 
-### 10-2. 잔여 보류 (수정 금지 지시 유지 — 지시 있을 때만 손댈 것)
+시·군·구 일부(동·읍·면)만 지정된 이력입니다. 계산기는 구 단위로만 판정하므로 그대로 쓰면
+지정 범위 밖 주택까지 규제로 봅니다. 대표님 결정(2026-08-15)에 따라 축을 나눴습니다.
 
-**S5 Medium 2**: ① 과세기준일 룰을 연중 시행일로 등록하면 연초 조회 실패 — 오류 메시지가
-사정을 설명 못함(가이드 경고로 완화). ② 종부세 배너가 재산세 룰 미집계(승인된 설계 — 한계 인지).
-**S5 Low 8(요지)**: 종부세 과세표준 0 절사 시 맥락 없는 재산세 오류 문구 · 계산 과정 표시
-뺄셈 불일치 가능(rawTax 절사 시점) · 극소 양수 상한(의도 동작) · 나이·연수 placeholder 경계
-(전례상 허용) · 주택 수 1/2/3 고정 · 재산세 도시지역 체크 접힘 후 유지 · 종부세 상한 비교
-비대칭(승인 산식) · property.ts 305줄(승인).
-**S6 Medium 잔여 2+1**: ① 채권 손실률 미입력이어도 bond 룰 선조회 — 룰 미등록이면 전체
-중단(필수 룰 대원칙 부합 측면 — 의도 여부 판단 필요). ④ 채권 행이 is_metro 조건일 때
-metro_scope 룰이 근거 누락(양도세도 동일 전례). 불확실: 인지세 전액 매수인 부담 합산 전제
-미안내(세법 해석 필요).
-**S6 Low(요지)**: 경과조치 날짜 함수 복제(transfer/net-proceeds page) · netProceeds 필드명이
-양도세 breakdown과 정의 다른데 동명 · transfer 결과 통째 전달로 appliedRules payload 중복 ·
-등기 폼 주택 수 정수 미검증 · 실수령액 큰 숫자 산식 캡션 없음 · 중개수수료 기준일=양도일 ·
-text-[11px]·아이콘 직접 import·aria-hidden·OG 이미지(전역 관례·과제).
-**S3 잔여**: 전세(월세 0) 환산 표시 오해 · 단수 처리 코드 고정(floor) · 거래금액 0원 허용 ·
-매매 결과에 입력 금액 미표기.
-**이월(과거분)**: 유상 분기 giftTaxBaseChoice 무시 · fetchValidRules가 rule_key로만 묶음
-(common/세목 동일 키 충돌 소지 — 현재 키 전부 고유) · 계산 액션 rate limit 부재·이력 보존
-정책 없음 · 규제지역 이력 겹침 방어 없음 · 300줄 초과(rule-value·engine-types·CalculatorForm·
-Navbar — 승인 예외 외).
+- **양도세 비과세의 '취득 당시' 축** — 자동 판정에서 **제외**하고 사용자에게 직접 선택을
+  요청합니다(사유 `partial_area`). 구 전체를 지정으로 보면 실제보다 불리해지기 때문입니다.
+- **취득세 중과 · 양도 당시 중과 축** — 구 단위 판정을 **유지**하되 결과에
+  `PartialAreaWarning`으로 "세금이 이보다 낮을 수 있다"는 범위 한계를 경고합니다.
 
-## 11. 미해결·다음 후보
+전체 지정 이력이 같은 시점에 함께 있으면 그것을 우선하므로 경고가 뜨지 않습니다
+(정렬: `is_partial asc`, 동률이면 `designated_from desc`).
 
-acquisition.gift.heavy 등록(증여 중과 개방 — 값 지시서 필요) · heavy 룰 미등록 vs 법정 유예
-구분 불가(의도된 설계 — 인지) · 규제지역 이력 0건 지역의 "비규제" 단정 표시 · 종부세가 조정
-판정을 쓰게 될 경우 규제지역 applies_to 확장 · 법제처 개정 감시(law_id·tax_law_change_queue
-준비됨 — property·comprehensive·registration 일부 룰은 law_id 미확인으로 비움) · 회귀 테스트
-실행기(tax_test_cases — 검산 케이스 30건이 지시서들에 있음) · 개정안 모드 확산(취득세만 UI
-보유. 2026 세제개편안 통과 시 종부세 basic_deduction·assessment_ratio·burden_cap 갱신 필요 —
-룰 note에 예고 기록됨) · 이력 조회 관리자 화면(input.calculator 구분 표시 필요).
+어느 동·읍·면인지는 `note` 컬럼에 있습니다. `note`에는 해제 공고 주소도 함께 들어 있습니다
+(`source_url`은 지정 공고 하나만, 152행에 해제 공고가 메모로 옮겨져 있음).
+
+---
+
+## 4. 취득 당시 조정대상지역 자동 판정
+
+### 4-1. 동작
+
+`transfer-regulated.ts`의 `resolveAcquiredRegulated`가 순서대로 검사합니다.
+
+1. **사용자가 직접 골랐으면 그 값을 씁니다** — 이력 조회조차 하지 않습니다. 자동 판정보다
+   사용자 지정이 항상 우선합니다.
+2. 커버리지 룰(`region.regulated_history_from`)이 있는지
+3. 취득일이 커버리지 시작일 이후인지
+4. 그 시점 이력이 부분 지정이 아닌지
+
+넷 다 통과하면 자동 판정하고, 결과와 근거(지정일·공고 링크)를 화면에 표시합니다. 자동 판정에
+쓴 커버리지 룰은 "적용된 법령 근거"에도 남습니다.
+
+### 4-2. 판정하지 못하는 세 사유
+
+| 사유 코드 | 뜻 | 화면 문구 요지 |
+|---|---|---|
+| `no_coverage_rule` | 커버리지 룰 미등록 | 과거 지정 이력이 아직 등록되지 않아 직접 선택이 필요합니다 |
+| `before_coverage` | 취득일이 이력 시작 이전 | 이력이 없는 것이 곧 비규제였다는 뜻은 아니므로 임의로 판단하지 않았습니다 |
+| `partial_area` | 그 시점 이력이 부분 지정 | 일부 동·읍·면만 지정된 곳이라 구 전체로 판정할 수 없습니다 |
+
+세 경우 모두 **임의로 비규제로 보지 않고** 사용자에게 묻습니다. 비규제로 단정하면 거주 요건이
+빠져 세금이 실제보다 적게 계산되기 때문입니다.
+
+### 4-3. 커버리지 룰 등록 시 주의
+
+- 세목을 반드시 **"공통 (전 세목)"**으로 두세요. 특정 세목에 넣으면 자동 판정이 조용히 꺼집니다.
+- `rule_value.from`은 등록된 이력 중 **가장 이른 지정일**로. 실제보다 이르면 이력 없는 구간이
+  "그때 비규제"로 자동 판정됩니다.
+- **룰의 시행일(`effective_from`)도 같은 날짜(또는 그보다 앞)로** 두세요. 화면은 오늘 기준으로
+  자동 판정 활성 여부를 보는데 엔진은 양도일 기준으로 룰을 싣기 때문에, 시행일을 늦게 잡으면
+  화면과 계산이 어긋납니다. 현재는 둘 다 2016-11-03이고 양도세 룰이 2023-01-01부터라 이
+  경로에 닿지 않습니다.
+
+---
+
+## 5. 조건 필드 전체 (세율 행 `when`이 쓸 수 있는 키)
+
+**여기 없는 키를 쓰면 저장 단계에서 거부됩니다.** 값이 미확정(`undefined`)이면 그 조건을 쓴
+행은 매칭 후보에서 빠지고, 결과에 "판정하지 못한 조건"으로 표시됩니다 — 임의로 false 처리하지
+않습니다.
+
+| 계산기 | 조건 필드 |
+|---|---|
+| 취득세 | `price` · `house_count` · `is_regulated` · `area_over_85` · `first_home` · `temporary_two_home` · `area_sqm` · `official_price` · `is_metro` |
+| 인지세 | `price` · `is_housing` |
+| 중개수수료 | `deal_type` · `price` · `sido` |
+| 등기비용(채권) | `official_price` · `price` · `sido` · `is_metro` |
+| 재산세 | `official_price` · `is_one_house` |
+| 종부세 | `house_count` · `is_one_house` · `total_official_price` · `age` · `holding_years` · `residence_years` · `is_residing` · `residing_official_price` · `has_regulated_house` |
+| 양도세 | `house_count` · `is_regulated`(양도 당시) · `holding_years` · `holding_years_ltsd` · `residence_years` · `sido` · `sigungu` · `is_metro` · `transfer_price` |
+
+`is_metro`는 `region.metro_scope` 룰과 시·도 입력이 둘 다 있어야 확정됩니다.
+
+---
+
+## 6. 엔진 실패 코드 (`TaxEngineErrorCode`)
+
+| 코드 | 뜻 |
+|---|---|
+| `INVALID_INPUT` | 입력값 오류 |
+| `RULE_NOT_REGISTERED` | 그 시점 룰 미등록 — **절대 0원으로 대체하지 않습니다** |
+| `RULE_CONFLICT` | 같은 `rule_key`에 유효 룰이 2건 이상 — 계산 중단 |
+| `RULE_VALUE_INVALID` | `rule_value` 구조가 스키마와 다름(관리자 입력 오류) |
+| `NO_MATCHING_RATE_ROW` | 세율표에 입력 조건에 맞는 행이 없음 |
+| `AMBIGUOUS_RATE_ROW` | 우선순위로도 행이 하나로 정해지지 않음 |
+| `DB_ERROR` | DB 조회 실패 |
+
+실패 결과에는 `acquiredRegulatedUnavailable`(위 4-2의 세 사유)이 선택적으로 함께 실립니다.
+화면 문구 변환은 `CalcFailureNotice.tsx`의 `userFacingFailureMessage` 한 곳에 모여 있습니다.
+
+---
+
+## 7. 마이그레이션 적용 현황
+
+| 번호 | 내용 | 적용 |
+|---|---|---|
+| 055 | `tax_rules` · `tax_regulated_areas` 등 계산기 스키마 전체 | ✅ |
+| 056 | 같은 `rule_key`의 기간 중복 방지 제약 | ✅ |
+| 057 | 공통 룰(`tax_type='common'`) 허용 + 법령 참조 컬럼(`law_id`·`law_article_no`) | ✅ |
+| 058 | 계산기 세목 추가(`tax_type` 확장) | ✅ |
+| 059 | `tax_regulated_areas.note` 컬럼 | ✅ |
+| 065 | `tax_regulated_areas.is_partial` (부분 지정 표시) | ✅ 2026-08-15 적용 |
+
+060~064는 계산기와 무관합니다(견적 요청·주문 기관정보·문의 첨부·활동 로그 인덱스·매뉴얼 스토리지).
+**다음 마이그레이션 번호는 066입니다.** 번호를 새로 딸 때 반드시 `supabase/migrations`를
+확인하세요 — 과거에 060이 이미 쓰여 065로 바꾼 적이 있습니다.
+
+---
+
+## 8. 이번 작업의 커밋 이력 (2026-08-15 ~ 16, 전부 배포됨)
+
+`d94593c`가 현재 `origin/main`입니다.
+
+| 커밋 | 내용 |
+|---|---|
+| `5714db4` | 마이그레이션 065 — 규제지역 이력에 부분 지정 컬럼 |
+| `11664c6` | 관리자 규제지역 화면에 부분 지정 입력칸 |
+| `ef7b34a` | 엔진에 취득 당시 자동 판정 — 근거·미판정 사유를 결과에 담음 |
+| `77e3e9e` | 자동 판정 결과·근거 표시와 직접 지정 경로 |
+| `7ef0def` | 커버리지 룰 저장 검증기·세목 강제·입력 안내 |
+| `eff4501` | 부분 지정이 판정 근거일 때 결과에 경고 |
+| `fc1a18a` | 폼 연동·계산 이력에 판정 근거·옛 문구 정리 |
+| `35a9c86` | **규제지역 해제일 경계 수정**(반열림) |
+| `ed4c1b2` | **비과세 거주 요건에 부칙 적용 시작 취득일 필드** |
+| `a1abea9` | 커버리지 룰 시행일 안내 |
+| `d94593c` | 재검사 지적 반영 — 비과세 사유 문구·죽은 이력 차단·규약 표기 통일 |
+
+그 이전(배포 완료): 연도별 세액 비교(`YearComparisonSection`), 계산기 PC 폭 확대
+(`CalcSection`·`CalcColumns`), 2026 세제개편안 룰 등록.
+
+### DB 직접 변경 이력 (관리자 화면을 거치지 않아 감사 기록에 없음)
+
+- 2026-08-15 `tax_regulated_areas` 기존 40행 삭제 → 192행 등록.
+  백업: `db-backup/tax_regulated_areas_before_history_20260815.json`
+- 2026-08-15 `region.regulated_history_from` 커버리지 룰 등록
+- 2026-08-16 `transfer.exemption`에 `appliesToAcquiredFrom: 2017-08-03` 추가.
+  백업: `db-backup/tax_rule_transfer_exemption_before_20260815.json`
+
+---
+
+## 9. 계산기를 새로 추가하는 절차
+
+1. `lib/tax/<name>-types.ts`에 입력·결과·`rule_value` 스키마 타입
+2. `lib/tax/<name>-rules.ts`에 `rule_value` 런타임 검증기 — **형식만 검사하고 값은 넣지 않습니다**
+3. `lib/tax/<name>.ts`에 엔진 — `fetchValidRules` → `requireRule` → `parse*` → `selectRateRow` →
+   `use(rule)`로 근거 수집 → 성공/실패 반환
+4. `app/tax/<name>/page.tsx`(metadata 필수) · `*Form.tsx` · `actions.ts` · `*ResultPanel.tsx`
+5. `lib/tax/calculators.ts`에 등록(`available` 플래그로 미완성 계산기 숨김)
+6. `app/admin/tax/rules/rule-guides-<name>.ts`에 관리자 안내와 스켈레톤
+7. 마이그레이션으로 `tax_type` 추가(058 참고)
+8. 룰을 관리자 화면에서 등록 — 등록 전까지 계산기는 "근거 미등록"으로 멈춥니다(정상)
+
+---
+
+## 10. 다음 세션이 지켜야 할 원칙
+
+1. **세율·금액·날짜·연도를 코드에 넣지 마세요.** 화면 문구에도 넣지 않습니다. 전부 룰에서
+   옵니다. 예외는 대표님이 승인한 문구뿐입니다(`RuleModeSelector`의 2027·2028·2029).
+2. **룰이 없으면 0원이 아니라 멈춥니다.** 미등록을 0으로 대체하는 코드를 절대 쓰지 마세요.
+3. **판정하지 못한 조건은 임의로 false 처리하지 않습니다.** 그 조건을 쓴 행을 후보에서 빼고
+   사용자에게 밝힙니다.
+4. **사용자가 직접 넣은 값이 자동 판정보다 우선합니다.**
+5. **회귀 위험이 있으면 손대지 말고 보고하세요.** 건너뛴 항목보다 깨진 화면이 더 나쁩니다.
+6. 파일은 300줄 이하. 초과 시 분리하되 계산 경로를 건드리는 분리는 승인 후에.
+7. 모든 함수에 한국어 JSDoc.
+8. 로컬 확인은 `npx next start -p 4123`(빌드 후). `npm run dev`는 쓰지 않습니다.
+9. 작업이 끝나면 `git push origin main`까지 해야 끝난 것입니다.
+10. 검증은 `npx tsc --noEmit` + `npm run build`. ESLint 설정이 없어 `next lint`는 쓸 수 없습니다.
+
+---
+
+## 11. 잔여 보류 항목
+
+### 11-1. 파일 크기 초과 4건
+
+| 파일 | 현재 | 기준 | 분리 후보 |
+|---|---|---|---|
+| `lib/tax/transfer.ts` | 774줄 | 승인 예외 748 | 비과세 판정 블록(취득 당시 규제 판정·고가주택 안분)을 `transfer-exemption.ts`로 |
+| `lib/tax/transfer-rules.ts` | 389줄 | 승인 예외 380 | 장기보유특별공제 검증기 3종을 `transfer-rules-ltsd.ts`로 |
+| `lib/tax/transfer-types.ts` | 301줄 | 300 (예외 없음) | `rule_value` 스키마 타입과 입력·결과 타입을 두 파일로 |
+| `lib/tax/rule-store.ts` | 305줄 | 300 (예외 없음) | 규제지역 조회 2함수를 `regulated-store.ts`로 |
+
+그 밖에 예외 목록에 없는 기존 초과: `rule-value.ts` 595줄, `comprehensive.ts` 458줄(승인),
+`engine-types.ts` 414줄, `acquisition.ts` 355줄, `property.ts` 321줄, `rule-guides.ts` 308줄.
+**전부 계산 경로라 배포 뒤 별도 작업으로 하시는 편이 안전합니다.**
+
+### 11-2. 이번 점검에서 나온 Medium 이하 (수정하지 않음)
+
+- **실수령액 폼의 거주기간 처리가 양도세 폼과 다름** — 양도세는 주택 수와 무관하게 항상
+  받는데 실수령액은 1주택 트랙일 때만 받습니다. 거주기간 조건을 쓰는 행이 생기면 두 화면의
+  결과가 갈립니다. 실수령액 폼에는 "거주기간 > 보유기간" 사전 가드도 없습니다(엔진이 막음).
+- **취득세·등기비용 계산 이력에 부분 지정 근거가 안 남음** — 양도세·실수령액은 남깁니다.
+  나중에 "왜 중과가 걸렸는지"를 되짚을 수 없습니다.
+- **규제지역 관리 화면에 192행을 위한 수단이 없음** — 검색·필터·페이지네이션이 없고 삭제
+  액션도 없습니다(`actions.ts`에 `saveTaxArea`만). 잘못 들어간 행을 UI에서 지울 수 없습니다.
+- **제도 시행 이전 취득도 사용자에게 물음** — 조정대상지역 제도가 2016-11-03에 시작됐으므로
+  그 이전 취득은 "취득 당시 조정대상지역"일 수 없는데 `before_coverage`로 분류돼 장기 보유
+  1주택자가 예외 없이 추가 선택을 요구받습니다. 커버리지 룰에 제도 시행일 필드를 두는 방법이
+  있습니다(날짜는 룰에).
+- **규제지역 이력 저장에 감사 기록이 없음** — 이 표 한 행이 비과세 거주 요건을 가르는데 누가
+  언제 `is_partial`을 바꿨는지 남지 않습니다(세금 계열 관리자 액션 전체의 기존 관례).
+- **고가주택 안분 경로에 거주 요건 면제 근거를 남길 곳이 없음** — 전액 비과세 경로에는
+  사유 한 줄이 들어가지만 안분 경로는 필드가 없습니다(잘못된 정보가 나가는 것은 아님).
+- **아이콘 `aria-hidden` 누락** — 결과 패널 4종의 기존 아이콘들. 신규 컴포넌트는 준수.
+- **`SELECT_CLS` 문자열이 4곳에 복제** — `AcquiredRegulatedField`·`TransferForm`·
+  `NetProceedsForm`·`AreasManager`.
+
+### 11-3. 미해결 · 확인 필요
+
+- **세종특별자치시 해제일** — CSV는 `2016-11-03 ~ 2022-11-14`인데, 2022-11-14 조치에서는
+  유지되고 2023-01-05에 해제된 것으로 보인다는 지적이 있었습니다(확신도 중간). 사실이라면
+  2022-11-14 ~ 2023-01-04 취득분이 비규제로 잘못 판정됩니다. **원 공고 대조가 필요합니다.**
+- **부분 지정 경고는 아직 화면에 도달하지 않습니다** — 오늘 시점에 유효한 이력 40건이 전부
+  전체 지정이고, 취득세·양도 당시 중과는 최근 시점만 계산 가능하기 때문입니다. 코드는
+  준비돼 있고 위험도 없습니다.
+- **과거 시점 계산 범위** — 세목별로 룰이 등록된 가장 늦은 시작일이 그 세목의 계산 가능
+  시점입니다: 인지세 2002-01-01 · 중개수수료 2021-10-19 · 종부세 2023-01-01 ·
+  등기비용 2025-08-01 · 재산세 2026-01-01 · 양도세 2026-05-10 · 취득세 2026-06-01.
+  그보다 이른 기준일은 "근거 미등록"으로 멈춥니다. 과거 신고용으로 쓰려면 과거 세율 룰을
+  등록해야 합니다.
+- **`tax_test_cases` 실행기가 없습니다** — 회귀 테스트가 자동화돼 있지 않아 검증은 브라우저
+  실측에 의존합니다.
+
+---
 
 ## 12. 새 세션이 처음 읽어야 할 파일 순서
 
-1. **이 파일** (HANDOVER-calc-2026-08-16.md)
-2. 작업 대상 Stage의 설계 문서(prompts/feat-tax-*)와 값 지시서(prompts/*-룰-등록.md)
-3. `src/lib/tax/types.ts` → `labels.ts` — 세목 체계
-4. `engine-types.ts` → 대상 세목의 `*-types.ts` — 계약. 이어서 `rule-store.ts` →
-   `rule-value.ts` → 대상 `*-rules.ts` → (양도 관련이면) `period.ts`
-5. 엔진: 단순한 것부터 `stamp.ts` → `brokerage.ts` → `acquisition.ts` → `property.ts` →
-   `comprehensive.ts`(재산세 호출 전례) → `transfer.ts`(4대 구분 필독) →
-   `registration.ts`·`net-proceeds.ts`(조립형 전례)
-6. `calculators.ts` → `tax/layout.tsx` → `_components/`(TaxNav·ApartmentOnlyNotice·
-   RuleBasisBanner·**CalcFailureNotice**)
-7. 최신 화면 본보기: 조립형은 `tax/net-proceeds/` 4종, 단독형은 `tax/property/` 4종
-8. 관리자: `rules/rule-guides.ts`(+세목별 분리 파일 4개) → `rules/actions.ts`
-   (VALUE_VALIDATORS·KEY_REQUIRED_TAX_TYPE) → `areas/`
-9. `supabase/migrations/055~059`
+1. **이 문서** — 전체 지도
+2. `CLAUDE.md` — 프로젝트 규칙(한국어 전용·push까지가 완료 등)
+3. `src/lib/tax/engine-types.ts` — 입력·결과·실패 코드의 공통 타입. 여기부터 봐야 나머지가 읽힙니다
+4. `src/lib/tax/rule-store.ts` — 룰 조회·규제지역 판정. 모든 엔진이 여기를 거칩니다
+5. `src/lib/tax/rule-value.ts` — 세율 행 매칭(`selectRateRow`)과 조건 판정 규칙
+6. `src/lib/tax/acquisition.ts` — 가장 단순한 전체 엔진. 구조를 익히기 좋습니다
+7. `src/lib/tax/transfer.ts` — 가장 복잡한 엔진. 비과세·중과·장기보유특별공제가 다 들어 있습니다
+8. `src/lib/tax/transfer-regulated.ts` — 취득 당시 자동 판정
+9. `src/app/tax/transfer/` 한 벌 — 화면 구조(page → form → actions → panel)
+10. `src/app/admin/tax/rules/rule-guides*.ts` — 각 룰의 값 형식과 운영자 안내
+
+---
+
+*작성: 2026-08-16 · 기준 커밋 `d94593c` · 이전 인계서 전부 대체*
