@@ -15,6 +15,7 @@ import { isRateLimited } from '@/lib/auth-error'
 import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import AuthSocialButton from '../_components/AuthSocialButton'
 import { EVENT, trackEvent } from '@/lib/analytics-events'
+import { SIGNUP_TRACKED_KEY } from '@/lib/signup-tracking'
 import AuthBrand from '../_components/AuthBrand'
 
 export default function RegisterForm() {
@@ -89,9 +90,12 @@ export default function RegisterForm() {
       return
     }
 
-    // 가입 요청 성공 — 흐름 측정(개인정보 없이 방식만). ⚠️ 이메일 가입 경로만 집계된다 —
-    // 소셜 가입(카카오 등)은 외부로 이동했다 돌아오는 방식이라 이 지점을 지나지 않는다(보류 항목)
+    // 가입 요청 성공 — 흐름 측정(개인정보 없이 방식만). 소셜 가입은 콜백 경유
+    // SignupTracker가 같은 sign_up 사건으로 집계한다(2026-08-15 해소).
+    // 브라우저 1회 표식을 여기서도 남긴다 — 이메일 가입 직후 5분 안에 같은 이메일로
+    // 소셜을 연결해 로그인하면 콜백이 신규로 볼 수 있어, 표식이 이중 계수를 막는다.
     trackEvent(EVENT.SIGN_UP, { method: 'email' })
+    try { localStorage.setItem(SIGNUP_TRACKED_KEY, String(Date.now())) } catch { /* 저장소 불가 — 무시 */ }
 
     // 이메일 확인이 비활성(대시보드 설정)이면 signUp이 즉시 세션을 반환한다 → 이미 로그인 상태.
     // 이 경우 코드 없는 인증 화면에 가두지 않고 바로 대시보드로 보낸다.

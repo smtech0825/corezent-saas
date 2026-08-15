@@ -10,6 +10,7 @@ import { Noto_Serif_KR } from 'next/font/google'
 import './globals.css'
 import Analytics from '@/components/Analytics'
 import CookieConsentBanner from '@/components/CookieConsentBanner'
+import SignupTracker from '@/components/common/SignupTracker'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SITE_URL } from '@/lib/site'
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next'
@@ -89,6 +90,9 @@ export default async function RootLayout({
         {children}
         {/* 분석 스크립트 (쿠키 동의 시에만 로드) */}
         <Analytics />
+        {/* 소셜 가입 측정 감지 — 화면에 아무것도 그리지 않고, 콜백이 심은 1회용 쿠키가
+            없으면 문자열 검사 한 번으로 끝난다(전 페이지 공용이라 무동작이 기본) */}
+        <SignupTracker />
         {/* GDPR/CCPA 쿠키 동의 배너 */}
         <CookieConsentBanner />
         {/* Vercel Analytics & Speed Insights */}
