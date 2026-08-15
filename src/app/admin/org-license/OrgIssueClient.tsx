@@ -14,7 +14,7 @@ import CopyButton from '@/components/common/CopyButton'
 import {
   type OrgLicenseInput, validateInput, calcPreview,
   buildRegisterSql, buildCheckSql, buildTopupSql,
-  won, ymd, genKey, nextMonthFirst, oneYearEnd,
+  won, ymd, genKey, nextMonthFirst, oneYearEnd, n,
 } from './_lib/orgLicenseSql'
 import { FIELD_SECTIONS, DEFAULT_INPUT, MISTAKES, type FieldChip } from './_lib/orgLicenseFields'
 import IssuePanel from './IssuePanel'
@@ -39,6 +39,7 @@ export default function OrgIssueClient() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(input)) } catch { /* 저장 실패 무시 */ }
   }, [input])
 
+  /** 입력 한 칸 갱신 — 모든 칸이 이 함수 하나를 지나간다 */
   function set(key: keyof OrgLicenseInput, value: string) {
     setInput((prev) => ({ ...prev, [key]: value }))
   }
@@ -65,7 +66,13 @@ export default function OrgIssueClient() {
   const sqlCheck = errCount > 0 ? '' : buildCheckSql(input)
   const sqlTopup = errCount > 0 ? '' : buildTopupSql(input)
 
-  const markFor = (key: string) => marks.find((m) => m.field === key)
+  /** 해당 칸에 표시할 오류·경고 표식 — 원본과 같이 여러 개 겹치면 마지막 것을 보여준다 */
+  const markFor = (key: string) => marks.filter((m) => m.field === key).slice(-1)[0]
+
+  // 워크스페이스 한도 환율 환산 안내 — 정본 usdHint 그대로(환율 오입력을 잡아 주는 안내)
+  const fx = parseFloat(input.fx_krw_per_usd.trim()); const wl = parseFloat(input.workspace_limit_usd.trim())
+  const usdHint = (!isNaN(fx) && fx && !isNaN(wl) && wl)
+    ? ('환율 ' + fx.toLocaleString('ko-KR') + '원 기준 ' + won(wl * fx)) : ''
 
   return (
     <div className="space-y-6">
@@ -80,11 +87,24 @@ export default function OrgIssueClient() {
         </p>
       </div>
 
+      {/* 쓰는 법 — 원본 4단계 안내 그대로(SQL 복사 흐름. 바로 발급은 4-1절에 자체 안내) */}
+      <div className="border border-rule bg-paper-raised rounded-card p-5 text-sm">
+        <p className="font-bold text-ink mb-2">쓰는 법</p>
+        <ol className="list-decimal pl-5 space-y-1 text-ink-soft">
+          <li>아래 칸을 채웁니다. <b className="text-ink">붉은 별표</b>가 붙은 10개는 반드시 채워야 합니다.</li>
+          <li>중간의 <b className="text-ink">검산</b>에서 이번 달 한도와 1인당 몫이 계약서와 맞는지 눈으로 봅니다.</li>
+          <li><b className="text-ink">[등록 SQL 복사]</b>를 누르고 Supabase의 SQL Editor에 붙여넣어 실행합니다.</li>
+          <li>그다음 <b className="text-ink">[확인 SQL 복사]</b>를 실행해 숫자가 맞는지 봅니다.</li>
+        </ol>
+        <p className="text-xs text-ink-faint mt-2">입력값은 이 브라우저에 자동 저장됩니다.</p>
+      </div>
+
       {/* 검산 — 원본 검산 6개 그대로 */}
       <div className="border border-rule bg-paper-raised rounded-card p-5">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
-          <div><p className="text-xs text-ink-faint">이번 달 한도</p><p className="text-lg font-bold text-ink">{input.base_package_krw.trim() ? won(pv.limit) : '-'}</p></div>
-          <div><p className="text-xs text-ink-faint">1인당 이번 달 몫</p><p className="text-lg font-bold text-ink">{input.base_package_krw.trim() && input.pc_count.trim() ? won(pv.per) : '-'}</p></div>
+          {/* 표시 조건은 정본과 동일하게 "숫자값이 0이 아닐 때"(문자열 존재가 아님) — 0을 넣으면 '-' */}
+          <div><p className="text-xs text-ink-faint">이번 달 한도</p><p className="text-lg font-bold text-ink">{n(input, 'base_package_krw') ? won(pv.limit) : '-'}</p></div>
+          <div><p className="text-xs text-ink-faint">1인당 이번 달 몫</p><p className="text-lg font-bold text-ink">{n(input, 'base_package_krw') && n(input, 'pc_count') ? won(pv.per) : '-'}</p></div>
           <div><p className="text-xs text-ink-faint">1인당 월 문서</p><p className="text-lg font-bold text-ink">{pv.per ? pv.docs.toLocaleString('ko-KR') + '장' : '-'}</p>
             <p className="text-[11px] text-ink-faint">문서 1장 97.2원 기준 · 35개 기능 평균</p></div>
           <div><p className="text-xs text-ink-faint">등록될 대수(tier)</p><p className="text-lg font-bold text-ink">{pv.tier || '-'}</p></div>
@@ -128,9 +148,16 @@ export default function OrgIssueClient() {
                     value={input[f.key]}
                     onChange={(e) => set(f.key, e.target.value)}
                     placeholder={f.placeholder}
+                    min={f.min}
+                    max={f.max}
+                    step={f.step}
                     className="w-full bg-paper border border-rule text-ink text-sm rounded-md px-3 py-2 focus:outline-none focus:border-mark"
                   />
                   {f.hint && <p className="text-[11px] text-ink-faint mt-1">{f.hint}</p>}
+                  {/* 정본 usdHint — 워크스페이스 한도 칸에만 환율 환산액을 보여준다 */}
+                  {f.key === 'workspace_limit_usd' && usdHint && (
+                    <p className="text-[11px] text-ink-faint mt-1">{usdHint}</p>
+                  )}
                   {mk && (
                     <p className={`text-[11px] mt-1 font-semibold ${mk.kind === 'err' ? 'text-caution' : 'text-ink-soft'}`}>{mk.msg}</p>
                   )}

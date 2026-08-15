@@ -9,7 +9,8 @@
 --          원본의 BEGIN;/COMMIT;은 함수의 트랜잭션 성질이 대신한다.
 --          issued_at·updated_at은 원본과 동일하게 넣지 않는다(DB가 채운다).
 -- 안전   : 같은 키 재발급은 license_keys UNIQUE(license_key)가 거부한다(원본과
---          동일 동작 — "두 번째는 거부"). 호출은 service_role만 가능.
+--          동일 동작 — "두 번째는 거부"). ★UNIQUE 제약 실재는 2026-08-15 운영자
+--          직접 조회로 확인됨(tier CHECK도 ^[0-9]{1,4}pc$ 로 확인). 호출은 service_role만.
 -- 관례   : 006_geniework_tester_ai_rpc.sql 과 동일(SECURITY DEFINER·search_path·REVOKE)
 -- ★ 실행은 운영자(대표님)가 해당 프로젝트 SQL Editor에서 직접 한다.
 -- ════════════════════════════════════════════════════════════════════════

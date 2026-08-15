@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { OrgLicenseInput, OrgLicensePreview } from './_lib/orgLicenseSql'
 import { won } from './_lib/orgLicenseSql'
+import { formatDateTimeKR } from '@/lib/datetime'
 import { issueOrgLicense, type IssueResult } from './actions'
 
 interface Props {
@@ -26,9 +27,11 @@ export default function IssuePanel({ input, preview, errCount }: Props) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState<IssueResult | null>(null)
+  // 발급 시점의 미리보기 값 고정 — 발급 후 폼을 고쳐도 표가 바뀌지 않게(다음 기관과 섞임 방지)
+  const [doneRows, setDoneRows] = useState<[string, string][] | null>(null)
   const [failReason, setFailReason] = useState('')
 
-  const rows: [string, string][] = [
+  const liveRows: [string, string][] = [
     ['기관명', input.org_name.trim() || '-'],
     ['라이선스 키', input.license_key.trim() || '-'],
     ['PC 대수', preview.tier || '-'],
@@ -37,6 +40,16 @@ export default function IssuePanel({ input, preview, errCount }: Props) {
     ['이번 달 한도', won(preview.limit)],
     ['1인당 몫', won(preview.per)],
   ]
+  // 발급이 끝났으면 그 시점 값을, 아니면 실시간 값을 보여준다
+  const rows = doneRows ?? liveRows
+
+  /** 다음 발급 준비 — 결과·미리보기를 닫고 폼 입력만 남긴다 */
+  function resetForNext() {
+    setDone(null)
+    setDoneRows(null)
+    setFailReason('')
+    setPreviewOpen(false)
+  }
 
   /** 발급 실행 — 확인 창을 거치고, 처리 중에는 버튼을 잠가 두 번 눌림을 막는다 */
   async function handleIssue() {
@@ -49,8 +62,10 @@ export default function IssuePanel({ input, preview, errCount }: Props) {
     setFailReason('')
     try {
       const res = await issueOrgLicense(input)
-      if (res.status === 'ok') setDone(res.created ?? { tier: null, expiresAt: null, orgName: null, pcCount: null })
-      else setFailReason(res.reason)
+      if (res.status === 'ok') {
+        setDone(res.created ?? { tier: null, expiresAt: null, orgName: null, pcCount: null, serverMonthlyLimit: null })
+        setDoneRows(liveRows)
+      } else setFailReason(res.reason)
     } catch {
       setFailReason('발급 요청이 전달되지 않았습니다. 네트워크를 확인한 뒤 다시 시도해 주세요.')
     } finally {
@@ -89,17 +104,30 @@ export default function IssuePanel({ input, preview, errCount }: Props) {
           </table>
 
           {done ? (
-            <div className="border border-ok/30 bg-ok-soft rounded-card p-4 text-sm">
-              <p className="font-bold text-ok mb-2">발급되었습니다 — 아래는 두 표에서 실제로 다시 읽은 값입니다</p>
+            <div className="border border-ok/30 bg-ok-soft rounded-card p-4 text-sm space-y-2">
+              <p className="font-bold text-ok">발급되었습니다 — 아래는 두 표에서 실제로 다시 읽은 값입니다</p>
               <p className="text-ink">
                 기관명 <b>{done.orgName ?? '(조회 실패)'}</b> · 등록된 대수 <b>{done.tier ?? '(조회 실패)'}</b> ·
                 계약 PC 수 <b>{done.pcCount ?? '(조회 실패)'}</b> · 만료{' '}
-                <b>{done.expiresAt ? new Date(done.expiresAt).toLocaleString('ko-KR') : '(조회 실패)'}</b>
+                <b>{done.expiresAt ? formatDateTimeKR(done.expiresAt) : '(조회 실패)'}</b>
               </p>
-              <p className="text-xs text-ink-soft mt-2">
-                이번 달 한도·1인당 몫은 위 검산과 같은 규칙으로 계산된 값입니다. 서버 함수 기준의
-                최종 확인은 5번의 「확인 SQL」을 SQL Editor에서 실행해 주세요.
-              </p>
+              {done.serverMonthlyLimit != null ? (
+                <p className="text-ink">
+                  서버 계산 함수 기준 이번 달 한도 <b>{won(done.serverMonthlyLimit)}</b> — 위 검산과 같아야 정상입니다.
+                </p>
+              ) : (
+                <p className="text-xs text-ink-soft">
+                  이번 달 한도·1인당 몫은 위 검산과 같은 규칙으로 계산된 값입니다(서버 함수 값 아님).
+                  서버 함수 기준의 최종 확인은 5번의 「확인 SQL」을 SQL Editor에서 실행해 주세요.
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={resetForNext}
+                className="text-sm font-semibold border border-rule text-ink-soft hover:text-ink hover:border-ink-faint px-4 py-2 rounded-md transition-colors"
+              >
+                다음 발급 준비
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-3">

@@ -20,6 +20,7 @@ export const KIND_OPTIONS = [
   { value: 'content',      label: '콘텐츠' },
   { value: 'section',      label: '섹션' },
   { value: 'settings',     label: '설정' },
+  { value: 'org_license',  label: '기관 발급' },
 ]
 
 // 기간 — 기본 '전체': 오래된 기록도 기본 화면에서 가려지지 않는다(admin/logs와 동일 원칙)
