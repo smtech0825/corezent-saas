@@ -40,7 +40,8 @@ export default function TaxHubPage() {
       </section>
 
       {/* 분류별 계산기 목록 */}
-      <CalcSection className="space-y-8">
+      {/* 허브는 2단 배치가 없는 목록이라 기존 폭 유지(narrow) — 카드가 통폭으로 늘어지는 것 방지 */}
+      <CalcSection width="narrow" className="space-y-8">
         {CALCULATOR_CATEGORIES.map((category) => {
           const items = TAX_CALCULATORS.filter((c) => c.category === category)
           if (items.length === 0) return null
