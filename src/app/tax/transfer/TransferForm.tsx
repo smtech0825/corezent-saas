@@ -20,12 +20,14 @@ import SegmentControl from '@/components/common/SegmentControl'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import { fullYearsBetween } from '@/lib/tax/period'
 import type { TaxRuleMode } from '@/lib/tax/types'
-import type { TransferHouseCount, TransferResult } from '@/lib/tax/transfer-types'
+import type { TransferHouseCount, TransferResult, TransferSuccess } from '@/lib/tax/transfer-types'
+import type { YearComparison } from '@/lib/tax/year-comparison'
 import RuleModeSelector from '../_components/RuleModeSelector'
 import AdvancedFields from './AdvancedFields'
 import { calculateTransfer } from './actions'
 import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import TransferResultPanel from './TransferResultPanel'
+import TransferComparisonCards from './TransferComparisonCards'
 
 /** Input과 톤을 맞춘 select 클래스 (취득세 폼과 동일 관례) */
 const SELECT_CLS =
@@ -95,6 +97,7 @@ export default function TransferForm({ graceDeadlineText }: {
   const [graceDeposit, setGraceDeposit] = useState(false)
   // ── 결과 ──────────────────────────────────────────────────────────────────
   const [result, setResult] = useState<TransferResult | null>(null)
+  const [comparison, setComparison] = useState<YearComparison<TransferSuccess> | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
@@ -102,6 +105,7 @@ export default function TransferForm({ graceDeadlineText }: {
   /** 입력이 바뀌면 이전 결과를 지운다 — 바뀐 입력과 무관한 옛 결과가 화면에 남는 것을 방지 */
   function clearStaleResult() {
     if (result) setResult(null)
+    if (comparison) setComparison(null)
   }
 
   const sigunguList = sido ? (findSigunguList(sido) ?? []) : []
@@ -188,8 +192,10 @@ export default function TransferForm({ graceDeadlineText }: {
           decedentAcquiredAt: inherited && decedentAcquiredAt ? decedentAcquiredAt : undefined,
           graceContractDate: graceContractDate || undefined,
           graceDepositReceived: graceContractDate ? graceDeposit : undefined,
+          includeYearComparison: true,
         })
         setResult(res.result)
+        setComparison(res.comparison ?? null)
         requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
@@ -198,6 +204,7 @@ export default function TransferForm({ graceDeadlineText }: {
   }
 
   return (
+    <>
     <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
@@ -325,5 +332,11 @@ export default function TransferForm({ graceDeadlineText }: {
       )}
       </CalcResultSlot>
     </CalcColumns>
+
+    {/* 연도별 비교 — 2단 아래 통폭. 오른쪽 결과 열(≈620px)은 카드 4장을 담기에 좁아
+        CalcColumns 밖(CalcSection 통폭)에 둔다. 비교가 없으면(요청 실패·본 계산 실패·
+        비교 불성립) 아무것도 그리지 않는다 */}
+    {comparison && <TransferComparisonCards comparison={comparison} />}
+    </>
   )
 }

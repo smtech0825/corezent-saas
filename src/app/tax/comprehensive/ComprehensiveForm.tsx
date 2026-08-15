@@ -21,7 +21,8 @@ import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
 import type { TaxRuleMode } from '@/lib/tax/types'
-import type { ComprehensiveHouseCount, ComprehensiveResult } from '@/lib/tax/comprehensive-types'
+import type { ComprehensiveHouseCount, ComprehensiveResult, ComprehensiveSuccess } from '@/lib/tax/comprehensive-types'
+import type { YearComparison } from '@/lib/tax/year-comparison'
 import RuleModeSelector from '../_components/RuleModeSelector'
 import {
   RegulatedSelect,
@@ -34,6 +35,7 @@ import {
 import { calculateComprehensive } from './actions'
 import CalcColumns, { CalcResultSlot } from '../_components/CalcColumns'
 import ComprehensiveResultPanel from './ComprehensiveResultPanel'
+import ComprehensiveComparisonCards from './ComprehensiveComparisonCards'
 
 /** 숫자 미리보기 한 줄 (다른 계산기 폼과 동일 관례) */
 function WonPreview({ value }: { value: string }) {
@@ -87,7 +89,11 @@ export default function ComprehensiveForm() {
   // ── 결과 ──────────────────────────────────────────────────────────────────
   // 계산 과정 표시에 제출 시점의 공시가격 합계가 필요해 결과와 함께 보관한다
   // (입력을 바꿔도 이미 표시된 결과가 흔들리지 않게 — 결과·입력 쌍을 함께 저장)
-  const [submitted, setSubmitted] = useState<{ result: ComprehensiveResult; totalOfficialPrice: number } | null>(null)
+  const [submitted, setSubmitted] = useState<{
+    result: ComprehensiveResult
+    totalOfficialPrice: number
+    comparison: YearComparison<ComprehensiveSuccess> | null
+  } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const resultRef = useRef<HTMLDivElement>(null)
@@ -162,8 +168,9 @@ export default function ComprehensiveForm() {
           // 산식 대상은 '1세대 1주택이 아닌 전부'(개편안 원문 ❷) — 주택 수 1이어도 보낸다
           residingOfficialPrice: proposedMode && !oneHouseTrack ? residingPriceNum : undefined,
           hasRegulatedHouse: proposedMode && hasRegulated !== '' ? hasRegulated === 'yes' : undefined,
+          includeYearComparison: true,
         })
-        setSubmitted({ result: res.result, totalOfficialPrice: priceNum })
+        setSubmitted({ result: res.result, totalOfficialPrice: priceNum, comparison: res.comparison ?? null })
         requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       } catch {
         setFormError('계산 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.')
@@ -172,6 +179,7 @@ export default function ComprehensiveForm() {
   }
 
   return (
+    <>
     <CalcColumns>
       {/* onChange: 폼 안 어떤 입력이든 바뀌면 이전 결과를 지운다(버튼형 선택은 각 onChange에서) */}
       <form onSubmit={handleSubmit} onChange={clearStaleResult} className="bg-paper-raised border border-rule rounded-lg p-6 sm:p-8 space-y-5">
@@ -283,5 +291,10 @@ export default function ComprehensiveForm() {
       )}
       </CalcResultSlot>
     </CalcColumns>
+
+    {/* 연도별 비교 — 2단 아래 통폭. 오른쪽 결과 열(≈620px)은 카드 여러 장을 담기에 좁아
+        CalcColumns 밖(CalcSection 통폭)에 둔다. 비교가 없으면 아무것도 그리지 않는다 */}
+    {submitted?.comparison && <ComprehensiveComparisonCards comparison={submitted.comparison} />}
+    </>
   )
 }
