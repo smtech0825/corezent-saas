@@ -13,6 +13,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import NetProceedsForm from './NetProceedsForm'
 
@@ -89,11 +90,12 @@ export default async function NetProceedsPage() {
       </section>
 
       {/* 계산기 */}
-      <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+      <CalcSection>
         <RuleBasisBanner taxTypes={['transfer', 'brokerage', 'common']} />
         <ApartmentOnlyNotice />
         <NetProceedsForm graceDeadlineText={graceDeadlineText} />
 
+        <CalcNotes>
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 명시 */}
         <div className="mt-8 bg-paper-raised border border-rule rounded-lg p-5">
           <p className="text-sm font-semibold text-ink mb-2">계산 전에 확인하세요</p>
@@ -125,7 +127,8 @@ export default async function NetProceedsPage() {
             관할 세무서, 중개사 또는 세무 전문가를 통해 반드시 확인하시기 바랍니다.
           </p>
         </div>
-      </section>
+        </CalcNotes>
+      </CalcSection>
     </>
   )
 }

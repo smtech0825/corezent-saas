@@ -14,6 +14,7 @@ import {
   CALCULATOR_CATEGORY_LABELS,
   TAX_CALCULATORS,
 } from '@/lib/tax/calculators'
+import CalcSection from './_components/CalcSection'
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/tax',
@@ -39,7 +40,7 @@ export default function TaxHubPage() {
       </section>
 
       {/* 분류별 계산기 목록 */}
-      <section className="max-w-xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+      <CalcSection className="space-y-8">
         {CALCULATOR_CATEGORIES.map((category) => {
           const items = TAX_CALCULATORS.filter((c) => c.category === category)
           if (items.length === 0) return null
@@ -84,7 +85,7 @@ export default function TaxHubPage() {
             </div>
           )
         })}
-      </section>
+      </CalcSection>
     </>
   )
 }

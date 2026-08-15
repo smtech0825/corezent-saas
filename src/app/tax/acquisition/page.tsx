@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import { Landmark } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import CalculatorForm from './CalculatorForm'
 
@@ -41,11 +42,12 @@ export default async function AcquisitionTaxPage() {
       </section>
 
       {/* 계산기 */}
-      <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+      <CalcSection>
         <RuleBasisBanner taxTypes={['acquisition', 'common']} />
         <ApartmentOnlyNotice />
         <CalculatorForm />
 
+        <CalcNotes>
         {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
         <div className="mt-8 border-t border-rule pt-5 text-center">
           <p className="text-xs text-ink-soft leading-relaxed">
@@ -53,7 +55,8 @@ export default async function AcquisitionTaxPage() {
             관할 지방자치단체 또는 세무 전문가를 통해 반드시 확인하시기 바랍니다.
           </p>
         </div>
-      </section>
+        </CalcNotes>
+      </CalcSection>
     </>
   )
 }

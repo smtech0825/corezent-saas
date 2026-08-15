@@ -11,6 +11,7 @@ import { Handshake } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
+import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import BrokerageForm from './BrokerageForm'
 
@@ -50,11 +51,12 @@ export default async function BrokeragePage() {
       </section>
 
       {/* 계산기 */}
-      <section className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+      <CalcSection>
         <RuleBasisBanner taxTypes={['brokerage']} />
         <ApartmentOnlyNotice />
         <BrokerageForm />
 
+        <CalcNotes>
         {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 */}
         <div className="mt-8 bg-paper-raised border border-rule rounded-lg p-5">
           <p className="text-sm font-semibold text-ink mb-2">계산 전에 확인하세요</p>
@@ -84,7 +86,8 @@ export default async function BrokeragePage() {
             확인하시기 바랍니다.
           </p>
         </div>
-      </section>
+        </CalcNotes>
+      </CalcSection>
     </>
   )
 }
