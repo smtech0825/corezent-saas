@@ -10,7 +10,7 @@
  */
 
 import type { TaxRuleMode } from './types'
-import type { AppliedRuleInfo, Conditions, RoundingValue, TaxEngineFailure } from './engine-types'
+import type { AppliedRuleInfo, Conditions, RegulatedPartialInfo, RoundingValue, TaxEngineFailure } from './engine-types'
 
 // ─── rule_value 스키마 (룰 키별) ─────────────────────────────────────────────
 
@@ -132,6 +132,8 @@ export interface RegistrationSuccess {
   stampExemptReason: string | null
   /** 취득세 판정 정보 — 조정대상지역 여부(취득세 엔진 결과 그대로) */
   isRegulatedArea: boolean
+  /** 그 판정 근거가 일부 지역만 지정된 이력이면 그 범위 — 아니면 null (065) */
+  regulatedPartial: RegulatedPartialInfo | null
   appliedRules: AppliedRuleInfo[]      // 취득세·인지세·등기 룰 병합 (세목은 룰 키 접두사로 구분)
   ruleMode: TaxRuleMode
   containsProposedRule: boolean

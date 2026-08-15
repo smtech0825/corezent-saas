@@ -247,6 +247,7 @@ export async function calculateRegistrationCost(
     stampExempt: stampRes.exempt,
     stampExemptReason: stampRes.exemptReason,
     isRegulatedArea: acqRes.isRegulatedArea,
+    regulatedPartial: acqRes.regulatedPartial,
     appliedRules,
     ruleMode: mode,
     containsProposedRule: appliedRules.some((r) => r.status === 'proposed'),

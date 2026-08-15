@@ -10,7 +10,7 @@
  */
 
 import type { TaxRuleMode } from './types'
-import type { AppliedRuleInfo, Conditions, RateSpec, TaxEngineFailure } from './engine-types'
+import type { AppliedRuleInfo, Conditions, RateSpec, RegulatedPartialInfo, TaxEngineFailure } from './engine-types'
 import type { DayInclusionMode } from './period'
 
 // ─── rule_value 공통 행 형태 ──────────────────────────────────────────────────
@@ -288,6 +288,8 @@ export interface TransferSuccess {
    */
   residenceYearsUsed: number | null
   regulatedAtTransfer: boolean    // '양도 당시' 조정대상지역 여부 (이력 자동 판정)
+  /** 그 판정 근거가 일부 지역만 지정된 이력이면 그 범위 — 아니면 null (065) */
+  regulatedAtTransferPartial: RegulatedPartialInfo | null
   /**
    * '취득 당시' 조정대상지역 판정 — 비과세 거주 요건 판정에 쓴 값과 그 출처·근거.
    * 판정이 필요 없던 경우(1주택 트랙이 아니거나 보유 요건 미충족)에는 null.

@@ -76,6 +76,8 @@ export interface AcquisitionSuccess {
   deemedGift: boolean               // 대가 지급 거래가 무상취득으로 간주됐는지
   taxBase: number                   // 과세표준 (원)
   isRegulatedArea: boolean          // 조정대상지역 여부 (기준일 판정 결과)
+  /** 판정 근거가 일부 지역만 지정된 이력이면 그 범위 — 아니면 null (065) */
+  regulatedPartial: RegulatedPartialInfo | null
   breakdown: AcquisitionBreakdown
   appliedRules: AppliedRuleInfo[]
   ruleMode: TaxRuleMode
@@ -119,6 +121,16 @@ export type TaxEngineErrorCode =
  *   partial_area     — 그 구는 일부 동·읍·면만 지정돼 구 단위로 판정할 수 없음
  */
 export type AcquiredRegulatedUnavailableReason = 'no_coverage_rule' | 'before_coverage' | 'partial_area'
+
+/**
+ * 규제지역 판정 근거가 '시·군·구 일부만 지정된 이력'일 때의 안내 재료 (065).
+ * 취득세 중과·양도 당시 중과는 구 단위로 판정하므로, 해당 주택이 지정 범위 밖이면
+ * 실제로는 규제지역이 아니고 세금이 더 낮다 — 화면이 그 한계를 밝혀야 한다.
+ * note는 관리자가 적은 지정 범위(어느 동·읍·면인지)이며 비어 있을 수 있다.
+ */
+export interface RegulatedPartialInfo {
+  note: string | null
+}
 
 /** 엔진 실패 결과 — message는 화면에 그대로 보여줄 한국어 문장 */
 export interface TaxEngineFailure {

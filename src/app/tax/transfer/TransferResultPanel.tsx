@@ -14,6 +14,7 @@ import { TRANSFER_RULE_KEYS } from '@/lib/tax/transfer-rules'
 import type { TransferResult } from '@/lib/tax/transfer-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
 import { AcquiredRegulatedResult, AcquiredRegulatedUnavailable } from '../_components/AcquiredRegulatedNotice'
+import PartialAreaWarning from '../_components/PartialAreaWarning'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -71,6 +72,12 @@ export default function TransferResultPanel({ result, acquiredAt }: {
             입력하면 결과가 달라질 수 있습니다. 0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
           </p>
         </div>
+      )}
+
+      {/* 양도 당시 판정 근거가 일부 지역만 지정된 이력이면 그 한계를 밝힌다 —
+          구 단위 판정이라 지정 범위 밖 주택은 실제 세금이 더 낮다 */}
+      {result.regulatedAtTransferPartial && (
+        <PartialAreaWarning partial={result.regulatedAtTransferPartial} axisLabel="양도일" />
       )}
 
       {/* 취득 당시 조정대상지역 판정 — 비과세 거주 요건이 이 값으로 갈리므로

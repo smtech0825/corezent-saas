@@ -188,6 +188,8 @@ export async function calculateTransferTax(
   const reg = await isRegulatedArea(supabase, input.regionCode, input.baseDate, 'transfer', 'adjustment')
   if (!reg.ok) return reg
   const regulatedAtTransfer = reg.regulated
+  // 판정 근거가 일부 지역만 지정된 이력이면 그 사실을 결과에 담는다(화면이 한계를 밝힌다)
+  const regulatedAtTransferPartial = reg.partial
 
   // ── 수도권 여부(is_metro) — 경과조치의 지역 조건용 (공통 룰, 없으면 미확정) ──
   let isMetro: boolean | undefined
@@ -738,6 +740,7 @@ export async function calculateTransferTax(
       holdingYearsForLtsd: yearsForLtsd,
       residenceYearsUsed,
       regulatedAtTransfer,
+      regulatedAtTransferPartial,
       acquiredRegulated,
       appliedRules,
       ruleMode: mode,

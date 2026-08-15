@@ -16,6 +16,7 @@ import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
 import { AcquiredRegulatedResult, AcquiredRegulatedUnavailable } from '../_components/AcquiredRegulatedNotice'
+import PartialAreaWarning from '../_components/PartialAreaWarning'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -74,6 +75,11 @@ export default function NetProceedsResultPanel({ result, acquiredAt }: {
             입력하면 결과가 달라질 수 있습니다. 0이나 &lsquo;아니오&rsquo;로 간주하지 않았습니다.
           </p>
         </div>
+      )}
+
+      {/* 양도 당시 판정 근거가 일부 지역만 지정된 이력이면 그 한계를 밝힌다(양도세와 같은 기준) */}
+      {result.transfer.regulatedAtTransferPartial && (
+        <PartialAreaWarning partial={result.transfer.regulatedAtTransferPartial} axisLabel="양도일" />
       )}
 
       {/* 취득 당시 조정대상지역 판정 — 양도세 엔진 결과를 그대로 표시(같은 판정을 쓴다) */}

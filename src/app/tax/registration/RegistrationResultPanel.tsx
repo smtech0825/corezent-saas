@@ -14,6 +14,7 @@ import { AlertTriangle, ExternalLink, ScrollText } from 'lucide-react'
 import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
 import type { RegistrationResult } from '@/lib/tax/registration-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
+import PartialAreaWarning from '../_components/PartialAreaWarning'
 
 /** 원화 표기 */
 function won(amount: number): string {
@@ -113,6 +114,13 @@ export default function RegistrationResultPanel({ result }: { result: Registrati
             일부 항목이 계산에 포함되지 않았습니다 — 실제 지출은 이 합계보다 클 수 있습니다.
             빠진 항목은 위 표에서 &lsquo;입력하면 포함됩니다&rsquo;로 표시돼 있습니다.
           </p>
+        )}
+
+        {/* 판정 근거가 일부 지역만 지정된 이력이면 그 한계를 밝힌다(취득세와 같은 기준) */}
+        {result.regulatedPartial && (
+          <div className="mb-4">
+            <PartialAreaWarning partial={result.regulatedPartial} axisLabel="취득일" />
+          </div>
         )}
 
         {/* 판정 배지 */}

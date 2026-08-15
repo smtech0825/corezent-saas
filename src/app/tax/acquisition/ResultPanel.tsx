@@ -11,6 +11,7 @@
 import { AlertTriangle, CircleHelp, ExternalLink, ScrollText } from 'lucide-react'
 import type { AcquisitionCause, AcquisitionResult } from '@/lib/tax/engine-types'
 import CalcFailureNotice from '../_components/CalcFailureNotice'
+import PartialAreaWarning from '../_components/PartialAreaWarning'
 
 interface Props {
   result: AcquisitionResult
@@ -66,6 +67,12 @@ export default function ResultPanel({ result, inputCause }: Props) {
             )}
           </p>
         </div>
+      )}
+
+      {/* 판정 근거가 일부 지역만 지정된 이력이면 그 한계를 밝힌다 —
+          구 단위 판정이라 지정 범위 밖 주택은 실제 세금이 더 낮다 */}
+      {result.regulatedPartial && (
+        <PartialAreaWarning partial={result.regulatedPartial} axisLabel="취득일" />
       )}
 
       {/* 세액 분해 — 3항목 각각 + 합계 */}

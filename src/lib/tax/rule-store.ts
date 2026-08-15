@@ -7,7 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RegulatedAreaType, TaxRule, TaxRuleMode, TaxType } from './types'
-import type { TaxEngineFailure } from './engine-types'
+import type { RegulatedPartialInfo, TaxEngineFailure } from './engine-types'
 
 /** YYYY-MM-DD 형식 검사 — PostgREST 필터 문자열에 넣기 전에 반드시 통과해야 한다 */
 export function isValidDateString(value: string): boolean {
@@ -251,9 +251,14 @@ export async function findRegulatedAreaRecord(
  * @설명: 규제지역 판정 — 지역코드·구분(area_type)·기준일로 tax_regulated_areas 이력을 찾습니다.
  *        지정일 ≤ 기준일이고 해제일이 NULL(현재 지정) 또는 기준일 이상이며,
  *        applies_to에 해당 세목(또는 'all')이 포함된 이력만 인정합니다.
+ *        ⚠️ 판정 근거가 '시·군·구 일부만 지정된 이력'(is_partial)이면 그 사실과 범위를
+ *        함께 돌려준다 — 이 축(취득세 중과·양도 당시 중과)은 구 단위로 판정하므로,
+ *        해당 주택이 지정 범위 밖이면 실제로는 규제지역이 아니고 세금이 더 낮다.
+ *        판정값 자체는 바꾸지 않고 화면이 그 한계를 밝히게 한다.
+ *        전체 지정 이력이 함께 있으면 그것을 우선하므로 경고가 뜨지 않는다.
  * @매개변수: supabase - 클라이언트 / regionCode - 행정구역 코드 / baseDate - 판정 기준일
  *            taxType - 세목 / areaType - adjustment(조정대상지역)·speculation(투기과열지구)
- * @반환값: { regulated: boolean } 또는 실패 결과
+ * @반환값: { regulated, partial } 또는 실패 결과 (partial은 부분 지정이 아니면 null)
  */
 export async function isRegulatedArea(
   supabase: SupabaseClient,
@@ -261,7 +266,7 @@ export async function isRegulatedArea(
   baseDate: string,
   taxType: TaxType,
   areaType: RegulatedAreaType,
-): Promise<{ ok: true; regulated: boolean } | TaxEngineFailure> {
+): Promise<{ ok: true; regulated: boolean; partial: RegulatedPartialInfo | null } | TaxEngineFailure> {
   if (!isValidDateString(baseDate)) {
     return engineFail('INVALID_INPUT', '기준일 형식이 올바르지 않습니다. (YYYY-MM-DD)')
   }
@@ -271,12 +276,14 @@ export async function isRegulatedArea(
 
   const { data, error } = await supabase
     .from('tax_regulated_areas')
-    .select('id')
+    .select('is_partial, note')
     .eq('region_code', regionCode)
     .eq('area_type', areaType)
     .lte('designated_from', baseDate)
     .or(`designated_to.is.null,designated_to.gte.${baseDate}`)
     .overlaps('applies_to', [taxType, 'all'])
+    .order('is_partial', { ascending: true })   // 전체 지정 이력을 먼저 — 있으면 경고 없음
+    .order('designated_from', { ascending: false })   // 동률이면 최근 지정 공고를 근거로
     .limit(1)
 
   if (error) {
@@ -284,5 +291,10 @@ export async function isRegulatedArea(
     return engineFail('DB_ERROR', '규제지역 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.')
   }
 
-  return { ok: true, regulated: (data?.length ?? 0) > 0 }
+  const row = (data ?? [])[0] as { is_partial: boolean; note: string | null } | undefined
+  return {
+    ok: true,
+    regulated: row !== undefined,
+    partial: row?.is_partial === true ? { note: row.note } : null,
+  }
 }

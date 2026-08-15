@@ -129,6 +129,8 @@ export async function calculateAcquisitionTax(
   const reg = await isRegulatedArea(supabase, input.regionCode, input.baseDate, 'acquisition', 'adjustment')
   if (!reg.ok) return reg
   const regulated = reg.regulated
+  // 판정 근거가 일부 지역만 지정된 이력이면 그 사실을 결과에 담는다(화면이 한계를 밝힌다)
+  const regulatedPartial = reg.partial
 
   // 계산에 실제 사용된 룰의 근거를 모은다 (중복 없이)
   const applied = new Map<string, AppliedRuleInfo>()
@@ -336,6 +338,7 @@ export async function calculateAcquisitionTax(
     deemedGift,
     taxBase,
     isRegulatedArea: regulated,
+    regulatedPartial: regulatedPartial,
     breakdown: {
       acquisitionTax,
       localEducationTax,
