@@ -24,6 +24,7 @@ import type { Json, TaxRule, TaxRuleMode } from './types'
 import type { AppliedRuleInfo, RateSpec, TaxEngineFailure } from './engine-types'
 import type {
   TransferBreakdown,
+  TransferFilingReliefNotice,
   TransferInput,
   TransferLtsdTable,
   TransferRatePath,
@@ -223,6 +224,9 @@ export async function calculateTransferTax(
   // 비과세·양도차손 등 조기 반환 경로에서도 결과에 담기므로 여기서 미리 선언한다
   let ltsdCapApplied = false
 
+  // 신고 시점 완화 특례 안내(개정안) — 중과 적용 시에만 채워진다. 조기 반환 경로 대비 선언
+  let filingRelief: TransferFilingReliefNotice | null = null
+
   // ── 비과세 판정 (③의 비과세 축 — 거주 요건은 '취득 당시' 조정대상지역인 경우만) ──
   let taxableRatio = 1
   let highPriceApplied = false
@@ -370,6 +374,51 @@ export async function calculateTransferTax(
           }
         }
       }
+    }
+  }
+
+  // ── 신고 시점 완화 특례 안내(개정안) — 중과가 적용된 경우, 양도일 이후에 시행되는
+  //    완화 룰(transfer.heavy·proposed)이 있고 양도일이 그 시행 직전 연도이면, 시행일
+  //    이후 예정·확정신고 시 완화 세율이 적용될 수 있다(개편안 원문 특례규정의
+  //    "'26년 양도분 ↔ '27.1.1. 시행"을 '시행 직전 연도의 양도분' 구조로 표현 —
+  //    2026-08-15 지시). 계산기는 신고 시점을 모르므로 자동 반영하지 않고 안내만 한다.
+  //    날짜·가산율은 전부 룰에서 읽고, 값을 읽지 못하면 날짜·수치 없는 일반 안내로
+  //    강등한다. 부가 안내라 조회 실패는 계산을 막지 않는다(세액과 무관).
+  if (heavyApplied) {
+    try {
+      const { data, error } = await supabase
+        .from('tax_rules')
+        .select('*')
+        .eq('tax_type', 'transfer')
+        .eq('rule_key', TRANSFER_RULE_KEYS.heavy)
+        .eq('status', 'proposed')
+        .gt('effective_from', input.baseDate)
+        .order('effective_from', { ascending: true })
+        .limit(1)
+      if (error) throw new Error(error.message)
+      const reliefRule = ((data ?? []) as TaxRule[])[0]
+      if (reliefRule && Number(input.baseDate.slice(0, 4)) === Number(reliefRule.effective_from.slice(0, 4)) - 1) {
+        const parsed = parseTransferHeavy(reliefRule.rule_value, reliefRule.rule_key)
+        if (!parsed.ok) {
+          filingRelief = { effectiveFrom: null, reliefPoints: null, currentPoints: heavyPoints }
+        } else {
+          const picked = selectRateRowOptional(parsed.value.rows, context, reliefRule.rule_key)
+          if (!picked.ok) {
+            filingRelief = { effectiveFrom: null, reliefPoints: null, currentPoints: heavyPoints }
+          } else if (picked.row !== null) {
+            filingRelief = {
+              effectiveFrom: reliefRule.effective_from,
+              reliefPoints: picked.row.addPercentPoints,
+              currentPoints: heavyPoints,
+            }
+          } else if (picked.unresolved.length > 0) {
+            // 판정 불가(입력 미확정) — 수치 없는 일반 안내. 행 미매칭(요건 미충족)이면 안내 없음
+            filingRelief = { effectiveFrom: null, reliefPoints: null, currentPoints: heavyPoints }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[tax] 신고 시점 완화 특례 조회 실패(안내 생략):', err instanceof Error ? err.message : String(err))
     }
   }
 
@@ -655,6 +704,7 @@ export async function calculateTransferTax(
       ...partial,
       ltsdPercentTotal: partial.ltsdPercentTotal ?? 0,
       ltsdCapApplied,
+      filingRelief,
       holdingYearsForRate: yearsForRate,
       holdingYearsForLtsd: yearsForLtsd,
       residenceYearsUsed,

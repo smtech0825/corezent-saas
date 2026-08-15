@@ -217,6 +217,19 @@ export interface TransferBreakdown {
   netProceeds: number         // 손에 쥐는 돈 = 양도가액 − 취득가액 − 필요경비 − 세금 합계
 }
 
+/**
+ * 신고 시점 완화 특례 안내(개정안) — 중과가 적용된 양도가, 양도일 이후 시행되는 완화
+ * 룰(transfer.heavy·proposed)의 시행일 이후에 예정·확정신고하면 완화 세율이 적용될 수
+ * 있는 경우의 안내 재료. 계산기는 신고 시점을 모르므로 자동 반영하지 않는다 — 화면이
+ * 안내만 한다. effectiveFrom·reliefPoints가 null이면 룰 값을 읽지 못했거나 판정하지
+ * 못한 것 — 날짜·수치 없는 일반 안내로 표시한다. 날짜·가산율은 전부 룰에서 온다.
+ */
+export interface TransferFilingReliefNotice {
+  effectiveFrom: string | null   // 완화 룰 시행일 (YYYY-MM-DD) — 룰에서 읽음
+  reliefPoints: number | null    // 이 입력 조건의 완화 가산(%p) — 룰에서 읽음
+  currentPoints: number          // 현재 계산에 적용된 가산(%p)
+}
+
 /** 장기보유특별공제에 실제 사용된 표 */
 export type TransferLtsdTable = 'one_house' | 'general' | 'none'
 
@@ -248,6 +261,8 @@ export interface TransferSuccess {
   heavyApplied: boolean           // 가산이 실제 반영됐는지
   heavyExemptedByGrace: boolean   // 경과조치로 면제됐는지
   heavyReason: string
+  /** 신고 시점 완화 특례 안내(개정안) — 해당 없으면 null */
+  filingRelief: TransferFilingReliefNotice | null
   /** 비교과세 — 채택 경로와 비교 대상 세액(절사 전) */
   ratePathChosen: TransferRatePath
   comparisonApplied: boolean

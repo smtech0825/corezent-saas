@@ -59,6 +59,24 @@ export default function TransferResultPanel({ result }: { result: TransferResult
         </div>
       )}
 
+      {/* 신고 시점 완화 특례(개정안) — 중과 적용 + 양도일 직후 연도부터 완화 룰 시행인 경우.
+          날짜·가산율은 룰에서 읽으며, 읽지 못하면 수치 없는 일반 안내로 표시한다 */}
+      {result.filingRelief && (
+        <div className="bg-info-soft border-2 border-info/40 rounded-lg p-4" role="alert">
+          <p className="flex items-center gap-2 text-sm font-semibold text-info mb-1">
+            <AlertTriangle size={16} />
+            신고 시점에 따라 중과 세율이 완화될 수 있습니다 (국회 통과 전 개정안)
+          </p>
+          <p className="text-sm text-ink leading-relaxed">
+            {result.filingRelief.effectiveFrom && result.filingRelief.reliefPoints !== null
+              ? `이 계산에는 다주택 중과 가산 +${result.filingRelief.currentPoints}%p가 적용됐지만, 개정안의 특례규정에 따라 ${result.filingRelief.effectiveFrom} 이후에 예정·확정신고하면 완화된 가산 +${result.filingRelief.reliefPoints}%p가 적용될 수 있습니다. `
+              : '이 계산에 적용된 다주택 중과는 개정안의 특례규정에 따라 신고 시점에 따라 완화 세율이 적용될 수 있습니다. '}
+            이 계산기는 신고 시점을 알 수 없어 자동으로 반영하지 않습니다 — 신고 전에 관할
+            세무서 또는 세무 전문가와 확인하세요.
+          </p>
+        </div>
+      )}
+
       {/* 세액 카드 */}
       <div className="bg-paper-raised border border-rule rounded-lg p-6">
         <h2 className="font-serif font-bold text-ink mb-4">계산 결과</h2>
