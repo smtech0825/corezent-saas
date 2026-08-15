@@ -334,8 +334,11 @@ export default function Navbar() {
                 {link.label}
               </button>
             ))}
-            {/* 무료 체험 신청 — 모바일 메뉴(공용 부품, 로그인 여부 무관, 터치 영역 44px) */}
-            <TrialApplyButton placement="nav-mobile" className="w-full" />
+            {/* 무료 체험 신청 — 모바일 메뉴(공용 부품, 로그인 여부 무관, 터치 영역 44px).
+                다른 메뉴 항목처럼 누르면 메뉴를 닫는다(클릭 버블 — 새 창이 열려도 원래 탭 정리) */}
+            <div onClick={() => setMobileOpen(false)}>
+              <TrialApplyButton placement="nav-mobile" className="w-full" />
+            </div>
             <div className="pt-2 flex flex-col gap-2 border-t border-rule">
               {user ? (
                 <>

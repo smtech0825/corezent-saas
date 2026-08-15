@@ -6,9 +6,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  *        상수(키·기본 주소)는 클라이언트(설정 화면 placeholder)에서도 쓰지만,
  *        fetchTrialApplyUrl은 서버 전용(admin 클라이언트를 받는 쪽에서만) 호출한다.
  *        ⚠️ 체험 기간·횟수·제한은 정해진 것이 없다 — 어떤 화면에도 조건 문구를 적지 말 것.
- *        폴백 규칙(홈 대표 제품과 동일 방식): 설정 행이 없거나 비면 기본 주소를 쓴다.
- *        조회가 실패하면 빈 문자열을 돌려주고, 그 경우 버튼은 아예 그리지 않는다
- *        (눌러도 아무 데도 안 가는 버튼 금지).
+ *        폴백 규칙: 설정 행이 아예 없으면(만든 적 없음) 기본 주소, 행이 있는데 값을
+ *        비웠으면 관리자가 끈 것으로 보고 빈 문자열(=버튼 숨김)을 돌려준다.
+ *        조회 실패·주소 형식 이상(http/https 아님)도 빈 문자열 — 눌러도 아무 데도
+ *        안 가는 버튼은 그리지 않는다.
  */
 
 /** front_settings 키 — 관리자 → 설정 → 일반 설정에서 편집한다 */
@@ -20,10 +21,11 @@ export const TRIAL_APPLY_URL_DEFAULT =
 
 /**
  * @함수명: fetchTrialApplyUrl
- * @설명: 관리자 설정에서 체험 신청 주소를 읽습니다. 행이 없거나 값이 비면 기본 주소,
- *        조회 실패 시에만 빈 문자열(버튼 숨김 신호)을 돌려줍니다.
+ * @설명: 관리자 설정에서 체험 신청 주소를 읽습니다. 행이 없으면 기본 주소, 행이 있는데
+ *        값이 비면 관리자가 버튼을 끈 것이므로 빈 문자열을 돌려줍니다(버튼 숨김).
+ *        http/https가 아닌 값(잘못 저장)도 빈 문자열 — 깨진 링크를 손님에게 내보내지 않습니다.
  * @매개변수: client - 서버용 Supabase 클라이언트
- * @반환값: 신청 주소(정상) 또는 ''(조회 실패 — 버튼을 그리지 않는다)
+ * @반환값: 신청 주소(정상) 또는 ''(버튼을 그리지 않는다)
  */
 export async function fetchTrialApplyUrl(client: SupabaseClient): Promise<string> {
   try {
@@ -33,7 +35,10 @@ export async function fetchTrialApplyUrl(client: SupabaseClient): Promise<string
       .eq('key', TRIAL_APPLY_URL_KEY)
       .maybeSingle()
     if (error) return ''
-    return (data?.value ?? '').trim() || TRIAL_APPLY_URL_DEFAULT
+    // 행 없음 = 설정을 만든 적 없음 → 기본 주소 / 행 있음 = 관리자가 저장한 값 그대로(비움 = 끔)
+    // String() — value 컬럼이 jsonb라 문자열이 아닌 값이 들어와도 조용히 죽지 않게
+    const url = data ? String(data.value ?? '').trim() : TRIAL_APPLY_URL_DEFAULT
+    return /^https?:\/\//i.test(url) ? url : ''
   } catch {
     return ''
   }

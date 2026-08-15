@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatKRW } from '@/lib/money'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import PurchaseTracker from './PurchaseTracker'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,6 +72,8 @@ export default async function OrderSuccessPage() {
 
   return (
     <>
+      {/* 결제 완료 측정(화면 없음) — 주문 id는 중복 방지 키로만 쓰고 사건에는 안 담는다 */}
+      <PurchaseTracker dedupeKey={order?.id ?? null} product={order?.productName ?? null} />
       <Navbar />
       <main className="min-h-screen bg-[#0B1120]">
         <section className="relative pt-36 pb-32 px-6">

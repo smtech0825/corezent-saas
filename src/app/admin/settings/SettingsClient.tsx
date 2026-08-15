@@ -246,7 +246,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           />
           <p className="text-xs text-ink-faint mt-1.5">
             상단 메뉴와 요금 페이지의 「무료 체험 신청」 버튼이 새 창으로 여는 주소입니다.
-            비워 두면 기본 구글 폼 주소로 연결됩니다. 바꾸면 1분 안에 사이트에 반영됩니다.
+            비워 두고 저장하면 버튼이 사이트에서 숨겨집니다. 바꾸면 1분 안에 반영됩니다.
           </p>
         </Field>
       </SectionCard>

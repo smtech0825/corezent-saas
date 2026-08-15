@@ -22,16 +22,39 @@ interface Props {
   className?: string
 }
 
+// 페이지당 한 번만 조회 — 같은 페이지에 버튼이 여러 개(메뉴·모바일·요금)라도
+// 첫 인스턴스의 요청을 전부가 공유한다(모듈 수준 캐시).
+let trialUrlPromise: Promise<string> | null = null
+
+/**
+ * @함수명: loadTrialUrl
+ * @설명: 신청 주소를 공개 API에서 한 번만 읽어 옵니다. 실패하면 ''(버튼 숨김).
+ * @반환값: 신청 주소 또는 ''
+ */
+function loadTrialUrl(): Promise<string> {
+  trialUrlPromise ??= (async () => {
+    try {
+      const res = await fetch('/api/trial-url')
+      if (!res.ok) return ''
+      const data = (await res.json()) as { url?: string }
+      return data.url ?? ''
+    } catch {
+      return ''
+    }
+  })()
+  return trialUrlPromise
+}
+
 export default function TrialApplyButton({ placement, showNote = false, className = '' }: Props) {
   // 신청 주소 — 읽기 전(null)·조회 실패('')에는 버튼을 그리지 않는다
   const [url, setUrl] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
-    fetch('/api/trial-url')
-      .then((r) => (r.ok ? r.json() : { url: '' }))
-      .then((d: { url?: string }) => { if (alive) setUrl(d.url ?? '') })
-      .catch(() => { if (alive) setUrl('') })
+    ;(async () => {
+      const loaded = await loadTrialUrl()
+      if (alive) setUrl(loaded)
+    })()
     return () => { alive = false }
   }, [])
 
@@ -49,7 +72,9 @@ export default function TrialApplyButton({ placement, showNote = false, classNam
         external
         variant="outline"
         size="md"
-        className="w-full whitespace-nowrap"
+        // 상단 메뉴는 1024px 폭에서 10px가 모자라 좌우 여백만 줄인다(px-4! — 높이 44px는 유지).
+        // 실측: 메뉴 필요 폭 1034px → px-4 적용 시 1018px(미리보기 배포에서 확인)
+        className={`w-full whitespace-nowrap ${placement === 'nav' ? 'px-4!' : ''}`}
       >
         무료 체험 신청
       </Button>

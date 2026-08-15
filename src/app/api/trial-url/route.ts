@@ -13,11 +13,16 @@ import { fetchTrialApplyUrl } from '@/lib/trial'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * @함수명: GET
+ * @설명: 체험 신청 주소 한 개를 { url } 형태로 돌려줍니다. 값이 비면 버튼이 숨겨집니다.
+ * @반환값: { url: string } — 주소 또는 ''(숨김)
+ */
 export async function GET() {
   const url = await fetchTrialApplyUrl(createAdminClient())
   return NextResponse.json(
     { url },
-    // CDN 60초 캐시 — 관리자가 주소를 바꾸면 1분 안에 반영된다(버튼마다 DB 조회 방지)
-    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } },
+    // CDN·브라우저 60초 캐시 — 관리자가 주소를 바꾸면 1분 안에 반영된다(호출량 최소화)
+    { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' } },
   )
 }

@@ -19,11 +19,14 @@ export const EVENT = {
   SIGN_UP: 'sign_up',
   /** 결제 시작(카드 체크아웃 이동·계좌이체 안내 열기) — 값: product(상품 slug)·method·placement */
   BEGIN_CHECKOUT: 'begin_checkout',
+  /** 결제 완료 — 주문 완료 페이지(/order/success) 도착 시 1회. 값: product(상품명)만 */
+  PURCHASE: 'purchase',
 } as const
 
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void
+    posthog?: { capture: (event: string, props?: Record<string, unknown>) => void }
   }
 }
 
@@ -31,9 +34,12 @@ declare global {
  * @함수명: trackEvent
  * @설명: 측정 사건 한 건을 보냅니다. gtag가 없으면(쿠키 미동의 등) 조용히 무시합니다.
  * @매개변수: name - EVENT의 사건 이름 / props - 부가 값(개인정보 금지)
+ * @반환값: 없음
  */
 export function trackEvent(name: string, props?: Record<string, unknown>): void {
   try {
     window.gtag?.('event', name, props)
+    // 기존 요금 화면의 로컬 track이 PostHog에도 보내고 있었다 — 수치 연속성 유지(있을 때만)
+    window.posthog?.capture(name, props)
   } catch { /* 측정 실패는 본 동작을 막지 않는다 */ }
 }
