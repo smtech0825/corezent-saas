@@ -12,6 +12,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
 import { HOME_FEATURED_PRODUCT_DEFAULT } from '@/lib/front-defaults'
+import { TRIAL_APPLY_URL_DEFAULT } from '@/lib/trial'
+import { createClient } from '@/lib/supabase/client'
 
 type Settings = Record<string, string>
 type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'company'
@@ -19,7 +21,11 @@ type Section = 'general' | 'footer' | 'seo' | 'smtp' | 'bank' | 'notify' | 'comp
 const SECTION_KEYS: Record<Section, string[]> = {
   // home_featured_product: 홈 대표 제품 slug — 홈의 요금·제품 소개 섹션에 이 제품만 보여준다.
   // 비면 기본 geniework, 일치하는 활성 상품이 없으면 전체 표시(lib/home-featured.ts).
-  general: ['site_name', 'site_url', 'support_email', 'footer_copyright', 'home_featured_product'],
+  // trial_apply_url: 무료 체험 신청 버튼(상단 메뉴·요금 페이지)이 여는 주소 — 비면 기본
+  // 구글 폼(lib/trial.ts). ⚠️ 체험 기간·횟수 문구는 어디에도 적지 않는다(정해진 것 없음).
+  // manual_file_url: 사용설명서 HTML 파일의 저장소 주소 — 손님은 /manual 중계로 연다
+  // (lib/manual.ts). 비면 대시보드의 「사용설명서 보기」 버튼이 숨겨진다.
+  general: ['site_name', 'site_url', 'support_email', 'footer_copyright', 'home_featured_product', 'trial_apply_url', 'manual_file_url'],
   // 조달청 등록번호는 공공 구매담당자가 가장 먼저 찾는 값이라 푸터·기관 도입 페이지에 노출한다.
   // front_settings는 key-value 구조라 컬럼 추가(마이그레이션) 없이 키만 늘리면 된다.
   footer:  ['footer_info', 'procurement_item_number', 'procurement_class_number'],
@@ -157,6 +163,49 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
     setValues((prev) => ({ ...prev, [key]: value }))
   }
 
+  // ─── 사용설명서 파일 올리기 — 로고 올리기와 같은 방식(저장소 업로드 → 공개 주소를 값에 채움) ──
+  const [manualUploading, setManualUploading] = useState(false)
+  const [manualUploadError, setManualUploadError] = useState('')
+  const manualFileRef = useRef<HTMLInputElement>(null)
+
+  /**
+   * @함수명: handleManualUpload
+   * @설명: 설명서 HTML 파일을 manuals 보관함에 올리고 공개 주소를 입력칸에 채웁니다.
+   *        파일 내용은 손대지 않고 그대로 올립니다. DB 반영은 「일반 설정 저장」을 눌러야 됩니다.
+   * @매개변수: e - 파일 선택 이벤트
+   */
+  async function handleManualUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setManualUploading(true)
+    setManualUploadError('')
+
+    const supabase = createClient()
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.html`
+    const { data, error: uploadErr } = await supabase.storage
+      .from('manuals')
+      .upload(filename, file, { upsert: true, contentType: 'text/html' })
+
+    if (uploadErr) {
+      // 원문은 영문이라 화면에 내보내지 않는다. 사유는 브라우저 기록에만 남긴다.
+      console.error('[settings] 설명서 업로드 실패:', uploadErr.message)
+      // 가장 흔한 두 원인은 문구로 구분 — 보관함 미생성(064 SQL 미실행)과 그 외
+      setManualUploadError(
+        /bucket not found/i.test(uploadErr.message)
+          ? '설명서 보관함이 아직 만들어지지 않았습니다. 064 SQL을 먼저 실행해 주세요.'
+          : '파일 업로드에 실패했습니다. HTML 파일(5MB 이하)인지 확인한 뒤 다시 시도해 주세요.',
+      )
+      setManualUploading(false)
+      if (manualFileRef.current) manualFileRef.current.value = ''
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('manuals').getPublicUrl(data.path)
+    update('manual_file_url', publicUrl)
+    setManualUploading(false)
+    if (manualFileRef.current) manualFileRef.current.value = ''
+  }
+
   async function saveSection(section: Section) {
     setSaving(section)
     setError(null)
@@ -231,6 +280,45 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           <p className="text-xs text-ink-faint mt-1.5">
             홈 화면에 이 제품 하나만 보여줍니다. 비워 두면 {HOME_FEATURED_PRODUCT_DEFAULT}, 해당 제품이 없거나
             판매 중지 상태면 판매 중인 제품 전체가 보입니다. 요금 페이지·제품 목록에는 영향이 없습니다.
+          </p>
+        </Field>
+        <Field label="무료 체험 신청 주소">
+          <input
+            type="url"
+            value={values.trial_apply_url ?? ''}
+            onChange={(e) => update('trial_apply_url', e.target.value)}
+            placeholder={TRIAL_APPLY_URL_DEFAULT}
+            className={INPUT_CLS}
+          />
+          <p className="text-xs text-ink-faint mt-1.5">
+            상단 메뉴와 요금 페이지의 「무료 체험 신청」 버튼이 새 창으로 여는 주소입니다.
+            비워 두고 저장하면 버튼이 사이트에서 숨겨집니다. 바꾸면 1분 안에 반영됩니다.
+          </p>
+        </Field>
+        <Field label="사용설명서 파일 (HTML)">
+          <div className="flex items-center gap-2">
+            <input
+              value={values.manual_file_url ?? ''}
+              onChange={(e) => update('manual_file_url', e.target.value)}
+              placeholder="아래 「파일 올리기」를 누르면 자동으로 채워집니다"
+              className={INPUT_CLS}
+            />
+            <label className="shrink-0 inline-flex items-center border border-rule rounded-xl px-4 py-2.5 text-sm text-ink-soft hover:text-ink hover:border-mark cursor-pointer transition-colors">
+              {manualUploading ? '올리는 중…' : '파일 올리기'}
+              <input
+                ref={manualFileRef}
+                type="file"
+                accept=".html,.htm,text/html"
+                onChange={handleManualUpload}
+                disabled={manualUploading}
+                className="hidden"
+              />
+            </label>
+          </div>
+          {manualUploadError && <p className="text-xs text-caution mt-1.5">{manualUploadError}</p>}
+          <p className="text-xs text-ink-faint mt-1.5">
+            대시보드 라이선스 화면의 「사용설명서 보기」 버튼이 여는 파일입니다. 파일을 올린 뒤
+            반드시 「저장」을 눌러야 반영됩니다. 비워 두고 저장하면 버튼이 숨겨집니다.
           </p>
         </Field>
       </SectionCard>

@@ -21,6 +21,7 @@ import SegmentControl from '@/components/common/SegmentControl'
 import DropUpSelect from '@/components/common/DropUpSelect'
 import BankTransferModal from './BankTransferModal'
 import type { OptionRow } from '@/lib/product-options'
+import { EVENT, trackEvent } from '@/lib/analytics-events'
 
 /** 계좌이체 안내(front_settings에서 서버가 읽어 전달) */
 export interface BankTransferInfo {
@@ -245,15 +246,21 @@ export default function ProductBuyBar({
                 출시 예정
               </span>
             ) : payMethod === 'bank_transfer' && userId ? (
-              // 계좌이체 + 로그인 → 모달 열기
-              <button onClick={() => setModalOpen(true)} className={BUY_BTN_CLS} aria-label={`${productName} 계좌이체 구매`}>
+              // 계좌이체 + 로그인 → 모달 열기 (결제 시작 측정 — 상품명뿐, 개인정보 없음)
+              <button
+                onClick={() => { trackEvent(EVENT.BEGIN_CHECKOUT, { product: productName, method: 'bank_transfer', placement: 'buy-bar' }); setModalOpen(true) }}
+                className={BUY_BTN_CLS}
+                aria-label={`${productName} 계좌이체 구매`}
+              >
                 구매하기
                 <ArrowRight size={14} />
               </button>
             ) : (
               // 카드(기존 LS 체크아웃) · 또는 비로그인(회원가입 유도)
+              // 결제 시작 측정은 실제 체크아웃으로 나갈 때(로그인 상태)만 — 상품명뿐, 개인정보 없음
               <Link
                 href={userId ? checkoutUrl : '/auth/register'}
+                onClick={userId ? () => trackEvent(EVENT.BEGIN_CHECKOUT, { product: productName, method: 'card', placement: 'buy-bar' }) : undefined}
                 className={BUY_BTN_CLS}
                 aria-label={`${productName} 구매`}
               >

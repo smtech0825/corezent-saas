@@ -17,6 +17,7 @@ import { BANNER_DEFAULTS } from '@/lib/front-defaults'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Zap, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import TrialApplyButton from '@/components/common/TrialApplyButton'
 
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -226,6 +227,11 @@ export default function Navbar() {
 
           {/* 우측 영역 */}
           <div className="flex items-center gap-2">
+            {/* 무료 체험 신청 — 공용 부품(로그인 여부 무관·데스크톱). 시작하기(채움)와
+                구분되는 outline. 주소를 못 읽으면 부품이 null이라 자리도 안 남는다 */}
+            <div className="hidden lg:block">
+              <TrialApplyButton placement="nav" />
+            </div>
             {user ? (
               /* 로그인 상태: 아바타 드롭다운 */
               <div ref={userRef} className="relative hidden lg:block">
@@ -328,6 +334,11 @@ export default function Navbar() {
                 {link.label}
               </button>
             ))}
+            {/* 무료 체험 신청 — 모바일 메뉴(공용 부품, 로그인 여부 무관, 터치 영역 44px).
+                다른 메뉴 항목처럼 누르면 메뉴를 닫는다(클릭 버블 — 새 창이 열려도 원래 탭 정리) */}
+            <div onClick={() => setMobileOpen(false)}>
+              <TrialApplyButton placement="nav-mobile" className="w-full" />
+            </div>
             <div className="pt-2 flex flex-col gap-2 border-t border-rule">
               {user ? (
                 <>
