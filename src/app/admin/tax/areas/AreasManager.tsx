@@ -130,7 +130,8 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
           <Input id="area-from" type="date" value={designatedFrom}
             onChange={(e) => setDesignatedFrom(e.target.value)} required />
         </Field>
-        <Field label="해제일" htmlFor="area-to" hint="비우면 현재 지정 상태로 판정됩니다.">
+        <Field label="해제일" htmlFor="area-to"
+          hint="해제 공고의 효력 발생일을 그대로 넣으세요 — 그날부터 비규제로 판정합니다(해제일 당일은 지정 상태가 아닙니다). 비우면 현재까지 지정 상태로 판정됩니다.">
           <Input id="area-to" type="date" value={designatedTo}
             onChange={(e) => setDesignatedTo(e.target.value)} />
         </Field>

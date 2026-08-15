@@ -192,8 +192,8 @@ export interface RegulatedAreaRecord {
  * @함수명: findRegulatedAreaRecord
  * @설명: 규제지역 이력을 찾아 그 내용을 반환합니다 — isRegulatedArea가 boolean만
  *        주는 것과 달리, 자동 판정에 필요한 지정일·공고 링크·부분 지정 여부를 담습니다.
- *        조건은 isRegulatedArea와 같습니다(지정일 ≤ 기준일, 해제일 NULL 또는 기준일 이상,
- *        applies_to에 해당 세목 또는 'all').
+ *        조건은 isRegulatedArea와 같습니다(지정일 ≤ 기준일 < 해제일, applies_to에
+ *        해당 세목 또는 'all').
  *        전체 지정(is_partial=false) 이력을 우선 반환합니다 — 같은 시점에 전체 지정
  *        이력이 있으면 부분 지정 이력이 있어도 자동 판정이 가능하기 때문입니다.
  * @매개변수: supabase - 클라이언트 / regionCode - 행정구역 코드 / baseDate - 판정 기준일 /
@@ -220,9 +220,10 @@ export async function findRegulatedAreaRecord(
     .eq('region_code', regionCode)
     .eq('area_type', areaType)
     .lte('designated_from', baseDate)
-    .or(`designated_to.is.null,designated_to.gte.${baseDate}`)
+    .or(`designated_to.is.null,designated_to.gt.${baseDate}`)   // 해제일 당일은 이미 비규제
     .overlaps('applies_to', [taxType, 'all'])
     .order('is_partial', { ascending: true })   // 전체 지정 이력을 먼저
+    .order('designated_from', { ascending: false })   // 동률이면 최근 지정 공고를 근거로 (isRegulatedArea와 같은 규칙)
     .limit(1)
 
   if (error) {
@@ -249,8 +250,11 @@ export async function findRegulatedAreaRecord(
 /**
  * @함수명: isRegulatedArea
  * @설명: 규제지역 판정 — 지역코드·구분(area_type)·기준일로 tax_regulated_areas 이력을 찾습니다.
- *        지정일 ≤ 기준일이고 해제일이 NULL(현재 지정) 또는 기준일 이상이며,
- *        applies_to에 해당 세목(또는 'all')이 포함된 이력만 인정합니다.
+ *        지정일 ≤ 기준일 < 해제일(해제일 NULL이면 현재까지 지정)이고 applies_to에 해당
+ *        세목(또는 'all')이 포함된 이력만 인정합니다.
+ *        ⚠️ 해제일은 '그날부터 해제'라 당일은 이미 비규제다 — 앞 이력의 해제일과 뒤 이력의
+ *        지정일이 같은 날인 전환 사례가 있어(고양 덕양구 2019-11-08 등) 해제일을 포함하면
+ *        두 이력이 같은 날 동시에 잡히고, 그때 전체 지정이 부분 지정을 가려 버린다.
  *        ⚠️ 판정 근거가 '시·군·구 일부만 지정된 이력'(is_partial)이면 그 사실과 범위를
  *        함께 돌려준다 — 이 축(취득세 중과·양도 당시 중과)은 구 단위로 판정하므로,
  *        해당 주택이 지정 범위 밖이면 실제로는 규제지역이 아니고 세금이 더 낮다.
@@ -280,7 +284,7 @@ export async function isRegulatedArea(
     .eq('region_code', regionCode)
     .eq('area_type', areaType)
     .lte('designated_from', baseDate)
-    .or(`designated_to.is.null,designated_to.gte.${baseDate}`)
+    .or(`designated_to.is.null,designated_to.gt.${baseDate}`)   // 해제일 당일은 이미 비규제
     .overlaps('applies_to', [taxType, 'all'])
     .order('is_partial', { ascending: true })   // 전체 지정 이력을 먼저 — 있으면 경고 없음
     .order('designated_from', { ascending: false })   // 동률이면 최근 지정 공고를 근거로
