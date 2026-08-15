@@ -134,7 +134,10 @@ export default function TransferResultPanel({ result }: { result: TransferResult
               <dd className="font-mono text-ink">{won(b.transferGain)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-ink-soft">− 장기보유특별공제{result.ltsdPercentTotal > 0 ? ` (${result.ltsdPercentTotal}%)` : ''}</dt>
+              <dt className="text-ink-soft">
+                − 장기보유특별공제
+                {result.ltsdPercentTotal > 0 ? ` (${result.ltsdPercentTotal}%${result.ltsdCapApplied ? ' · 물건별 한도 적용' : ''})` : ''}
+              </dt>
               <dd className="font-mono text-ink">{won(b.ltsdAmount)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">

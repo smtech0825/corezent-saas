@@ -1,6 +1,6 @@
 /**
  * @파일: admin/tax/rules/rule-guides-transfer.ts
- * @설명: 양도소득세 룰 키 11종의 입력 형식 안내 — rule-guides.ts의 RULE_GUIDES에 병합된다
+ * @설명: 양도소득세 룰 키 12종의 입력 형식 안내 — rule-guides.ts의 RULE_GUIDES에 병합된다
  *        (rule-guides.ts가 300줄에 가까워 양도세 안내는 파일 분리).
  *        ⚠️ 스켈레톤의 «...»는 자리표시자다 — 실제 세율·공제율·금액·연수·날짜를 이 파일에
  *        절대 넣지 않는다. «...»를 남겨두면 JSON이 아니어서 저장이 거부된다.
@@ -11,7 +11,7 @@ import type { RuleGuide } from './rule-guides'
 
 /** 양도세 표(rows) 공통 안내 */
 const TRANSFER_COMMON_NOTES = [
-  '쓸 수 있는 조건 필드: house_count(주택 수 — 3은 3주택 이상), is_regulated(양도 당시 조정대상지역 true/false), holding_years(세율용 보유 만 연수 — §104②), holding_years_ltsd(공제용 보유 만 연수 — §95④, 세율용과 다름!), residence_years(거주 만 연수), sido·sigungu(소재지 이름 — 계산기 드롭다운 표기와 동일), is_metro(수도권 — 공통 세목 region.metro_scope 룰 필요)',
+  '쓸 수 있는 조건 필드: house_count(주택 수 — 3은 3주택 이상), is_regulated(양도 당시 조정대상지역 true/false), holding_years(세율용 보유 만 연수 — §104②), holding_years_ltsd(공제용 보유 만 연수 — §95④, 세율용과 다름!), residence_years(거주 만 연수), transfer_price(양도가액·원), sido·sigungu(소재지 이름 — 계산기 드롭다운 표기와 동일), is_metro(수도권 — 공통 세목 region.metro_scope 룰 필요)',
   '조건(when)은 eq(일치)·min/max(범위, 경계 포함)·in(목록) 연산자를 씁니다. 금액 구간은 max 대신 min + priority 오름차순으로(경계 충돌 방지 — 취득세·중개수수료와 같은 요령), 연수 구간은 만 연수 정수라 eq 또는 min을 쓰세요.',
   '여러 행이 동시에 맞으면 priority가 가장 큰 행이 적용됩니다(같으면 오류).',
 ]
@@ -82,9 +82,12 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
   [TRANSFER_RULE_KEYS.ltsdGeneral]: {
     title: '장기보유특별공제 일반 표(작은 표) — 1세대 1주택 큰 표 대상이 아닐 때 적용.',
     notes: [
+      '두 형식을 지원합니다. 확정법(구 형식): rows — 보유 연수(holding_years_ltsd) 조건 단일 표. 기존 확정법 룰은 재등록 없이 그대로 동작합니다.',
+      '개정안(신 형식): holdingRows + residenceRows — 보유분과 거주분(residence_years 조건) 중 높은 쪽 하나만 적용합니다. 혼합은 저장이 거부됩니다. 거주기간 미입력 계산은 보유분만 적용하고 그 사실이 결과에 표시됩니다.',
       '조건 필드는 holding_years_ltsd(공제용 보유 만 연수 — §95④, 상속은 상속개시일 기산)입니다. 세율용 보유(holding_years)와 절대 혼용하지 마세요.',
       '연수별 행을 min + priority 오름차순으로 두세요 — priority를 연수와 같은 값으로 두면 간단합니다. 최소 연수 미만은 행이 없으면 자동으로 공제 0이 됩니다.',
       'deductPercent 0%는 저장이 거부됩니다(공제 없음은 행을 두지 않는 것으로 표현).',
+      '공제액의 물건별 한도는 이 표가 아니라 별도 룰(transfer.ltsd.cap)로 등록합니다 — 큰 표·일반 표에 공통 적용됩니다.',
     ],
     skeleton: `{
   "rows": [
@@ -92,6 +95,17 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
     { "when": { "holding_years_ltsd": { "min": «더 큰 연수» } }, "priority": «연수와 같은 값», "deductPercent": «공제율%» }
   ]
 }`,
+    altSkeleton: {
+      title: '개정안(신 형식) 입력 형식 — 보유분·거주분 중 높은 쪽 하나만 적용:',
+      skeleton: `{
+  "holdingRows": [
+    { "when": { "holding_years_ltsd": { "min": «연수» } }, "priority": «연수와 같은 값», "deductPercent": «공제율%» }
+  ],
+  "residenceRows": [
+    { "when": { "residence_years": { "min": «연수» } }, "priority": «연수와 같은 값», "deductPercent": «공제율%» }
+  ]
+}`,
+    },
   },
   [TRANSFER_RULE_KEYS.ltsdOneHouse]: {
     title: '장기보유특별공제 큰 표 — 1세대 1주택 + 거주 요건 충족 시. 보유분·거주분을 합산합니다.',
@@ -110,10 +124,38 @@ export const TRANSFER_RULE_GUIDES: Record<string, RuleGuide> = {
   ]
 }`,
   },
+  [TRANSFER_RULE_KEYS.ltsdCap]: {
+    title: '장기보유특별공제 물건별 한도(원) — 개정안 룰. 등록하지 않으면 한도 없이 계산합니다.',
+    notes: [
+      'perPropertyAmount: 물건 하나의 공제액 한도(원). 큰 표·일반 표 어느 쪽으로 계산됐든 공제액이 이를 넘으면 한도액까지만 적용되고 결과에 표시됩니다. 0 이하는 저장이 거부됩니다.',
+      '확정법에는 한도 규정이 없으므로 이 룰은 개정안(proposed)으로만 등록하세요 — 기준일에 유효한 룰이 없으면 엔진이 한도를 적용하지 않는 것이 확정법의 올바른 동작입니다.',
+      '⚠️ 같은 해에 여러 물건을 양도한 경우의 "인별" 합산 한도는 단일 물건 계산기가 알 수 없어 적용하지 않습니다 — 화면 판단 한계에 그 사실이 안내됩니다.',
+    ],
+    skeleton: `{ "perPropertyAmount": «물건별 한도(원)» }`,
+  },
   [TRANSFER_RULE_KEYS.basicDeduction]: {
     title: '기본공제 — 양도소득금액에서 빼는 금액(원).',
-    notes: ['amount: 기본공제액(원). 0은 저장이 거부됩니다.'],
+    notes: [
+      '두 형식을 지원합니다. 확정법(구 형식): amount 고정 금액 — 기존 확정법 룰은 재등록 없이 그대로 동작합니다.',
+      '개정안(신 형식): rows — 행 조건별 금액. 거주기간(residence_years)·양도가액(transfer_price·원) 조건을 쓸 수 있습니다. 혼합은 저장이 거부됩니다.',
+      '신 형식에는 모든 입력이 어느 한 행에는 맞도록 조건 없는 기본 행(priority 최소)을 반드시 두세요 — 맞는 행이 없으면 계산이 중단됩니다.',
+      '금액 0은 저장이 거부됩니다.',
+      ...TRANSFER_COMMON_NOTES.slice(1),
+    ],
     skeleton: `{ "amount": «금액(원)» }`,
+    altSkeleton: {
+      title: '개정안(신 형식) 입력 형식 — 거주기간·양도가액 조건별 금액:',
+      skeleton: `{
+  "rows": [
+    { "when": {}, "priority": 0, "amount": «금액(원)» },
+    {
+      "when": { "residence_years": { "min": «연수» }, "transfer_price": { "min": «금액(원)» } },
+      "priority": 1,
+      "amount": «금액(원)»
+    }
+  ]
+}`,
+    },
   },
   [TRANSFER_RULE_KEYS.exemption]: {
     title: '1세대 1주택 비과세 요건과 고가주택 기준.',

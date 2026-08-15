@@ -15,13 +15,15 @@ import { engineFail, isValidDateString } from './rule-store'
 import { checkRateSpec } from './rule-value'
 import type {
   TransferBaseRatesValue,
-  TransferBasicDeductionValue,
+  TransferBasicDeductionParsed,
+  TransferBasicDeductionRow,
   TransferExemptionValue,
   TransferGraceRow,
   TransferHeavyRow,
   TransferHeavyValue,
   TransferLocalIncomeTaxValue,
-  TransferLtsdGeneralValue,
+  TransferLtsdCapValue,
+  TransferLtsdGeneralParsed,
   TransferLtsdOneHouseValue,
   TransferLtsdRow,
   TransferPeriodRuleValue,
@@ -37,6 +39,7 @@ export const TRANSFER_RULE_KEYS = {
   heavy: 'transfer.heavy',                           // 다주택 중과 가산 + 경과조치
   ltsdGeneral: 'transfer.ltsd.general',              // 장기보유특별공제 작은 표
   ltsdOneHouse: 'transfer.ltsd.one_house',           // 장기보유특별공제 큰 표(보유분+거주분)
+  ltsdCap: 'transfer.ltsd.cap',                      // 장기보유특별공제 물건별 한도 (개정안 — 없으면 한도 없음)
   basicDeduction: 'transfer.basic_deduction',        // 기본공제
   exemption: 'transfer.exemption',                   // 1세대 1주택 비과세 요건 + 고가주택 기준
   temporaryTwoHouse: 'transfer.temporary_two_house', // 일시적 2주택 요건
@@ -188,15 +191,50 @@ export function parseTransferHeavy(
   return { ok: true, value: { rows: value.rows as unknown as TransferHeavyRow[], grace } }
 }
 
-/** transfer.ltsd.general 검증 */
+/**
+ * transfer.ltsd.general 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * 구 형식: { rows } 보유 연수 단일 표. 신 형식: { holdingRows, residenceRows } —
+ * 보유분·거주분 중 높은 쪽 하나. 확정법 룰은 재등록 없이 구 형식 그대로 동작한다.
+ */
 export function parseTransferLtsdGeneral(
   value: Json,
   ruleKey: string,
-): { ok: true; value: TransferLtsdGeneralValue } | TaxEngineFailure {
+): { ok: true; value: TransferLtsdGeneralParsed } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const hasNew = value.holdingRows !== undefined || value.residenceRows !== undefined
+  const hasOld = value.rows !== undefined
+  if (hasNew && hasOld) {
+    return invalid(ruleKey, '구 형식(rows)과 신 형식(holdingRows·residenceRows)을 한 룰에 섞을 수 없습니다.')
+  }
+  if (hasNew) {
+    const holdErr = checkLtsdRows(value.holdingRows, ruleKey, 'holdingRows')
+    if (holdErr) return holdErr
+    const resErr = checkLtsdRows(value.residenceRows, ruleKey, 'residenceRows')
+    if (resErr) return resErr
+    return {
+      ok: true,
+      value: {
+        format: 'max_residence',
+        holdingRows: value.holdingRows as unknown as TransferLtsdRow[],
+        residenceRows: value.residenceRows as unknown as TransferLtsdRow[],
+      },
+    }
+  }
   const err = checkLtsdRows(value.rows, ruleKey, 'rows')
   if (err) return err
-  return { ok: true, value: { rows: value.rows as unknown as TransferLtsdRow[] } }
+  return { ok: true, value: { format: 'holding_only', rows: value.rows as unknown as TransferLtsdRow[] } }
+}
+
+/** transfer.ltsd.cap 검증 — 물건별 한도(원). 0 이하는 공제 0원 함정이라 거부 */
+export function parseTransferLtsdCap(
+  value: Json,
+  ruleKey: string,
+): { ok: true; value: TransferLtsdCapValue } | TaxEngineFailure {
+  if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  if (!isNum(value.perPropertyAmount) || value.perPropertyAmount <= 0) {
+    return invalid(ruleKey, 'perPropertyAmount(물건별 한도·원)가 0보다 큰 숫자가 아닙니다.')
+  }
+  return { ok: true, value: { perPropertyAmount: value.perPropertyAmount } }
 }
 
 /** transfer.ltsd.one_house 검증 — 보유분·거주분 표 + 거주 요건 연수 */
@@ -222,14 +260,35 @@ export function parseTransferLtsdOneHouse(
   }
 }
 
-/** transfer.basic_deduction 검증 — 0원 거부(공제 없음이면 룰을 등록하지 않는 게 아니라 필수 룰이므로 양수 강제) */
+/**
+ * transfer.basic_deduction 검증 — 구/신 형식을 판별해 반환한다(혼합 금지).
+ * 구 형식: { amount } 고정 금액 — 0원 거부(필수 룰이므로 양수 강제).
+ * 신 형식: { rows } — 행 조건(거주기간·양도가액 등)별 금액, 각 행 0원 거부.
+ * 확정법 룰은 재등록 없이 구 형식 그대로 동작한다.
+ */
 export function parseTransferBasicDeduction(
   value: Json,
   ruleKey: string,
-): { ok: true; value: TransferBasicDeductionValue } | TaxEngineFailure {
+): { ok: true; value: TransferBasicDeductionParsed } | TaxEngineFailure {
   if (!isObj(value)) return invalid(ruleKey, '값이 객체가 아닙니다.')
+  const hasRows = value.rows !== undefined
+  const hasFixed = value.amount !== undefined
+  if (hasRows && hasFixed) {
+    return invalid(ruleKey, '구 형식(amount 단일)과 신 형식(rows)을 한 룰에 섞을 수 없습니다.')
+  }
+  if (hasRows) {
+    const rows = value.rows
+    if (!Array.isArray(rows) || rows.length === 0) return invalid(ruleKey, 'rows가 비어 있지 않은 배열이 아닙니다.')
+    for (let i = 0; i < rows.length; i++) {
+      const shape = checkRowShape(rows[i], `rows[${i}]`)
+      if (shape) return invalid(ruleKey, shape)
+      const amount = (rows[i] as Record<string, unknown>).amount
+      if (!isNum(amount) || amount <= 0) return invalid(ruleKey, `rows[${i}].amount가 0보다 큰 숫자(원)가 아닙니다.`)
+    }
+    return { ok: true, value: { format: 'rows', rows: rows as unknown as TransferBasicDeductionRow[] } }
+  }
   if (!isNum(value.amount) || value.amount <= 0) return invalid(ruleKey, 'amount가 0보다 큰 숫자(원)가 아닙니다.')
-  return { ok: true, value: { amount: value.amount } }
+  return { ok: true, value: { format: 'fixed', amount: value.amount } }
 }
 
 /** transfer.exemption 검증 */

@@ -77,9 +77,25 @@ export interface TransferHeavyValue {
   }
 }
 
-/** transfer.ltsd.general — 장기보유특별공제 작은 표 (조건: holding_years_ltsd) */
-export interface TransferLtsdGeneralValue {
-  rows: TransferLtsdRow[]
+/**
+ * transfer.ltsd.general — 장기보유특별공제 일반 표. 두 형식을 지원한다(같은 키에 혼합 금지):
+ *   구 형식(확정법): { rows } — 보유 연수(holding_years_ltsd) 조건 단일 표
+ *   신 형식(개정안): { holdingRows, residenceRows } — 보유분·거주분(residence_years 조건) 중
+ *   높은 쪽 하나만 적용. 거주기간 미입력이면 보유분만 적용하고 그 사실을 안내한다.
+ * 확정법 룰은 재등록 없이 구 형식 그대로 동작한다. 파서가 형식을 판별해 반환한다.
+ */
+export type TransferLtsdGeneralParsed =
+  | { format: 'holding_only'; rows: TransferLtsdRow[] }
+  | { format: 'max_residence'; holdingRows: TransferLtsdRow[]; residenceRows: TransferLtsdRow[] }
+
+/**
+ * transfer.ltsd.cap — 장기보유특별공제 '물건별' 한도(원). 개정안 룰 — 기준일에 유효한
+ * 룰이 없으면 한도를 적용하지 않는다(확정법에는 한도 규정이 없다).
+ * 같은 해 여러 물건 양도 시의 '인별' 합산 한도는 단일 물건 계산기가 알 수 없어
+ * 적용하지 않으며, 화면 판단 한계에 그 사실을 명시한다.
+ */
+export interface TransferLtsdCapValue {
+  perPropertyAmount: number   // 물건별 한도액 (원) — 관리자 입력
 }
 
 /**
@@ -94,10 +110,22 @@ export interface TransferLtsdOneHouseValue {
   residenceRows: TransferLtsdRow[]   // 조건: residence_years
 }
 
-/** transfer.basic_deduction — 기본공제액(원) */
-export interface TransferBasicDeductionValue {
+/** 기본공제 행(신 형식) — 조건(거주기간·양도가액 등)별 공제액(원). 값은 관리자 입력 */
+export interface TransferBasicDeductionRow {
+  when: Conditions
+  priority?: number
   amount: number
 }
+
+/**
+ * transfer.basic_deduction — 기본공제. 두 형식을 지원한다(같은 키에 혼합 금지):
+ *   구 형식(확정법): { amount } 고정 금액
+ *   신 형식(개정안): { rows } — 행 조건(residence_years·transfer_price 등)별 금액
+ * 확정법 룰은 재등록 없이 구 형식 그대로 동작한다. 파서가 형식을 판별해 반환한다.
+ */
+export type TransferBasicDeductionParsed =
+  | { format: 'fixed'; amount: number }
+  | { format: 'rows'; rows: TransferBasicDeductionRow[] }
 
 /**
  * transfer.exemption — 1세대 1주택 비과세 요건과 고가주택 기준.
@@ -209,6 +237,8 @@ export interface TransferSuccess {
   ltsdTable: TransferLtsdTable
   ltsdReason: string
   ltsdPercentTotal: number        // 적용 공제율 합계(%)
+  /** 물건별 공제 한도(transfer.ltsd.cap — 개정안 룰)로 공제액이 잘렸는지 */
+  ltsdCapApplied: boolean
   /** 다주택 중과 */
   heavyApplied: boolean           // 가산이 실제 반영됐는지
   heavyExemptedByGrace: boolean   // 경과조치로 면제됐는지

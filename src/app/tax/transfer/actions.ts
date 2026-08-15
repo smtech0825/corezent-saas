@@ -100,6 +100,7 @@ export async function calculateTransfer(payload: TransferCalcPayload): Promise<T
           taxableRatio: result.taxableRatio,
           breakdown: result.breakdown,
           ltsdTable: result.ltsdTable,
+          ltsdCapApplied: result.ltsdCapApplied,
           heavyApplied: result.heavyApplied,
           heavyExemptedByGrace: result.heavyExemptedByGrace,
           ratePathChosen: result.ratePathChosen,

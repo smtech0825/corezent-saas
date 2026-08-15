@@ -13,6 +13,10 @@
  *           중과=양도 당시(tax_regulated_areas 이력 자동 판정).
  *        중과 유예 기간은 transfer.heavy 룰의 시행기간 이력로 표현한다(날짜를 코드에 안 둔다).
  *        룰이 없으면 0원으로 계산하지 않고 RULE_NOT_REGISTERED를 반환한다.
+ *        ⚠️ ltsd.general·basic_deduction은 구 형식(확정법)과 신 형식(2026 세제개편안)을 모두
+ *        지원한다 — 계산 방식은 모드가 아니라 '집힌 룰의 값 형식'이 정하며, 확정법 룰은
+ *        재등록 없이 구 형식 그대로 동작한다. ltsd.cap(물건별 한도)은 개정안 전용 선택 룰로,
+ *        기준일에 유효한 룰이 없으면 한도를 적용하지 않는다(형식 정의는 transfer-types.ts).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -27,7 +31,7 @@ import type {
   TransferSuccess,
 } from './transfer-types'
 import { COMMON_RULE_KEYS, engineFail, fetchValidRules, isRegulatedArea, isValidDateString, isValidRegionCode, requireRule } from './rule-store'
-import { applyRounding, evaluateRateSpec, parseMetroScope, parseRounding, selectRateRowOptional } from './rule-value'
+import { applyRounding, evaluateRateSpec, parseMetroScope, parseRounding, selectRateRow, selectRateRowOptional } from './rule-value'
 import type { RoundingValue } from './engine-types'
 import { fullYearsBetween, holdingYearsForLtsd, holdingYearsForRate, isOnOrBeforeAnniversary, isOnOrBeforeMonthsAfter } from './period'
 import {
@@ -37,6 +41,7 @@ import {
   parseTransferExemption,
   parseTransferHeavy,
   parseTransferLocalIncomeTax,
+  parseTransferLtsdCap,
   parseTransferLtsdGeneral,
   parseTransferLtsdOneHouse,
   parseTransferPeriodRule,
@@ -214,6 +219,10 @@ export async function calculateTransferTax(
   // 확인되지 않은 한계를 화면이 조건부로 안내할 수 있게 결과에 담는다
   let residenceYearsUsed: number | null = null
 
+  // 장기보유특별공제 물건별 한도(transfer.ltsd.cap — 개정안 룰) 적용 여부.
+  // 비과세·양도차손 등 조기 반환 경로에서도 결과에 담기므로 여기서 미리 선언한다
+  let ltsdCapApplied = false
+
   // ── 비과세 판정 (③의 비과세 축 — 거주 요건은 '취득 당시' 조정대상지역인 경우만) ──
   let taxableRatio = 1
   let highPriceApplied = false
@@ -307,6 +316,7 @@ export async function calculateTransferTax(
     sido: input.sido,                         // 시·도 이름 — 경과조치 지역 조건
     sigungu: input.sigungu,                   // 시·군·구 이름 — 경과조치의 구 단위 지역 조건
     is_metro: isMetro,                        // 수도권 여부 — metro_scope 룰 필요
+    transfer_price: input.transferPrice,      // 양도가액 (원) — 신 형식 기본공제 등 조건용
   }
 
   // ── 다주택 중과 판정 + 경과조치 (유예 기간은 heavy 룰의 시행기간 이력이 표현) ──
@@ -410,30 +420,88 @@ export async function calculateTransferTax(
       if (!genRule.ok) return genRule
       const gen = parseTransferLtsdGeneral(genRule.rule.rule_value, genRule.rule.rule_key)
       if (!gen.ok) return gen
-      const picked = selectRateRowOptional(gen.value.rows, context, genRule.rule.rule_key)
-      if (!picked.ok) return picked
-      picked.unresolved.forEach((f) => unresolvedFields.add(f))
-      use(genRule.rule)
-      if (picked.row === null) {
-        ltsdTable = 'none'
-        ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + '일반 표에서 보유기간 조건에 해당하는 행이 없어 공제가 없습니다.'
+      if (gen.value.format === 'holding_only') {
+        const picked = selectRateRowOptional(gen.value.rows, context, genRule.rule.rule_key)
+        if (!picked.ok) return picked
+        picked.unresolved.forEach((f) => unresolvedFields.add(f))
+        use(genRule.rule)
+        if (picked.row === null) {
+          ltsdTable = 'none'
+          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + '일반 표에서 보유기간 조건에 해당하는 행이 없어 공제가 없습니다.'
+        } else {
+          ltsdTable = 'general'
+          ltsdPercentTotal = picked.row.deductPercent
+          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + `일반 표 적용 — 공제율 ${picked.row.deductPercent}%.`
+        }
       } else {
-        ltsdTable = 'general'
-        ltsdPercentTotal = picked.row.deductPercent
-        ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') + `일반 표 적용 — 공제율 ${picked.row.deductPercent}%.`
+        // 신 형식(개정안) — 보유분·거주분 중 높은 쪽 하나만 적용
+        const holdingPicked = selectRateRowOptional(gen.value.holdingRows, context, genRule.rule.rule_key)
+        if (!holdingPicked.ok) return holdingPicked
+        const residencePicked = selectRateRowOptional(gen.value.residenceRows, context, genRule.rule.rule_key)
+        if (!residencePicked.ok) return residencePicked
+        holdingPicked.unresolved.forEach((f) => unresolvedFields.add(f))
+        residencePicked.unresolved.forEach((f) => unresolvedFields.add(f))
+        use(genRule.rule)
+        const holdPct = holdingPicked.row?.deductPercent ?? 0
+        const resPct = residencePicked.row?.deductPercent ?? 0
+        if (input.residenceYears === undefined) {
+          // 거주기간 미입력 — 0으로 간주하지 않고 보유분만 적용한 사실을 명시한다
+          ltsdPercentTotal = holdPct
+          ltsdTable = holdPct > 0 ? 'general' : 'none'
+          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
+            `거주기간 미입력으로 일반 표(개정안)의 보유 기준 공제만 적용했습니다 — 보유분 ${holdPct}%. ` +
+            '거주기간을 입력하면 거주 기준 공제와 비교해 높은 쪽이 적용됩니다.'
+        } else {
+          if (residencePicked.row !== null) residenceYearsUsed = input.residenceYears
+          ltsdPercentTotal = Math.max(holdPct, resPct)
+          ltsdTable = ltsdPercentTotal > 0 ? 'general' : 'none'
+          // 동률이면 보유분으로 표기 — 공제액은 동일하다
+          const chosen = resPct > holdPct ? '거주분' : '보유분'
+          ltsdReason = (ltsdReason ? ltsdReason + ' ' : '') +
+            `일반 표(개정안) 적용 — 보유분 ${holdPct}%·거주분 ${resPct}% 중 높은 쪽인 ${chosen} ${ltsdPercentTotal}%를 적용했습니다(둘 중 하나만 적용).`
+          if (ltsdPercentTotal === 0) {
+            ltsdReason += ' 보유·거주기간이 공제 요건에 해당하지 않아 공제가 없습니다.'
+          }
+        }
       }
     }
   }
-  const ltsdAmount = Math.floor((gain * ltsdPercentTotal) / 100)
+  let ltsdAmount = Math.floor((gain * ltsdPercentTotal) / 100)
+
+  // ── 장기보유특별공제 물건별 한도 (transfer.ltsd.cap — 개정안 선택 룰) ────────
+  // 기준일에 유효한 룰이 없으면 한도 없음(확정법에는 한도 규정이 없다). 같은 해 여러
+  // 물건 양도 시의 '인별' 합산 한도는 단일 물건 계산기가 알 수 없어 적용하지 않는다 —
+  // 화면 판단 한계가 그 사실을 안내한다.
+  const capRule = rules.get(TRANSFER_RULE_KEYS.ltsdCap)
+  if (capRule && ltsdAmount > 0) {
+    const cap = parseTransferLtsdCap(capRule.rule_value, capRule.rule_key)
+    if (!cap.ok) return cap
+    use(capRule)
+    if (ltsdAmount > cap.value.perPropertyAmount) {
+      ltsdAmount = cap.value.perPropertyAmount
+      ltsdCapApplied = true
+      ltsdReason += ` 공제액이 물건별 한도를 넘어 한도액 ${cap.value.perPropertyAmount.toLocaleString('ko-KR')}원까지만 적용했습니다(개정안 기준).`
+    }
+  }
 
   // ── 기본공제 → 과세표준 ─────────────────────────────────────────────────────
+  // 구 형식(확정법)은 고정 금액, 신 형식(개정안)은 행 조건(거주기간·양도가액 등)별 금액.
   const taxableGain = gain - ltsdAmount
   const basicRule = requireRule(rules, TRANSFER_RULE_KEYS.basicDeduction, input.baseDate)
   if (!basicRule.ok) return basicRule
   const basic = parseTransferBasicDeduction(basicRule.rule.rule_value, basicRule.rule.rule_key)
   if (!basic.ok) return basic
   use(basicRule.rule)
-  const basicApplied = Math.min(basic.value.amount, Math.max(taxableGain, 0))
+  let basicAmount: number
+  if (basic.value.format === 'fixed') {
+    basicAmount = basic.value.amount
+  } else {
+    const picked = selectRateRow(basic.value.rows, context, basicRule.rule.rule_key)
+    if (!picked.ok) return picked
+    picked.unresolved.forEach((f) => unresolvedFields.add(f))
+    basicAmount = picked.row.amount
+  }
+  const basicApplied = Math.min(basicAmount, Math.max(taxableGain, 0))
   const taxBase = Math.max(taxableGain - basicApplied, 0)
 
   // ── 세율 적용 — 국세·지방 각각 독립 계산 (지방은 10% 부가가 아니라 별도 세율표) ──
@@ -567,6 +635,7 @@ export async function calculateTransferTax(
       ok: true,
       ...partial,
       ltsdPercentTotal: partial.ltsdPercentTotal ?? 0,
+      ltsdCapApplied,
       holdingYearsForRate: yearsForRate,
       holdingYearsForLtsd: yearsForLtsd,
       residenceYearsUsed,
