@@ -127,8 +127,8 @@ export interface TaxCalculationLog {
 
 /**
  * @타입: TaxLawChangeQueueItem
- * @설명: tax_law_change_queue 행 — 법령 개정 감지 큐. 다음 Stage(법제처 OPEN API 연동)용이며
- *        이번 Stage에서는 어떤 코드도 이 테이블에 쓰지 않는다.
+ * @설명: tax_law_change_queue 행 — 법령 개정 감지 큐. 감시 배치가 채우고 관리자가 검토한다.
+ *        matched_rule_keys는 066에서 추가됐다 — 조문번호가 조 단위라 한 건에 여러 룰이 걸린다.
  */
 export interface TaxLawChangeQueueItem {
   id: string
@@ -141,4 +141,20 @@ export interface TaxLawChangeQueueItem {
   raw_payload: Json | null
   status: 'pending' | 'reviewed' | 'ignored'
   reviewed_at: string | null
+  /** 감지 시점에 이 (법령ID, 조문번호)에 걸려 있던 룰의 rule_key 목록 (066) */
+  matched_rule_keys: string[]
+}
+
+/**
+ * @타입: TaxLawWatchState
+ * @설명: tax_law_watch_state 단일 행(id=1) — 감시 배치의 실행 상태.
+ *        배치가 조용히 죽었는지 관리자가 확인하는 단일 출처다.
+ */
+export interface TaxLawWatchState {
+  id: number
+  last_checked_date: string | null
+  last_run_at: string | null
+  last_run_ok: boolean | null
+  last_error: string | null
+  updated_at: string
 }

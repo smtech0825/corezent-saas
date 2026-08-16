@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import PageContainer from '@/components/common/PageContainer'
 import type { TaxRule } from '@/lib/tax/types'
 import TaxTabs from '../_components/TaxTabs'
+import { fetchPendingLawChangeCount } from '../_components/pending-count'
 import RulesManager from './RulesManager'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,7 @@ export default async function AdminTaxRulesPage() {
   if (error) console.error('[admin/tax] 룰 목록 조회 실패:', error.message)
 
   const rules = (data ?? []) as TaxRule[]
+  const pendingLawChanges = await fetchPendingLawChangeCount()
 
   return (
     <PageContainer variant="admin" className="space-y-5">
@@ -39,7 +41,7 @@ export default async function AdminTaxRulesPage() {
           모든 룰에 법령명·조문·원문 링크를 반드시 남기세요.
         </p>
       </div>
-      <TaxTabs active="rules" />
+      <TaxTabs active="rules" pendingLawChanges={pendingLawChanges} />
       <RulesManager rules={rules} />
     </PageContainer>
   )

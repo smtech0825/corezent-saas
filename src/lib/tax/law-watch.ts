@@ -19,12 +19,14 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  fetchArticleHistory,
-  fetchLawChangesOn,
-  getLawApiOc,
-  LawApiError,
-  type LawChangeRow,
-} from './law-api'
+  loadWatchTargets,
+  verifyLawIds,
+  type InvalidLawId,
+  type WatchTarget,
+} from './law-watch-targets'
+import { fetchArticleHistory, fetchLawChangesOn, getLawApiOc, LawApiError } from './law-api'
+
+export type { InvalidLawId } from './law-watch-targets'
 
 /** 한 번 실행에 처리할 최대 날짜 수 — 밀려도 나눠 처리하고 다음 실행이 이어받는다 */
 const MAX_DAYS_PER_RUN = 10
@@ -32,12 +34,6 @@ const MAX_DAYS_PER_RUN = 10
 /** 한 번 실행의 목표 시간(ms). 넘기면 그날까지만 처리하고 멈춘다(함수 시간 제한 방어) */
 const SOFT_DEADLINE_MS = 45_000
 
-/** 감시 대상 한 줄 — (법령ID, 조번호)에 걸린 룰 목록 */
-interface WatchTarget {
-  lawId: string
-  articleNo: string
-  ruleKeys: string[]
-}
 
 /** 배치 실행 결과 — 라우트가 그대로 응답으로 내보낸다 */
 export interface WatchRunResult {
@@ -49,6 +45,8 @@ export interface WatchRunResult {
   datesProcessed: string[]
   queuedCount: number
   lastCheckedDate: string | null
+  /** 법제처에서 조회되지 않은 법령ID — 있으면 그 룰들은 감시되지 않는다 */
+  invalidLawIds: InvalidLawId[]
   /** 실패 시에만 — 법제처 응답 원문 일부를 그대로 담는다 */
   errorDetail?: { url: string; status: number | null; body: string }
 }
@@ -73,36 +71,6 @@ function subDay(date: string): string {
   const d = new Date(`${date}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - 1)
   return d.toISOString().slice(0, 10)
-}
-
-/**
- * @함수명: loadWatchTargets
- * @설명: 등록된 룰에서 법령ID와 6자리 조번호가 모두 있는 것만 모아 감시 대상을 만듭니다.
- *        둘 중 하나라도 비면 감시할 수 없으므로 제외합니다(어느 룰이 빠졌는지는
- *        관리자가 룰 화면에서 확인합니다).
- * @매개변수: supabase - 관리자 클라이언트
- * @반환값: (법령ID, 조번호)별 감시 대상 목록
- */
-export async function loadWatchTargets(supabase: SupabaseClient): Promise<WatchTarget[]> {
-  const { data, error } = await supabase
-    .from('tax_rules')
-    .select('rule_key, law_id, law_article_no')
-    .not('law_id', 'is', null)
-    .not('law_article_no', 'is', null)
-
-  if (error) throw new Error(`감시 대상 조회에 실패했습니다: ${error.message}`)
-
-  const map = new Map<string, WatchTarget>()
-  for (const row of (data ?? []) as { rule_key: string; law_id: string; law_article_no: string }[]) {
-    const key = `${row.law_id}|${row.law_article_no}`
-    const found = map.get(key)
-    if (found) {
-      if (!found.ruleKeys.includes(row.rule_key)) found.ruleKeys.push(row.rule_key)
-    } else {
-      map.set(key, { lawId: row.law_id, articleNo: row.law_article_no, ruleKeys: [row.rule_key] })
-    }
-  }
-  return [...map.values()]
 }
 
 /** 상태 행 갱신 — 성공/실패 공통 */
@@ -215,6 +183,7 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
       ok: false, mode: 'scan',
       message: `감시 상태 행을 읽지 못했습니다(066 적용 여부를 확인하세요): ${stateError?.message ?? '행 없음'}`,
       targetCount: 0, datesPlanned: 0, datesProcessed: [], queuedCount: 0, lastCheckedDate: null,
+      invalidLawIds: [],
     }
   }
 
@@ -227,6 +196,7 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
       ok: true, mode: 'baseline',
       message: `첫 가동입니다. 과거는 훑지 않고 ${today}로 기준선을 세웠습니다. 다음 실행부터 그 이후 개정을 감지합니다.`,
       targetCount: 0, datesPlanned: 0, datesProcessed: [], queuedCount: 0, lastCheckedDate: today,
+      invalidLawIds: [],
     }
   }
 
@@ -243,6 +213,7 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
     return {
       ok: true, mode: 'scan', message: `새로 볼 날짜가 없습니다(${lastChecked}까지 처리 완료).`,
       targetCount: 0, datesPlanned: 0, datesProcessed: [], queuedCount: 0, lastCheckedDate: lastChecked,
+      invalidLawIds: [],
     }
   }
 
@@ -257,9 +228,38 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
     return {
       ok: false, mode: 'scan', message: msg,
       targetCount: 0, datesPlanned: pending.length, datesProcessed: [], queuedCount: 0,
-      lastCheckedDate: lastChecked,
+      lastCheckedDate: lastChecked, invalidLawIds: [],
     }
   }
+
+  // ── 법령ID가 법제처에 실제로 있는지 확인 ────────────────────────────────────
+  //    없는 ID는 그 법령이 개정돼도 목록에서 걸러져 오류 없이 조용히 감시가 빠진다.
+  //    감지 자체는 계속 진행하되(나머지 법령은 정상이므로), 그 사실을 결과와
+  //    상태에 남겨 관리자 화면이 띄우게 한다.
+  let invalidLawIds: InvalidLawId[] = []
+  try {
+    invalidLawIds = await verifyLawIds(oc, targets)
+  } catch (e) {
+    // 확인 자체가 실패하면(법제처 장애 등) 감시를 멈춘다 — 잘못된 경고보다 낫다
+    const msg = e instanceof Error ? e.message : String(e)
+    await saveState(supabase, { last_run_ok: false, last_error: `법령ID 확인 실패: ${msg}` })
+    return {
+      ok: false, mode: 'scan', message: `법령ID 확인에 실패해 중단했습니다: ${msg}`,
+      targetCount: targets.length, datesPlanned: pending.length, datesProcessed: [],
+      queuedCount: 0, lastCheckedDate: lastChecked, invalidLawIds: [],
+      ...(e instanceof LawApiError
+        ? { errorDetail: { url: e.url.replace(/OC=[^&]*/, 'OC=***'), status: e.status, body: e.body } }
+        : {}),
+    }
+  }
+
+  /** 결과·상태에 함께 남길 경고 문구 (없으면 빈 문자열) */
+  const invalidNotice =
+    invalidLawIds.length === 0
+      ? ''
+      : ` ⚠️ 법제처에서 조회되지 않는 법령ID ${invalidLawIds.length}개(${invalidLawIds
+          .map((v) => v.lawId)
+          .join(', ')})가 있어 관련 룰 ${invalidLawIds.reduce((a, b) => a + b.ruleKeys.length, 0)}건은 감시되지 않습니다.`
 
   const processed: string[] = []
   let queuedCount = 0
@@ -283,7 +283,7 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
         ok: false, mode: 'scan',
         message: `${date} 처리 중 실패해 중단했습니다. 이 날짜는 다음 실행에서 다시 시도합니다.`,
         targetCount: targets.length, datesPlanned: pending.length, datesProcessed: processed,
-        queuedCount, lastCheckedDate: advanceTo ?? lastChecked,
+        queuedCount, lastCheckedDate: advanceTo ?? lastChecked, invalidLawIds,
         ...(e instanceof LawApiError
           ? { errorDetail: { url: e.url.replace(/OC=[^&]*/, 'OC=***'), status: e.status, body: e.body } }
           : {}),
@@ -292,15 +292,22 @@ export async function runLawWatch(supabase: SupabaseClient): Promise<WatchRunRes
   }
 
   const advanceTo = processed.length > 0 ? processed[processed.length - 1] : lastChecked
-  await saveState(supabase, { last_checked_date: advanceTo, last_run_ok: true, last_error: null })
+  // 없는 법령ID가 있으면 실행은 성공이어도 '정상'으로 표시하지 않는다 —
+  // 관리자 화면이 초록불만 보고 안심하면 안 되기 때문이다
+  await saveState(supabase, {
+    last_checked_date: advanceTo,
+    last_run_ok: invalidLawIds.length === 0,
+    last_error: invalidLawIds.length === 0 ? null : invalidNotice.trim(),
+  })
 
   const remaining = pending.length - processed.length
   return {
-    ok: true, mode: 'scan',
+    ok: invalidLawIds.length === 0, mode: 'scan',
     message:
       `${processed.length}일치를 처리해 ${queuedCount}건을 큐에 넣었습니다.` +
-      (remaining > 0 ? ` ${remaining}일이 남아 다음 실행이 이어받습니다.` : ''),
+      (remaining > 0 ? ` ${remaining}일이 남아 다음 실행이 이어받습니다.` : '') +
+      invalidNotice,
     targetCount: targets.length, datesPlanned: pending.length, datesProcessed: processed,
-    queuedCount, lastCheckedDate: advanceTo,
+    queuedCount, lastCheckedDate: advanceTo, invalidLawIds,
   }
 }

@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import PageContainer from '@/components/common/PageContainer'
 import type { TaxRegulatedArea } from '@/lib/tax/types'
 import TaxTabs from '../_components/TaxTabs'
+import { fetchPendingLawChangeCount } from '../_components/pending-count'
 import AreasManager from './AreasManager'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,7 @@ export default async function AdminTaxAreasPage() {
   if (error) console.error('[admin/tax] 규제지역 목록 조회 실패:', error.message)
 
   const areas = (data ?? []) as TaxRegulatedArea[]
+  const pendingLawChanges = await fetchPendingLawChangeCount()
 
   return (
     <PageContainer variant="admin" className="space-y-5">
@@ -39,7 +41,7 @@ export default async function AdminTaxAreasPage() {
           소재지는 계산기와 같은 행정구역 목록에서 선택되므로 판정 코드가 어긋나지 않습니다.
         </p>
       </div>
-      <TaxTabs active="areas" />
+      <TaxTabs active="areas" pendingLawChanges={pendingLawChanges} />
       <AreasManager areas={areas} />
     </PageContainer>
   )

@@ -221,6 +221,52 @@ export async function fetchArticleHistory(
 }
 
 /**
+ * @함수명: fetchLawName
+ * @설명: 법령ID로 법령명을 읽습니다. 그 ID가 법제처에 실제로 있는지 확인하는 용도입니다.
+ *        없는 ID를 넣으면 법제처는 오류가 아니라 안내 문자열을 돌려주므로,
+ *        객체가 아닌 응답은 '없는 ID'로 판정합니다.
+ * @매개변수: oc - 인증키 / lawId - 법령ID
+ * @반환값: 법령명. 그 ID가 없으면 null
+ */
+export async function fetchLawName(oc: string, lawId: string): Promise<string | null> {
+  const url =
+    `${SERVICE_URL}?OC=${encodeURIComponent(oc)}&target=law&type=JSON&ID=${encodeURIComponent(lawId)}`
+  const json = await fetchJson(url)
+  // 없는 ID면 { "Law": "일치하는 법령이 없습니다. ..." } 처럼 문자열이 온다
+  if (json !== null && typeof json === 'object' && !Array.isArray(json)) {
+    const law = (json as Record<string, Json>)['Law']
+    if (typeof law === 'string') return null
+  }
+  const name = findFirst(json, ['법령명_한글', '법령명한글'])
+  return name === '' ? null : name
+}
+
+/**
+ * @함수명: findFirst
+ * @설명: 응답을 훑어 후보 키 중 처음 발견한 값을 문자열로 돌려줍니다.
+ * @매개변수: value - 훑을 JSON / keys - 찾을 키 후보
+ * @반환값: 찾은 값(없으면 빈 문자열)
+ */
+function findFirst(value: Json, keys: string[]): string {
+  let result = ''
+  const walk = (node: Json) => {
+    if (result !== '') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node === null || typeof node !== 'object') return
+    const obj = node as Record<string, Json>
+    for (const k of keys) {
+      if (obj[k] !== undefined && obj[k] !== null) {
+        result = str(obj[k])
+        return
+      }
+    }
+    Object.values(obj).forEach(walk)
+  }
+  walk(value)
+  return result
+}
+
+/**
  * @함수명: buildOldAndNewUrl
  * @설명: 신구법 대조(oldAndNew) 화면 주소를 만듭니다. 관리자 화면 링크 전용이며
  *        인증키가 들어가므로 서버에서만 만들어 내려보냅니다.
