@@ -14,6 +14,7 @@ import { ChevronDown, Loader2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import SegmentControl from '@/components/common/SegmentControl'
+import { fullYearsBetween } from '@/lib/tax/period'
 import { REGIONS, findSigunguList } from '@/lib/tax/regions'
 import type { TransferHouseCount } from '@/lib/tax/transfer-types'
 import type { NetProceedsResult } from '@/lib/tax/net-proceeds-types'
@@ -147,6 +148,14 @@ export default function NetProceedsForm({ graceDeadlineText, autoRegulatedEnable
     }
     // 미래 날짜 차단 — 양도세 폼과 동일(엔진도 같은 검증으로 이중 방어)
     if (acquiredAt > transferDate) { setFormError('취득일이 양도일보다 늦을 수 없습니다.'); return }
+    // 거주기간이 보유기간을 넘으면 차단 — 양도세 폼과 같은 가드(두 계산기의 검증을 맞춘다).
+    // 연수 계산은 엔진과 같은 공용 함수(period.ts)를 쓰되, 초일 산입 방식은 룰 값이라
+    // 폼은 더 관대한 쪽(include_start)으로만 검사한다 — 경계·불산입 여부는 엔진이 판정한다.
+    // 상속 주택은 공제용 기산일이 상속개시일이라 이 가드를 건너뛴다(엔진이 판정).
+    if (resNum !== undefined && !inherited && acquiredAt &&
+        resNum > fullYearsBetween(acquiredAt, transferDate, 'include_start')) {
+      setFormError('거주기간이 보유기간보다 길 수 없습니다. 취득일·거주기간 입력을 확인해 주세요.'); return
+    }
     if (houseCount === 2 && temporaryTwo && newHouseAcquiredAt && newHouseAcquiredAt > transferDate) {
       setFormError('신규주택 취득일이 양도일보다 늦을 수 없습니다.'); return
     }
@@ -171,7 +180,10 @@ export default function NetProceedsForm({ graceDeadlineText, autoRegulatedEnable
           acquirePrice: acqNum,
           expenses: expNum,
           houseCount,
-          residenceYears: oneHouseTrack ? resNum : undefined,
+          // 전 주택 수에서 전달 — 양도세 폼과 같은 기준. 다주택도 장기보유특별공제·
+          // 양도소득 기본공제 판정에 거주기간을 쓰는 룰이 등록될 수 있어, 여기서 걸러내면
+          // 같은 입력인데 두 계산기의 세액이 갈린다
+          residenceYears: resNum,
           acquiredInRegulatedArea:
             oneHouseTrack && acquiredRegulated !== '' ? acquiredRegulated === 'yes' : undefined,
           isTemporaryTwoHouse: houseCount === 2 ? temporaryTwo : undefined,
@@ -264,14 +276,17 @@ export default function NetProceedsForm({ graceDeadlineText, autoRegulatedEnable
           </div>
         )}
 
-        {/* 1주택 트랙 — 비과세·장기보유특별공제 큰 표 판정용 입력 (양도세 폼과 동일) */}
+        {/* 거주기간 — 전 주택 수 공통(양도세 폼과 같은 기준). 주택 수에 따라 감추면
+            같은 입력인데 두 계산기의 세액이 갈린다 */}
+        <Field label="거주기간 (만 연수)" htmlFor="np-residence"
+          hint="실제 거주한 만 연수. 1세대 1주택 판정과 장기보유특별공제·양도소득 기본공제 판정에 쓰입니다. 비워 두면 거주기간을 쓰는 공제 없이 계산합니다. 산정 방식(초일 산입)은 법령·집행기준에서 확인되지 않아 보유기간과 같은 방식을 전제로 합니다.">
+          <Input id="np-residence" type="number" min={0} step={1} value={residenceYears}
+            onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
+        </Field>
+
+        {/* 1주택 트랙 — 비과세 거주 요건 판정용 입력 (양도세 폼과 동일 조건) */}
         {oneHouseTrack && (
           <div className="space-y-4 border-l-2 border-pen/20 pl-4">
-            <Field label="거주기간 (만 연수)" htmlFor="np-residence"
-              hint="실제 거주한 만 연수. 산정 방식(초일 산입)은 법령·집행기준에서 확인되지 않아 보유기간과 같은 방식을 전제로 합니다.">
-              <Input id="np-residence" type="number" min={0} step={1} value={residenceYears}
-                onChange={(e) => setResidenceYears(e.target.value)} placeholder="예: 3" />
-            </Field>
             <AcquiredRegulatedField id="np-acq-regulated" value={acquiredRegulated}
               onChange={setAcquiredRegulated} autoEnabled={autoRegulatedEnabled} />
           </div>
