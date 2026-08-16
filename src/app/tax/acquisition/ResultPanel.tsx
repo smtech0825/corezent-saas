@@ -46,6 +46,13 @@ export default function ResultPanel({ result, inputCause }: Props) {
     { label: '농어촌특별세', amount: result.breakdown.ruralSpecialTax },
   ]
 
+  // 증여 중과 세율표가 실제로 적용됐는지 — 엔진은 규제지역이면 중과 미적용이어도
+  // 중과 룰을 근거에 넣으므로(판정 자체의 근거), 중과가 걸린 경우에만 있는
+  // '중과 룰은 쓰였고 증여 기본 세율표는 안 쓰였다'로 구분한다.
+  const giftHeavyApplied =
+    result.appliedRules.some((r) => r.ruleKey === 'acquisition.gift.heavy') &&
+    !result.appliedRules.some((r) => r.ruleKey === 'acquisition.gift.rates')
+
   return (
     <div className="space-y-4">
       {/* 개정안 모드 경고 배지 — 계산 당시 모드(result.ruleMode) 기준. 토글을 나중에
@@ -116,6 +123,14 @@ export default function ResultPanel({ result, inputCause }: Props) {
         {inputCause === 'gift' && result.causeApplied === 'onerous' && (
           <p className="mt-2 text-xs text-ink-soft leading-relaxed">
             지급한 대가가 기준 범위에서 인정되어 유상취득으로 계산했습니다.
+          </p>
+        )}
+        {/* 증여 중과의 농어촌특별세는 세율 근거가 확인되지 않아 0으로 두었다 —
+            합계가 실제보다 작을 수 있다는 사실을 결과에 함께 밝힌다 */}
+        {giftHeavyApplied && (
+          <p className="mt-3 text-sm text-caution bg-caution-soft border border-caution/30 rounded-md p-3 leading-relaxed">
+            조정대상지역 증여 중과의 농어촌특별세는 이 계산에 포함되지 않았습니다. 실제 납부액은
+            이보다 클 수 있습니다.
           </p>
         )}
       </div>

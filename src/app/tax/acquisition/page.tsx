@@ -48,6 +48,17 @@ export default async function AcquisitionTaxPage() {
         <CalculatorForm />
 
         <CalcNotes>
+        {/* 판단 한계 안내 — 이 계산기가 반영하지 못하는 것들 명시 (다른 계산기와 같은 형식) */}
+        <div className="mt-8 bg-paper-raised border border-rule rounded-lg p-5">
+          <p className="text-sm font-semibold text-ink mb-2">계산 전에 확인하세요</p>
+          <ul className="list-disc pl-5 space-y-1.5 text-xs text-ink-soft leading-relaxed">
+            <li>
+              조정대상지역 증여 중과의 농어촌특별세는 이 계산에 포함되지 않았습니다. 실제
+              납부액은 이보다 클 수 있습니다.
+            </li>
+          </ul>
+        </div>
+
         {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
         <div className="mt-8 border-t border-rule pt-5 text-center">
           <p className="text-xs text-ink-soft leading-relaxed">
