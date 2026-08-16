@@ -16,11 +16,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { runLawWatch } from '@/lib/tax/law-watch'
 
 /**
- * 외부 API를 여러 번 호출하므로 넉넉히 둔다. 로직 자체 상한(날짜 처리 150초 ·
- * 전체 240초)보다 크게 잡아야 한다 — 함수가 강제 종료되면 실패 기록조차 남지 않아
- * 화면이 직전 실행의 초록불을 계속 보여준다.
+ * 실행 시간 상한. 요금제·Fluid Compute 설정에 따라 60초를 넘기면 배포가 거부될 수
+ * 있어 안전하게 60초로 둔다(대표님 결정 2026-08-16).
+ *
+ * 로직 자체 상한이 이보다 짧아야 한다 — 함수가 강제 종료되면 실패 기록조차 남지 않아
+ * 화면이 직전 실행의 초록불을 계속 보여준다. law-watch.ts가 날짜 처리 30초 ·
+ * 전체 42초로 잡고, 개별 호출은 10초에서 끊어 최악의 경우도 52초를 넘지 않는다.
  */
-export const maxDuration = 300
+export const maxDuration = 60
 
 /** 항상 그 시점의 DB·외부 API를 본다 — 캐시 금지 */
 export const dynamic = 'force-dynamic'

@@ -27,14 +27,21 @@ import {
 
 export type { InvalidTarget, UnwatchableRule } from './law-watch-targets'
 
-/** 한 번 실행에 처리할 최대 날짜 수 — 밀려도 나눠 처리하고 다음 실행이 이어받는다 */
-const MAX_DAYS_PER_RUN = 10
+/**
+ * 한 번 실행에 처리할 최대 날짜 수. 매일 도니 밀릴 일이 거의 없고, 밀려도 다음
+ * 실행이 이어받는다 — 함수 시간 상한(60초)을 넘겨 강제 종료되는 쪽이 훨씬 나쁘다.
+ */
+const MAX_DAYS_PER_RUN = 3
 
 /** 날짜 처리에 쓸 시간(ms). 넘기면 멈추고 다음 실행이 이어받는다 */
-const SCAN_DEADLINE_MS = 150_000
+const SCAN_DEADLINE_MS = 30_000
 
-/** 대상 검증까지 포함한 전체 시간 상한(ms). 라우트의 maxDuration보다 넉넉히 짧게 둔다 */
-const TOTAL_DEADLINE_MS = 240_000
+/**
+ * 대상 검증까지 포함한 전체 시간 상한(ms). 라우트의 maxDuration(60초)보다 짧게 둔다.
+ * 여기서 통과한 직후 호출 하나가 최대 10초(law-api의 FETCH_TIMEOUT_MS) 걸리므로
+ * 최악의 경우도 52초로, 강제 종료 전에 상태를 저장할 여유가 남는다.
+ */
+const TOTAL_DEADLINE_MS = 42_000
 
 /** 배치 실행 결과 — 라우트가 그대로 응답으로 내보낸다 */
 export interface WatchRunResult {
