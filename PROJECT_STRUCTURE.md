@@ -513,7 +513,19 @@ submitTicket(formData) [서버 액션]
 
 ## 4. 데이터베이스 (Supabase PostgreSQL)
 
-마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~062 (61개, 039 결번). ⚠️ 아래 4.1~4.5 표는 견적서 라운드(060·061)·문의 첨부/유형 라운드(062, 대표님 적용 대기)와 과거 주요 변경만 반영한 요약이며, 028~059 구간의 모든 마이그레이션이 개별 서술되어 있지는 않음 — 정확한 컬럼은 항상 해당 `.sql` 파일을 1차 출처로 확인할 것.
+마이그레이션: [supabase/migrations/](supabase/migrations/) — 001~066 (65개, 039 결번). ⚠️ 아래 4.1~4.5 표는 견적서 라운드(060·061)·문의 첨부/유형 라운드(062)·법령 감시 라운드(066)와 과거 주요 변경만 반영한 요약이며, 028~059 구간의 모든 마이그레이션이 개별 서술되어 있지는 않음 — 정확한 컬럼은 항상 해당 `.sql` 파일을 1차 출처로 확인할 것.
+
+**부동산 계산기·법령 감시 테이블** (055 생성, 065·066 보강 — 전부 운영 적용 완료)
+
+| 테이블 | 역할 | 비고 |
+|---|---|---|
+| `tax_rules` | 세율·공제·기준액 등 계산 근거 전량. 시행 기간·status(confirmed/proposed/repealed)별 이력 구조 | 056 기간 중복 방지 EXCLUDE, 057 공통 세목(`common`)+법령 참조(`law_id`·`law_article_no`), 058 세목 확장 |
+| `tax_regulated_areas` | 조정대상지역 지정/해제 이력 | 059 `note`, 065 `is_partial`(시·군·구 일부만 지정) |
+| `tax_law_change_queue` | 법령 개정 감지 큐 | 066 `matched_rule_keys`(조 단위라 한 건에 여러 룰) + (법령ID,조번호,시행일) COALESCE UNIQUE 인덱스 + 조회 인덱스 |
+| `tax_law_watch_state` ⭐신규 | 감시 배치 실행 상태(단일 행 `id=1`) — 마지막 처리 날짜·실행 시각·성공 여부·오류 | 066. 실패한 날짜는 처리 완료로 올리지 않는다 |
+| `tax_test_cases` · `tax_calculation_logs` | 회귀 검증용 케이스 · 계산 이력 | 055 |
+
+> RLS: `tax_rules`·`tax_regulated_areas`만 공개 SELECT(계산기가 anon으로 읽음). 나머지 넷은 **정책 0개 = service_role 전용**.
 
 ### 4.1 사용자 데이터
 
@@ -664,6 +676,46 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 
 > 위 4개 env는 모두 `.env.example`에 이미 반영됨(누락 없음). 어느 서비스 계정을 쓰든 **Search Console 자산에 '소유자'로 등록**돼 있어야 Google Indexing API 호출이 승인됨.
 
+### 5.8 법제처 국가법령정보 OPEN API (법령 개정 자동 감시) ⭐신규
+
+계산기 룰의 근거 조문이 개정되면 감지해 관리자 큐에 쌓는다. **룰은 자동으로 고치지 않는다** — 무엇을 어떻게 고칠지는 사람이 원문을 대조해 판단하고 룰 편집 화면에서 넣는다.
+
+| 파일 | 역할 |
+|---|---|
+| [law-api.ts](src/lib/tax/law-api.ts) | API 호출 (fetch·타임아웃·오류) |
+| [law-api-parse.ts](src/lib/tax/law-api-parse.ts) | 응답 파싱·정규화·안전장치(`requireTotalCnt`·`digitsOnly`·`normalizeLawId`) |
+| [law-api-error.ts](src/lib/tax/law-api-error.ts) | `LawApiError` (순환 참조 회피용 별도 파일) |
+| [law-watch.ts](src/lib/tax/law-watch.ts) | 배치 실행 흐름·상태 저장 |
+| [law-watch-scan.ts](src/lib/tax/law-watch-scan.ts) | 하루치 처리(대조·큐 저장) |
+| [law-watch-targets.ts](src/lib/tax/law-watch-targets.ts) | 감시 대상 조회·(법령ID, 조번호) 실재 검증 |
+| [api/cron/tax-law-watch/route.ts](src/app/api/cron/tax-law-watch/route.ts) | Cron 진입점 (`maxDuration = 60`) |
+| [admin/tax/law-changes/](src/app/admin/tax/law-changes/) | 관리자 화면 (목록·상태 카드·처리 상태 변경) |
+
+**쓰는 API 3종** (베이스 `https://www.law.go.kr/DRF/`)
+
+| target | 엔드포인트 | 용도 |
+|---|---|---|
+| `lsHstInf` | `lawSearch.do` | `regDt`(YYYYMMDD)로 그날 바뀐 법령 목록 |
+| `lsJoHstInf` | `lawService.do` | `ID`(법령ID) + `JO`(6자리 조번호)로 조문 변경 이력. 감시 대상 실재 검증에도 사용 |
+| `oldAndNew` | — | 신구법 대조. **호출하지 않고** 관리자 화면이 국가법령정보센터 공개 URL로 링크만 건다(인증키 노출 회피) |
+
+> ⚠️ 응답 판정의 핵심: 정상 응답은 결과가 0건이어도 `totalCnt`를 반드시 싣는다. 법제처는 인증 실패·점검 중에도 **HTTP 200 + JSON**으로 안내 문구를 돌려주므로, `totalCnt` 유무로 '진짜 0건'과 '조회 실패'를 가른다. 이 검사가 없으면 조회 실패를 "그날 개정 없음"으로 읽고 날짜를 처리 완료로 올려 **그날 개정을 영영 놓친다**.
+
+| 환경변수 | 용도 |
+|---|---|
+| `LAW_API_OC` | 법제처 OPEN API 인증값(OC). open.law.go.kr 발급. 서버 전용 — `NEXT_PUBLIC_` 금지 |
+| `CRON_SECRET` | Vercel Cron이 붙이는 `Authorization: Bearer <값>` 검증. **미설정이면 라우트가 모든 요청을 거부**. ⚠️ HTTP 헤더에 실리므로 **영문·숫자·기호만** — 한글이 들어가면 배포 자체가 거부됨 |
+
+### 5.9 Vercel Cron ⭐신규 (프로젝트 최초 도입)
+
+[vercel.json](vercel.json)이 유일한 cron 선언이다(이 파일도 이번에 처음 생성).
+
+```json
+{ "crons": [{ "path": "/api/cron/tax-law-watch", "schedule": "0 20 * * *" }] }
+```
+
+`schedule`은 **UTC 기준**이라 한국시간 05:00이다. JSON에는 주석을 달 수 없어 시간대 설명은 라우트 파일 상단에 적어 두었다. 배치는 '어제'까지만 처리하므로 한국에서 막 끝난 하루를 본다 — 오늘을 처리 완료로 올리면 그날 늦게 공포되는 개정을 다시 볼 기회가 없기 때문이다.
+
 ---
 
 ## 6. 미들웨어·자동화
@@ -678,6 +730,7 @@ API 베이스: `https://api.lemonsqueezy.com/v1/`
 | 문의·견적 요청마다(정정 — in-memory Map 아님) | IP별 분당 3회 제한을 Supabase RPC(`check_contact_rate_limit`)로 원자적 카운트(다중 서버리스 인스턴스에도 안전, 별도 cleanup 불필요) | [lib/contact-rate-limit.ts](src/lib/contact-rate-limit.ts) — `/api/contact`·`/api/quote` 공유 |
 | 새 주문·새 견적 요청·새 문의 티켓 응답 후 | `after()`로 관리자 알림 메일 비동기 발송(본 처리 지연·실패 없음) | webhooks/lemonsqueezy, orders/bank-transfer, `api/quote`, `dashboard/support/page.tsx`(`submitTicket`) → [lib/admin-notify.ts](src/lib/admin-notify.ts) |
 | 회원 목록 CSV 내보내기 시 ⭐신규 | 반출 기록(`admin_activity_log` INSERT)이 먼저 성공해야만 CSV를 생성 — 기록이 실패하면 반출 자체를 거부(누가 언제 무엇을 내보냈는지 없이는 개인정보 파일이 안 나감) | [admin/users/actions.ts](src/app/admin/users/actions.ts) `exportUsersCsv()` |
+| 매일 한국시간 05:00 ⭐신규 | **Vercel Cron** — 법제처에서 그날 바뀐 법령을 받아 감시 대상 조문이 실제로 바뀌었는지 확인하고 큐에 넣는다. 실패한 날짜는 처리 완료로 올리지 않아 다음 실행이 다시 시도한다 | [vercel.json](vercel.json) → [api/cron/tax-law-watch](src/app/api/cron/tax-law-watch/route.ts) → [law-watch.ts](src/lib/tax/law-watch.ts) |
 
 ---
 
