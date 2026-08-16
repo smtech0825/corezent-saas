@@ -2,6 +2,13 @@
  * @파일: api/cron/tax-law-watch/route.ts
  * @설명: 법령 개정 자동 감시 배치 — Vercel Cron이 하루 한 번 호출한다.
  *
+ *        일정은 vercel.json의 "0 20 * * *" — **UTC 기준**이라 한국시간 05:00이다.
+ *        JSON에는 주석을 달 수 없어 여기 적어 둔다. 배치는 '어제'까지만 처리하므로
+ *        한국에서 막 끝난 하루를 본다.
+ *
+ *        ⚠️ CRON_SECRET은 Authorization 헤더에 실려 나가므로 **영문·숫자·기호만**
+ *        써야 한다. 한글이 들어가면 배포 자체가 거부된다(2026-08-16에 실제로 겪음).
+ *
  *        인증: Vercel Cron은 `Authorization: Bearer <CRON_SECRET>` 헤더를 붙여 부른다.
  *        CRON_SECRET이 없으면 아예 거부한다 — 설정을 빠뜨린 채로 열려 있는 것이
  *        가장 위험하기 때문이다(공개 주소에서 외부가 배치를 돌릴 수 있다).
