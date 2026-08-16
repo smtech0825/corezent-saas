@@ -12,11 +12,12 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, CheckCircle2, ExternalLink, Info, Loader2, ScrollText } from 'lucide-react'
+import { ExternalLink, Loader2, ScrollText } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import EmptyState from '@/components/common/EmptyState'
-import { TAX_TYPE_LABELS } from '@/lib/tax/labels'
-import type { TaxLawChangeQueueItem, TaxLawWatchState } from '@/lib/tax/types'
+import WatchStateCard from './WatchStateCard'
+import { RULE_TAX_TYPE_LABELS } from '@/lib/tax/labels'
+import type { TaxLawChangeQueueItem, TaxLawWatchState, TaxRuleTaxType } from '@/lib/tax/types'
 import { setLawChangeStatus, type LawChangeStatus } from './actions'
 
 /** 감지 한 건 + 화면이 쓸 부가 정보 */
@@ -57,85 +58,43 @@ function articleLabel(raw: string | null): string {
 export default function LawChangesManager({
   rows,
   watchState,
+  unwatchable,
+  pendingCount,
+  loadError,
 }: {
   rows: LawChangeRow[]
   watchState: TaxLawWatchState | null
+  /** 법령ID·조문번호가 비어 감시 자체가 안 되는 룰 */
+  unwatchable: { ruleKey: string; lawName: string; reason: string }[]
+  /** 미확인 정확 건수(목록 상한과 무관) — 카드가 이 값을 쓴다 */
+  pendingCount: number
+  /** 목록 조회에 실패했으면 그 사실을 화면에 밝힌다 */
+  loadError: string | null
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const [busy, setBusy] = useState<{ id: string; status: LawChangeStatus } | null>(null)
 
   /** 처리 상태 변경 */
   function changeStatus(id: string, status: LawChangeStatus) {
     setError(null)
-    setBusyId(id)
+    setBusy({ id, status })
     startTransition(async () => {
       const result = await setLawChangeStatus(id, status)
-      setBusyId(null)
+      setBusy(null)
       if (result.status === 'ok') router.refresh()
       else setError(result.reason)
     })
   }
 
-  const runOk = watchState?.last_run_ok
-  const neverRan = !watchState || watchState.last_run_at === null
-
   return (
     <div className="space-y-5">
-      {/* ── 배치 실행 상태 — 조용히 죽었는지 여기서 드러나야 한다 ────────────── */}
-      <div
-        className={`border rounded-lg p-5 ${
-          neverRan
-            ? 'bg-paper-raised border-rule'
-            : runOk
-              ? 'bg-paper-raised border-rule'
-              : 'bg-caution-soft border-caution'
-        }`}
-      >
-        <div className="flex items-start gap-2">
-          {neverRan ? (
-            <Info size={18} className="text-ink-soft mt-0.5 shrink-0" aria-hidden="true" />
-          ) : runOk ? (
-            <CheckCircle2 size={18} className="text-ok mt-0.5 shrink-0" aria-hidden="true" />
-          ) : (
-            <AlertTriangle size={18} className="text-caution mt-0.5 shrink-0" aria-hidden="true" />
-          )}
-          <div className="min-w-0">
-            <h2 className="font-serif font-bold text-ink">
-              감시 배치 —{' '}
-              {neverRan ? '아직 한 번도 실행되지 않았습니다' : runOk ? '정상' : '마지막 실행이 실패했습니다'}
-            </h2>
-            <dl className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1.5 text-sm">
-              <div className="flex gap-2">
-                <dt className="text-ink-soft shrink-0">마지막 실행</dt>
-                <dd className="font-mono text-ink">{when(watchState?.last_run_at ?? null)}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="text-ink-soft shrink-0">처리 완료일</dt>
-                <dd className="font-mono text-ink">{watchState?.last_checked_date ?? '—'}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="text-ink-soft shrink-0">미확인</dt>
-                <dd className="font-mono text-ink">
-                  {rows.filter((r) => r.item.status === 'pending').length}건
-                </dd>
-              </div>
-            </dl>
-            {watchState?.last_error && (
-              <p className="mt-3 text-sm text-caution leading-relaxed break-words">
-                {watchState.last_error}
-              </p>
-            )}
-            {neverRan && (
-              <p className="mt-2 text-xs text-ink-soft leading-relaxed">
-                Vercel Cron이 하루 한 번 부릅니다. 환경변수(CRON_SECRET·LAW_API_OC)가 설정되지 않으면
-                실행되지 않고 이 칸도 비어 있습니다.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <WatchStateCard
+        watchState={watchState}
+        pendingCount={pendingCount}
+        unwatchable={unwatchable}
+      />
 
       {/* ── 조문번호의 한계 — 감추면 관리자가 잘못 판단한다 ─────────────────── */}
       <div className="bg-paper-raised border border-rule rounded-lg p-5">
@@ -162,6 +121,12 @@ export default function LawChangesManager({
         </ul>
       </div>
 
+      {loadError && (
+        <div className="bg-caution-soft border border-caution rounded-lg p-4" role="alert">
+          <p className="text-sm text-caution">{loadError}</p>
+        </div>
+      )}
+
       {error && (
         <div className="bg-caution-soft border border-caution rounded-lg p-4" role="alert">
           <p className="text-sm text-caution">{error}</p>
@@ -170,17 +135,15 @@ export default function LawChangesManager({
 
       {/* ── 감지 목록 ──────────────────────────────────────────────────────── */}
       {rows.length === 0 ? (
-        <div className="bg-paper-raised border border-rule rounded-lg">
-          <EmptyState
-            message="감지된 법령 개정이 없습니다."
-            description="감시 배치가 매일 돌면서 등록된 룰의 근거 조문이 바뀌었는지 확인합니다."
-          />
-        </div>
+        <EmptyState
+          boxed
+          message="감지된 법령 개정이 없습니다."
+          description="감시 배치가 매일 돌면서 등록된 룰의 근거 조문이 바뀌었는지 확인합니다."
+        />
       ) : (
         <ul className="space-y-3">
           {rows.map(({ item, matchedRules, oldAndNewUrl }) => {
             const meta = STATUS_META[item.status]
-            const busy = isPending && busyId === item.id
             return (
               <li key={item.id} className="bg-paper-raised border border-rule rounded-lg p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -239,7 +202,7 @@ export default function LawChangesManager({
                         >
                           {r.taxType && (
                             <span className="font-semibold text-ink">
-                              {(TAX_TYPE_LABELS as Record<string, string>)[r.taxType] ?? r.taxType}{' '}
+                              {RULE_TAX_TYPE_LABELS[r.taxType as TaxRuleTaxType] ?? r.taxType}{' '}
                             </span>
                           )}
                           <span className="font-mono">{r.ruleKey}</span>
@@ -263,10 +226,12 @@ export default function LawChangesManager({
                       key={s}
                       variant={item.status === s ? 'primary' : 'outline'}
                       size="sm"
-                      disabled={busy || item.status === s}
+                      disabled={isPending || item.status === s}
                       onClick={() => changeStatus(item.id, s)}
                     >
-                      {busy && <Loader2 size={13} className="animate-spin mr-1" aria-hidden="true" />}
+                      {busy?.id === item.id && busy.status === s && (
+                        <Loader2 size={13} className="animate-spin mr-1" aria-hidden="true" />
+                      )}
                       {STATUS_META[s].label}
                     </Button>
                   ))}

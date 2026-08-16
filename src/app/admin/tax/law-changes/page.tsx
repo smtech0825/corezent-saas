@@ -33,28 +33,65 @@ export default async function AdminTaxLawChangesPage() {
 
   const admin = createAdminClient()
 
-  const [queueRes, stateRes, rulesRes, pendingCount] = await Promise.all([
+  // 미확인을 먼저, 그 안에서 최근 순. status 문자열을 그냥 오름차순으로 정렬하면
+  // ignored < pending < reviewed 순이 되어 '해당 없음'이 맨 위로 온다 —
+  // 이 화면의 존재 이유(미확인을 눈에 띄게)와 정반대다. 그래서 두 번 나눠 읽는다.
+  // raw_payload는 화면이 쓰지 않으므로 select에서 제외한다(브라우저까지 실려 가지 않게).
+  const QUEUE_COLUMNS =
+    'id, law_name, law_id, article_no, detected_at, effective_date, change_type, status, reviewed_at, matched_rule_keys'
+  const [pendingRes, doneRes, stateRes, rulesRes, pendingCount] = await Promise.all([
     admin
       .from('tax_law_change_queue')
-      .select('*')
-      .order('status', { ascending: true })
+      .select(QUEUE_COLUMNS)
+      .eq('status', 'pending')
       .order('detected_at', { ascending: false })
-      .limit(200),
+      .limit(100),
+    admin
+      .from('tax_law_change_queue')
+      .select(QUEUE_COLUMNS)
+      .neq('status', 'pending')
+      .order('detected_at', { ascending: false })
+      .limit(100),
     admin.from('tax_law_watch_state').select('*').eq('id', 1).maybeSingle(),
-    admin.from('tax_rules').select('rule_key, status, tax_type, law_name, law_article'),
+    admin
+      .from('tax_rules')
+      .select('rule_key, status, tax_type, law_name, law_article, law_id, law_article_no')
+      .range(0, 4999),
     fetchPendingLawChangeCount(),
   ])
+  const queueRes = {
+    data: [...(pendingRes.data ?? []), ...(doneRes.data ?? [])],
+    error: pendingRes.error ?? doneRes.error,
+  }
 
   if (queueRes.error) console.error('[admin/tax] 개정 큐 조회 실패:', queueRes.error.message)
   if (stateRes.error) console.error('[admin/tax] 감시 상태 조회 실패:', stateRes.error.message)
   if (rulesRes.error) console.error('[admin/tax] 룰 조회 실패:', rulesRes.error.message)
 
-  const items = (queueRes.data ?? []) as TaxLawChangeQueueItem[]
+  const items = (queueRes.data ?? []) as unknown as TaxLawChangeQueueItem[]
   const watchState = (stateRes.data ?? null) as TaxLawWatchState | null
   const rules = (rulesRes.data ?? []) as Pick<
     TaxRule,
-    'rule_key' | 'status' | 'tax_type' | 'law_name' | 'law_article'
+    'rule_key' | 'status' | 'tax_type' | 'law_name' | 'law_article' | 'law_id' | 'law_article_no'
   >[]
+
+  // 감시할 수 없는 룰(법령ID·조문번호가 비어 있음) — 잘못된 ID만 경고하고 빈 ID는
+  // 무표시라면 초록불만 보고 안심하게 된다. 룰 목록 화면에는 이 값이 보이지 않는다.
+  // 같은 룰 키가 시행 기간별로 여러 행이라 키 기준으로 한 번만 담는다.
+  const unwatchable = [
+    ...new Map(
+      rules
+        .filter((r) => !r.law_id?.trim() || !r.law_article_no?.trim())
+        .map((r) => [
+          r.rule_key,
+          {
+            ruleKey: r.rule_key,
+            lawName: r.law_name,
+            reason: !r.law_id?.trim() ? ('법령ID 없음' as const) : ('조문번호 없음' as const),
+          },
+        ]),
+    ).values(),
+  ]
 
   // rule_key → 그 키를 쓰는 룰 행들. 같은 키에 확정법·개정안이 함께 있을 수 있어
   // 화면이 둘을 구분해 보여줄 수 있도록 상태별로 모아 넘긴다.
@@ -83,7 +120,13 @@ export default async function AdminTaxLawChangesPage() {
         </p>
       </div>
       <TaxTabs active="law-changes" pendingLawChanges={pendingCount} />
-      <LawChangesManager rows={rows} watchState={watchState} />
+      <LawChangesManager
+        rows={rows}
+        watchState={watchState}
+        unwatchable={unwatchable}
+        pendingCount={pendingCount}
+        loadError={queueRes.error ? '개정 목록을 불러오지 못했습니다. 화면의 건수가 실제와 다를 수 있습니다.' : null}
+      />
     </PageContainer>
   )
 }

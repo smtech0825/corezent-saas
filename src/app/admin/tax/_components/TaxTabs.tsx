@@ -38,7 +38,7 @@ export default function TaxTabs({
           {tab.label}
           {tab.key === 'law-changes' && pendingLawChanges > 0 && (
             <span
-              className="inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-caution text-paper"
+              className="inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-caution text-paper"
               aria-label={`미확인 ${pendingLawChanges}건`}
             >
               {pendingLawChanges}

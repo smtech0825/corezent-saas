@@ -15,8 +15,12 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runLawWatch } from '@/lib/tax/law-watch'
 
-/** 외부 API를 여러 번 호출하므로 기본값보다 넉넉히 둔다(로직에도 자체 시간 상한이 있다) */
-export const maxDuration = 60
+/**
+ * 외부 API를 여러 번 호출하므로 넉넉히 둔다. 로직 자체 상한(날짜 처리 150초 ·
+ * 전체 240초)보다 크게 잡아야 한다 — 함수가 강제 종료되면 실패 기록조차 남지 않아
+ * 화면이 직전 실행의 초록불을 계속 보여준다.
+ */
+export const maxDuration = 300
 
 /** 항상 그 시점의 DB·외부 API를 본다 — 캐시 금지 */
 export const dynamic = 'force-dynamic'
@@ -33,6 +37,12 @@ function isAuthorized(request: Request): boolean {
   return request.headers.get('authorization') === `Bearer ${secret}`
 }
 
+/**
+ * @함수명: GET
+ * @설명: Vercel Cron의 호출 진입점. 권한을 확인하고 감시 배치를 한 번 실행합니다.
+ * @매개변수: request - 들어온 요청(Authorization 헤더 검증에 사용)
+ * @반환값: 실행 결과 JSON (실패해도 200 + ok:false)
+ */
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     // 존재 여부를 흘리지 않도록 사유를 자세히 적지 않는다
