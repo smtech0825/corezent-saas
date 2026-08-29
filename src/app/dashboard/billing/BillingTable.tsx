@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { Package, ExternalLink } from 'lucide-react'
 import { useToast } from '@/components/common/Toast'
 import { deriveSubStatus } from '@/lib/subscription-status'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { formatDateTimeKR, formatDateKR } from '@/lib/datetime'
 import CancellationModal, {
   cancelErrorMessage, OTHER_REASON, type CancelReason, type CancelTarget,
@@ -40,7 +40,8 @@ export interface BillingRow {
   productName: string
   optionLabel: string | null
   createdAt: string
-  amount: number            // cents
+  amount: number            // 통화의 최소단위 정수
+  currency: string          // ISO 통화 코드(표시 단위 판단)
   paymentMethod: string     // 'card' | 'bank_transfer'
   orderStatus: string
   subscription: SubInfo | null
@@ -147,7 +148,7 @@ export default function BillingTable({ rows }: Props) {
                 {/* 구입일시 */}
                 <span className="text-xs text-ink-soft tabular-nums">{formatDateTimeKR(row.createdAt)}</span>
                 {/* 금액 */}
-                <span className="text-sm text-ink font-medium tabular-nums">{formatKRW(row.amount)}</span>
+                <span className="text-sm text-ink font-medium tabular-nums">{formatMoney(row.amount, row.currency)}</span>
                 {/* 결제수단 */}
                 <span className="text-xs text-ink-soft">{payLabel(row.paymentMethod)}</span>
                 {/* 상태 — 배지 + 다음에 무슨 일이 일어나는지 한 줄 */}
@@ -206,7 +207,7 @@ export default function BillingTable({ rows }: Props) {
                   <p className="text-xs text-ink-faint mt-1.5">{formatDateTimeKR(row.createdAt)} · {payLabel(row.paymentMethod)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm text-ink font-medium">{formatKRW(row.amount)}</p>
+                  <p className="text-sm text-ink font-medium">{formatMoney(row.amount, row.currency)}</p>
                   <span className={`inline-block mt-1 text-xs px-2.5 py-1 rounded-full border font-medium ${badge.cls}`}>{badge.label}</span>
                   {nextStepHint(row.orderStatus) && (
                     <p className="text-[11px] text-ink-faint mt-1 leading-snug max-w-[160px]">{nextStepHint(row.orderStatus)}</p>

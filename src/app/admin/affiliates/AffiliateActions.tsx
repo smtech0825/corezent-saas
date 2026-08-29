@@ -9,6 +9,7 @@
 
 import { useState, useTransition } from 'react'
 import { Loader2, ArrowRightLeft, Ticket, Check } from 'lucide-react'
+import { formatMoney, toMinorUnits } from '@/lib/money'
 import {
   convertCommissionsAction,
   issueCreditDiscountAction,
@@ -43,20 +44,20 @@ export function ConvertButton({ referrerId }: { referrerId: string }) {
 }
 
 /** 사용자 크레딧을 1회용 LS 할인으로 발급(차감 포함) */
-export function IssueDiscountForm({ userId }: { userId: string }) {
+export function IssueDiscountForm({ userId, currency }: { userId: string; currency: string }) {
   const [amount, setAmount] = useState('')
   const [pending, start] = useTransition()
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   function submit() {
-    const cents = Math.round(parseFloat(amount || '0') * 100)
+    // 입력은 통화의 기본 단위(원) → 저장은 최소단위 정수. 환산 규칙은 lib/money 한 곳에만 있다.
+    const cents = toMinorUnits(parseFloat(amount || '0'), currency)
     if (!Number.isInteger(cents) || cents <= 0) {
       setMsg({ ok: false, text: '금액을 입력하세요.' })
       return
     }
     // 크레딧 차감 + 할인코드 발급은 되돌릴 수 없다 → 금액을 다시 보여주고 확인받는다.
-    const won = (cents / 100).toLocaleString('ko-KR')
-    if (!confirm(`₩${won} 만큼 할인코드를 발급할까요?\n\n같은 금액이 이 회원의 스토어 크레딧에서 차감되며 되돌릴 수 없습니다.`)) return
+    if (!confirm(`${formatMoney(cents, currency)} 만큼 할인코드를 발급할까요?\n\n같은 금액이 이 회원의 스토어 크레딧에서 차감되며 되돌릴 수 없습니다.`)) return
     start(async () => {
       try {
         const r = await issueCreditDiscountAction(userId, cents)

@@ -26,7 +26,8 @@ const BASE_PATH = '/admin/activity'
 
 interface ActivityRow {
   id: string
-  admin_user_id: string
+  /** 사람이 한 일이면 관리자 id, 시스템(결제 웹훅 등)이 남긴 기록이면 null (067) */
+  admin_user_id: string | null
   action: string
   target_type: string | null
   target_id: string | null
@@ -94,13 +95,15 @@ export default async function ActivityPage({
   // 행 주체 이름 — 이 페이지에 나온 관리자 id만 모아 한 번에 조회(과거 관리자도 이름이 나온다)
   const nameMap = new Map<string, string>()
   try {
-    const ids = [...new Set(rows.map((r) => r.admin_user_id))]
+    // 시스템 기록(admin_user_id=null)은 조회 대상에서 뺀다 — profiles에 없는 값이다
+    const ids = [...new Set(rows.map((r) => r.admin_user_id).filter((v): v is string => !!v))]
     if (ids.length > 0) {
       const { data: profs } = await admin.from('profiles').select('id, name').in('id', ids)
       ;(profs ?? []).forEach((p) => nameMap.set(p.id as string, (p.name as string) || ''))
     }
   } catch { /* 이름 없이 id 일부만 표시 */ }
-  const displayName = (id: string) => nameMap.get(id) || `${id.slice(0, 8)}…`
+  /** 주체 표시 — 사람이면 이름(없으면 id 앞자리), 시스템이 남긴 기록이면 '시스템' */
+  const displayName = (id: string | null) => (id ? nameMap.get(id) || `${id.slice(0, 8)}…` : '시스템')
 
   return (
     <PageContainer variant="admin" className="space-y-6">

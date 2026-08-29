@@ -10,10 +10,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyNewOrder } from '@/lib/admin-notify'
-import { formatKRW } from '@/lib/money'
+import { formatMoney, toMinorUnits } from '@/lib/money'
 import { NextResponse, after } from 'next/server'
 
 const DEPOSIT_WINDOW_DAYS = 3
+
+/**
+ * 계좌이체 주문의 통화 — product_prices.price가 적힌 통화다(가격 표에는 통화 컬럼이 없다).
+ * 저장 단위 환산·화면 표기가 모두 이 한 값을 따라간다. 통화가 바뀌면 여기만 바꾼다.
+ */
+const ORDER_CURRENCY = 'KRW'
 
 export async function POST(request: Request) {
   try {
@@ -57,9 +63,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '상품 옵션을 찾을 수 없습니다.', code: 'PRICE_NOT_FOUND' }, { status: 404 })
     }
 
-    // product_prices.price 는 "원 정수"(예 9900). orders.amount 는 "cents"(×100). 수량만큼 곱한다.
+    // product_prices.price 는 통화의 기본 단위 정수(원, 예 9900).
+    // orders.amount 는 그 통화의 최소단위 정수 — 환산은 lib/money.toMinorUnits 한 곳에서만 한다.
     const priceWon = Number(price.price) || 0
-    const amountCents = Math.round(priceWon * 100) * qty
+    const amountCents = toMinorUnits(priceWon, ORDER_CURRENCY) * qty
     const expiresAt = new Date(Date.now() + DEPOSIT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
     const { data: order, error: insErr } = await admin
@@ -69,7 +76,7 @@ export async function POST(request: Request) {
         product_price_id: price.id,
         quantity: qty,
         amount: amountCents,
-        currency: 'KRW',
+        currency: ORDER_CURRENCY,
         status: 'pending_deposit',
         payment_method: 'bank_transfer',
         depositor_email: user.email ?? enteredEmail,
@@ -94,7 +101,7 @@ export async function POST(request: Request) {
       productName: `${prod?.name ?? '-'}${opts ? ` (${opts})` : ''}`,
       quantity: qty,
       // 주문 행에 저장한 값(amountCents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
-      amountLabel: formatKRW(amountCents),
+      amountLabel: formatMoney(amountCents, ORDER_CURRENCY),
       buyerEmail: user.email ?? enteredEmail,
       method: 'bank_transfer',
       status: '입금 대기(pending_deposit)',

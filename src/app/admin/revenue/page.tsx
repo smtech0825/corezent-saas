@@ -2,27 +2,19 @@
  * @파일: admin/revenue/page.tsx
  * @설명: 관리자 매출 리포트 — 기존 orders/subscriptions로 산출 가능한 핵심 지표.
  *        총매출·주문수·환불·활성구독·MRR(추정)·해지율 + 월별 매출 추이 + 상품별 매출.
- *        금액은 모두 lib/money.formatKRW(cents ÷100 + ₩), 합산은 정수 cents로.
+ *        금액은 모두 lib/money(통화 최소단위 → 통화 표기), 합산은 최소단위 정수로.
+ *        ⚠️ 차트·MRR은 숫자 하나로 그리므로 통화를 섞을 수 없다. 매출이 가장 큰 통화 하나만
+ *           골라 그리고, 빠진 통화는 차트 위에 이름을 밝힌다(조용히 잘라내지 않는다).
+ *           통화별 전체 합계는 상단 통계 카드(총매출·환불)가 나눠서 보여준다.
  *        차트는 무의존 CSS 막대(과설계 방지, 새 집계 테이블 없음).
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatKRW } from '@/lib/money'
+import { formatMoney, formatMoneyCompact, sumAndFormat, sumMinorByCurrency } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
 import StatCard from '@/components/common/StatCard'
 import EmptyState from '@/components/common/EmptyState'
-
-/**
- * @함수명: fmtCompact
- * @설명: 차트 막대 위에 얹는 축약 표기(만·억 단위). 좁은 막대 위에 전체 금액을 쓰면
- *        서로 겹쳐 읽을 수 없어 축약한다. 정확한 값은 Y축 눈금과 막대 툴팁(formatKRW)에 있다.
- * @매개변수: cents - 정수 센트 금액
- * @반환값: "123만" 형태의 축약 문자열
- */
-function fmtCompact(cents: number): string {
-  return new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.round(cents / 100))
-}
 
 export const dynamic = 'force-dynamic'
 
@@ -46,18 +38,40 @@ export default async function RevenuePage() {
     return out
   }
 
-  type PaidRow = { id: string; amount: number; created_at: string; product_price_id: string | null }
-  type RefundRow = { amount: number }
+  type PaidRow = { id: string; amount: number; currency: string | null; created_at: string; product_price_id: string | null }
+  type RefundRow = { amount: number; currency: string | null }
   type SubRow = { status: string; billing_interval: string | null; order_id: string | null }
 
   const [paid, refunded, subs] = await Promise.all([
-    fetchAll<PaidRow>((f, t) => admin.from('orders').select('id, amount, created_at, product_price_id').eq('status', 'paid').order('created_at', { ascending: false }).range(f, t)),
-    fetchAll<RefundRow>((f, t) => admin.from('orders').select('amount').eq('status', 'refunded').order('created_at', { ascending: false }).range(f, t)),
+    fetchAll<PaidRow>((f, t) => admin.from('orders').select('id, amount, currency, created_at, product_price_id').eq('status', 'paid').order('created_at', { ascending: false }).range(f, t)),
+    fetchAll<RefundRow>((f, t) => admin.from('orders').select('amount, currency').eq('status', 'refunded').order('created_at', { ascending: false }).range(f, t)),
     fetchAll<SubRow>((f, t) => admin.from('subscriptions').select('status, billing_interval, order_id').order('created_at', { ascending: false }).range(f, t)),
   ])
 
-  // 상품명 매핑 (product_price_id → products.name)
-  const priceIds = [...new Set(paid.map((o) => o.product_price_id).filter(Boolean))] as string[]
+  // ── 핵심 집계 (통화 최소단위 정수) ─────────────────────────────
+  // 통계 카드(총매출·환불)는 통화별로 나눠 표시한다.
+  const totalRevenueLabel = sumAndFormat(paid)
+  const orderCount = paid.length
+  const refundTotalLabel = sumAndFormat(refunded)
+  const refundCount = refunded.length
+
+  // 차트·MRR은 숫자 하나로 그리므로 통화를 섞을 수 없다
+  // (자릿수가 다른 값을 더하면 그 숫자는 아무 뜻도 없다).
+  // → 매출이 가장 큰 통화 하나를 골라 그 통화 주문만으로 계산하고,
+  //   빠진 통화가 있으면 화면에 그대로 밝힌다(말없이 잘라내지 않는다).
+  const totalsByCurrency = sumMinorByCurrency(paid)
+  const chartCurrency = [...totalsByCurrency.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  const chartRows = paid.filter((o) => (o.currency ?? '').trim().toUpperCase() === chartCurrency)
+  // 합계가 0인 통화(스텁 주문 등)는 "제외했다"고 알릴 대상이 아니고,
+  // 통화 코드가 빈 행은 빈칸 대신 뜻이 읽히는 말로 바꿔 표시한다.
+  const excludedCurrencies = [...totalsByCurrency.entries()]
+    .filter(([code, total]) => code !== chartCurrency && total > 0)
+    .map(([code]) => code || '통화 미상')
+  /** 안내 문구에 쓸 통화 이름 — 코드가 비어도 빈칸이 노출되지 않게 한다(제외 목록과 같은 규칙) */
+  const chartCurrencyLabel = chartCurrency || '통화 미상'
+
+  // 상품명 매핑 (product_price_id → products.name) — 차트에 쓰는 행만 대상
+  const priceIds = [...new Set(chartRows.map((o) => o.product_price_id).filter(Boolean))] as string[]
   const priceNameMap = new Map<string, string>()
   if (priceIds.length > 0) {
     const { data: prices } = await admin.from('product_prices').select('id, products(name)').in('id', priceIds)
@@ -67,12 +81,6 @@ export default async function RevenuePage() {
     })
   }
 
-  // ── 핵심 집계 (정수 cents) ─────────────────────────────────────
-  const totalRevenue = paid.reduce((s, o) => s + (o.amount ?? 0), 0)
-  const orderCount = paid.length
-  const refundTotal = refunded.reduce((s, o) => s + (o.amount ?? 0), 0)
-  const refundCount = refunded.length
-
   // ── 월별 매출 추이 (최근 12개월, UTC) ──────────────────────────
   const now = new Date()
   const months = Array.from({ length: 12 }, (_, k) => {
@@ -81,7 +89,7 @@ export default async function RevenuePage() {
     return { key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`, label: `${d.getUTCMonth() + 1}월`, cents: 0 }
   })
   const monthIdx = new Map(months.map((m, i) => [m.key, i]))
-  paid.forEach((o) => {
+  chartRows.forEach((o) => {
     const d = new Date(o.created_at)
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
     const idx = monthIdx.get(key)
@@ -91,7 +99,7 @@ export default async function RevenuePage() {
 
   // ── 상품별 매출 ────────────────────────────────────────────────
   const prodMap = new Map<string, number>()
-  paid.forEach((o) => {
+  chartRows.forEach((o) => {
     const name = o.product_price_id ? (priceNameMap.get(o.product_price_id) ?? '기타') : '기타'
     prodMap.set(name, (prodMap.get(name) ?? 0) + (o.amount ?? 0))
   })
@@ -105,7 +113,7 @@ export default async function RevenuePage() {
   const churnRate = totalSubs > 0 ? Math.round((endedSubs / totalSubs) * 1000) / 10 : 0
 
   // MRR(추정): 활성 구독의 연결 주문금액을 월 단위로 환산(연간=÷12). 정수 cents 합산.
-  const orderAmount = new Map(paid.map((o) => [o.id, o.amount ?? 0]))
+  const orderAmount = new Map(chartRows.map((o) => [o.id, o.amount ?? 0]))
   let mrrCents = 0
   subs.filter((s) => s.status === 'active').forEach((s) => {
     const amt = s.order_id ? (orderAmount.get(s.order_id) ?? 0) : 0
@@ -125,13 +133,22 @@ export default async function RevenuePage() {
           (xl 6열은 사이드바를 뺀 본문 폭에서 금액이 카드를 넘칠 수 있어 4열,
           6열은 2xl부터 — 검증에서 발견된 겹침 방지) */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 items-start">
-        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={formatKRW(totalRevenue)} />
+        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="총매출 (결제 완료)" value={totalRevenueLabel} />
         <StatCard icon={<ShoppingBag size={16} className="text-mark" />} label="총 주문수" value={orderCount.toLocaleString('ko-KR')} />
-        <StatCard icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={formatKRW(refundTotal)} subline={`${refundCount}건`} />
+        <StatCard icon={<RotateCcw size={16} className="text-mark" />} label="환불 총액" value={refundTotalLabel} subline={`${refundCount}건`} />
         <StatCard icon={<Repeat size={16} className="text-mark" />} label="활성 구독" value={activeSubs.toLocaleString('ko-KR')} />
-        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={formatKRW(mrrCents)} subline="월 환산" />
+        <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={mrrCents > 0 ? formatMoney(mrrCents, chartCurrency) : '—'} subline="월 환산" />
         <StatCard icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} subline={`${endedSubs}/${totalSubs} 구독`} />
       </div>
+
+      {/* 통화가 섞였을 때만 나온다 — 무엇이 빠졌는지 숨기지 않는다 */}
+      {excludedCurrencies.length > 0 && (
+        <p className="text-xs text-caution">
+          아래 차트와 MRR은 {chartCurrencyLabel} 주문만으로 계산했습니다. 통화가 다른 주문(
+          {excludedCurrencies.join(', ')})은 제외했습니다 — 서로 다른 통화는 하나의 숫자로 더할 수 없습니다.
+          통화별 전체 합계는 위 &lsquo;총매출&rsquo; 카드에 있습니다.
+        </p>
+      )}
 
       {/* 월별 매출 추이 — 데이터가 없으면 차트를 그리지 않는다.
           예전에는 0원인 달에도 최소 높이 막대(바닥 선분 12개)가 그려져
@@ -144,9 +161,9 @@ export default async function RevenuePage() {
           <div className="flex gap-3">
             {/* Y축 눈금 — 최대·절반·0 (실제 집계값의 표기, 만든 숫자 아님) */}
             <div className="h-40 flex flex-col justify-between items-end shrink-0 text-[9px] text-ink-faint tabular-nums">
-              <span>{formatKRW(monthMax)}</span>
-              <span>{formatKRW(Math.round(monthMax / 2))}</span>
-              <span>₩0</span>
+              <span>{formatMoney(monthMax, chartCurrency)}</span>
+              <span>{formatMoney(Math.round(monthMax / 2), chartCurrency)}</span>
+              <span>{formatMoney(0, chartCurrency)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-end gap-1.5 h-40 border-l border-b border-rule pl-1.5">
@@ -154,12 +171,12 @@ export default async function RevenuePage() {
                   <div
                     key={m.key}
                     className="flex-1 h-full flex flex-col justify-end items-center"
-                    title={`${m.label} · ${formatKRW(m.cents)}`}
+                    title={`${m.label} · ${formatMoney(m.cents, chartCurrency)}`}
                   >
                     {m.cents > 0 && (
                       <>
                         <span className="shrink-0 text-[9px] text-ink-faint tabular-nums mb-0.5 truncate max-w-full">
-                          {fmtCompact(m.cents)}
+                          {formatMoneyCompact(m.cents, chartCurrency)}
                         </span>
                         {/* 라벨 높이(16px)를 미리 빼고 전 막대를 같은 비율로 그린다.
                             라벨과 막대를 그냥 쌓으면 flex가 최댓값 막대만 눌러
@@ -194,7 +211,7 @@ export default async function RevenuePage() {
               <div key={p.name}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-ink-soft truncate max-w-[60%]">{p.name}</span>
-                  <span className="text-xs font-semibold text-ink tabular-nums">{formatKRW(p.cents)}</span>
+                  <span className="text-xs font-semibold text-ink tabular-nums">{formatMoney(p.cents, chartCurrency)}</span>
                 </div>
                 <div className="h-2.5 bg-paper-shade rounded-full overflow-hidden">
                   <div className="h-full bg-mark rounded-full" style={{ width: `${Math.max((p.cents / prodMax) * 100, 3)}%` }} />

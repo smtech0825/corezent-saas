@@ -38,7 +38,8 @@ import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { maskSecret, maskSecretsInText } from '@/lib/mask'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
 import { notifyNewOrder } from '@/lib/admin-notify'
-import { formatKRW } from '@/lib/money'
+import { formatMoney, fromProviderAmount, toMinorUnits } from '@/lib/money'
+import { logSystemActivity } from '@/lib/adminActivityLog'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
@@ -355,6 +356,102 @@ async function findLicensesByLsSubId(
   }
 }
 
+// ─── 금액 단위 안전장치 ────────────────────────────────────────────────────
+
+/** 067 컬럼(provider_raw_*) 존재 여부 — 인스턴스당 한 번만 확인하고 재사용 */
+let providerRawColumnsReady: boolean | null = null
+
+/**
+ * @함수명: hasProviderRawColumns
+ * @설명: orders에 결제사 원본 컬럼(067)이 있는지 한 번만 확인해 캐시합니다.
+ *        없으면 그 컬럼을 빼고 저장해 마이그레이션 미적용 상태에서도 주문이 깨지지 않게 합니다.
+ * @매개변수: admin - 서비스 롤 Supabase 클라이언트
+ * @반환값: 컬럼이 있으면 true
+ */
+async function hasProviderRawColumns(admin: ReturnType<typeof createAdminClient>): Promise<boolean> {
+  if (providerRawColumnsReady !== null) return providerRawColumnsReady
+  const { error } = await admin.from('orders').select('provider_raw_amount').limit(1)
+  if (!error) {
+    providerRawColumnsReady = true
+    return true
+  }
+  // "컬럼이 없다"는 판정만 캐시한다. 일시적인 네트워크·DB 오류까지 캐시하면 그 인스턴스가
+  // 살아 있는 동안 원본값을 영영 기록하지 않게 되고, 067을 적용해도 되돌아오지 않는다.
+  const missingColumn = error.code === '42703' || error.code === 'PGRST204'
+  if (missingColumn) providerRawColumnsReady = false
+  console.warn(
+    `[LS Webhook] orders.provider_raw_* 확인 실패 — 이번 주문은 결제사 원본값을 기록하지 않습니다` +
+      `${missingColumn ? '(마이그레이션 067 적용 필요)' : '(일시 오류로 보고 다음 주문에서 다시 확인)'}: ${error.message}`,
+  )
+  return false
+}
+
+/** 정가 대비 배율이 이 비율 안쪽이면 "그 배율"로 본다(환율·반올림 오차 흡수) */
+const SCALE_TOLERANCE = 0.1
+
+/** 두 값이 같은 자릿수 배율로 볼 만큼 가까운지 */
+function isNear(value: number, target: number): boolean {
+  return Math.abs(value - target) <= target * SCALE_TOLERANCE
+}
+
+/**
+ * @함수명: warnIfAmountScaleLooksWrong
+ * @설명: 결제사가 보낸 금액이 상품 정가와 100배(또는 1/100배) 어긋나 보이면 경고를 남깁니다.
+ *        ⚠️ 값을 자동으로 고치지 않습니다 — 돈이 걸린 값이라 사람이 판단합니다.
+ *        할인이 붙었거나 수량이 2개 이상인 주문은 정가와 단순 비교할 수 없어 검사에서 빼고,
+ *        뺐다는 사실도 서버 기록에 남깁니다(조용히 건너뛰지 않습니다).
+ * @매개변수: 주문·상품·금액 정보 한 벌
+ * @반환값: 없음(항상 resolve — 기록 실패가 주문 처리를 막지 않는다)
+ */
+async function warnIfAmountScaleLooksWrong(input: {
+  orderId: string
+  lsOrderId: string
+  currency: string
+  receivedMinor: number
+  listPriceMajor: number | null
+  quantity: number
+  discountMinor: number
+  productPriceId: string | null
+}): Promise<void> {
+  const { orderId, lsOrderId, currency, receivedMinor, listPriceMajor, quantity, discountMinor } = input
+
+  if (listPriceMajor == null || !Number.isFinite(listPriceMajor) || listPriceMajor <= 0) {
+    console.warn(`[LS Webhook] 금액 단위 점검 제외(정가 미상): order=${lsOrderId} price_id=${input.productPriceId ?? '-'}`)
+    return
+  }
+  if (quantity > 1 || discountMinor > 0) {
+    console.warn(
+      `[LS Webhook] 금액 단위 점검 제외(수량·할인 있음): order=${lsOrderId} quantity=${quantity} discount=${discountMinor}`,
+    )
+    return
+  }
+
+  const expectedMinor = toMinorUnits(listPriceMajor, currency)
+  if (!expectedMinor || !Number.isFinite(receivedMinor) || receivedMinor <= 0) return
+
+  const ratio = receivedMinor / expectedMinor
+  const scale = isNear(ratio, 100) ? '100배 큼' : isNear(ratio, 0.01) ? '1/100배 작음' : null
+  if (!scale) return
+
+  const detail = {
+    lsOrderId,
+    currency,
+    listPriceMajor,
+    expectedMinor,
+    receivedMinor,
+    ratio: Math.round(ratio * 1000) / 1000,
+    scale,
+    note: '값은 그대로 저장했습니다. 저장 단위 규약을 확인한 뒤 사람이 판단하세요.',
+  }
+  console.error('[LS Webhook] 주문 금액 단위 경고:', JSON.stringify(detail))
+  await logSystemActivity({
+    action: 'order.amount_scale_warning',
+    targetType: 'order',
+    targetId: orderId,
+    detail,
+  })
+}
+
 // ─── order_created 핸들러 ──────────────────────────────────────────────────
 
 async function handleOrderCreated(payload: LSWebhookPayload) {
@@ -392,7 +489,7 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   const variantId = String(attrs.first_order_item?.variant_id)
   const { data: ppRows } = await admin
     .from('product_prices')
-    .select('id, product_id, type, interval')
+    .select('id, product_id, type, interval, price')
     .eq('lemon_squeezy_variant_id', variantId)
     .order('is_active', { ascending: false })
     .order('id', { ascending: true })
@@ -419,21 +516,33 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   }
 
   const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
-  const discountCents = Number(attrs.discount_total ?? 0)
+  const providerDiscount = Number(attrs.discount_total ?? 0)
+
+  // 결제사 값(항상 2자리 cents)을 우리 저장 규약(그 통화의 최소단위)으로 환산해 넣는다.
+  // 원화는 결제사가 ×100으로 보내므로 여기서 100을 나눠야 화면 금액이 100배가 되지 않는다.
+  // 원본값은 아래 provider_raw_*에 가공 없이 따로 남는다.
+  const amountMinor = fromProviderAmount(attrs.total, attrs.currency)
+  const discountMinor = fromProviderAmount(providerDiscount, attrs.currency)
 
   const orderInsert: Record<string, unknown> = {
     user_id: userId,
     lemon_squeezy_order_id: lsOrderId,
     status: 'paid',
-    amount: attrs.total,
+    amount: amountMinor,
     currency: attrs.currency,
   }
   if (productPriceId) orderInsert.product_price_id = productPriceId
   if (bundleId) orderInsert.bundle_id = bundleId
-  // 수량·할인(cents) 기록 — 038 마이그레이션 컬럼. 기본값(1·0)이면 생략해
+  // 수량·할인 기록 — 038 마이그레이션 컬럼. 기본값(1·0)이면 생략해
   // 마이그레이션 미적용 상태에서도 일반 주문 INSERT는 깨지지 않게 한다.
   if (quantity > 1) orderInsert.quantity = quantity
-  if (Number.isFinite(discountCents) && discountCents > 0) orderInsert.discount_amount = discountCents
+  if (Number.isFinite(discountMinor) && discountMinor > 0) orderInsert.discount_amount = discountMinor
+  // 결제사가 보낸 금액·통화 원본 보존(067) — 나중에 저장 규약을 바꾸더라도 "받은 값"은 남는다.
+  // 컬럼이 아직 없으면 아예 넣지 않는다(마이그레이션 미적용 상태에서도 주문 생성은 깨지지 않게).
+  if (await hasProviderRawColumns(admin)) {
+    orderInsert.provider_raw_amount = attrs.total
+    orderInsert.provider_raw_currency = attrs.currency
+  }
 
   // 스텁 주문이 있으면 실금액·옵션연결로 보강(UPDATE), 없으면 신규 INSERT.
   // INSERT가 경쟁(subscription_created 선행)으로 중복키(23505)면 재조회 후 보강한다.
@@ -468,6 +577,20 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     }
   }
 
+  // 금액 단위 점검 — after(): 발급 경로를 붙잡지 않는다. 저장은 이미 끝났고 값은 고치지 않는다.
+  after(() =>
+    warnIfAmountScaleLooksWrong({
+      orderId,
+      lsOrderId,
+      currency: attrs.currency,
+      receivedMinor: amountMinor,
+      listPriceMajor: productPrice?.price != null ? Number(productPrice.price) : null,
+      quantity,
+      discountMinor: Number.isFinite(discountMinor) ? discountMinor : 0,
+      productPriceId,
+    }),
+  )
+
   // 관리자 새 주문 알림 — after(): 응답이 나간 뒤 실행돼 결제·발급 경로를 붙잡지 않는다.
   // 이 지점(주문 확정~발급 사이)은 실패하면 재전송이 멱등 체크에 걸러져 복구되지 않는 구간이라,
   // 알림의 예외뿐 아니라 "SMTP 무응답으로 시간을 소모하는 것"조차 여기 있으면 안 된다(검증 지적).
@@ -485,8 +608,8 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
         orderId,
         productName,
         quantity,
-        // 주문 행에 저장한 값(attrs.total cents) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
-        amountLabel: formatKRW(attrs.total),
+        // 주문 행에 저장한 값(환산 후 최소단위) 그대로 표시 — 재계산 없음, 관리자 화면과 같은 형식
+        amountLabel: formatMoney(amountMinor, attrs.currency),
         buyerEmail: attrs.user_email,
         method: 'card',
         status: '결제 완료(paid)',
@@ -509,7 +632,9 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
     sourceId: lsOrderId,
     buyerUserId: userId,
     affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
-    grossCents: attrs.total,
+    // 커미션·크레딧도 주문과 같은 단위(통화 최소단위)로 적립한다 — 결제사 단위를 그대로 쓰면
+    // 크레딧 잔액만 100배가 되어 주문 금액과 뜻이 달라진다.
+    grossCents: amountMinor,
     currency: attrs.currency,
     orderId, // 첫 order 적립 시 attribution.converted_at·order_id 기록용(내부 uuid)
   })
@@ -534,7 +659,7 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
   // 구매자: 구독 행의 user_id 우선(신뢰), 폴백 custom_data.user_id
   const { data: sub } = await admin
     .from('subscriptions')
-    .select('user_id')
+    .select('user_id, order_id')
     .eq('lemon_squeezy_subscription_id', lsSubId)
     .maybeSingle()
 
@@ -547,13 +672,46 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
     return
   }
 
+  // 통화를 한 번만 확정해 "환산"과 "적립 기록"에 같은 값을 쓴다.
+  // 갱신 인보이스의 currency는 선택 필드라 비어 올 수 있는데, 비운 채로 환산하면
+  // 환산이 통째로 생략되면서(자릿수 폴백 2 = 그대로) 값은 결제사 단위인데
+  // 기록되는 통화는 설정값(예: KRW)이 되어 100배 어긋난 적립 행이 남는다.
+  let renewalCurrency = (attrs.currency ?? '').trim()
+  if (!renewalCurrency && sub?.order_id) {
+    // 구독에 연결된 주문의 통화를 쓴다(orders.currency는 NOT NULL).
+    // ★ 단, subscription_created가 만든 스텁 주문은 통화가 'KRW'로 박혀 있으므로(아래 스텁 생성부)
+    //   그 값을 확정으로 받으면 안 된다. 이 파일이 이미 쓰는 판별 기준과 같게
+    //   "실금액이 채워진 주문(amount > 0)"의 통화만 인정한다.
+    const { data: ord } = await admin
+      .from('orders')
+      .select('currency, amount')
+      .eq('id', sub.order_id)
+      .maybeSingle()
+    if (ord && Number(ord.amount) > 0) {
+      renewalCurrency = ((ord.currency as string | undefined) ?? '').trim()
+    }
+  }
+  if (!renewalCurrency) {
+    // 돈 값을 추측한 단위로 적립하지 않는다 — 건너뛰되 조용히 넘어가지는 않는다.
+    console.error(`[LS Webhook] 갱신 적립 건너뜀: 통화 미상 (sub=${lsSubId}, invoice=${invoiceId})`)
+    await logNotification({
+      kind: 'webhook',
+      status: 'failure',
+      event: 'subscription_payment_success',
+      target: invoiceId,
+      error: '통화를 확정하지 못해 커미션 적립을 건너뛰었습니다(수동 확인 필요).',
+    })
+    return
+  }
+
   await accrueCommission({
     sourceType: 'subscription_renewal',
     sourceId: invoiceId,
     buyerUserId,
     affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
-    grossCents: attrs.total,
-    currency: attrs.currency ?? '',
+    // 갱신 적립도 첫 결제와 같은 단위(통화 최소단위)로 맞춘다
+    grossCents: fromProviderAmount(attrs.total, renewalCurrency),
+    currency: renewalCurrency,
     subscriptionId: lsSubId,
   })
 }

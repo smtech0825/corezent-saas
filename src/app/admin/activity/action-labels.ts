@@ -37,6 +37,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'order.refund':                '주문 환불 처리',
   'order.confirm_deposit':       '입금 확인',
   'order.org_info_update':       '기관 정보 수정',
+  'order.amount_scale_warning':  '주문 금액 단위 경고',
   'subscription.cancel':         '구독 취소',
   'user.role_change':            '회원 역할 변경',
   'user.withdraw':               '회원 탈퇴 처리',

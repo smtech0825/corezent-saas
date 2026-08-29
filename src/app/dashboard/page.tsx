@@ -5,7 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { Key, CreditCard, Package, ArrowRight } from 'lucide-react'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { deriveSubStatus, isActiveSub } from '@/lib/subscription-status'
 import Link from 'next/link'
 import OnboardingChecklist from './OnboardingChecklist'
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('orders')
-      .select('id, amount, status, created_at, product_price_id')
+      .select('id, amount, currency, status, created_at, product_price_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5),
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-ink">{formatKRW(order.amount)}</p>
+                    <p className="text-sm text-ink">{formatMoney(order.amount, order.currency)}</p>
                     <StatusBadge status={order.status} amount={Number(order.amount) || 0} />
                   </div>
                 </div>

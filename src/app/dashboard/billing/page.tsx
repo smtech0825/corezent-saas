@@ -14,7 +14,7 @@ import BillingTable, { type BillingRow } from './BillingTable'
 // (대수 비교·목록 판정일 뿐 금액 계산 아님)
 import { hwidLimitForTier, isKnownTier } from '@/app/api/license/_lib_supabase'
 import type { UpgradeOption } from './PlanUpgradeButton'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 
@@ -43,14 +43,14 @@ export default async function BillingPage({
     // 주문 1건 = 표 1행. 구독이 연결된 주문은 subscriptions(...) 임베드로 갱신일·취소 정보를 함께 가져온다.
     supabase
       .from('orders')
-      .select('id, amount, status, created_at, payment_method, product_price_id, subscriptions(id, status, cancel_at_period_end, current_period_end, billing_interval, lemon_squeezy_subscription_id, product_price_id)', { count: 'exact' })
+      .select('id, amount, currency, status, created_at, payment_method, product_price_id, subscriptions(id, status, cancel_at_period_end, current_period_end, billing_interval, lemon_squeezy_subscription_id, product_price_id)', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1),
     // 입금 대기(계좌이체) 주문 — 안내 재확인용(페이지네이션과 별개로 전체)
     supabase
       .from('orders')
-      .select('id, amount, created_at, product_price_id, deposit_expires_at')
+      .select('id, amount, currency, created_at, product_price_id, deposit_expires_at')
       .eq('user_id', user.id)
       .eq('status', 'pending_deposit')
       .order('created_at', { ascending: false }),
@@ -186,6 +186,7 @@ export default async function BillingPage({
       optionLabel:  priceOptMap.get(o.product_price_id) ?? null,
       createdAt:    o.created_at,
       amount:       o.amount ?? 0,
+      currency:     o.currency ?? '',
       paymentMethod: o.payment_method ?? 'card',
       orderStatus:  o.status,
       subscription: s ? {
@@ -227,7 +228,7 @@ export default async function BillingPage({
                 <div key={o.id} className="flex items-center justify-between gap-3 text-sm border-t border-caution/20 pt-2 first:border-0 first:pt-0">
                   <span className="text-ink truncate">{priceNameMap.get(o.product_price_id) ?? productNameByOrderId.get(o.id) ?? '주문'}</span>
                   <div className="text-right shrink-0">
-                    <span className="text-ink font-semibold">{formatKRW(o.amount)}</span>
+                    <span className="text-ink font-semibold">{formatMoney(o.amount, o.currency)}</span>
                     {o.deposit_expires_at && (
                       <span className="block text-[11px] text-caution">
                         입금 기한 {new Date(o.deposit_expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}

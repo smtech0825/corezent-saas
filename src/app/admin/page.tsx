@@ -6,7 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatKRW } from '@/lib/money'
+import { formatMoney, sumAndFormat } from '@/lib/money'
 import {
   Users, DollarSign, Key, MessageSquare,
   TrendingUp, UserPlus,
@@ -22,10 +22,8 @@ export const dynamic = 'force-dynamic'
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US').format(n)
 }
-// 매출·주문 금액(amount)은 cents — formatKRW가 ÷100 후 ₩ 표기 (단일 출처 lib/money).
-function fmtCurrency(n: number) {
-  return formatKRW(n)
-}
+/** 주문 행 중 금액 집계에 필요한 최소 모양 — amount는 통화의 최소단위 정수 */
+type AmountRow = { amount: number | null; currency: string | null }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
@@ -51,8 +49,15 @@ function growthDisplay(current: number, prev: number): number | null {
   return growthRate(current, prev)
 }
 
-/** 매출 배열 합산 (amount는 센트 — 합산만, ÷100·₩표기는 formatKRW에서) */
-function sumAmount(rows: { amount: number | null }[]): number {
+/**
+ * @함수명: sumAmount
+ * @설명: 증감률 계산에 쓸 매출 합계(숫자)를 냅니다. 표시는 이 값이 아니라 sumAndFormat이 맡습니다.
+ *        ⚠️ 통화가 섞인 기간이면 이 숫자는 증감 "방향"을 보는 용도로만 뜻이 있습니다
+ *           (서로 다른 통화를 하나로 더한 값이라 금액 자체로는 읽지 않습니다).
+ * @매개변수: rows - amount(최소단위)를 가진 주문 행
+ * @반환값: 합계(최소단위)
+ */
+function sumAmount(rows: AmountRow[]): number {
   return rows.reduce((s, o) => s + (o.amount ?? 0), 0)
 }
 
@@ -109,12 +114,12 @@ export default async function AdminPage() {
     revPrevYearRes,
   ] = await Promise.all([
     adminClient.from('profiles').select('*', { count: 'exact', head: true }),
-    adminClient.from('orders').select('amount').eq('status', 'paid'),
+    adminClient.from('orders').select('amount, currency').eq('status', 'paid'),
     adminClient.from('licenses').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     adminClient.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     adminClient
       .from('orders')
-      .select('id, amount, status, created_at, user_id')
+      .select('id, amount, currency, status, created_at, user_id')
       .order('created_at', { ascending: false })
       .limit(8),
 
@@ -129,19 +134,18 @@ export default async function AdminPage() {
       .gte('created_at', startOfPrevYear).lt('created_at', startOfYear),
 
     // Revenue 월간/연간 (paid only)
-    adminClient.from('orders').select('amount').eq('status', 'paid')
+    adminClient.from('orders').select('amount, currency').eq('status', 'paid')
       .gte('created_at', startOfMonth),
-    adminClient.from('orders').select('amount').eq('status', 'paid')
+    adminClient.from('orders').select('amount, currency').eq('status', 'paid')
       .gte('created_at', startOfPrevMonth).lt('created_at', startOfMonth),
-    adminClient.from('orders').select('amount').eq('status', 'paid')
+    adminClient.from('orders').select('amount, currency').eq('status', 'paid')
       .gte('created_at', startOfYear),
-    adminClient.from('orders').select('amount').eq('status', 'paid')
+    adminClient.from('orders').select('amount, currency').eq('status', 'paid')
       .gte('created_at', startOfPrevYear).lt('created_at', startOfYear),
   ])
 
   // ── 집계 ─────────────────────────────────────────────────────
   const totalUsers     = userCountRes.count ?? 0
-  const totalRevenue   = sumAmount(revenueAllRes.data ?? [])
   const activeLicenses = licenseCountRes.count ?? 0
   const openTickets    = ticketCountRes.count ?? 0
   const recentOrders   = recentOrdersRes.data ?? []
@@ -155,6 +159,11 @@ export default async function AdminPage() {
   const prevRevMonth = sumAmount(revPrevMonthRes.data ?? [])
   const revYear      = sumAmount(revYearRes.data ?? [])
   const prevRevYear  = sumAmount(revPrevYearRes.data ?? [])
+
+  // 화면에 찍을 금액은 통화별로 합산해 표기한다(합계 숫자를 다시 나누거나 기호를 붙이지 않는다).
+  const totalRevenueLabel = sumAndFormat(revenueAllRes.data ?? [])
+  const revMonthLabel     = sumAndFormat(revMonthRes.data ?? [])
+  const revYearLabel      = sumAndFormat(revYearRes.data ?? [])
 
   // ── 최근 가입자 ───────────────────────────────────────────────
   const { data: recentUsers } = await adminClient
@@ -207,11 +216,11 @@ export default async function AdminPage() {
         />
         <StatCard
           icon={<DollarSign size={17} className="text-mark" />}
-          value={fmtCurrency(totalRevenue)}
+          value={totalRevenueLabel}
           label="총 매출"
           subMetrics={[
-            { label: '매출 (월간)', value: fmtCurrency(revMonth), growth: growthDisplay(revMonth, prevRevMonth) },
-            { label: '매출 (연간)', value: fmtCurrency(revYear), growth: growthDisplay(revYear, prevRevYear) },
+            { label: '매출 (월간)', value: revMonthLabel, growth: growthDisplay(revMonth, prevRevMonth) },
+            { label: '매출 (연간)', value: revYearLabel, growth: growthDisplay(revYear, prevRevYear) },
           ]}
         />
         <StatCard
@@ -259,7 +268,7 @@ export default async function AdminPage() {
                         {emailMap.get(order.user_id) || '—'}
                       </td>
                       <td className="px-4 py-3 text-ink font-medium">
-                        {fmtCurrency(order.amount ?? 0)}
+                        {formatMoney(order.amount, order.currency)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[order.status] ?? 'text-ink-soft bg-paper-shade'}`}>

@@ -16,6 +16,7 @@ export interface UserOrderRow {
   id: string
   user_id: string
   amount: number
+  currency: string
   status: string
   created_at: string
   cancelReason: string | null
@@ -99,7 +100,7 @@ export async function fetchUserList(opts: {
     const pageIds = rows.map((p) => p.id)
     const { data: orders, error: ordersErr } = await adminClient
       .from('orders')
-      .select('id, user_id, amount, status, created_at')
+      .select('id, user_id, amount, currency, status, created_at')
       .in('user_id', pageIds)
       .order('created_at', { ascending: false })
     if (ordersErr) throw new Error(`회원 주문 조회 실패: ${ordersErr.message}`)

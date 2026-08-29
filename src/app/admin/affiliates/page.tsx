@@ -6,7 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAffiliateConfig } from '@/lib/affiliate'
-import { formatKRW } from '@/lib/money'
+import { currencyFractionDigits, formatMoney } from '@/lib/money'
 import ConfigEditor from './ConfigEditor'
 import { ConvertButton, IssueDiscountForm, ResolveButton } from './AffiliateActions'
 import PageContainer from '@/components/common/PageContainer'
@@ -16,9 +16,9 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = { title: '제휴 관리' }
 
-/** 정수 cents(KRW 기준) → ₩ 표시 */
-function krw(cents: number): string {
-  return formatKRW(cents)
+/** 크레딧 금액(통화 최소단위 정수) → 통화 표기. 통화는 affiliate_program_config.currency를 따른다 */
+function credit(minor: number, currency: string): string {
+  return formatMoney(minor, currency)
 }
 
 type Agg = { pendingEligible: number; pendingHeld: number; approved: number; paid: number; reversed: number }
@@ -82,7 +82,11 @@ export default async function AdminAffiliatesPage() {
       reason: c.review_reason ?? '',
     }))
 
-  const minWon = cfg ? String(Math.round(cfg.min_payout_credit / 100)) : '5000'
+  // 크레딧 통화 — 설정에 없으면 빈 값(임의 통화 가정 금지). 표시·입력 환산이 같은 값을 쓴다.
+  const creditCurrency = (cfg?.currency ?? '').trim()
+  const minWon = cfg
+    ? String(Math.round(cfg.min_payout_credit / 10 ** currencyFractionDigits(creditCurrency)))
+    : '5000'
 
   return (
     <PageContainer variant="admin" className="space-y-6">
@@ -124,7 +128,7 @@ export default async function AdminAffiliatesPage() {
             {flagged.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-ink">{f.referrerName} · <span className="font-mono text-danger">{krw(f.amountCents)}</span></p>
+                  <p className="text-sm text-ink">{f.referrerName} · <span className="font-mono text-danger">{credit(f.amountCents, creditCurrency)}</span></p>
                   <p className="text-xs text-ink-faint truncate">{f.reason}</p>
                 </div>
                 <ResolveButton commissionId={f.id} />
@@ -155,14 +159,14 @@ export default async function AdminAffiliatesPage() {
                   )}
                 </div>
                 <div className="flex-1 flex flex-wrap gap-x-5 gap-y-2 text-xs">
-                  <Stat label="전환가능" value={krw(a.pendingEligible)} tone="text-caution" />
-                  <Stat label="보류" value={krw(a.pendingHeld)} tone="text-ink-soft" />
-                  <Stat label="지급완료" value={krw(a.paid)} tone="text-ok" />
-                  <Stat label="크레딧 잔액" value={krw(a.balanceCents)} tone="text-mark" />
+                  <Stat label="전환가능" value={credit(a.pendingEligible, creditCurrency)} tone="text-caution" />
+                  <Stat label="보류" value={credit(a.pendingHeld, creditCurrency)} tone="text-ink-soft" />
+                  <Stat label="지급완료" value={credit(a.paid, creditCurrency)} tone="text-ok" />
+                  <Stat label="크레딧 잔액" value={credit(a.balanceCents, creditCurrency)} tone="text-mark" />
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:gap-3">
                   <ConvertButton referrerId={a.referrerId} />
-                  <IssueDiscountForm userId={a.referrerId} />
+                  <IssueDiscountForm userId={a.referrerId} currency={creditCurrency} />
                 </div>
               </div>
             ))}

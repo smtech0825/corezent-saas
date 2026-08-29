@@ -1,7 +1,7 @@
 /**
  * @파일: app/order/success/page.tsx
  * @설명: 결제 완료(주문 확인) 페이지 — LS 체크아웃 완료 후 도착하는 곳.
- *        로그인 사용자의 최근 주문 영수증 요약(금액은 cents÷100 = formatKRW) + 다음 단계 안내.
+ *        로그인 사용자의 최근 주문 영수증 요약(금액은 lib/money.formatMoney(통화 최소단위 → 통화 표기)) + 다음 단계 안내.
  *        ⚠️ LS 리다이렉트 URL 연결은 LS 제품/스토어 설정(외부)에서 이 경로로 지정한다(결제 로직 미접촉).
  *        결제 반영(웹훅)이 잠시 지연될 수 있어 "처리 중" 안내를 함께 둔다.
  */
@@ -10,7 +10,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CheckCircle2, Download, KeyRound, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import PurchaseTracker from './PurchaseTracker'
@@ -91,7 +91,7 @@ export default async function OrderSuccessPage() {
               <div className="text-left border border-[#1E293B] bg-[#111A2E] rounded-2xl p-6 mb-10">
                 <h2 className="text-sm font-semibold text-white mb-4">주문 요약</h2>
                 <Row label="제품">{order.productName}</Row>
-                <Row label="금액">{formatKRW(order.amount)}</Row>
+                <Row label="금액">{formatMoney(order.amount, order.currency)}</Row>
                 <Row label="상태">{ORDER_STATUS[order.status] ?? order.status}</Row>
                 <Row label="주문일">{fmtDate(order.created_at)}</Row>
                 <div className="pt-3">
