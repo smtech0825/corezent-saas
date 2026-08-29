@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { convertReferrerCommissions, redeemStoreCredit } from '@/lib/affiliate-commission'
 import { createLsDiscount, generateSerialKey } from '@/lib/lemonsqueezy'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, toProviderAmount } from '@/lib/money'
 import { logAdminActivity } from '@/lib/adminActivityLog'
 import type { AffiliateConfigInput } from './types'
 
@@ -151,7 +151,13 @@ export async function issueCreditDiscountAction(
   }
 
   // 2) LS 할인 자동 생성(차감은 이미 기록됨 — 실패 시 수동 폴백)
-  const disc = await createLsDiscount({ code, name: `Store credit ${code}`, amountCents })
+  //    크레딧은 통화 최소단위로 보관하지만 결제사 API는 항상 2자리 cents를 받는다 →
+  //    보낼 때만 결제사 단위로 되돌린다. (원화 9,900 → 990000)
+  const disc = await createLsDiscount({
+    code,
+    name: `Store credit ${code}`,
+    amountCents: toProviderAmount(amountCents, cur),
+  })
 
   // 감사 기록 — 차감 금액과 LS 자동 발급 성공 여부(할인 코드는 1회용 공개 코드라 비밀값 아님)
   await logAdminActivity({

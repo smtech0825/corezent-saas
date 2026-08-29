@@ -17,6 +17,15 @@
 /** 통화를 확정하지 못했을 때 쓸 소수 자릿수 — 큰 금액을 작게 보이게 하는 쪽으로 틀리지 않도록 2를 쓴다 */
 const FALLBACK_FRACTION_DIGITS = 2
 
+/**
+ * 결제사(LemonSqueezy)가 쓰는 소수 자릿수 — 통화와 상관없이 항상 2자리(cents)다.
+ * 근거(실측): 정가 9,900원짜리 옵션(product_prices c3ee312f…)의 원화 실주문이
+ * amount=990114(=9,901.14원, 환율 환산 잔돈 포함)로 들어왔다.
+ * → 원화처럼 소수가 없는 통화도 결제사는 100을 곱해 보낸다.
+ * 그래서 결제사 값은 저장 전에 반드시 fromProviderAmount로 우리 규약(ISO 최소단위)에 맞춘다.
+ */
+const PROVIDER_FRACTION_DIGITS = 2
+
 /** 값이 없거나 숫자가 아닐 때 보여줄 안전한 기본 표시 */
 const EMPTY_DISPLAY = '—'
 
@@ -85,6 +94,39 @@ export function currencyFractionDigits(currency: string | null | undefined): num
 export function toMinorUnits(major: number, currency: string | null | undefined): number {
   const digits = currencyFractionDigits(currency)
   return Math.round(major * 10 ** digits)
+}
+
+/**
+ * @함수명: fromProviderAmount
+ * @설명: 결제사가 보낸 금액(항상 2자리 cents)을 우리 저장 규약(그 통화의 최소단위)으로 바꿉니다.
+ *        원화 990000 → 9900 / 달러 699 → 699.
+ *        ⚠️ 결제사 값을 orders.amount에 넣기 전에 반드시 이 함수를 거칩니다.
+ *           원본값은 orders.provider_raw_amount(마이그레이션 067)에 가공 없이 따로 남깁니다.
+ * @매개변수: providerAmount - 결제사가 보낸 금액 / currency - 통화 코드
+ * @반환값: 그 통화의 최소단위 정수
+ */
+export function fromProviderAmount(
+  providerAmount: number,
+  currency: string | null | undefined,
+): number {
+  const n = Number(providerAmount)
+  if (!Number.isFinite(n)) return 0
+  const digits = currencyFractionDigits(currency)
+  return Math.round((n / 10 ** PROVIDER_FRACTION_DIGITS) * 10 ** digits)
+}
+
+/**
+ * @함수명: toProviderAmount
+ * @설명: 우리 저장 규약(통화 최소단위) 금액을 결제사가 받는 단위(2자리 cents)로 되돌립니다.
+ *        결제사 API에 금액을 보낼 때(할인 발급 등) 씁니다. fromProviderAmount의 역함수입니다.
+ * @매개변수: minor - 통화 최소단위 정수 / currency - 통화 코드
+ * @반환값: 결제사 단위 정수
+ */
+export function toProviderAmount(minor: number, currency: string | null | undefined): number {
+  const n = Number(minor)
+  if (!Number.isFinite(n)) return 0
+  const digits = currencyFractionDigits(currency)
+  return Math.round((n / 10 ** digits) * 10 ** PROVIDER_FRACTION_DIGITS)
 }
 
 /**

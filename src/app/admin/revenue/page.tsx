@@ -3,13 +3,14 @@
  * @설명: 관리자 매출 리포트 — 기존 orders/subscriptions로 산출 가능한 핵심 지표.
  *        총매출·주문수·환불·활성구독·MRR(추정)·해지율 + 월별 매출 추이 + 상품별 매출.
  *        금액은 모두 lib/money(통화 최소단위 → 통화 표기), 합산은 최소단위 정수로.
- *        ⚠️ 차트는 숫자 하나로 그리므로, 주문 통화가 두 종류 이상 섞이면 기호 없이 숫자만 표시한다
- *           (임의로 한 통화를 골라 기호를 붙이지 않는다). 통화별 합계는 상단 통계 카드가 보여준다.
+ *        ⚠️ 차트·MRR은 숫자 하나로 그리므로 통화를 섞을 수 없다. 매출이 가장 큰 통화 하나만
+ *           골라 그리고, 빠진 통화는 차트 위에 이름을 밝힌다(조용히 잘라내지 않는다).
+ *           통화별 전체 합계는 상단 통계 카드(총매출·환불)가 나눠서 보여준다.
  *        차트는 무의존 CSS 막대(과설계 방지, 새 집계 테이블 없음).
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatMoney, formatMoneyCompact, sumAndFormat } from '@/lib/money'
+import { formatMoney, formatMoneyCompact, sumAndFormat, sumMinorByCurrency } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
 import StatCard from '@/components/common/StatCard'
@@ -47,8 +48,24 @@ export default async function RevenuePage() {
     fetchAll<SubRow>((f, t) => admin.from('subscriptions').select('status, billing_interval, order_id').order('created_at', { ascending: false }).range(f, t)),
   ])
 
-  // 상품명 매핑 (product_price_id → products.name)
-  const priceIds = [...new Set(paid.map((o) => o.product_price_id).filter(Boolean))] as string[]
+  // ── 핵심 집계 (통화 최소단위 정수) ─────────────────────────────
+  // 통계 카드(총매출·환불)는 통화별로 나눠 표시한다.
+  const totalRevenueLabel = sumAndFormat(paid)
+  const orderCount = paid.length
+  const refundTotalLabel = sumAndFormat(refunded)
+  const refundCount = refunded.length
+
+  // 차트·MRR은 숫자 하나로 그리므로 통화를 섞을 수 없다
+  // (자릿수가 다른 값을 더하면 그 숫자는 아무 뜻도 없다).
+  // → 매출이 가장 큰 통화 하나를 골라 그 통화 주문만으로 계산하고,
+  //   빠진 통화가 있으면 화면에 그대로 밝힌다(말없이 잘라내지 않는다).
+  const totalsByCurrency = sumMinorByCurrency(paid)
+  const chartCurrency = [...totalsByCurrency.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  const chartRows = paid.filter((o) => (o.currency ?? '').trim().toUpperCase() === chartCurrency)
+  const excludedCurrencies = [...totalsByCurrency.keys()].filter((c) => c !== chartCurrency)
+
+  // 상품명 매핑 (product_price_id → products.name) — 차트에 쓰는 행만 대상
+  const priceIds = [...new Set(chartRows.map((o) => o.product_price_id).filter(Boolean))] as string[]
   const priceNameMap = new Map<string, string>()
   if (priceIds.length > 0) {
     const { data: prices } = await admin.from('product_prices').select('id, products(name)').in('id', priceIds)
@@ -58,18 +75,6 @@ export default async function RevenuePage() {
     })
   }
 
-  // ── 핵심 집계 (통화 최소단위 정수) ─────────────────────────────
-  // 통계 카드는 통화별로 나눠 표시하고, 차트는 숫자 하나로 그린다.
-  const totalRevenueLabel = sumAndFormat(paid)
-  const orderCount = paid.length
-  const refundTotalLabel = sumAndFormat(refunded)
-  const refundCount = refunded.length
-
-  // 차트에 쓸 통화 — 결제 완료 주문의 통화가 딱 하나일 때만 그 통화로 표기한다.
-  // 두 종류 이상 섞여 있으면 빈 문자열 → 기호 없이 숫자만 나간다(임의 통화 가정 금지).
-  const paidCurrencies = new Set(paid.map((o) => (o.currency ?? '').trim().toUpperCase()))
-  const chartCurrency = paidCurrencies.size === 1 ? [...paidCurrencies][0] : ''
-
   // ── 월별 매출 추이 (최근 12개월, UTC) ──────────────────────────
   const now = new Date()
   const months = Array.from({ length: 12 }, (_, k) => {
@@ -78,7 +83,7 @@ export default async function RevenuePage() {
     return { key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`, label: `${d.getUTCMonth() + 1}월`, cents: 0 }
   })
   const monthIdx = new Map(months.map((m, i) => [m.key, i]))
-  paid.forEach((o) => {
+  chartRows.forEach((o) => {
     const d = new Date(o.created_at)
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
     const idx = monthIdx.get(key)
@@ -88,7 +93,7 @@ export default async function RevenuePage() {
 
   // ── 상품별 매출 ────────────────────────────────────────────────
   const prodMap = new Map<string, number>()
-  paid.forEach((o) => {
+  chartRows.forEach((o) => {
     const name = o.product_price_id ? (priceNameMap.get(o.product_price_id) ?? '기타') : '기타'
     prodMap.set(name, (prodMap.get(name) ?? 0) + (o.amount ?? 0))
   })
@@ -102,7 +107,7 @@ export default async function RevenuePage() {
   const churnRate = totalSubs > 0 ? Math.round((endedSubs / totalSubs) * 1000) / 10 : 0
 
   // MRR(추정): 활성 구독의 연결 주문금액을 월 단위로 환산(연간=÷12). 정수 cents 합산.
-  const orderAmount = new Map(paid.map((o) => [o.id, o.amount ?? 0]))
+  const orderAmount = new Map(chartRows.map((o) => [o.id, o.amount ?? 0]))
   let mrrCents = 0
   subs.filter((s) => s.status === 'active').forEach((s) => {
     const amt = s.order_id ? (orderAmount.get(s.order_id) ?? 0) : 0
@@ -129,6 +134,15 @@ export default async function RevenuePage() {
         <StatCard icon={<TrendingUp size={16} className="text-mark" />} label="MRR (추정)" value={mrrCents > 0 ? formatMoney(mrrCents, chartCurrency) : '—'} subline="월 환산" />
         <StatCard icon={<Percent size={16} className="text-mark" />} label="해지율" value={`${churnRate}%`} subline={`${endedSubs}/${totalSubs} 구독`} />
       </div>
+
+      {/* 통화가 섞였을 때만 나온다 — 무엇이 빠졌는지 숨기지 않는다 */}
+      {excludedCurrencies.length > 0 && (
+        <p className="text-xs text-caution">
+          아래 차트와 MRR은 {chartCurrency} 주문만으로 계산했습니다. 통화가 다른 주문(
+          {excludedCurrencies.join(', ')})은 제외했습니다 — 서로 다른 통화는 하나의 숫자로 더할 수 없습니다.
+          통화별 전체 합계는 위 &lsquo;총매출&rsquo; 카드에 있습니다.
+        </p>
+      )}
 
       {/* 월별 매출 추이 — 데이터가 없으면 차트를 그리지 않는다.
           예전에는 0원인 달에도 최소 높이 막대(바닥 선분 12개)가 그려져
