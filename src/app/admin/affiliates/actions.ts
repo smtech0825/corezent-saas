@@ -24,7 +24,9 @@ import type { AffiliateConfigInput } from './types'
  */
 async function creditCurrency(): Promise<string> {
   const admin = createAdminClient()
-  const { data } = await admin.from('affiliate_program_config').select('currency').limit(1).maybeSingle()
+  const { data, error } = await admin.from('affiliate_program_config').select('currency').limit(1).maybeSingle()
+  // 조회 실패와 미설정을 화면에서는 구분할 수 없으므로, 사유는 서버 기록에 남긴다(조용히 넘어가지 않음).
+  if (error) console.error('[affiliates] 크레딧 통화 조회 실패:', error.message)
   return ((data?.currency as string | undefined) ?? '').trim()
 }
 
@@ -142,7 +144,10 @@ export async function issueCreditDiscountAction(
   // 크레딧은 제대로 차감되고 할인만 1/100로 발급되는데, 차감은 되돌릴 수 없다.
   const cur = await creditCurrency()
   if (!cur) {
-    return { ok: false, message: '크레딧 통화 설정을 읽지 못했습니다. 제휴 설정의 통화를 확인한 뒤 다시 시도해 주세요.' }
+    return {
+      ok: false,
+      message: '크레딧 통화를 확인하지 못해 발급을 중단했습니다. 잠시 후 다시 시도하거나, 제휴 설정의 통화 값을 확인해 주세요.',
+    }
   }
 
   const code = `CZCREDIT-${generateSerialKey().replace(/-/g, '').slice(0, 10)}`

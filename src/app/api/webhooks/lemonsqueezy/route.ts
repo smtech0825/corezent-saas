@@ -679,12 +679,17 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
   let renewalCurrency = (attrs.currency ?? '').trim()
   if (!renewalCurrency && sub?.order_id) {
     // 구독에 연결된 주문의 통화를 쓴다(orders.currency는 NOT NULL).
+    // ★ 단, subscription_created가 만든 스텁 주문은 통화가 'KRW'로 박혀 있으므로(아래 스텁 생성부)
+    //   그 값을 확정으로 받으면 안 된다. 이 파일이 이미 쓰는 판별 기준과 같게
+    //   "실금액이 채워진 주문(amount > 0)"의 통화만 인정한다.
     const { data: ord } = await admin
       .from('orders')
-      .select('currency')
+      .select('currency, amount')
       .eq('id', sub.order_id)
       .maybeSingle()
-    renewalCurrency = ((ord?.currency as string | undefined) ?? '').trim()
+    if (ord && Number(ord.amount) > 0) {
+      renewalCurrency = ((ord.currency as string | undefined) ?? '').trim()
+    }
   }
   if (!renewalCurrency) {
     // 돈 값을 추측한 단위로 적립하지 않는다 — 건너뛰되 조용히 넘어가지는 않는다.

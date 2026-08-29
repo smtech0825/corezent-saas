@@ -67,6 +67,8 @@ export default async function RevenuePage() {
   const excludedCurrencies = [...totalsByCurrency.entries()]
     .filter(([code, total]) => code !== chartCurrency && total > 0)
     .map(([code]) => code || '통화 미상')
+  /** 안내 문구에 쓸 통화 이름 — 코드가 비어도 빈칸이 노출되지 않게 한다(제외 목록과 같은 규칙) */
+  const chartCurrencyLabel = chartCurrency || '통화 미상'
 
   // 상품명 매핑 (product_price_id → products.name) — 차트에 쓰는 행만 대상
   const priceIds = [...new Set(chartRows.map((o) => o.product_price_id).filter(Boolean))] as string[]
@@ -142,7 +144,7 @@ export default async function RevenuePage() {
       {/* 통화가 섞였을 때만 나온다 — 무엇이 빠졌는지 숨기지 않는다 */}
       {excludedCurrencies.length > 0 && (
         <p className="text-xs text-caution">
-          아래 차트와 MRR은 {chartCurrency} 주문만으로 계산했습니다. 통화가 다른 주문(
+          아래 차트와 MRR은 {chartCurrencyLabel} 주문만으로 계산했습니다. 통화가 다른 주문(
           {excludedCurrencies.join(', ')})은 제외했습니다 — 서로 다른 통화는 하나의 숫자로 더할 수 없습니다.
           통화별 전체 합계는 위 &lsquo;총매출&rsquo; 카드에 있습니다.
         </p>
