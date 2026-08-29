@@ -3,7 +3,8 @@
  * @설명: 기관 도입 안내 페이지 — 부서 단위 도입을 검토하는 공공기관 담당자용.
  *        가격표는 product_prices 옵션 행을 읽어 그린다(대수를 코드에 나열하지 않는다).
  *        옵션이 늘거나 금액이 바뀌면 이 페이지도 자동으로 따라간다.
- *        조달청 등록번호는 front_settings에서 읽고, 값이 없으면 그 블록을 통째로 숨긴다.
+ *        조달청 등록번호는 products 컬럼(054)에서 읽고 — 상품 배지와 같은 단일 출처 —
+ *        등록번호를 가진 상품이 하나도 없으면 그 블록을 통째로 숨긴다.
  */
 
 import type { Metadata } from 'next'
@@ -20,8 +21,9 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/public-sector',
-  title: '기관 도입 안내',
-  description: '부서 단위 도입을 검토하는 공공기관 담당자를 위한 안내 — 대수별 요금, 조달청 등록번호, 견적 요청.',
+  title: '지니워크 기관 도입 안내 — 수의계약·견적서·세금계산서',
+  description:
+    '공공기관 담당자를 위한 지니워크 도입·계약 정보. 수의계약 근거 법령, 창업기업 우선구매, 견적서·세금계산서 안내.',
 })
 
 /** 옵션 한 줄 — 같은 대수의 월/연 금액을 함께 담는다 */
@@ -65,25 +67,59 @@ interface PriceRow {
   license_tier: string | null
 }
 
+/**
+ * 수의계약 근거 법령 — 조문과 금액 한도는 법령에 고정된 값이라 코드 상수로 둔다.
+ * 화면에 흩어 놓지 않고 이 한 곳에서만 정의하고, 표는 이 배열을 그대로 그린다.
+ */
+const NEGOTIATED_CONTRACT_BASIS: { scope: string; law: string; limit: string }[] = [
+  {
+    scope: '국가기관·공공기관',
+    law: '「국가를 당사자로 하는 계약에 관한 법률 시행령」 제26조제1항제5호가목',
+    limit: '추정가격 5천만원 이하의 물품 제조·구매 및 용역 계약',
+  },
+  {
+    scope: '지방자치단체',
+    law: '「지방자치단체를 당사자로 하는 계약에 관한 법률 시행령」 제25조제1항제5호',
+    limit: '추정가격 2천만원 이하의 물품 제조·구매 계약',
+  },
+]
+
 export default async function PublicSectorPage() {
   const client = createAdminClient()
 
   const [productsRes, pricesRes, settingsRes] = await Promise.all([
-    client.from('products').select('id, name, slug, system_requirements').eq('is_active', true).order('order_index'),
+    client
+      .from('products')
+      .select('id, name, slug, system_requirements, procurement_item_number, procurement_class_number')
+      .eq('is_active', true)
+      .order('order_index'),
     client
       .from('product_prices')
       .select('product_id, interval, price, option_axis2_label, license_tier')
       .eq('is_active', true),
-    client.from('front_settings').select('key, value').in('key', ['procurement_item_number', 'procurement_class_number']),
+    client.from('front_settings').select('key, value').in('key', ['company_name']),
   ])
 
   const products = productsRes.data ?? []
   const prices = (pricesRes.data ?? []) as PriceRow[]
   const settings = new Map((settingsRes.data ?? []).map((r) => [r.key, (r.value ?? '').trim()]))
 
-  const itemNo = settings.get('procurement_item_number') ?? ''
-  const classNo = settings.get('procurement_class_number') ?? ''
-  const hasProcurement = Boolean(itemNo || classNo)
+  // 상호는 사이트 공통 설정(front_settings.company_name) 한 곳에서만 읽는다.
+  // 비어 있으면 상호가 들어가는 문장 자체를 렌더링하지 않는다(임의 표기 금지).
+  const companyName = settings.get('company_name') ?? ''
+
+  // 조달청 등록번호는 products 컬럼(마이그레이션 054)이 단일 출처 —
+  // 상품 목록·상세의 "조달청 등록" 배지가 읽는 값과 같은 곳을 읽는다.
+  // (같은 번호가 front_settings에도 들어 있었으나 두 곳이 어긋날 수 있어 상품 쪽으로 통일했다.)
+  const procurementProducts = products
+    .map((p) => ({
+      id: String(p.id),
+      name: String(p.name ?? ''),
+      itemNo: String(p.procurement_item_number ?? '').trim(),
+      classNo: String(p.procurement_class_number ?? '').trim(),
+    }))
+    .filter((p) => p.itemNo || p.classNo)
+  const hasProcurement = procurementProducts.length > 0
 
   // 대수 옵션이 2가지 이상인 제품만 "부서 단위 도입" 대상으로 본다.
   // 특정 제품 slug를 코드에 박지 않는다 — 옵션 구조를 갖춘 제품이면 자동으로 표에 나온다.
@@ -106,29 +142,45 @@ export default async function PublicSectorPage() {
           />
         </Section>
 
-        {/* 조달청 등록 정보 — 값이 없으면 블록 자체를 숨긴다 */}
+        {/* 조달청 등록 정보 — 등록번호를 가진 상품이 없으면 블록 자체를 숨긴다 */}
         {hasProcurement && (
           <Section tone="shade" width="text" className="py-10 sm:py-12">
             <h2 className="text-lg font-bold font-serif text-ink mb-4">조달청 등록 정보</h2>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {itemNo && (
-                <div className="border border-rule bg-paper-raised rounded-xl px-5 py-4">
-                  <dt className="text-xs text-ink-faint">물품식별번호</dt>
-                  <dd className="text-xl font-mono font-bold text-ink mt-1 tracking-wide">{itemNo}</dd>
+            <div className="space-y-5">
+              {procurementProducts.map((p) => (
+                <div key={p.id}>
+                  {/* 등록 상품이 둘 이상일 때만 어느 상품의 번호인지 밝힌다 */}
+                  {procurementProducts.length > 1 && p.name && (
+                    <p className="text-sm font-semibold text-ink mb-2">{p.name}</p>
+                  )}
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {p.itemNo && (
+                      <div className="border border-rule bg-paper-raised rounded-xl px-5 py-4">
+                        <dt className="text-xs text-ink-faint">물품식별번호</dt>
+                        <dd className="text-xl font-mono font-bold text-ink mt-1 tracking-wide">{p.itemNo}</dd>
+                      </div>
+                    )}
+                    {p.classNo && (
+                      <div className="border border-rule bg-paper-raised rounded-xl px-5 py-4">
+                        <dt className="text-xs text-ink-faint">물품분류번호</dt>
+                        <dd className="text-xl font-mono font-bold text-ink mt-1 tracking-wide">{p.classNo}</dd>
+                      </div>
+                    )}
+                  </dl>
                 </div>
-              )}
-              {classNo && (
-                <div className="border border-rule bg-paper-raised rounded-xl px-5 py-4">
-                  <dt className="text-xs text-ink-faint">물품분류번호</dt>
-                  <dd className="text-xl font-mono font-bold text-ink mt-1 tracking-wide">{classNo}</dd>
-                </div>
-              )}
-            </dl>
+              ))}
+            </div>
             {/* 우선구매·보유 자격·판매 채널 — 블록이 보일 때 항상 함께 표시(기존 톤 그대로) */}
             <div className="mt-4 space-y-1.5 text-sm text-ink-soft">
-              <p>창업기업제품 공공기관 우선구매 대상 (총 구매액 8% 이상)</p>
+              {companyName && (
+                <p>
+                  {companyName}는 「중소기업창업 지원법」에 따른 창업기업 확인서를 보유하고 있습니다.
+                  공공기관은 창업기업제품 구매목표비율 제도에 따라 연간 총 구매액의 8% 이상을 창업기업
+                  제품으로 구매하도록 되어 있습니다.
+                </p>
+              )}
               <p>보유 자격: 경쟁입찰참가자격등록 · 소프트웨어사업자신고 · 중소기업확인서 · 창업기업확인서</p>
-              <p>판매 채널: corezent.com · 나라장터 · 벤처나라</p>
+              <p>판매 채널: corezent.com 직접 구매 · 기관 수의계약(견적 요청)</p>
             </div>
           </Section>
         )}
@@ -206,6 +258,44 @@ export default async function PublicSectorPage() {
           <p className="text-xs text-ink-faint mt-6">
             필요한 서류나 계약 방식은 기관마다 다릅니다. 견적 요청 시 필요한 서류를 함께 적어 주시면 확인해 회신드립니다.
           </p>
+
+          {/* 수의계약 근거 법령 — 조문·한도는 NEGOTIATED_CONTRACT_BASIS 값을 그대로 표시한다 */}
+          <div className="mt-10">
+            <h3 className="text-base font-bold font-serif text-ink mb-3">수의계약 근거 법령</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] border-collapse text-sm">
+                <thead>
+                  <tr>
+                    <th className="border border-ink bg-paper-shade px-4 py-2.5 text-left font-sans font-bold text-[13px] tracking-wider whitespace-nowrap">구분</th>
+                    <th className="border border-ink bg-paper-shade px-4 py-2.5 text-left font-sans font-bold text-[13px] tracking-wider">근거</th>
+                    <th className="border border-ink bg-paper-shade px-4 py-2.5 text-left font-sans font-bold text-[13px] tracking-wider">수의계약 가능 범위</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {NEGOTIATED_CONTRACT_BASIS.map((row) => (
+                    <tr key={row.scope}>
+                      <td className="border border-ink px-4 py-3 font-serif font-bold text-ink whitespace-nowrap">{row.scope}</td>
+                      <td className="border border-ink px-4 py-3 text-ink-soft">{row.law}</td>
+                      <td className="border border-ink px-4 py-3 text-ink-soft">{row.limit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-ink-faint mt-2">
+              위 금액은 법령상 한도이며, 실제 적용 여부와 절차는 기관 계약 담당 부서의 판단에 따릅니다.
+            </p>
+          </div>
+
+          {/* 세금계산서 발행 — 수의계약·계좌이체 건에 한정한 안내.
+              카드 결제(홈페이지 즉시 결제) 건은 발행 주체 확인이 끝나지 않아 여기 넣지 않는다. */}
+          <div className="mt-10">
+            <h3 className="text-base font-bold font-serif text-ink mb-3">세금계산서 발행</h3>
+            <p className="text-sm text-ink-soft leading-relaxed">
+              기관 수의계약 및 계좌이체 구매 건은 세금계산서를 발행해 드립니다. 견적 요청 시
+              기관명·사업자등록번호·담당자 연락처를 함께 적어 주시면 계약과 함께 처리해 드립니다.
+            </p>
+          </div>
         </Section>
 
         {/* 보안 — 사용설명서에서 확인된 구조만 설명한다 */}

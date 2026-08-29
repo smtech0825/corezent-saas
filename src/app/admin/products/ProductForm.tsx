@@ -313,7 +313,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               required
               value={form.name}
               onChange={handleNameChange}
-              placeholder="예: GeniePost"
+              placeholder="예: 지니포스트"
               className={inputCls}
             />
           </Field>
