@@ -286,6 +286,16 @@ export default async function PublicSectorPage() {
               위 금액은 법령상 한도이며, 실제 적용 여부와 절차는 기관 계약 담당 부서의 판단에 따릅니다.
             </p>
           </div>
+
+          {/* 세금계산서 발행 — 수의계약·계좌이체 건에 한정한 안내.
+              카드 결제(홈페이지 즉시 결제) 건은 발행 주체 확인이 끝나지 않아 여기 넣지 않는다. */}
+          <div className="mt-10">
+            <h3 className="text-base font-bold font-serif text-ink mb-3">세금계산서 발행</h3>
+            <p className="text-sm text-ink-soft leading-relaxed">
+              기관 수의계약 및 계좌이체 구매 건은 세금계산서를 발행해 드립니다. 견적 요청 시
+              기관명·사업자등록번호·담당자 연락처를 함께 적어 주시면 계약과 함께 처리해 드립니다.
+            </p>
+          </div>
         </Section>
 
         {/* 보안 — 사용설명서에서 확인된 구조만 설명한다 */}
