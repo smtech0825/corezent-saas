@@ -16,7 +16,7 @@ export const HERO_DEFAULTS = {
   headline1: '보고서, 이제',
   headline2: '저절로 써집니다',
   subtext:
-    '계획서·보고서·공문 초안 작성과 자료 검색까지 — 반복되는 문서 업무를 AI로 줄이는 설치형 프로그램, 지니워크(GenieWork)입니다.',
+    '계획서·보고서·공문 초안 작성과 자료 검색까지 — 반복되는 문서 업무를 AI로 줄이는 설치형 프로그램, 지니워크입니다.',
   cta1_text: '제품 둘러보기',
   cta1_href: '#product',
   cta2_text: '무료 계정 만들기',
@@ -38,8 +38,8 @@ export const CTA_DEFAULTS = {
 
 /** 상단 공지 배너 예비값 (Navbar 배너 + admin/content/announcement 공용) */
 export const BANNER_DEFAULTS = {
-  text: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱, 지금 만나보세요.',
-  text_mobile: 'GenieWork 출시 — 공무원 공문 작성 데스크톱 앱',
+  text: '지니워크 출시 — 공무원 공문 작성 데스크톱 앱, 지금 만나보세요.',
+  text_mobile: '지니워크 출시 — 공무원 공문 작성 데스크톱 앱',
   link_text: '자세히 보기 →',
   link_url: '#product',
   visible: 'true',

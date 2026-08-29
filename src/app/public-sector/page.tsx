@@ -21,9 +21,9 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/public-sector',
-  title: 'GenieWork 기관 도입 안내 — 수의계약·견적서·세금계산서',
+  title: '지니워크 기관 도입 안내 — 수의계약·견적서·세금계산서',
   description:
-    '공공기관 담당자를 위한 GenieWork 도입·계약 정보. 수의계약 근거 법령, 창업기업 우선구매, 견적서·세금계산서 안내.',
+    '공공기관 담당자를 위한 지니워크 도입·계약 정보. 수의계약 근거 법령, 창업기업 우선구매, 견적서·세금계산서 안내.',
 })
 
 /** 옵션 한 줄 — 같은 대수의 월/연 금액을 함께 담는다 */
