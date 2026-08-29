@@ -18,6 +18,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import DynamicIcon from '@/components/DynamicIcon'
+import PublicSectorBanner from '@/components/common/PublicSectorBanner'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { getProductOptions, type OptionRow } from '@/lib/product-options'
@@ -174,6 +175,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors mb-8">
                 <ArrowLeft size={14} /> 제품 목록
               </Link>
+
+              {/* 기관 도입 안내 진입 — 하단 고정 구매 바를 피해 항상 본문 위쪽에만 둔다 */}
+              <PublicSectorBanner className="mb-8" />
 
               {/* 헤더 (박스 밖) — 로고·이름·태그라인·태그. 구매/가격은 하단 바가 대체 */}
               <div className="flex items-start gap-5 mb-6">

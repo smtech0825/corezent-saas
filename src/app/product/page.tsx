@@ -11,6 +11,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductList from './ProductList'
+import PublicSectorBanner from '@/components/common/PublicSectorBanner'
 import { lowestPriceRow } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
@@ -99,6 +100,9 @@ export default async function ProductPage() {
                 실질적인 결과를 전하도록 설계되었습니다.
               </p>
             </div>
+
+            {/* 기관 도입 안내 진입 — 헤더 아래 한 줄 배너 */}
+            <PublicSectorBanner className="max-w-2xl mx-auto mb-12" />
 
             {/* 상품 목록 */}
             <ProductList products={products} />
