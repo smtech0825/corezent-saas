@@ -27,10 +27,16 @@ function maskKey(key: string | null): string {
   return key.length > 8 ? `${key.slice(0, 8)}…` : key
 }
 
-/** 제휴 크레딧 표기 — dashboard/affiliate의 formatCents와 동일 규칙(표시 전용) */
-function fmtCredit(cents: number, currency: string): string {
-  const v = (cents / 100).toFixed(2)
-  return currency === 'USD' ? `$${v}` : `${v} ${currency}`
+/**
+ * @함수명: fmtCredit
+ * @설명: 제휴 크레딧 표기 — 자체 계산 없이 공용 표시 함수만 씁니다.
+ *        (예전에는 여기서 직접 ÷100·소수 2자리로 찍어 "9901.14 KRW"처럼
+ *         다른 화면과 표기가 갈렸습니다. 환산·기호는 lib/money 한 곳에서만 합니다.)
+ * @매개변수: minor - 통화 최소단위 정수 / currency - 통화 코드
+ * @반환값: 통화 표기 문자열
+ */
+function fmtCredit(minor: number, currency: string): string {
+  return formatMoney(minor, currency)
 }
 
 const ORDER_STATUS: Record<string, string> = { paid: '결제됨', pending: '대기 중', refunded: '환불됨', cancelled: '취소됨' }
@@ -75,7 +81,8 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const subs = (subRes.data ?? []) as Array<{ id: string; status: string; billing_interval: string | null; current_period_end: string | null }>
   const tickets = (ticketRes.data ?? []) as Array<{ id: string; subject: string; status: string; priority: string; created_at: string }>
   const creditCents = (creditRes.data?.[0]?.balance_after_cents as number | undefined) ?? 0
-  const creditCurrency = (cfgRes.data?.currency as string | undefined) ?? 'USD'
+  // 크레딧 통화 — 설정값 그대로. 없으면 빈 값으로 두고 임의 통화를 가정하지 않는다.
+  const creditCurrency = ((cfgRes.data?.currency as string | undefined) ?? '').trim()
 
   return (
     <PageContainer variant="admin">

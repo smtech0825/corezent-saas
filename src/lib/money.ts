@@ -123,6 +123,26 @@ export function formatMoney(
 }
 
 /**
+ * @함수명: formatMoneyCompact
+ * @설명: 차트 축·막대처럼 자리가 좁은 곳에 쓰는 축약 표기(만·억 단위)입니다.
+ *        formatMoney와 같은 환산 규칙을 쓰되 통화 기호 없이 숫자만 줄여 씁니다
+ *        (정확한 값은 축 눈금·툴팁의 formatMoney가 보여줍니다).
+ * @매개변수: minor - 최소단위 정수 금액 / currency - 통화 코드
+ * @반환값: "123만" 형태의 축약 문자열
+ */
+export function formatMoneyCompact(
+  minor: number | null | undefined,
+  currency: string | null | undefined,
+): string {
+  const n = Number(minor)
+  if (minor == null || !Number.isFinite(n)) return EMPTY_DISPLAY
+  const major = n / 10 ** currencyFractionDigits(currency)
+  return new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(
+    Math.round(major),
+  )
+}
+
+/**
  * @함수명: sumMinorByCurrency
  * @설명: 통화가 섞일 수 있는 목록의 합계를 통화별로 나눠 더합니다.
  *        서로 다른 통화를 한 숫자로 합치면 그 값은 아무 뜻도 없으므로 합치지 않습니다.

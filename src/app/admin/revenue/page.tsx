@@ -9,23 +9,11 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { currencyFractionDigits, formatMoney, sumAndFormat } from '@/lib/money'
+import { formatMoney, formatMoneyCompact, sumAndFormat } from '@/lib/money'
 import { TrendingUp, ShoppingBag, RotateCcw, Repeat, Percent } from 'lucide-react'
 import PageContainer from '@/components/common/PageContainer'
 import StatCard from '@/components/common/StatCard'
 import EmptyState from '@/components/common/EmptyState'
-
-/**
- * @함수명: fmtCompact
- * @설명: 차트 막대 위에 얹는 축약 표기(만·억 단위). 좁은 막대 위에 전체 금액을 쓰면
- *        서로 겹쳐 읽을 수 없어 축약한다. 정확한 값은 Y축 눈금과 막대 툴팁에 있다.
- * @매개변수: minor - 통화 최소단위 정수 금액 / currency - 통화 코드(자릿수 판단용)
- * @반환값: "123만" 형태의 축약 문자열
- */
-function fmtCompact(minor: number, currency: string): string {
-  const major = minor / 10 ** currencyFractionDigits(currency)
-  return new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.round(major))
-}
 
 export const dynamic = 'force-dynamic'
 
@@ -155,7 +143,7 @@ export default async function RevenuePage() {
             <div className="h-40 flex flex-col justify-between items-end shrink-0 text-[9px] text-ink-faint tabular-nums">
               <span>{formatMoney(monthMax, chartCurrency)}</span>
               <span>{formatMoney(Math.round(monthMax / 2), chartCurrency)}</span>
-              <span>₩0</span>
+              <span>{formatMoney(0, chartCurrency)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-end gap-1.5 h-40 border-l border-b border-rule pl-1.5">
@@ -168,7 +156,7 @@ export default async function RevenuePage() {
                     {m.cents > 0 && (
                       <>
                         <span className="shrink-0 text-[9px] text-ink-faint tabular-nums mb-0.5 truncate max-w-full">
-                          {fmtCompact(m.cents, chartCurrency)}
+                          {formatMoneyCompact(m.cents, chartCurrency)}
                         </span>
                         {/* 라벨 높이(16px)를 미리 빼고 전 막대를 같은 비율로 그린다.
                             라벨과 막대를 그냥 쌓으면 flex가 최댓값 막대만 눌러
