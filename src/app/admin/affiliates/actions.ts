@@ -138,7 +138,13 @@ export async function issueCreditDiscountAction(
     return { ok: false, message: '유효하지 않은 입력입니다.' }
   }
 
+  // 통화를 못 읽으면 차감 전에 멈춘다. 빈 통화로 진행하면 결제사 단위 환산이 통째로 생략돼
+  // 크레딧은 제대로 차감되고 할인만 1/100로 발급되는데, 차감은 되돌릴 수 없다.
   const cur = await creditCurrency()
+  if (!cur) {
+    return { ok: false, message: '크레딧 통화 설정을 읽지 못했습니다. 제휴 설정의 통화를 확인한 뒤 다시 시도해 주세요.' }
+  }
+
   const code = `CZCREDIT-${generateSerialKey().replace(/-/g, '').slice(0, 10)}`
 
   // 1) 원자적 차감(음수잔액 금지)

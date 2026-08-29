@@ -659,7 +659,7 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
   // 구매자: 구독 행의 user_id 우선(신뢰), 폴백 custom_data.user_id
   const { data: sub } = await admin
     .from('subscriptions')
-    .select('user_id')
+    .select('user_id, order_id')
     .eq('lemon_squeezy_subscription_id', lsSubId)
     .maybeSingle()
 
@@ -672,14 +672,41 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
     return
   }
 
+  // 통화를 한 번만 확정해 "환산"과 "적립 기록"에 같은 값을 쓴다.
+  // 갱신 인보이스의 currency는 선택 필드라 비어 올 수 있는데, 비운 채로 환산하면
+  // 환산이 통째로 생략되면서(자릿수 폴백 2 = 그대로) 값은 결제사 단위인데
+  // 기록되는 통화는 설정값(예: KRW)이 되어 100배 어긋난 적립 행이 남는다.
+  let renewalCurrency = (attrs.currency ?? '').trim()
+  if (!renewalCurrency && sub?.order_id) {
+    // 구독에 연결된 주문의 통화를 쓴다(orders.currency는 NOT NULL).
+    const { data: ord } = await admin
+      .from('orders')
+      .select('currency')
+      .eq('id', sub.order_id)
+      .maybeSingle()
+    renewalCurrency = ((ord?.currency as string | undefined) ?? '').trim()
+  }
+  if (!renewalCurrency) {
+    // 돈 값을 추측한 단위로 적립하지 않는다 — 건너뛰되 조용히 넘어가지는 않는다.
+    console.error(`[LS Webhook] 갱신 적립 건너뜀: 통화 미상 (sub=${lsSubId}, invoice=${invoiceId})`)
+    await logNotification({
+      kind: 'webhook',
+      status: 'failure',
+      event: 'subscription_payment_success',
+      target: invoiceId,
+      error: '통화를 확정하지 못해 커미션 적립을 건너뛰었습니다(수동 확인 필요).',
+    })
+    return
+  }
+
   await accrueCommission({
     sourceType: 'subscription_renewal',
     sourceId: invoiceId,
     buyerUserId,
     affiliateRefRaw: payload.meta.custom_data?.affiliate_ref ?? payload.meta.custom_data?.ref,
     // 갱신 적립도 첫 결제와 같은 단위(통화 최소단위)로 맞춘다
-    grossCents: fromProviderAmount(attrs.total, attrs.currency ?? ''),
-    currency: attrs.currency ?? '',
+    grossCents: fromProviderAmount(attrs.total, renewalCurrency),
+    currency: renewalCurrency,
     subscriptionId: lsSubId,
   })
 }

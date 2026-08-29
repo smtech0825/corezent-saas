@@ -62,7 +62,11 @@ export default async function RevenuePage() {
   const totalsByCurrency = sumMinorByCurrency(paid)
   const chartCurrency = [...totalsByCurrency.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
   const chartRows = paid.filter((o) => (o.currency ?? '').trim().toUpperCase() === chartCurrency)
-  const excludedCurrencies = [...totalsByCurrency.keys()].filter((c) => c !== chartCurrency)
+  // 합계가 0인 통화(스텁 주문 등)는 "제외했다"고 알릴 대상이 아니고,
+  // 통화 코드가 빈 행은 빈칸 대신 뜻이 읽히는 말로 바꿔 표시한다.
+  const excludedCurrencies = [...totalsByCurrency.entries()]
+    .filter(([code, total]) => code !== chartCurrency && total > 0)
+    .map(([code]) => code || '통화 미상')
 
   // 상품명 매핑 (product_price_id → products.name) — 차트에 쓰는 행만 대상
   const priceIds = [...new Set(chartRows.map((o) => o.product_price_id).filter(Boolean))] as string[]
