@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Receipt, UserX, Search, X, Loader2, MessageSquare, ExternalLink } from 'lucide-react'
 import RoleSelect from './RoleSelect'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { changeRole, withdrawUser } from './actions'
 import type { UserSort } from './query'
 import CsvExportButton from './CsvExportButton'
@@ -26,6 +26,7 @@ interface Order {
   id: string
   user_id: string
   amount: number
+  currency: string
   status: string
   created_at: string
   cancelReason: string | null
@@ -56,9 +57,9 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function fmtCurrency(amount: number) {
-  // DB의 amount는 cents — formatKRW가 ÷100 후 ₩ 표기 (단일 출처 lib/money)
-  return formatKRW(amount)
+function fmtCurrency(amount: number, currency: string) {
+  // DB의 amount는 그 통화의 최소단위 정수 — 환산·기호는 lib/money 한 곳에서만 한다
+  return formatMoney(amount, currency)
 }
 
 const orderStatusStyle: Record<string, string> = {
@@ -346,7 +347,7 @@ export default function UserTable({ users, total, page, pageSize, q, sort }: Pro
                                           #{o.id.slice(0, 8).toUpperCase()}
                                         </td>
                                         <td className="px-4 py-2.5 text-ink font-medium">
-                                          {fmtCurrency(o.amount)}
+                                          {fmtCurrency(o.amount, o.currency)}
                                         </td>
                                         <td className="px-4 py-2.5">
                                           <span className={`font-semibold ${orderStatusStyle[o.status] ?? 'text-ink-soft'}`}>

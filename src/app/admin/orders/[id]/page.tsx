@@ -1,7 +1,7 @@
 /**
  * @파일: admin/orders/[id]/page.tsx
  * @설명: 관리자 주문 상세 — 주문↔사용자↔상품↔라이선스↔구독을 한 화면에 조인해 표시.
- *        금액은 lib/money.formatKRW(cents ÷100 + ₩), 라이선스 키는 마스킹, 없는 필드는 "—".
+ *        금액은 lib/money.formatMoney(통화 최소단위 → 통화 표기), 라이선스 키는 마스킹, 없는 필드는 "—".
  *        수량·할인 금액은 038 마이그레이션 컬럼(quantity·discount_amount) 표시.
  *        스키마에 없는 항목(결제수단)은 "—"로 둔다.
  */
@@ -10,7 +10,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import OrderActions from './OrderActions'
 import OrgInfoSection from './OrgInfoSection'
 import PageContainer from '@/components/common/PageContainer'
@@ -156,10 +156,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             {product?.slug && <span className="text-ink-faint ml-2 font-mono text-xs">{product.slug}</span>}
           </Row>
           <Row label="수량">{orderQuantity ?? '—'}</Row>
-          <Row label="금액">{formatKRW(order.amount as number)}</Row>
+          <Row label="금액">{formatMoney(order.amount as number, order.currency as string)}</Row>
           {discountAmount > 0 && (
             <Row label="할인">
-              <span className="text-ok">-{formatKRW(discountAmount)}</span>
+              <span className="text-ok">-{formatMoney(discountAmount, order.currency as string)}</span>
               <span className="text-ink-faint ml-2 text-xs">할인코드 적용 (금액은 할인 반영가)</span>
             </Row>
           )}
@@ -187,7 +187,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           orderId={order.id as string}
           orderStatus={order.status as string}
           hasLsOrderId={Boolean(order.lemon_squeezy_order_id)}
-          amountLabel={formatKRW(order.amount as number)}
+          amountLabel={formatMoney(order.amount as number, order.currency as string)}
           canCancelSub={!!subscription && (subscription.status === 'active' || subscription.status === 'paused')}
         />
 

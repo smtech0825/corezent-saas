@@ -1,7 +1,7 @@
 /**
  * @파일: admin/users/[id]/page.tsx
  * @설명: 관리자 사용자 상세 — 계정·구매이력·라이선스·구독·문의·제휴를 한 화면에 통합.
- *        주문 금액은 lib/money.formatKRW(cents ÷100 + ₩), 라이선스 키는 마스킹, 없는 값은 "—".
+ *        주문 금액은 lib/money.formatMoney(통화 최소단위 → 통화 표기), 라이선스 키는 마스킹, 없는 값은 "—".
  *        라이선스 tier는 본체 DB에 없어(제품별 외부 라이선스 DB 관리) 표시하지 않는다.
  */
 
@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
@@ -111,7 +111,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                 className="grid grid-cols-[1fr_auto_auto] gap-3 items-center py-2.5 border-b border-rule last:border-0 hover:bg-paper-shade -mx-2 px-2 rounded transition-colors"
               >
                 <span className="text-xs font-mono text-ink-soft">#{o.id.slice(0, 8).toUpperCase()}</span>
-                <span className="text-sm text-ink tabular-nums">{formatKRW(o.amount)}</span>
+                <span className="text-sm text-ink tabular-nums">{formatMoney(o.amount, o.currency)}</span>
                 <span className="text-xs text-ink-faint whitespace-nowrap">{ORDER_STATUS[o.status] ?? o.status} · {fmtDate(o.created_at)}</span>
               </Link>
             ))

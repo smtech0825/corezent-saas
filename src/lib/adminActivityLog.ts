@@ -90,6 +90,38 @@ export async function currentUserIdForLog(): Promise<string | null> {
 }
 
 /**
+ * @함수명: logSystemActivity
+ * @설명: 사람이 아니라 시스템(결제 웹훅 등)이 남기는 활동 기록 한 건입니다.
+ *        admin_user_id를 null로 넣으므로 마이그레이션 067(널 허용)이 적용돼 있어야 저장됩니다.
+ *        미적용이면 저장은 실패하지만 서버 기록에는 사유가 남고, 부르는 쪽의 본 작업은 막지 않습니다.
+ * @매개변수: params - action/targetType/targetId/detail
+ * @반환값: 없음(항상 resolve)
+ */
+export async function logSystemActivity(
+  params: Omit<AdminActivityLogParams, 'adminUserId'>,
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const { error } = await admin.from('admin_activity_log').insert({
+      admin_user_id: null,
+      action: params.action,
+      target_type: params.targetType,
+      target_id: params.targetId,
+      detail: params.detail ?? null,
+    })
+    if (error) {
+      console.error('[adminActivityLog] 시스템 기록 실패(본 작업은 정상):', params.action, error.message)
+    }
+  } catch (err) {
+    console.error(
+      '[adminActivityLog] 시스템 기록 실패(본 작업은 정상):',
+      params.action,
+      err instanceof Error ? err.message : String(err),
+    )
+  }
+}
+
+/**
  * @함수명: logAdminActivity
  * @설명: 관리자 활동 로그 한 건을 기록합니다. 실패해도 조용히 넘어갑니다.
  * @매개변수: params - adminUserId/action/targetType/targetId/detail

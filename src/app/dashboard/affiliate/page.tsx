@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { buildReferralUrl, getAffiliateConfig } from '@/lib/affiliate'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import DynamicIcon from '@/components/DynamicIcon'
 import CopyButton from '@/components/common/CopyButton'
 import PayoutAccountCard from './PayoutAccountCard'
@@ -22,9 +22,9 @@ export const metadata = {
   description: '내 추천 링크와 적립 현황, 스토어 크레딧 잔액을 확인하세요.',
 }
 
-/** 정수 cents(KRW 기준) → ₩ 표시 문자열 (표시 전용, 계산 아님) */
-function formatCents(cents: number, _currency?: string): string {
-  return formatKRW(cents)
+/** 크레딧 금액(통화 최소단위 정수) → 통화 표기 (표시 전용, 계산 아님) */
+function formatCents(minor: number, currency?: string): string {
+  return formatMoney(minor, currency ?? '')
 }
 
 export default async function AffiliatePage() {
@@ -98,7 +98,8 @@ export default async function AffiliatePage() {
   const balanceCents = ((ledgerRes.data ?? []) as Array<{ delta_cents: number }>)
     .reduce((s, r) => s + (r.delta_cents ?? 0), 0)
 
-  const currency = cfg?.currency ?? 'USD'
+  // 크레딧 통화 — 설정값을 그대로 쓴다. 없으면 빈 값(임의 통화 가정 금지)
+  const currency = (cfg?.currency ?? '').trim()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? ''
   const referralUrl = code ? buildReferralUrl(siteUrl, code) : ''
 

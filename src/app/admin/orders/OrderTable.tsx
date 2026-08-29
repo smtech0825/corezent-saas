@@ -12,7 +12,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, Download, Check, Loader2 } from 'lucide-react'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 import SelectField from '@/components/common/SelectField'
@@ -50,7 +50,7 @@ export interface Order {
 
 interface Props {
   orders: Order[]
-  totalRevenue: number
+  totalRevenueLabel: string
 }
 
 function getStatusBadge(o: Order): { label: string; cls: string } {
@@ -80,7 +80,7 @@ function getStatusBadge(o: Order): { label: string; cls: string } {
   return map[o.status] ?? { label: o.status, cls: 'text-ink-soft bg-paper-shade' }
 }
 
-export default function OrderTable({ orders, totalRevenue }: Props) {
+export default function OrderTable({ orders, totalRevenueLabel }: Props) {
   const router = useRouter()
   const [rawSearch, setRawSearch] = useState('')
   const [search, setSearch] = useState('')
@@ -145,13 +145,13 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
 
   // 현재 필터 결과를 CSV로 내보내기 (표시금액 + 원시 cents·통화 병행 — 회계용)
   function handleExport() {
-    const header = ['주문ID', '이름', '이메일', '상품', '옵션', '금액(표시)', '금액(cents)', '통화', '상태', '결제수단', '주기', '주문일시', '만료일']
+    const header = ['주문ID', '이름', '이메일', '상품', '옵션', '금액(표시)', '금액(최소단위)', '통화', '상태', '결제수단', '주기', '주문일시', '만료일']
     const esc = (v: unknown) => {
       const s = String(v ?? '')
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
     }
     const lines = filtered.map((o) =>
-      [o.shortId, o.name, o.email, o.productName, o.option, formatKRW(o.amount), o.amount, o.currency, o.status,
+      [o.shortId, o.name, o.email, o.productName, o.option, formatMoney(o.amount, o.currency), o.amount, o.currency, o.status,
        o.paymentMethod === 'bank_transfer' ? '계좌이체' : '신용카드', o.period ?? '',
        new Date(o.created_at).toISOString(), o.expires_at ? new Date(o.expires_at).toISOString() : '']
         .map(esc).join(','),
@@ -185,7 +185,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
         <p className="text-sm text-ink-soft mt-1">총 {orders.length}건의 주문</p>
         {/* 금액 기본은 검정(ink) — 증감 같은 비교 맥락이 없는 합계라 색을 쓰지 않는다 */}
         <p className="text-3xl font-bold text-ink mt-2 tabular-nums">
-          {formatKRW(totalRevenue)}
+          {totalRevenueLabel}
         </p>
         <p className="text-xs text-ink-faint mt-0.5">총 매출 (결제 완료)</p>
       </div>
@@ -286,7 +286,7 @@ export default function OrderTable({ orders, totalRevenue }: Props) {
                           {o.option && <div className="text-mark text-xs truncate">{o.option}</div>}
                         </td>
                         <td className="px-4 py-3 text-ink font-medium tabular-nums">
-                          {formatKRW(o.amount)}
+                          {formatMoney(o.amount, o.currency)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${badge.cls}`}>

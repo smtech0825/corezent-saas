@@ -4,11 +4,13 @@
  * @컴포넌트: ConfigEditor
  * @설명: affiliate_program_config 편집 폼 — 관리자 전용.
  *        모든 규칙값(커미션·보류/쿠키 일수·캡·최소전환·통화·자기추천·반복)을 DB에 저장.
- *        금액(min_payout_credit)은 화면에선 원(₩) 단위로 입력받아 cents(원×100)로 변환해 저장.
+ *        금액(min_payout_credit)은 화면에선 기본 단위(원)로 입력받아
+ *        그 통화의 최소단위 정수로 변환해 저장한다(환산 규칙은 lib/money 한 곳).
  */
 
 import { useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
+import { toMinorUnits } from '@/lib/money'
 import SelectField from '@/components/common/SelectField'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
@@ -34,8 +36,8 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
   function save() {
     setMsg(null)
     startTransition(async () => {
-      // 원(₩) 입력 → cents(원×100) 정수 변환
-      const cents = Math.max(0, Math.round(parseFloat(minWon || '0') * 100))
+      // 기본 단위(원) 입력 → 그 통화의 최소단위 정수 변환
+      const cents = Math.max(0, toMinorUnits(parseFloat(minWon || '0'), v.currency))
       const res = await updateAffiliateConfigAction({ ...v, min_payout_credit: cents })
       setMsg({ ok: res.ok, text: res.message })
     })

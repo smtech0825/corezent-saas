@@ -12,9 +12,21 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { convertReferrerCommissions, redeemStoreCredit } from '@/lib/affiliate-commission'
 import { createLsDiscount, generateSerialKey } from '@/lib/lemonsqueezy'
-import { formatKRW } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { logAdminActivity } from '@/lib/adminActivityLog'
 import type { AffiliateConfigInput } from './types'
+
+/**
+ * @함수명: creditCurrency
+ * @설명: 크레딧 금액을 표기할 통화 코드를 설정(affiliate_program_config)에서 읽습니다.
+ *        읽지 못하면 빈 문자열을 돌려줍니다 — 임의 통화를 가정하지 않습니다.
+ * @반환값: 통화 코드 또는 빈 문자열
+ */
+async function creditCurrency(): Promise<string> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('affiliate_program_config').select('currency').limit(1).maybeSingle()
+  return ((data?.currency as string | undefined) ?? '').trim()
+}
 
 /** 현재 요청 사용자가 관리자인지 검증 — 아니면 throw. 통과 시 관리자 id 반환(감사 기록용) */
 async function assertAdmin(): Promise<string> {
@@ -41,6 +53,7 @@ export async function convertCommissionsAction(
   if (!referrerId) return { ok: false, message: '대상이 없습니다.' }
 
   const r = await convertReferrerCommissions(referrerId)
+  const cur = await creditCurrency()
   revalidatePath('/admin/affiliates')
 
   if (r.ok) {
@@ -52,10 +65,10 @@ export async function convertCommissionsAction(
       targetId: referrerId,
       detail: { count: r.count ?? 0, amountCents: r.amount ?? 0 },
     })
-    return { ok: true, message: `전환 완료: ${r.count ?? 0}건 · ${formatKRW(r.amount ?? 0)} 크레딧 적립` }
+    return { ok: true, message: `전환 완료: ${r.count ?? 0}건 · ${formatMoney(r.amount ?? 0, cur)} 크레딧 적립` }
   }
   if (r.reason === 'below_min') {
-    return { ok: false, message: `최소 전환 금액 미달 (전환가능 합계 ${formatKRW(r.total ?? 0)} < 최소 ${formatKRW(r.min ?? 0)})` }
+    return { ok: false, message: `최소 전환 금액 미달 (전환가능 합계 ${formatMoney(r.total ?? 0, cur)} < 최소 ${formatMoney(r.min ?? 0, cur)})` }
   }
   return { ok: false, message: `전환 불가: ${r.reason ?? '알 수 없음'}` }
 }
@@ -125,13 +138,14 @@ export async function issueCreditDiscountAction(
     return { ok: false, message: '유효하지 않은 입력입니다.' }
   }
 
+  const cur = await creditCurrency()
   const code = `CZCREDIT-${generateSerialKey().replace(/-/g, '').slice(0, 10)}`
 
   // 1) 원자적 차감(음수잔액 금지)
   const redeem = await redeemStoreCredit(userId, amountCents, code)
   if (!redeem.ok) {
     if (redeem.reason === 'insufficient') {
-      return { ok: false, message: `잔액 부족 (현재 ${formatKRW(redeem.balance ?? 0)})` }
+      return { ok: false, message: `잔액 부족 (현재 ${formatMoney(redeem.balance ?? 0, cur)})` }
     }
     return { ok: false, message: `차감 실패: ${redeem.reason ?? '알 수 없음'}` }
   }
@@ -156,7 +170,7 @@ export async function issueCreditDiscountAction(
   return {
     ok: true,
     code,
-    message: `크레딧 ${formatKRW(amountCents)} 차감됨(코드 ${code}). LS 자동 발급 실패 — LS 대시보드에서 고정금액 ${formatKRW(amountCents)} · 1회용 코드 ${code} 를 수동 발급하세요. (${disc.error})`,
+    message: `크레딧 ${formatMoney(amountCents, cur)} 차감됨(코드 ${code}). LS 자동 발급 실패 — LS 대시보드에서 고정금액 ${formatMoney(amountCents, cur)} · 1회용 코드 ${code} 를 수동 발급하세요. (${disc.error})`,
   }
 }
 

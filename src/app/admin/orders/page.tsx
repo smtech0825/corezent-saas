@@ -4,6 +4,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sumAndFormat } from '@/lib/money'
 import OrderTable from './OrderTable'
 import type { Order } from './OrderTable'
 
@@ -66,9 +67,9 @@ export default async function OrdersPage() {
     }
   })
 
-  // 주문 금액(amount)은 cents — cents로 합산만 하고, ÷100·₩ 표기는 formatKRW에서 한 번(이중 방지).
-  const totalRevenue =
-    list.filter((o) => o.status === 'paid').reduce((s, o) => s + o.amount, 0)
+  // 주문 금액(amount)은 통화의 최소단위 정수 — 합산·표기는 lib/money 한 곳에서만 한다.
+  // 통화가 섞여 있으면 하나로 합치지 않고 통화별로 나란히 표시한다(합친 숫자는 뜻이 없다).
+  const totalRevenueLabel = sumAndFormat(list.filter((o) => o.status === 'paid'))
 
-  return <OrderTable orders={list} totalRevenue={totalRevenue} />
+  return <OrderTable orders={list} totalRevenueLabel={totalRevenueLabel} />
 }
