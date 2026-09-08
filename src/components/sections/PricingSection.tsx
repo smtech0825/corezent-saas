@@ -223,8 +223,12 @@ export default function PricingSection({ products, affiliateRef, showViewPricing
             aria-label="연간 결제 전환"
             aria-pressed={annual}
           >
+            {/* 손잡이 — left-0 필수. 빼면 absolute의 기준이 '버튼 안 글자가 놓였을 자리'가 되어
+                브라우저 기본 버튼 여백·정렬만큼 밀린 채로 translateX가 더해진다. 그 결과
+                켜짐(28px)에서 손잡이가 트랙(48px) 밖으로 빠져나간다. 실측: left 없음 52~68px.
+                기준을 트랙 왼쪽 끝으로 고정하면 꺼짐 4~20px, 켜짐 28~44px로 양쪽 여백이 맞는다. */}
             <span
-              className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+              className="absolute left-0 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
               style={{ transform: annual ? 'translateX(28px)' : 'translateX(4px)' }}
             />
           </button>

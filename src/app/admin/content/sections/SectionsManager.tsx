@@ -172,8 +172,11 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
                 section.is_visible ? 'bg-ok' : 'bg-paper-shade'
               }`}
             >
+              {/* 손잡이 — left-0 필수(홈 요금 토글과 같은 이유). 빼면 기준이 브라우저 기본
+                  버튼 여백만큼 밀려 켜짐 상태에서 트랙 밖으로 나간다. 여기는 부모에
+                  overflow-hidden이 있어 밖으로 나가는 대신 잘려 보였다. */}
               <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                className={`absolute left-0 top-1 w-4 h-4 rounded-full bg-white transition-transform ${
                   section.is_visible ? 'translate-x-5' : 'translate-x-1'
                 }`}
               />
