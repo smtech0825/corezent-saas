@@ -28,6 +28,7 @@ import ScrollTopButton from './ScrollTopButton'
 import RichContent from '@/components/common/RichContent'
 import ProcurementBadge from '@/components/common/ProcurementBadge'
 import { richToPlainText } from '@/lib/rich-html'
+import { JsonLd, productJsonLd, breadcrumbJsonLd, faqJsonLd } from '@/lib/jsonld'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,8 +164,32 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   }
   const hasBar = buyRows.length > 0
 
+  // 검색엔진용 구조화 데이터 — 상품·가격·경로(빵부스러기)·상품 FAQ. 화면 출력에는 영향이 없다.
+  // 설명·요구사항은 리치 HTML이라 평문화해서 넣는다(태그가 섞이면 검색엔진이 오류로 본다).
+  const detailJsonLd: Record<string, unknown>[] = [
+    productJsonLd({
+      name,
+      description: (tagline ?? '').trim() || richToPlainText(description ?? ''),
+      image: heroImage || logoUrl,
+      path: `/product/${slug}`,
+      prices: prices.map((p) => p.price),
+      available: isActive,
+      operatingSystem: richToPlainText(systemRequirements ?? ''),
+    }),
+    breadcrumbJsonLd([
+      { name: '홈', path: '/' },
+      { name: '제품', path: '/product' },
+      { name, path: `/product/${slug}` },
+    ]),
+  ]
+  const productFaqSchema = faqJsonLd(
+    faqs.map((f) => ({ question: f.question, answer: richToPlainText(f.answer) })),
+  )
+  if (productFaqSchema) detailJsonLd.push(productFaqSchema)
+
   return (
     <>
+      <JsonLd data={detailJsonLd} />
       <Navbar />
       {/* 하단 고정 바 높이만큼 여백 — 푸터·본문이 바에 가리지 않게(측정값 --buy-bar-h, 미측정 시 88px) */}
       <div style={hasBar ? { paddingBottom: 'var(--buy-bar-h, 88px)' } : undefined}>

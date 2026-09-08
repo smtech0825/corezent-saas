@@ -12,6 +12,7 @@ import HeroSection from '@/components/sections/HeroSection'
 import type { PricingSectionProduct } from '@/components/sections/PricingSection'
 import { lowestPriceRow } from '@/lib/product-pricing'
 import { fetchHomeFeaturedSlug, filterHomeFeatured } from '@/lib/home-featured'
+import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/jsonld'
 
 // Below-fold 섹션 — 별도 JS 청크로 분리 (초기 번들 절감)
 const ProductSection      = lazy(() => import('@/components/sections/ProductSection'))
@@ -75,7 +76,7 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef, homeFeaturedSlug] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef, homeFeaturedSlug, orgRes] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
@@ -91,6 +92,9 @@ export default async function HomePage() {
     resolveCheckoutAffiliateRef(),
     // 홈 대표 제품 slug(관리자 설정, 기본 geniework) — 홈에만 적용
     fetchHomeFeaturedSlug(client),
+    // 구조화 데이터(Organization)용 상호·연락처 — 관리자 설정을 그대로 쓴다(중복 입력 없음)
+    client.from('front_settings').select('key, value')
+      .in('key', ['site_name', 'support_email', 'company_name', 'company_phone', 'company_address']),
   ])
 
   // DB 섹션과 기본값 병합 후 order_index 기준 정렬
@@ -159,6 +163,20 @@ export default async function HomePage() {
   // front_content key-value 맵 생성
   const contentMap = Object.fromEntries((contentRes.data ?? []).map((c) => [c.key, c.value]))
 
+  // 검색엔진용 구조화 데이터 — 조직·사이트 정보는 사이트 전체에서 홈에만 한 번 넣는다.
+  // 값이 빈 항목은 lib/jsonld가 알아서 빼므로, 관리자 설정이 비어 있어도 오류가 나지 않는다.
+  const orgMap = new Map((orgRes.data ?? []).map((r) => [r.key, r.value ?? '']))
+  const siteName = orgMap.get('company_name') || orgMap.get('site_name') || 'CoreZent'
+  const siteJsonLd = [
+    organizationJsonLd({
+      name: siteName,
+      email: orgMap.get('support_email'),
+      phone: orgMap.get('company_phone'),
+      address: orgMap.get('company_address'),
+    }),
+    websiteJsonLd(orgMap.get('site_name') || siteName),
+  ]
+
   const heroContent = {
     badge:     contentMap['hero_badge']     || null,
     headline1: contentMap['hero_headline1'] || null,
@@ -195,6 +213,7 @@ export default async function HomePage() {
 
   return (
     <div className="theme-paper min-h-screen bg-paper font-sans text-ink">
+      <JsonLd data={siteJsonLd} />
       <Navbar />
       <main>
         {sections

@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { blog } from '@/lib/source'
 import { SITE_URL } from '@/lib/site'
+import { JsonLd, articleJsonLd, breadcrumbJsonLd } from '@/lib/jsonld'
 
 type BlogPostProps = { params: Promise<{ slug: string }> }
 
@@ -68,8 +69,24 @@ export default async function BlogPostPage(props: BlogPostProps) {
 
   const MDX = page.data.body
 
+  // 검색엔진용 구조화 데이터 — 글(BlogPosting) + 경로(빵부스러기)
+  const postJsonLd = [
+    articleJsonLd({
+      title: page.data.title,
+      description: page.data.description,
+      date: page.data.date,
+      path: `/blog/${slug}`,
+    }),
+    breadcrumbJsonLd([
+      { name: '홈', path: '/' },
+      { name: '블로그', path: '/blog' },
+      { name: page.data.title, path: `/blog/${slug}` },
+    ]),
+  ]
+
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
+      <JsonLd data={postJsonLd} />
       <Navbar />
 
       <main className="flex-1 pt-10 sm:pt-14 pb-20 px-4 sm:px-6">
