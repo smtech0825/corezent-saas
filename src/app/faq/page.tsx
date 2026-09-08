@@ -6,6 +6,8 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderRichHtml } from '@/lib/sanitize-html'
+import { richToPlainText } from '@/lib/rich-html'
+import { JsonLd, faqJsonLd } from '@/lib/jsonld'
 import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -35,8 +37,14 @@ export default async function FaqPage() {
     answerHtml: renderRichHtml(f.answer),
   }))
 
+  // 검색엔진용 FAQ 구조화 데이터 — 답변은 원본(HTML/평문)을 평문화해 넣는다.
+  const faqSchema = faqJsonLd(
+    (faqs ?? []).map((f) => ({ question: f.question, answer: richToPlainText(f.answer) })),
+  )
+
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
+      {faqSchema && <JsonLd data={faqSchema} />}
       <Navbar />
 
       <main className="flex-1 pt-10 sm:pt-14">
