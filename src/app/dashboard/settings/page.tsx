@@ -12,6 +12,7 @@ import { normalizeKoreanPhone, formatPhoneForDisplay } from '@/lib/phone'
 import { isWrongPassword, isRateLimited } from '@/lib/auth-error'
 import WithdrawSection from './WithdrawSection'
 import EmailChangeSection from './EmailChangeSection'
+import OrgProfileSection from './OrgProfileSection'
 import PageContainer from '@/components/common/PageContainer'
 import { FormField, SubmitButton, inputCls } from './settings-ui'
 
@@ -301,6 +302,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </section>
+
+      {/* 기관 정보 · 세금계산서 (마이그레이션 068 적용 시에만 나타난다) */}
+      <OrgProfileSection />
 
       {/* 회원 탈퇴 섹션 (위험 구역) */}
       <WithdrawSection />
