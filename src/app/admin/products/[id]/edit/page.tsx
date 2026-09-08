@@ -73,7 +73,7 @@ export default async function EditProductPage({
   // 기존 changelog 목록 조회
   const { data: rawChangelogs } = await client
     .from('changelogs')
-    .select('id, version, release_date, is_latest, download_urls, content')
+    .select('id, version, release_date, is_latest, download_urls, checksums, content')
     .eq('product_id', id)
     .order('release_date', { ascending: false })
 
@@ -83,6 +83,7 @@ export default async function EditProductPage({
     release_date:  c.release_date as string,
     is_latest:     c.is_latest as boolean,
     download_urls: (c.download_urls ?? {}) as Record<string, string>,
+    checksums:     (c.checksums ?? {}) as Record<string, string>,
     content: {
       new_features:     ((c.content as any)?.new_features     ?? []) as string[],
       improvements:     ((c.content as any)?.improvements     ?? []) as string[],

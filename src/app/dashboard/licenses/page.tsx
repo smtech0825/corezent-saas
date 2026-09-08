@@ -14,6 +14,7 @@ import DownloadButton from '../billing/DownloadButton'
 import Pagination from '@/components/common/Pagination'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
+import ChecksumList from '@/components/common/ChecksumList'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,13 +93,13 @@ export default async function LicensesPage({
       .filter((id): id is string => Boolean(id)),
   )]
 
-  const changelogMap = new Map<string, { version: string; download_urls: Record<string, string> }>()
+  const changelogMap = new Map<string, { version: string; download_urls: Record<string, string>; checksums: Record<string, string> }>()
   if (productIds.length > 0) {
     // 한 제품에 '최신'이 둘 이상 켜진 과거 데이터가 있어도 실제 최신이 잡히도록 정렬한다.
     // 오래된 것부터 받아 같은 제품을 덮어쓰면, 마지막에 남는 값이 릴리스 날짜가 가장 늦은 항목이 된다.
     const { data: changelogs } = await supabase
       .from('changelogs')
-      .select('product_id, version, release_date, download_urls')
+      .select('product_id, version, release_date, download_urls, checksums')
       .in('product_id', productIds)
       .eq('is_latest', true)
       .order('release_date', { ascending: true })
@@ -107,6 +108,7 @@ export default async function LicensesPage({
       changelogMap.set(c.product_id as string, {
         version:       c.version as string,
         download_urls: (c.download_urls ?? {}) as Record<string, string>,
+        checksums:     (c.checksums ?? {}) as Record<string, string>,
       })
     })
   }
@@ -270,6 +272,14 @@ export default async function LicensesPage({
                             >
                               v{changelog.version} · 릴리스 노트
                             </Link>
+                          )}
+                          {/* 체크섬 — 등록된 값이 있을 때만. 없으면 아무것도 그리지 않는다 */}
+                          {changelog && (
+                            <ChecksumList
+                              checksums={changelog.checksums}
+                              downloadUrls={changelog.download_urls}
+                              className="mt-1 max-w-[220px]"
+                            />
                           )}
                         </div>
                       ) : (
