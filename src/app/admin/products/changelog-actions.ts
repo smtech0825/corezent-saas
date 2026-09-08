@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import { revalidatePath } from 'next/cache'
 import { logAdminActivity } from '@/lib/adminActivityLog'
+import { SHA256_RE, normalizeChecksum } from '@/lib/checksum'
 
 export interface ChangelogContent {
   new_features: string[]
@@ -22,6 +23,8 @@ export interface ChangelogFormData {
   release_date: string
   is_latest: boolean
   download_urls: Record<string, string>
+  /** 플랫폼별 SHA-256 체크섬. 다운로드 주소가 있는 플랫폼만 저장된다 */
+  checksums: Record<string, string>
   content: ChangelogContent
 }
 
@@ -85,6 +88,18 @@ export async function upsertChangelog(
     return { error: `다운로드 URL 형식이 올바르지 않습니다 (http/https 필요): ${invalid.map(([k]) => k).join(', ')}` }
   }
 
+  // 체크섬: 주소가 있는 플랫폼만 남긴다. 주소를 지운 뒤 체크섬만 남으면
+  // 어느 파일의 해시인지 알 수 없는 값이 화면에 뜬다.
+  const urlKeys = new Set(cleanedUrls.map(([k]) => k))
+  const cleanedChecksums = Object.entries(data.checksums ?? {})
+    .map(([k, v]) => [k, normalizeChecksum(v)] as const)
+    .filter(([k, v]) => v && urlKeys.has(k))
+  const badChecksums = cleanedChecksums.filter(([, v]) => !SHA256_RE.test(v))
+  if (badChecksums.length > 0) {
+    // 틀린 체크섬은 없는 것보다 나쁘다 — 손님이 정상 파일을 위조본으로 의심하게 된다.
+    return { error: `체크섬 형식이 올바르지 않습니다 (SHA-256 16진수 64자리): ${badChecksums.map(([k]) => k).join(', ')}` }
+  }
+
   const payload = {
     product_id: productId,
     version: data.version.trim(),
@@ -93,6 +108,7 @@ export async function upsertChangelog(
     download_urls: Object.fromEntries(
       cleanedUrls.map(([k, v]) => [k, v.trim()])
     ),
+    checksums: Object.fromEntries(cleanedChecksums),
     content: {
       new_features:     data.content.new_features.filter(Boolean),
       improvements:     data.content.improvements.filter(Boolean),

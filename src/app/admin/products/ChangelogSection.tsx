@@ -9,6 +9,8 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Loader2, X } from 'lucide-react'
 import { upsertChangelog, deleteChangelog, type ChangelogContent, type ChangelogFormData } from './changelog-actions'
+import { PLATFORMS } from '@/lib/platforms'
+import { SHA256_RE, normalizeChecksum } from '@/lib/checksum'
 
 interface ChangelogEntry {
   id: string
@@ -16,6 +18,7 @@ interface ChangelogEntry {
   release_date: string
   is_latest: boolean
   download_urls: Record<string, string>
+  checksums: Record<string, string>
   content: ChangelogContent
 }
 
@@ -23,14 +26,6 @@ interface Props {
   productId: string
   initialChangelogs: ChangelogEntry[]
 }
-
-const PLATFORMS = [
-  { key: 'windows', label: 'Windows' },
-  { key: 'mac',     label: 'macOS' },
-  { key: 'linux',   label: 'Linux' },
-  { key: 'chrome_store', label: 'Chrome Store' },
-  { key: 'web',     label: '웹' },
-]
 
 const CONTENT_KEYS: { key: keyof ChangelogContent; label: string; color: string }[] = [
   { key: 'new_features',     label: '새 기능',       color: 'text-mark bg-mark/10 border-mark/30' },
@@ -45,6 +40,7 @@ function emptyForm(): ChangelogFormData {
     release_date: new Date().toISOString().split('T')[0],
     is_latest: false,
     download_urls: {},
+    checksums: {},
     content: { new_features: [], improvements: [], bug_fixes: [], breaking_changes: [] },
   }
 }
@@ -72,6 +68,7 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       release_date: entry.release_date,
       is_latest: entry.is_latest,
       download_urls: { ...entry.download_urls },
+      checksums: { ...(entry.checksums ?? {}) },
       content: {
         new_features:     [...(entry.content.new_features ?? [])],
         improvements:     [...(entry.content.improvements ?? [])],
@@ -116,6 +113,14 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       setError(`다운로드 URL 형식이 올바르지 않습니다 (http/https 필요): ${badUrls.map(([k]) => PLATFORMS.find((p) => p.key === k)?.label ?? k).join(', ')}`)
       return
     }
+    // 체크섬 형식 검증 (서버와 동일 규칙 — 즉시 피드백). 주소가 없는 플랫폼은 어차피 저장되지 않으므로 건너뛴다.
+    const badChecksums = Object.entries(form.checksums)
+      .filter(([k, v]) => v.trim() && (form.download_urls[k] ?? '').trim())
+      .filter(([, v]) => !SHA256_RE.test(normalizeChecksum(v)))
+    if (badChecksums.length > 0) {
+      setError(`체크섬 형식이 올바르지 않습니다 (SHA-256 16진수 64자리): ${badChecksums.map(([k]) => PLATFORMS.find((p) => p.key === k)?.label ?? k).join(', ')}`)
+      return
+    }
     setSaving(true)
     setError(null)
     // 권한 확인에 걸리면 예외가 올라온다. 잡지 않으면 "저장 중…"에 영구히 갇힌다.
@@ -142,6 +147,13 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
       is_latest: form.is_latest,
       download_urls: Object.fromEntries(
         Object.entries(form.download_urls).filter(([, v]) => v.trim())
+      ),
+      // 서버가 저장하는 규칙과 같게 — 주소 있는 플랫폼만, 정규화된 값으로.
+      // 다르게 담으면 저장 직후 다시 [수정]을 눌렀을 때 방금 넣은 체크섬이 사라진 것처럼 보인다.
+      checksums: Object.fromEntries(
+        Object.entries(form.checksums)
+          .map(([k, v]) => [k, normalizeChecksum(v)] as const)
+          .filter(([k, v]) => v && (form.download_urls[k] ?? '').trim())
       ),
       content: {
         new_features:     form.content.new_features.filter(Boolean),
@@ -311,11 +323,14 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
             </div>
           </div>
 
-          {/* Download URLs */}
+          {/* Download URLs + 체크섬 — 같은 칸에 붙여 어느 파일의 해시인지 헷갈리지 않게 한다 */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">다운로드 URL</h3>
+            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">다운로드 URL · 체크섬</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {PLATFORMS.map(({ key, label }) => (
+              {PLATFORMS.map(({ key, label }) => {
+                // 주소가 없으면 체크섬은 저장되지 않는다(서버에서도 걸러낸다) — 입력칸도 잠근다
+                const hasUrl = (form.download_urls[key] ?? '').trim() !== ''
+                return (
                 <div key={key} className="space-y-1">
                   <label className="text-xs text-ink-faint">{label}</label>
                   <input
@@ -330,8 +345,22 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                     placeholder="https://..."
                     className="w-full bg-paper border border-rule rounded-xl px-4 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors"
                   />
+                  <input
+                    type="text"
+                    value={form.checksums[key] ?? ''}
+                    disabled={!hasUrl}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        checksums: { ...p.checksums, [key]: e.target.value },
+                      }))
+                    }
+                    placeholder={hasUrl ? 'SHA-256 (16진수 64자리, 선택)' : '다운로드 주소를 먼저 입력하세요'}
+                    className="w-full bg-paper border border-rule rounded-xl px-4 py-1.5 font-mono text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-mark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 

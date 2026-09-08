@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Tag, ArrowLeft } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import ChecksumList from '@/components/common/ChecksumList'
+import { PLATFORM_LABELS } from '@/lib/platforms'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +26,7 @@ interface Changelog {
   release_date: string
   is_latest: boolean
   download_urls: Record<string, string>
+  checksums: Record<string, string>
   content: {
     new_features:     string[]
     improvements:     string[]
@@ -59,7 +62,7 @@ export default async function ChangelogPage({
   // changelog가 있는 상품 목록 + 버전 조회
   const { data: raw } = await supabase
     .from('changelogs')
-    .select('id, product_id, version, release_date, is_latest, download_urls, content, products(id, name, slug, logo_url)')
+    .select('id, product_id, version, release_date, is_latest, download_urls, checksums, content, products(id, name, slug, logo_url)')
     .order('release_date', { ascending: false })
 
   // 상품별로 그룹화
@@ -78,6 +81,7 @@ export default async function ChangelogPage({
       release_date:  row.release_date,
       is_latest:     row.is_latest,
       download_urls: row.download_urls ?? {},
+      checksums:     row.checksums ?? {},
       content: {
         new_features:     row.content?.new_features     ?? [],
         improvements:     row.content?.improvements     ?? [],
@@ -236,11 +240,18 @@ export default async function ChangelogPage({
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 border border-emerald-300 hover:border-emerald-500 px-3 py-2.5 rounded-md transition-colors min-h-[44px]"
                                 >
-                                  ↓ {PLATFORM_LABEL[platform] ?? platform}
+                                  ↓ {PLATFORM_LABELS[platform] ?? platform}
                                 </a>
                               ))}
                             </div>
                           )}
+
+                          {/* 체크섬 — 등록된 값이 있을 때만 */}
+                          <ChecksumList
+                            checksums={cl.checksums}
+                            downloadUrls={cl.download_urls}
+                            className="mb-4"
+                          />
 
                           {/* 변경 내용 */}
                           {hasAnyContent && (
@@ -285,10 +296,4 @@ export default async function ChangelogPage({
   )
 }
 
-const PLATFORM_LABEL: Record<string, string> = {
-  windows:      'Windows',
-  mac:          'macOS',
-  linux:        'Linux',
-  chrome_store: 'Chrome Store',
-  web:          'Web',
-}
+
