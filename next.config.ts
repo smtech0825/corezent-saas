@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
   // 견적서 PDF 자산(한글 폰트·도장) — 라우트가 fs로 읽으므로 서버리스 번들에 명시적으로 포함
   outputFileTracingIncludes: {
     '/api/admin/quotes/issue': ['./src/assets/quotation/**/*'],
+    // 소셜 미리보기 이미지(og:image)도 같은 한글 폰트를 fs로 읽는다.
+    // ⚠️ 경로별로 등록해야 한다 — 빠뜨리면 로컬에선 멀쩡하고 운영에서만 한글이 사라진다.
+    //    opengraph-image.tsx를 새로 추가하면 여기에도 한 줄 추가할 것.
+    '/opengraph-image': ['./src/assets/quotation/fonts/**/*'],
+    '/security/opengraph-image': ['./src/assets/quotation/fonts/**/*'],
+    '/public-sector/opengraph-image': ['./src/assets/quotation/fonts/**/*'],
   },
   // 서버 액션 본문 한도 — 기본 1MB라 5MB 첨부(고객 문의)가 폼 안내와 달리 413으로 끊긴다.
   // 5MB 파일 + 폼 오버헤드 여유로 6mb. (호스팅 자체 요청 한도는 비회원 폼과 동일한 기존 조건)
