@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatMoney } from '@/lib/money'
+import { formatBizRegNo } from '@/lib/bizRegNo'
 import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
@@ -65,7 +66,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
   if (!profile) notFound()
 
-  const [authRes, ordersRes, licRes, subRes, ticketRes, creditRes, cfgRes] = await Promise.all([
+  const [authRes, ordersRes, licRes, subRes, ticketRes, creditRes, cfgRes, orgRes] = await Promise.all([
     admin.auth.admin.getUserById(id),
     admin.from('orders').select('id, amount, currency, status, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     admin.from('licenses').select('id, serial_key, status, expires_at, products(name)').eq('user_id', id).order('created_at', { ascending: false }),
@@ -73,9 +74,21 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     admin.from('support_tickets').select('id, subject, status, priority, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     admin.from('store_credit_ledger').select('balance_after_cents').eq('user_id', id).order('created_at', { ascending: false }).limit(1),
     admin.from('affiliate_program_config').select('currency').limit(1).maybeSingle(),
+    // 기관 정보(068) — 반드시 별도 조회. 위 profile select에 합치면 컬럼 미적용 환경에서
+    // 조회가 통째로 실패해 사용자 상세가 404로 떨어진다.
+    admin.from('profiles').select('org_name, org_biz_reg_no, org_contact_name, tax_invoice_email').eq('id', id).maybeSingle(),
   ])
 
   const email = authRes.data?.user?.email ?? '—'
+  // 068 미적용이면 orgRes.error가 채워진다 — 그때는 구역을 그리지 않는다
+  const org = (orgRes.error ? null : orgRes.data) as {
+    org_name: string | null
+    org_biz_reg_no: string | null
+    org_contact_name: string | null
+    tax_invoice_email: string | null
+  } | null
+  // 한 칸이라도 채워져 있을 때만 구역을 보여준다(개인 구매자 화면에 빈 칸을 늘리지 않는다)
+  const hasOrgInfo = !!org && Object.values(org).some((v) => (v ?? '').trim() !== '')
   const orders = (ordersRes.data ?? []) as Array<{ id: string; amount: number; currency: string | null; status: string; created_at: string }>
   const licenses = (licRes.data ?? []) as unknown as Array<{ id: string; serial_key: string; status: string; expires_at: string | null; products: { name: string } | null }>
   const subs = (subRes.data ?? []) as Array<{ id: string; status: string; billing_interval: string | null; current_period_end: string | null }>
@@ -176,6 +189,23 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <h2 className="text-sm font-semibold text-ink mb-2">제휴</h2>
             <Row label="추천 코드"><span className="font-mono">{profile.affiliate_code as string}</span></Row>
             <Row label="크레딧 잔액">{fmtCredit(creditCents, creditCurrency)}</Row>
+          </section>
+        )}
+
+        {/* 기관 정보 (회원이 설정에 저장한 값) — 세금계산서 발행 때 보는 자리.
+            ⚠️ 주문에 확정된 값(orders.org_*)과 다를 수 있다. 주문 상세 쪽이 그 주문의 정본이다. */}
+        {hasOrgInfo && (
+          <section className="border border-rule bg-paper-raised rounded-card p-5">
+            <h2 className="text-sm font-semibold text-ink mb-2">기관 정보 · 세금계산서</h2>
+            <Row label="기관·회사명">{org?.org_name || '—'}</Row>
+            <Row label="사업자등록번호">
+              <span className="font-mono">{formatBizRegNo(org?.org_biz_reg_no) || '—'}</span>
+            </Row>
+            <Row label="담당자">{org?.org_contact_name || '—'}</Row>
+            <Row label="계산서 수신 이메일">{org?.tax_invoice_email || '—'}</Row>
+            <p className="text-xs text-ink-faint mt-3">
+              회원이 설정에 저장해 둔 값입니다. 주문마다 확정된 기관 정보는 주문 상세에서 따로 관리합니다.
+            </p>
           </section>
         )}
 
