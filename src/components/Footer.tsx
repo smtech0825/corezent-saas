@@ -17,6 +17,7 @@ const footerLinks = {
   ],
   자료: [
     { label: '사용 설명서', href: 'https://sites.google.com/view/corezent' },
+    { label: '보안·개인정보', href: '/security' },
     { label: '고객지원', href: '/dashboard/support' },
   ],
   약관: [

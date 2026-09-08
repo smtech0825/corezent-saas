@@ -298,18 +298,18 @@ export default async function PublicSectorPage() {
           </div>
         </Section>
 
-        {/* 보안 — 사용설명서에서 확인된 구조만 설명한다 */}
+        {/* 보안 — 요약만 두고 자세한 설명은 /security 한 곳에서 관리한다(두 곳이 서로 어긋나지 않게) */}
         <Section width="text">
           <SectionHeader label="보안" title="어떻게 동작하는지 그대로 말씀드립니다" />
           <div className="space-y-4 text-sm text-ink-soft leading-relaxed">
             <p>
               <b className="text-ink">AI 키는 본인 것을 등록해 사용합니다.</b> 앱이 자체 AI 키를 갖고 있지 않습니다.
-              등록한 키는 그 PC에만 암호화되어 저장되며 외부로 전송되지 않습니다.
+              등록한 키는 그 PC에만 암호화되어 저장되며 당사 서버로 전송되지 않습니다.
               AI 사용 내역과 비용은 사용하시는 분의 계정에서 관리됩니다.
             </p>
             <p>
-              <b className="text-ink">라이선스는 PC에 연결됩니다.</b> 인증 시 PC 고유번호가 라이선스에 연결되며,
-              키 하나는 PC 한 대에서 사용하는 방식입니다.
+              <b className="text-ink">라이선스는 PC에 연결됩니다.</b> 인증 시 라이선스 키와 PC 고유번호가 전송되며,
+              문서 내용은 이 요청에 포함되지 않습니다.
             </p>
             <div className="border border-caution/20 bg-caution-soft rounded-xl p-5">
               <p className="text-sm font-semibold text-caution mb-2">먼저 확인해 주세요</p>
@@ -319,6 +319,11 @@ export default async function PublicSectorPage() {
                 <li>도입 전 기관의 보안 지침에 맞는지 담당 부서와 확인해 주시기 바랍니다.</li>
               </ul>
             </div>
+            <p>
+              가리는 항목·처리 방식 선택·기관 담당자 문답은{' '}
+              <Link href="/security" className="text-mark underline underline-offset-4">보안·개인정보 안내</Link>에
+              모두 정리해 두었습니다.
+            </p>
           </div>
         </Section>
 
