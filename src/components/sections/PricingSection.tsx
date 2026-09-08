@@ -88,8 +88,10 @@ function PricingCard({ product, annual, userId, affiliateRef, highlighted }: Car
         </span>
       )}
 
+      {/* 뱃지 — self-start 필수. 카드가 flex-col이라 이게 없으면 inline-flex가 무시되고
+          카드 너비만큼 늘어난 띠로 보인다(ProductSection의 뱃지와 같은 규칙). */}
       {product.badgeText && (
-        <div className={`inline-flex items-center gap-1.5 border rounded px-2.5 py-1 text-xs font-semibold mb-3 ${PRODUCT_BADGE_COLORS_PAPER[product.badgeColor] ?? PRODUCT_BADGE_COLORS_PAPER.blue}`}>
+        <div className={`inline-flex items-center gap-1.5 self-start border rounded px-2.5 py-1 text-xs font-semibold mb-3 ${PRODUCT_BADGE_COLORS_PAPER[product.badgeColor] ?? PRODUCT_BADGE_COLORS_PAPER.blue}`}>
           {product.badgeText}
         </div>
       )}
