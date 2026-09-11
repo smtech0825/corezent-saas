@@ -9,7 +9,7 @@
 
 import { useState, useTransition } from 'react'
 import { Loader2, ArrowRightLeft, Ticket, Check } from 'lucide-react'
-import { formatMoney, toMinorUnits } from '@/lib/money'
+import { formatMoney, toMinorUnits, currencyUnitLabel } from '@/lib/money'
 import {
   convertCommissionsAction,
   issueCreditDiscountAction,
@@ -72,7 +72,6 @@ export function IssueDiscountForm({ userId, currency }: { userId: string; curren
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-ink-faint">₩</span>
         <input
           type="number"
           step="1"
@@ -82,6 +81,7 @@ export function IssueDiscountForm({ userId, currency }: { userId: string; curren
           placeholder="0"
           className="w-24 bg-paper border border-rule text-ink text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-mark"
         />
+        <span className="text-xs text-ink-faint">{currencyUnitLabel(currency)}</span>
         <button
           onClick={submit}
           disabled={pending}

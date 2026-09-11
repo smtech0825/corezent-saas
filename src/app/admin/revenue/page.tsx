@@ -24,29 +24,41 @@ export default async function RevenuePage() {
   const admin = createAdminClient()
 
   // PostgREST 기본 1000행 상한을 넘겨도 정확히 집계하도록 range로 전량 수집(과소집계 방지).
+  // 조회가 실패하면 조용히 빈 배열로 넘기지 않는다 — 실패 여부를 함께 돌려줘 화면이
+  // "0"과 "못 불러옴"을 구분해 알리게 한다.
   async function fetchAll<T>(
-    make: (from: number, to: number) => PromiseLike<{ data: T[] | null }>,
-  ): Promise<T[]> {
+    make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  ): Promise<{ rows: T[]; failed: boolean }> {
     const PAGE = 1000
     const out: T[] = []
     for (let from = 0; ; from += PAGE) {
-      const { data } = await make(from, from + PAGE - 1)
+      const { data, error } = await make(from, from + PAGE - 1)
+      if (error) {
+        console.error('[revenue] 집계 조회 실패:', error)
+        return { rows: out, failed: true }
+      }
       const rows = (data ?? []) as T[]
       out.push(...rows)
       if (rows.length < PAGE) break
     }
-    return out
+    return { rows: out, failed: false }
   }
 
   type PaidRow = { id: string; amount: number; currency: string | null; created_at: string; product_price_id: string | null }
   type RefundRow = { amount: number; currency: string | null }
   type SubRow = { status: string; billing_interval: string | null; order_id: string | null }
 
-  const [paid, refunded, subs] = await Promise.all([
+  const [paidRes, refundedRes, subsRes] = await Promise.all([
     fetchAll<PaidRow>((f, t) => admin.from('orders').select('id, amount, currency, created_at, product_price_id').eq('status', 'paid').order('created_at', { ascending: false }).range(f, t)),
     fetchAll<RefundRow>((f, t) => admin.from('orders').select('amount, currency').eq('status', 'refunded').order('created_at', { ascending: false }).range(f, t)),
     fetchAll<SubRow>((f, t) => admin.from('subscriptions').select('status, billing_interval, order_id').order('created_at', { ascending: false }).range(f, t)),
   ])
+
+  // 하나라도 실패하면 아래 수치는 실제 값이 아닐 수 있다 — 화면에 그대로 밝힌다.
+  const loadFailed = paidRes.failed || refundedRes.failed || subsRes.failed
+  const paid = paidRes.rows
+  const refunded = refundedRes.rows
+  const subs = subsRes.rows
 
   // ── 핵심 집계 (통화 최소단위 정수) ─────────────────────────────
   // 통계 카드(총매출·환불)는 통화별로 나눠 표시한다.
@@ -127,6 +139,13 @@ export default async function RevenuePage() {
         <h1 className="text-2xl font-bold text-ink font-serif">매출 리포트</h1>
         <p className="text-sm text-ink-soft mt-1">결제 완료 주문 기준의 핵심 매출 지표입니다.</p>
       </div>
+
+      {/* 조회 실패 안내 — "0"과 "못 불러옴"을 구분해 알린다(조용한 실패 금지). */}
+      {loadFailed && (
+        <div className="rounded-card border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
+          매출 데이터를 불러오지 못했습니다. 아래 수치는 실제 값이 아닐 수 있으니, 잠시 후 새로고침해 주세요.
+        </div>
+      )}
 
       {/* KPI 카드 — 공용 StatCard. 6장이 3열×2줄로 헐렁하게 퍼지던 것을
           넓은 화면에서 열 수를 늘려 카드 폭과 내용을 맞춘다.

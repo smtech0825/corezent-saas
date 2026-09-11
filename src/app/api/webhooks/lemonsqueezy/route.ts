@@ -521,8 +521,18 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   // 결제사 값(항상 2자리 cents)을 우리 저장 규약(그 통화의 최소단위)으로 환산해 넣는다.
   // 원화는 결제사가 ×100으로 보내므로 여기서 100을 나눠야 화면 금액이 100배가 되지 않는다.
   // 원본값은 아래 provider_raw_*에 가공 없이 따로 남는다.
+  // 금액(amount)은 결제의 본체다 — 숫자가 아니면 fromProviderAmount가 던지는 오류가 그대로
+  // 위로 전파돼 이 주문은 기록되지 않고(0원 주문 둔갑 방지) 결제사가 재전송한다.
   const amountMinor = fromProviderAmount(attrs.total, attrs.currency)
-  const discountMinor = fromProviderAmount(providerDiscount, attrs.currency)
+  // 할인은 부수 값이다 — 숫자가 아니면 주문 자체를 막지 않도록 0으로 두고 서버 기록만 남긴다.
+  let discountMinor = 0
+  if (Number.isFinite(providerDiscount)) {
+    discountMinor = fromProviderAmount(providerDiscount, attrs.currency)
+  } else {
+    console.error(
+      `[LS Webhook] 할인 금액이 숫자가 아님(order_id=${lsOrderId}) — 할인 0으로 처리하고 주문은 계속 기록합니다.`,
+    )
+  }
 
   const orderInsert: Record<string, unknown> = {
     user_id: userId,
@@ -700,6 +710,22 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
       event: 'subscription_payment_success',
       target: invoiceId,
       error: '통화를 확정하지 못해 커미션 적립을 건너뛰었습니다(수동 확인 필요).',
+    })
+    return
+  }
+
+  // 갱신 금액이 숫자가 아니면 커미션 적립만 건너뛴다 — 오류를 던져 성공 이벤트 전체를
+  // 되돌리지 않도록(위 '통화 미상' 처리와 같은 방식) 큰 소리로 기록만 남기고 멈춘다.
+  if (!Number.isFinite(Number(attrs.total))) {
+    console.error(
+      `[LS Webhook] 갱신 금액이 숫자가 아님(sub=${lsSubId}, invoice=${invoiceId}) — 커미션 적립 건너뜀`,
+    )
+    await logNotification({
+      kind: 'webhook',
+      status: 'failure',
+      event: 'subscription_payment_success',
+      target: invoiceId,
+      error: '갱신 금액이 숫자가 아니어서 커미션 적립을 건너뛰었습니다(수동 확인 필요).',
     })
     return
   }
@@ -1221,21 +1247,43 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
 // ─── subscription_payment_failed 핸들러 ──────────────────────────────────────
 
 async function handlePaymentFailed(payload: LSWebhookPayload) {
-  const lsSubId = String(payload.data.id)
+  // 이 이벤트의 data는 subscription-invoice다 — data.id는 인보이스 번호이고,
+  // 실제 구독 번호는 attributes.subscription_id에 있다(결제 성공 핸들러와 같은 출처).
+  // 예전에는 인보이스 번호를 구독 번호로 잘못 써서 늘 0건 갱신 → 라이선스 정지가 조용히 안 됐다.
+  const attrs = payload.data.attributes as LSSubscriptionInvoiceAttributes
+  const lsSubId = String(attrs.subscription_id)
+  const invoiceId = String(payload.data.id)
 
   const admin = createAdminClient()
 
   // 구독 상태를 expired로 업데이트
-  const { error } = await admin
+  const { data: updatedSubs, error } = await admin
     .from('subscriptions')
     .update({
       status: 'expired',
       updated_at: new Date().toISOString(),
     })
     .eq('lemon_squeezy_subscription_id', lsSubId)
+    .select('id')
 
   if (error) throw new Error(`결제 실패 처리 실패: ${error.message}`)
-  console.log(`[LS Webhook] 결제 실패 처리 완료: ${lsSubId}`)
+
+  // 0건 갱신은 조용히 넘기지 않는다 — 구독을 못 찾으면 라이선스 정지가 적용되지 않은 것이므로
+  // 오류로 남겨 수동 확인을 유도한다.
+  if (!updatedSubs || updatedSubs.length === 0) {
+    console.error(
+      `[LS Webhook] 결제 실패 처리: 구독 ${lsSubId}(invoice ${invoiceId})에 해당하는 행이 없어 0건 갱신 — 라이선스 정지가 적용되지 않았습니다.`,
+    )
+    await logNotification({
+      kind: 'webhook',
+      status: 'failure',
+      event: 'subscription_payment_failed',
+      target: lsSubId,
+      error: '결제 실패 처리: 해당 구독을 찾지 못해 0건 갱신(라이선스 정지 미적용, 수동 확인 필요).',
+    })
+  } else {
+    console.log(`[LS Webhook] 결제 실패 처리 완료: ${lsSubId}`)
+  }
 
   // 연결된 라이선스 상태도 expired로 변경 + (GenieStock: Supabase / GeniePost: Sheets) 중지
   // (수량 N 주문이면 N개 전부)
@@ -1261,7 +1309,7 @@ async function handlePaymentFailed(payload: LSWebhookPayload) {
   }
 
   // 추천 커미션 반전(갱신 인보이스 대상). 실패한 갱신은 보통 적립 전이라 no-op이나, 매칭 시 reversed.
-  await reverseCommissionsBySource('subscription_renewal', String(payload.data.id))
+  await reverseCommissionsBySource('subscription_renewal', invoiceId)
 }
 
 // ─── subscription_paused / unpaused 핸들러 ───────────────────────────────────

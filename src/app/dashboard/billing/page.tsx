@@ -14,7 +14,7 @@ import BillingTable, { type BillingRow } from './BillingTable'
 // (대수 비교·목록 판정일 뿐 금액 계산 아님)
 import { hwidLimitForTier, isKnownTier } from '@/app/api/license/_lib_supabase'
 import type { UpgradeOption } from './PlanUpgradeButton'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, DEFAULT_CURRENCY } from '@/lib/money'
 import PageContainer from '@/components/common/PageContainer'
 import EmptyState from '@/components/common/EmptyState'
 
@@ -186,7 +186,7 @@ export default async function BillingPage({
       optionLabel:  priceOptMap.get(o.product_price_id) ?? null,
       createdAt:    o.created_at,
       amount:       o.amount ?? 0,
-      currency:     o.currency ?? '',
+      currency:     o.currency ?? DEFAULT_CURRENCY,
       paymentMethod: o.payment_method ?? 'card',
       orderStatus:  o.status,
       subscription: s ? {

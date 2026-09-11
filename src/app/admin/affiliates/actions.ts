@@ -92,6 +92,19 @@ export async function updateAffiliateConfigAction(
     }
   } catch { /* 전값 없이 기록 */ }
 
+  // 통화는 ISO 4217 코드만 허용한다 — '원' 같은 값이 저장되지 못하게 막는다.
+  // 통화 목록을 코드에 손으로 적지 않고 런타임의 Intl 표준에서 확인한다
+  // (표준 목록을 못 구하는 환경이면 3자리 영문으로 최소 검증 — '원'은 어느 쪽이든 걸러진다).
+  const currencyCode = (values.currency ?? '').toUpperCase().trim()
+  const isoCurrencies = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] })
+    .supportedValuesOf?.('currency')
+  const currencyValid = isoCurrencies
+    ? isoCurrencies.includes(currencyCode)
+    : /^[A-Z]{3}$/.test(currencyCode)
+  if (!currencyValid) {
+    return { ok: false, message: '통화는 ISO 4217 코드로 입력해야 합니다. 예: KRW' }
+  }
+
   const payload = {
     program_enabled:       !!values.program_enabled,
     commission_type:       values.commission_type === 'flat' ? 'flat' : 'percent',
@@ -101,7 +114,7 @@ export async function updateAffiliateConfigAction(
     cookie_days:           clampInt(values.cookie_days, 0),
     hold_days:             clampInt(values.hold_days, 0),
     min_payout_credit:     clampInt(values.min_payout_credit, 0),
-    currency:              (values.currency || 'KRW').toUpperCase().slice(0, 3),
+    currency:              currencyCode,
     self_referral_blocked: !!values.self_referral_blocked,
     updated_at:            new Date().toISOString(),
   }
@@ -152,6 +165,18 @@ export async function issueCreditDiscountAction(
 
   const code = `CZCREDIT-${generateSerialKey().replace(/-/g, '').slice(0, 10)}`
 
+  // 결제사에 보낼 금액 환산은 차감 '전에' 끝낸다.
+  // 크레딧은 통화 최소단위로 보관하지만 결제사 API는 항상 2자리 cents를 받는다(원화 9,900 → 990000).
+  // 환산이 실패하면(숫자가 아닌 금액) 여기서 멈춰야 차감이 일어나지 않는다 —
+  // 차감 뒤에 환산하면 되돌릴 수 없는 차감만 남고 할인은 못 만드는 상태가 된다.
+  let providerAmount: number
+  try {
+    providerAmount = toProviderAmount(amountCents, cur)
+  } catch (e) {
+    console.error('[affiliates] 할인 금액 환산 실패:', e)
+    return { ok: false, message: '금액을 처리하지 못해 발급을 중단했습니다. 금액을 다시 확인해 주세요.' }
+  }
+
   // 1) 원자적 차감(음수잔액 금지)
   const redeem = await redeemStoreCredit(userId, amountCents, code)
   if (!redeem.ok) {
@@ -162,12 +187,11 @@ export async function issueCreditDiscountAction(
   }
 
   // 2) LS 할인 자동 생성(차감은 이미 기록됨 — 실패 시 수동 폴백)
-  //    크레딧은 통화 최소단위로 보관하지만 결제사 API는 항상 2자리 cents를 받는다 →
-  //    보낼 때만 결제사 단위로 되돌린다. (원화 9,900 → 990000)
+  //    금액은 위에서 차감 전에 환산해 둔 값을 그대로 쓴다.
   const disc = await createLsDiscount({
     code,
     name: `Store credit ${code}`,
-    amountCents: toProviderAmount(amountCents, cur),
+    amountCents: providerAmount,
   })
 
   // 감사 기록 — 차감 금액과 LS 자동 발급 성공 여부(할인 코드는 1회용 공개 코드라 비밀값 아님)

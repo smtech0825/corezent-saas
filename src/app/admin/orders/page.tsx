@@ -4,7 +4,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sumAndFormat } from '@/lib/money'
+import { sumAndFormat, DEFAULT_CURRENCY } from '@/lib/money'
 import OrderTable from './OrderTable'
 import type { Order } from './OrderTable'
 
@@ -53,7 +53,7 @@ export default async function OrdersPage() {
       productName: prod?.name ?? '',
       option:     optionParts.join(' · '),
       amount:     (o.amount as number) ?? 0,
-      currency:   (o.currency as string) ?? 'KRW',
+      currency:   (o.currency as string) ?? DEFAULT_CURRENCY,
       status:     o.status as string,
       created_at: o.created_at as string,
       // subscriptions.current_period_end → 만료일

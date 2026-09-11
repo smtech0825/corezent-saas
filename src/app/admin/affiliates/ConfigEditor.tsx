@@ -81,7 +81,13 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
             <input type="number" step="1" min="0" value={minWon} onChange={(e) => setMinWon(e.target.value)} className={INPUT_CLS} />
           </Field>
           <Field label="통화">
-            <input value={v.currency} onChange={(e) => set('currency', e.target.value)} className={INPUT_CLS} />
+            <SelectField size="md" value={v.currency} onChange={(e) => set('currency', e.target.value)}>
+              <option value="KRW">KRW (원)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="GBP">GBP (£)</option>
+            </SelectField>
           </Field>
         </div>
 

@@ -10,7 +10,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CheckCircle2, Download, KeyRound, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, DEFAULT_CURRENCY } from '@/lib/money'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import PurchaseTracker from './PurchaseTracker'
@@ -62,7 +62,7 @@ export default async function OrderSuccessPage() {
       order = {
         id: o.id as string,
         amount: (o.amount as number) ?? 0,
-        currency: (o.currency as string) ?? 'KRW',
+        currency: (o.currency as string) ?? DEFAULT_CURRENCY,
         status: o.status as string,
         created_at: o.created_at as string,
         productName,

@@ -29,6 +29,19 @@ const PROVIDER_FRACTION_DIGITS = 2
 /** 값이 없거나 숫자가 아닐 때 보여줄 안전한 기본 표시 */
 const EMPTY_DISPLAY = '—'
 
+/**
+ * 원화(KRW)의 화면 단위 표기 — 이 사이트는 원화를 통화 기호(₩)가 아니라 '원'으로,
+ * 소수점 없이 표시한다(운영자 결정). KRW=원 규칙은 이 한 곳에서만 정의하고
+ * formatMoney·currencyUnitLabel이 함께 쓴다(화면마다 따로 적지 않는다).
+ */
+const KRW_UNIT = '원'
+
+/**
+ * 통화를 확정하지 못했을 때 화면 표시에 쓸 기본 통화 코드 — 스토어 기준 통화(원화).
+ * 주문 통화 폴백을 화면마다 'KRW'·빈 값으로 제각각 두지 않도록 이 한 곳에서만 정한다.
+ */
+export const DEFAULT_CURRENCY = 'KRW'
+
 /** 통화 코드 → 소수 자릿수 캐시 (Intl 인스턴스 생성 비용을 매 호출마다 치르지 않기 위함) */
 const fractionDigitsCache = new Map<string, number>()
 
@@ -110,7 +123,13 @@ export function fromProviderAmount(
   currency: string | null | undefined,
 ): number {
   const n = Number(providerAmount)
-  if (!Number.isFinite(n)) return 0
+  // 숫자가 아니면 조용히 0으로 저장하지 않는다 — 0원 주문으로 둔갑하는 것을 막기 위해
+  // 큰 소리로 실패시키고, 호출부가 결제 이벤트를 잃지 않도록 각자 판단하게 한다.
+  if (!Number.isFinite(n)) {
+    throw new Error(
+      `[money] fromProviderAmount: 숫자가 아닌 결제 금액(${String(providerAmount)}) — 0으로 저장하지 않고 중단합니다.`,
+    )
+  }
   const digits = currencyFractionDigits(currency)
   return Math.round((n / 10 ** PROVIDER_FRACTION_DIGITS) * 10 ** digits)
 }
@@ -124,7 +143,13 @@ export function fromProviderAmount(
  */
 export function toProviderAmount(minor: number, currency: string | null | undefined): number {
   const n = Number(minor)
-  if (!Number.isFinite(n)) return 0
+  // fromProviderAmount와 같은 규칙 — 숫자가 아니면 조용히 0을 돌려주지 않는다.
+  // 0으로 넘어가면 "0원짜리 할인"이 발급되는 등 값이 틀린 채로 결제사에 전달된다.
+  if (!Number.isFinite(n)) {
+    throw new Error(
+      `[money] toProviderAmount: 숫자가 아닌 금액(${String(minor)}) — 0으로 보내지 않고 중단합니다.`,
+    )
+  }
   const digits = currencyFractionDigits(currency)
   return Math.round((n / 10 ** digits) * 10 ** PROVIDER_FRACTION_DIGITS)
 }
@@ -147,6 +172,11 @@ export function formatMoney(
   const digits = currencyFractionDigits(code)
   const major = n / 10 ** digits
 
+  // 원화는 통화 기호(₩) 대신 '원'을, 소수점 없이 표시한다(운영자 결정). 예: 100,000원 / 0원
+  if (code === 'KRW') {
+    return `${new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(major)}${KRW_UNIT}`
+  }
+
   try {
     return new Intl.NumberFormat('ko-KR', {
       style: 'currency',
@@ -162,6 +192,18 @@ export function formatMoney(
     }).format(major)
     return code ? `${number} ${code}` : number
   }
+}
+
+/**
+ * @함수명: currencyUnitLabel
+ * @설명: 입력칸 옆에 붙일 통화 단위 글자를 돌려줍니다. 원화는 '원'(운영자 결정),
+ *        그 외 통화는 ISO 코드 그대로. 화면에서 통화 기호를 손으로 적지 않도록 이 값을 씁니다.
+ * @매개변수: currency - 통화 코드
+ * @반환값: 단위 글자('원' 또는 통화 코드)
+ */
+export function currencyUnitLabel(currency: string | null | undefined): string {
+  const code = normalizeCurrency(currency)
+  return code === 'KRW' ? KRW_UNIT : code
 }
 
 /**
