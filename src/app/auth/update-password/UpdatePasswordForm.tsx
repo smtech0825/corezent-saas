@@ -121,9 +121,10 @@ export default function UpdatePasswordForm() {
 
                 {/* 새 비밀번호 */}
                 <div>
-                  <label className="block text-sm text-ink-soft mb-1.5">새 비밀번호</label>
+                  <label htmlFor="new-password" className="block text-sm text-ink-soft mb-1.5">새 비밀번호</label>
                   <div className="relative">
                     <input
+                      id="new-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -135,6 +136,7 @@ export default function UpdatePasswordForm() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -144,9 +146,10 @@ export default function UpdatePasswordForm() {
 
                 {/* 비밀번호 확인 */}
                 <div>
-                  <label className="block text-sm text-ink-soft mb-1.5">비밀번호 확인</label>
+                  <label htmlFor="confirm-password" className="block text-sm text-ink-soft mb-1.5">비밀번호 확인</label>
                   <div className="relative">
                     <input
+                      id="confirm-password"
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
@@ -157,6 +160,7 @@ export default function UpdatePasswordForm() {
                     <button
                       type="button"
                       onClick={() => setShowConfirm(!showConfirm)}
+                      aria-label={showConfirm ? '비밀번호 숨기기' : '비밀번호 보기'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                     >
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}

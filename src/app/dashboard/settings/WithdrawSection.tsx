@@ -102,6 +102,7 @@ export default function WithdrawSection() {
                   <span className="font-semibold text-ink">&lsquo;{CONFIRM_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
                 <input
+                  aria-label={`확인 문구 ‘${CONFIRM_WORD}’ 입력`}
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={CONFIRM_WORD}

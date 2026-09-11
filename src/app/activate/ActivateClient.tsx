@@ -111,10 +111,11 @@ export default function ActivateClient() {
 
       {/* 입력 폼 */}
       <div className="bg-paper-raised border border-rule rounded-lg p-6 mb-4">
-        <label className="block text-xs text-ink-faint uppercase tracking-widest font-semibold mb-2">
+        <label htmlFor="activate-serial-key" className="block text-xs text-ink-faint uppercase tracking-widest font-semibold mb-2">
           라이선스 키
         </label>
         <input
+          id="activate-serial-key"
           value={serialKey}
           onChange={handleInput}
           placeholder="XXXX-XXXX-XXXX-XXXX"

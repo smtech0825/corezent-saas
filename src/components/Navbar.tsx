@@ -181,10 +181,13 @@ export default function Navbar() {
             <span className="hidden sm:inline">{banner.text}</span>
             <span className="sm:hidden">{banner.text_mobile}</span>
             {banner.link_text && banner.link_url && (
+              /* 누를 높이를 44px로 확보한다(글자 높이만으로는 16px라 손가락으로 누르기 어렵다).
+                 여백만큼 배너 자체가 두꺼워지지 않도록 위아래 음수 여백으로 상쇄해
+                 보이는 배너 높이는 이전과 같게 둔다. */
               <button
                 type="button"
                 onClick={() => go(banner.link_url)}
-                className="text-pen underline underline-offset-2 hover:text-pen-dark transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center min-h-11 -my-3 text-pen underline underline-offset-2 hover:text-pen-dark transition-colors whitespace-nowrap cursor-pointer"
               >
                 {banner.link_text}
               </button>
@@ -314,6 +317,8 @@ export default function Navbar() {
             {/* 모바일 햄버거 */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
+              aria-expanded={mobileOpen}
               className="lg:hidden text-ink-soft hover:text-ink p-1"
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}

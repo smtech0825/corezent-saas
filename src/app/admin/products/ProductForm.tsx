@@ -14,6 +14,7 @@ import { validateOptionRows } from '@/lib/product-validation'
 import { PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import OptionTable from './OptionTable'
 import SelectField from '@/components/common/SelectField'
+import LabeledField from '@/components/common/LabeledField'
 import FeatureImageUpload from './FeatureImageUpload'
 import nextDynamic from 'next/dynamic'
 
@@ -97,11 +98,15 @@ function slugify(text: string) {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  // 연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 모양은 그대로.
   return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-ink-soft uppercase tracking-wider">{label}</label>
+    <LabeledField
+      label={label}
+      className="space-y-1.5"
+      labelClassName="block text-xs font-medium text-ink-soft uppercase tracking-wider"
+    >
       {children}
-    </div>
+    </LabeledField>
   )
 }
 

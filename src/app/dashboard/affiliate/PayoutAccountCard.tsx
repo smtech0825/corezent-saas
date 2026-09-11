@@ -85,16 +85,20 @@ export default function PayoutAccountCard({ initial }: { initial: Account }) {
                 <option key={b} value={b}>{b}</option>
               ))}
             </SelectField>
+            {/* 눈에 보이는 이름표가 없는 칸 — 화면낭독기가 읽을 이름을 aria-label로 준다
+                (위 은행 고르기 칸과 같은 방식). 안내 글자(placeholder)는 이름표 구실을 못 한다. */}
             <input
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value.replace(/[^0-9-]/g, ''))}
               inputMode="numeric"
+              aria-label="계좌번호"
               placeholder="계좌번호 (숫자·하이픈)"
               className={INPUT_CLS}
             />
             <input
               value={accountHolder}
               onChange={(e) => setAccountHolder(e.target.value)}
+              aria-label="예금주"
               placeholder="예금주"
               className={INPUT_CLS}
             />

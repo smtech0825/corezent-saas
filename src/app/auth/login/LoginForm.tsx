@@ -258,8 +258,9 @@ export default function LoginForm() {
           {/* 이메일 폼 (자동완성 차단 — 저장은 "아이디 저장"으로만 제어) */}
           <form onSubmit={handleEmailLogin} autoComplete="off" className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
+              <label htmlFor="login-email" className="block text-sm text-ink-soft mb-1.5">이메일</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -272,13 +273,14 @@ export default function LoginForm() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm text-ink-soft">비밀번호</label>
+                <label htmlFor="login-password" className="block text-sm text-ink-soft">비밀번호</label>
                 <Link href="/auth/reset-password" className="text-xs text-pen hover:underline">
                   비밀번호를 잊으셨나요?
                 </Link>
               </div>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -290,6 +292,7 @@ export default function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft transition-colors focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

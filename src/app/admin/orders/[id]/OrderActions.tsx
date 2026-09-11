@@ -117,6 +117,7 @@ export default function OrderActions({ orderId, orderStatus, hasLsOrderId, amoun
                   계속하려면 <span className="font-semibold text-ink">&lsquo;{REFUND_WORD}&rsquo;</span> 을(를) 입력하세요.
                 </p>
                 <input
+                  aria-label={`확인 문구 ‘${REFUND_WORD}’ 입력`}
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={REFUND_WORD}

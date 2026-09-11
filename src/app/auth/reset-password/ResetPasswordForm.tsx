@@ -92,8 +92,9 @@ export default function ResetPasswordForm() {
               </p>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
+                  <label htmlFor="reset-email" className="block text-sm text-ink-soft mb-1.5">이메일</label>
                   <input
+                    id="reset-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

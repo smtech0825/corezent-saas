@@ -198,8 +198,8 @@ export default function RegisterForm() {
           {/* 이메일 폼 (자동완성 차단 — 가입 화면은 항상 빈칸으로 시작) */}
           <form onSubmit={handleRegister} autoComplete="off" className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">이름</label>
-              <input
+              <label htmlFor="register-f1" className="block text-sm text-ink-soft mb-1.5">이름</label>
+              <input id="register-f1"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -211,8 +211,8 @@ export default function RegisterForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
-              <input
+              <label htmlFor="register-f2" className="block text-sm text-ink-soft mb-1.5">이메일</label>
+              <input id="register-f2"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -224,8 +224,8 @@ export default function RegisterForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">휴대폰 번호</label>
-              <input
+              <label htmlFor="register-f3" className="block text-sm text-ink-soft mb-1.5">휴대폰 번호</label>
+              <input id="register-f3"
                 type="tel"
                 inputMode="numeric"
                 autoComplete="off"
@@ -245,9 +245,10 @@ export default function RegisterForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">비밀번호</label>
+              <label htmlFor="register-password" className="block text-sm text-ink-soft mb-1.5">비밀번호</label>
               <div className="relative">
                 <input
+                  id="register-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -260,6 +261,7 @@ export default function RegisterForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft transition-colors focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

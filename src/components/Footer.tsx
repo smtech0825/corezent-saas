@@ -64,8 +64,12 @@ export default async function Footer() {
           {/* 링크 컬럼 */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="text-sm font-bold text-ink mb-4">{category}</h4>
-              <ul className="space-y-3">
+              {/* 제목 단계는 h2 — 본문이 h1/h2로 끝나는 페이지에서 h4로 뛰면 단계를 건너뛴다.
+                  보이는 크기(text-sm font-bold)는 그대로다. */}
+              <h2 className="text-sm font-bold text-ink mb-4">{category}</h2>
+              {/* 링크를 블록으로 만들고 위아래 여백을 줘 손가락으로 누를 높이(약 44px)를 확보한다.
+                  늘어난 여백만큼 줄 간격(space-y)을 줄여 보이는 간격은 이전과 같게 맞춘다. */}
+              <ul className="space-y-0.5 -my-2">
                 {links.map((link) => (
                   <li key={link.label}>
                     {link.href.startsWith('http') ? (
@@ -73,14 +77,14 @@ export default async function Footer() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-ink-soft hover:text-ink transition-colors"
+                        className="block py-2.5 text-sm text-ink-soft hover:text-ink transition-colors"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-sm text-ink-soft hover:text-ink transition-colors"
+                        className="block py-2.5 text-sm text-ink-soft hover:text-ink transition-colors"
                       >
                         {link.label}
                       </Link>

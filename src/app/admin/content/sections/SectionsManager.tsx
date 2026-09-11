@@ -168,6 +168,9 @@ export default function SectionsManager({ sections }: { sections: Section[] }) {
             <button
               onClick={() => handleToggle(idx)}
               disabled={isPending}
+              role="switch"
+              aria-checked={section.is_visible}
+              aria-label={`${section.label} 섹션 표시`}
               className={`w-10 h-6 rounded-full transition-colors relative overflow-hidden disabled:opacity-60 ${
                 section.is_visible ? 'bg-ok' : 'bg-paper-shade'
               }`}

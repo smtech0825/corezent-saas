@@ -111,6 +111,7 @@ export default function ReplyForm({ onSubmit }: Props) {
       )}
 
       <textarea
+        aria-label="답변 내용"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="답변을 입력하세요..."

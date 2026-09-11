@@ -89,7 +89,7 @@ export default function BankTransferModal({
             <Landmark size={18} className="text-pen" />
             <h2 className="text-base font-bold text-ink">계좌이체로 구매</h2>
           </div>
-          <button onClick={onClose} disabled={submitting} className="text-ink-faint hover:text-ink transition-colors disabled:opacity-40">
+          <button onClick={onClose} disabled={submitting} aria-label="닫기" className="text-ink-faint hover:text-ink transition-colors disabled:opacity-40">
             <X size={18} />
           </button>
         </div>

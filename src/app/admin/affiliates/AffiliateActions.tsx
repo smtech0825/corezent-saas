@@ -76,6 +76,7 @@ export function IssueDiscountForm({ userId, currency }: { userId: string; curren
           type="number"
           step="1"
           min="0"
+          aria-label="발급할 할인 금액"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"

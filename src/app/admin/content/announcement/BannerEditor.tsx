@@ -57,8 +57,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
       {/* 표시 여부 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>배너 표시</label>
-        <SelectField
+        <label htmlFor="banner-f1" className={labelCls}>배너 표시</label>
+        <SelectField id="banner-f1"
           size="md"
           value={form.visible}
           onChange={(e) => set('visible', e.target.value)}
@@ -70,8 +70,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
       {/* 데스크톱 텍스트 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>배너 텍스트 (데스크톱)</label>
-        <input
+        <label htmlFor="banner-f2" className={labelCls}>배너 텍스트 (데스크톱)</label>
+        <input id="banner-f2"
           value={form.text}
           onChange={(e) => set('text', e.target.value)}
           placeholder={BANNER_DEFAULTS.text}
@@ -81,8 +81,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
 
       {/* 모바일 텍스트 */}
       <div className="space-y-1.5">
-        <label className={labelCls}>배너 텍스트 (모바일)</label>
-        <input
+        <label htmlFor="banner-f3" className={labelCls}>배너 텍스트 (모바일)</label>
+        <input id="banner-f3"
           value={form.text_mobile}
           onChange={(e) => set('text_mobile', e.target.value)}
           placeholder={BANNER_DEFAULTS.text_mobile}
@@ -93,8 +93,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
       {/* 링크 텍스트 + URL */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>링크 텍스트</label>
-          <input
+          <label htmlFor="banner-f4" className={labelCls}>링크 텍스트</label>
+          <input id="banner-f4"
             value={form.link_text}
             onChange={(e) => set('link_text', e.target.value)}
             placeholder={BANNER_DEFAULTS.link_text}
@@ -102,8 +102,8 @@ export default function BannerEditor({ initial, onSave }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>링크 URL</label>
-          <input
+          <label htmlFor="banner-f5" className={labelCls}>링크 URL</label>
+          <input id="banner-f5"
             value={form.link_url}
             onChange={(e) => set('link_url', e.target.value)}
             placeholder={BANNER_DEFAULTS.link_url}

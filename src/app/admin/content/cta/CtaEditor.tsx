@@ -58,18 +58,18 @@ export default function CtaEditor({ initial, onSave }: Props) {
       {saved && !isPending && <p className="text-xs text-ok">저장되었습니다.</p>}
 
       <div className="space-y-1.5">
-        <label className={labelCls}>아이브로 (헤드라인 위 작은 라벨)</label>
-        <input value={form.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} placeholder={CTA_DEFAULTS.eyebrow} className={inputCls} />
+        <label htmlFor="cta-f1" className={labelCls}>아이브로 (헤드라인 위 작은 라벨)</label>
+        <input id="cta-f1" value={form.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} placeholder={CTA_DEFAULTS.eyebrow} className={inputCls} />
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>헤드라인</label>
-        <input value={form.headline} onChange={(e) => set('headline', e.target.value)} placeholder={CTA_DEFAULTS.headline} className={inputCls} />
+        <label htmlFor="cta-f2" className={labelCls}>헤드라인</label>
+        <input id="cta-f2" value={form.headline} onChange={(e) => set('headline', e.target.value)} placeholder={CTA_DEFAULTS.headline} className={inputCls} />
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>부가 설명</label>
-        <textarea
+        <label htmlFor="cta-f3" className={labelCls}>부가 설명</label>
+        <textarea id="cta-f3"
           value={form.subtext}
           onChange={(e) => set('subtext', e.target.value)}
           rows={3}
@@ -79,29 +79,29 @@ export default function CtaEditor({ initial, onSave }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>기본 버튼 텍스트</label>
-          <input value={form.btn1_text} onChange={(e) => set('btn1_text', e.target.value)} placeholder={CTA_DEFAULTS.btn1_text} className={inputCls} />
+          <label htmlFor="cta-f4" className={labelCls}>기본 버튼 텍스트</label>
+          <input id="cta-f4" value={form.btn1_text} onChange={(e) => set('btn1_text', e.target.value)} placeholder={CTA_DEFAULTS.btn1_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>기본 버튼 링크</label>
-          <input value={form.btn1_href} onChange={(e) => set('btn1_href', e.target.value)} placeholder={CTA_DEFAULTS.btn1_href} className={inputCls} />
+          <label htmlFor="cta-f5" className={labelCls}>기본 버튼 링크</label>
+          <input id="cta-f5" value={form.btn1_href} onChange={(e) => set('btn1_href', e.target.value)} placeholder={CTA_DEFAULTS.btn1_href} className={inputCls} />
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>보조 버튼 텍스트</label>
-          <input value={form.btn2_text} onChange={(e) => set('btn2_text', e.target.value)} placeholder={CTA_DEFAULTS.btn2_text} className={inputCls} />
+          <label htmlFor="cta-f6" className={labelCls}>보조 버튼 텍스트</label>
+          <input id="cta-f6" value={form.btn2_text} onChange={(e) => set('btn2_text', e.target.value)} placeholder={CTA_DEFAULTS.btn2_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>보조 버튼 링크</label>
-          <input value={form.btn2_href} onChange={(e) => set('btn2_href', e.target.value)} placeholder={CTA_DEFAULTS.btn2_href} className={inputCls} />
+          <label htmlFor="cta-f7" className={labelCls}>보조 버튼 링크</label>
+          <input id="cta-f7" value={form.btn2_href} onChange={(e) => set('btn2_href', e.target.value)} placeholder={CTA_DEFAULTS.btn2_href} className={inputCls} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>각주 (버튼 아래 작은 텍스트)</label>
-        <input value={form.footnote} onChange={(e) => set('footnote', e.target.value)} placeholder={CTA_DEFAULTS.footnote} className={inputCls} />
+        <label htmlFor="cta-f8" className={labelCls}>각주 (버튼 아래 작은 텍스트)</label>
+        <input id="cta-f8" value={form.footnote} onChange={(e) => set('footnote', e.target.value)} placeholder={CTA_DEFAULTS.footnote} className={inputCls} />
       </div>
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2.5 pt-2">
