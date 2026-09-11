@@ -5,6 +5,8 @@
 
 import Link from 'next/link'
 import { Home, ArrowLeft } from 'lucide-react'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
 
 export const metadata = {
   title: '페이지를 찾을 수 없습니다',
@@ -12,20 +14,13 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0B1120] flex items-center justify-center px-6">
-      {/* Glow */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 30%, rgba(56,189,248,0.06) 0%, transparent 70%)',
-        }}
-      />
-
+    <div className="theme-paper min-h-screen bg-paper font-sans text-ink flex flex-col">
+      <Navbar />
+      <main className="flex-1 flex items-center justify-center px-6 py-24">
       <div className="relative z-10 text-center max-w-md">
-        <p className="text-7xl sm:text-8xl font-bold text-[#38BDF8] tracking-tight mb-4">404</p>
-        <h1 className="text-2xl font-bold text-white mb-3">페이지를 찾을 수 없습니다</h1>
-        <p className="text-[#94A3B8] text-sm leading-relaxed mb-8">
+        <p className="text-7xl sm:text-8xl font-bold text-mark tracking-tight mb-4">404</p>
+        <h1 className="text-2xl font-bold text-ink font-serif mb-3">페이지를 찾을 수 없습니다</h1>
+        <p className="text-ink-soft text-sm leading-relaxed mb-8">
           요청하신 페이지가 존재하지 않거나 이동되었습니다.<br />
           주소를 다시 확인해 주세요.
         </p>
@@ -33,20 +28,22 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 bg-[#38BDF8] text-[#0B1120] font-semibold px-6 py-3 rounded-xl text-sm hover:bg-[#0ea5e9] transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-mark text-white font-semibold px-6 py-3 rounded-md text-sm hover:brightness-95 transition-colors"
           >
             <Home size={15} />
             홈으로 가기
           </Link>
           <Link
             href="/product"
-            className="inline-flex items-center justify-center gap-2 border border-[#1E293B] text-[#F1F5F9] font-medium px-6 py-3 rounded-xl text-sm hover:border-[#38BDF8]/40 transition-colors"
+            className="inline-flex items-center justify-center gap-2 border border-rule text-ink font-medium px-6 py-3 rounded-md text-sm hover:border-mark/40 transition-colors"
           >
             <ArrowLeft size={15} />
             제품 둘러보기
           </Link>
         </div>
       </div>
+      </main>
+      <Footer />
     </div>
   )
 }

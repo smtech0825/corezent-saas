@@ -52,8 +52,11 @@ const BRAND_STYLES: Record<'kakao' | 'naver', { btn: string; spinner: string }> 
     spinner: 'text-[#191919]',
   },
   naver: {
-    btn: 'bg-[#03C75A] hover:brightness-95 text-white',
-    spinner: 'text-white',
+    // 브랜드 배경(#03C75A)은 그대로 두고 글자만 어둡게 — 흰 글자는 대비 2.25:1로 읽기 기준(4.5:1)에
+    // 미달했다. 먹색 토큰(ink)을 쓰면 6.65:1이 되어 통과한다(카카오 버튼과 같은 방식).
+    // 로고마크(흰 N)는 네이버 브랜드 규정이고 로고는 글자 대비 기준 대상이 아니라 그대로 둔다.
+    btn: 'bg-[#03C75A] hover:brightness-95 text-ink',
+    spinner: 'text-ink',
   },
 }
 

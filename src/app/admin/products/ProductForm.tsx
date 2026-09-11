@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { validateOptionRows } from '@/lib/product-validation'
+import { PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import OptionTable from './OptionTable'
 import SelectField from '@/components/common/SelectField'
 import FeatureImageUpload from './FeatureImageUpload'
@@ -400,32 +401,28 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         {/* Badge — 색상 선택 + 텍스트 입력 */}
         <Field label="뱃지">
           <div className="space-y-2.5">
-            {/* 색상 선택 */}
+            {/* 색상 선택 — 손님이 보는 화면과 같은 뱃지 색(lib/products의 페이퍼 테마 공용 값)을 쓴다.
+                예전에는 옛 어두운 테마 hex를 직접 적어 대비가 1.82~2.01:1로 읽기 어려웠고,
+                실제 공개 화면과 색도 달라 미리보기 구실을 못 했다. */}
             <div className="flex items-center gap-2">
               {([
-                { value: 'blue',   hex: '#38BDF8', label: '파랑' },
-                { value: 'green',  hex: '#34D399', label: '초록' },
-                { value: 'yellow', hex: '#FBBF24', label: '노랑' },
+                { value: 'blue',   label: '파랑' },
+                { value: 'green',  label: '초록' },
+                { value: 'yellow', label: '노랑' },
               ] as const).map((c) => (
                 <button
                   key={c.value}
                   type="button"
                   onClick={() => set('badge_color', c.value)}
                   className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                    PRODUCT_BADGE_COLORS_PAPER[c.value] ?? PRODUCT_BADGE_COLORS_PAPER.blue
+                  } ${
                     form.badge_color === c.value
-                      ? ''
+                      ? 'ring-2 ring-mark/30'
                       : 'opacity-50 hover:opacity-80'
                   }`}
-                  style={{
-                    color: c.hex,
-                    backgroundColor: `${c.hex}15`,
-                    borderColor: form.badge_color === c.value ? c.hex : `${c.hex}30`,
-                    ...(form.badge_color === c.value
-                      ? { boxShadow: `0 0 0 2px ${c.hex}40` }
-                      : {}),
-                  }}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.hex }} />
+                  <span className="w-2.5 h-2.5 rounded-full bg-current" />
                   {c.label}
                 </button>
               ))}
@@ -456,12 +453,9 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-xs text-ink-faint">미리보기:</span>
                 <span
-                  className="inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold"
-                  style={{
-                    color: { blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color],
-                    backgroundColor: `${{ blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color]}15`,
-                    borderColor: `${{ blue: '#38BDF8', green: '#34D399', yellow: '#FBBF24' }[form.badge_color]}30`,
-                  }}
+                  className={`inline-flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                    PRODUCT_BADGE_COLORS_PAPER[form.badge_color] ?? PRODUCT_BADGE_COLORS_PAPER.blue
+                  }`}
                 >
                   <Sparkles size={11} />
                   {form.badge_text}

@@ -211,7 +211,9 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
           </span>
           <span className="flex flex-col leading-none">
             <span className="text-sm">CoreZent</span>
-            <span className="text-[9px] font-semibold text-mark tracking-widest uppercase">
+            {/* 9px은 너무 작아 읽기 어려웠다 — 최소 12px(text-xs)로 올린다. 줄 높이를 좁혀
+                로고 블록 높이(h-16)는 그대로 유지한다. */}
+            <span className="text-xs leading-tight font-semibold text-mark tracking-widest uppercase">
               관리자 패널
             </span>
           </span>
@@ -241,7 +243,7 @@ export default function AdminSidebar({ user, supportBadge = 0, onClose }: Props)
                 onClick={() => toggleGroup(group.key)}
                 aria-expanded={expanded}
                 aria-controls={`admin-nav-${group.key}`}
-                className={`w-full flex items-center justify-between px-3 py-1 mb-1 min-h-11 lg:min-h-0 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-1 mb-1 min-h-11 lg:min-h-0 text-xs font-semibold uppercase tracking-widest transition-colors ${
                   groupActive ? 'text-ink' : 'text-ink-soft hover:text-ink'
                 }`}
               >
