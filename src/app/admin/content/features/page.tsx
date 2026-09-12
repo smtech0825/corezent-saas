@@ -13,6 +13,8 @@ import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/ad
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '특징 편집' }
+
 /** 추가된 특징 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
 type FeatureRow = { id: string; icon: string | null; tag: string | null; title: string; description: string; is_published: boolean; order_index: number }
 

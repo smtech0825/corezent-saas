@@ -8,6 +8,8 @@ import LicenseTable, { type License } from './LicenseTable'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '라이선스 관리' }
+
 function maskKey(key: string) {
   const parts = key.split('-')
   if (parts.length !== 4) return key

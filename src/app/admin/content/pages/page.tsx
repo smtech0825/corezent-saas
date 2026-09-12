@@ -7,6 +7,8 @@ import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '페이지 관리' }
+
 export default function PagesPage() {
   return (
     <PageContainer variant="admin-form" className="space-y-6">

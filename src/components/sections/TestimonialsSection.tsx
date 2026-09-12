@@ -6,6 +6,7 @@
  */
 
 import Section, { SectionHeader } from '@/components/ui/Section'
+import Image from 'next/image'
 
 export interface DbTestimonial {
   id: string
@@ -66,8 +67,8 @@ export default function TestimonialsSection({ testimonials }: Props) {
 
               <div className="flex items-center gap-3 pt-1 border-t border-rule">
                 {t.author_avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={t.author_avatar} alt={t.author_name} className="w-9 h-9 rounded-full object-cover shrink-0 mt-3" />
+                  // 보이는 크기(36px)로 줄여 내려받는다
+                  <Image src={t.author_avatar} alt={t.author_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0 mt-3" />
                 ) : (
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-3 ${avatarCls}`}>
                     {initials}

@@ -8,8 +8,11 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminShell from './_components/AdminShell'
 
+// 설명 문구는 여기 한 곳에만 둔다 — 관리자 화면은 저마다 제목만 정하고 설명은 이것을 물려받는다.
+// (이게 없으면 홈 화면 소개 문구가 관리자 화면에까지 따라붙는다)
 export const metadata = {
   title: '관리자 패널',
+  description: 'CoreZent 운영자 전용 화면입니다. 주문·라이선스·제품·고객지원을 관리합니다.',
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

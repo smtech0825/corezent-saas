@@ -17,6 +17,7 @@ import SelectField from '@/components/common/SelectField'
 import LabeledField from '@/components/common/LabeledField'
 import FeatureImageUpload from './FeatureImageUpload'
 import nextDynamic from 'next/dynamic'
+import Image from 'next/image'
 
 // 설명 문서 편집기(TipTap)는 admin·클라이언트에서만 로드 — 번들 영향 최소화(ssr:false).
 // (파일 상단에 export const dynamic이 없어 충돌은 없지만, 컨벤션대로 next/dynamic은 nextDynamic으로 alias)
@@ -529,10 +530,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             {/* 로고 미리보기 */}
             {form.logo_url && (
               <div className="flex items-center gap-3 pt-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={form.logo_url}
                   alt="로고 미리보기"
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-lg object-contain border border-rule bg-paper"
                 />
                 <span className="text-xs text-ink-faint truncate max-w-xs">{form.logo_url}</span>

@@ -13,6 +13,8 @@ import { logAdminActivity, diffKeyChanges, buildChangeDetail, currentUserIdForLo
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: 'CTA 섹션 편집' }
+
 const ctaKeys = [
   'cta_eyebrow', 'cta_headline', 'cta_subtext',
   'cta_btn1_text', 'cta_btn1_href', 'cta_btn2_text', 'cta_btn2_href', 'cta_footnote',

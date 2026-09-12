@@ -14,6 +14,7 @@ import { richToPlainText } from '@/lib/rich-html'
 import DynamicIcon from '@/components/DynamicIcon'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
+import Image from 'next/image'
 
 // 콘텐츠 블록 "설명"은 제품 설명과 동일한 리치 에디터(TipTap) 재사용 — admin·클라이언트에서만 로드(ssr:false).
 const RichTextEditor = nextDynamic(() => import('@/components/admin/RichTextEditor'), {
@@ -100,7 +101,7 @@ function ImageUploader({ images, onChange, max = 3 }: { images: string[]; onChan
       <div className="flex gap-2 flex-wrap">
         {images.map((url, idx) => (
           <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-rule group">
-            <img src={url} alt={`업로드된 소개 이미지 ${idx + 1}`} className="w-full h-full object-cover" />
+            <Image src={url} alt={`업로드된 소개 이미지 ${idx + 1}`} fill sizes="96px" className="object-cover" />
             <button
               type="button"
               onClick={() => removeImage(idx)}

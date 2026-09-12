@@ -15,6 +15,7 @@ import EmailChangeSection from './EmailChangeSection'
 import OrgProfileSection from './OrgProfileSection'
 import PageContainer from '@/components/common/PageContainer'
 import { FormField, SubmitButton, inputCls } from './settings-ui'
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -107,8 +108,9 @@ export default function SettingsPage() {
     e.preventDefault()
     setPasswordError('')
 
-    if (newPassword.length < 8) {
-      setPasswordError('새 비밀번호는 8자 이상이어야 합니다.')
+    const pwError = validatePassword(newPassword)
+    if (pwError) {
+      setPasswordError(pwError)
       return
     }
     if (!currentPassword) {
@@ -252,7 +254,7 @@ export default function SettingsPage() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="8자 이상 입력하세요"
+              placeholder={PASSWORD_RULE_TEXT}
               required
               minLength={8}
               className={inputCls}

@@ -7,6 +7,8 @@ import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '파트너 편집' }
+
 export default function PartnersPage() {
   return (
     <PageContainer variant="admin-form" className="space-y-6">

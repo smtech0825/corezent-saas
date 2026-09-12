@@ -11,6 +11,8 @@ import SaveAndViewButton from '@/app/admin/content/_components/SaveAndViewButton
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '섹션 설정' }
+
 // 기본 섹션 목록 — label은 코드 값을 정본으로 사용 (DB 값 무시)
 const defaultSections = [
   { name: 'hero',         label: 'Hero',          is_visible: true, order_index: 0 },

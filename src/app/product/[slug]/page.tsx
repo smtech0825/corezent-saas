@@ -208,7 +208,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div className="flex items-start gap-5 mb-6">
                 {logoUrl && (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-rule bg-paper-raised">
-                    <Image src={logoUrl} alt={`${name} logo`} fill className="object-contain p-2" />
+                    <Image src={logoUrl} alt={`${name} logo`} fill sizes="64px" className="object-contain p-2" />
                   </div>
                 )}
                 <div className="min-w-0">
@@ -241,7 +241,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               {/* 대표 이미지 (박스 밖) */}
               {heroImage && (
                 <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-rule bg-paper-raised mb-8">
-                  <Image src={heroImage} alt={`${name} 대표 이미지`} fill className="object-cover" />
+                  <Image src={heroImage} alt={`${name} 대표 이미지`} fill sizes="(max-width: 896px) 100vw, 896px" className="object-cover" />
                 </div>
               )}
 
@@ -270,7 +270,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {screenshots.map((src, i) => (
                         <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-rule bg-paper">
-                          <Image src={src} alt={`${name} 스크린샷 ${i + 1}`} fill className="object-cover" />
+                          <Image src={src} alt={`${name} 스크린샷 ${i + 1}`} fill sizes="(max-width: 640px) 100vw, 448px" className="object-cover" />
                         </div>
                       ))}
                     </div>
@@ -286,7 +286,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         <div key={i} className="border border-rule bg-paper rounded-lg p-5 flex flex-col items-center text-center space-y-3">
                           <div className="flex items-center justify-center w-[72px] h-[72px] rounded-lg bg-paper-shade border border-rule">
                             {feat.image_url ? (
-                              <div className="relative w-12 h-12"><Image src={feat.image_url} alt={feat.title} fill className="object-contain" /></div>
+                              <div className="relative w-12 h-12"><Image src={feat.image_url} alt={feat.title} fill sizes="48px" className="object-contain" /></div>
                             ) : feat.icon ? (
                               <DynamicIcon name={feat.icon} size={30} className="text-pen" />
                             ) : (

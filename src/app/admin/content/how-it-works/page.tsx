@@ -13,6 +13,8 @@ import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/ad
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '이용 방법 편집' }
+
 type StepData = {
   icon: string
   title: string

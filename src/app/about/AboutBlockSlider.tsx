@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface Props {
   images: string[]
@@ -20,9 +21,12 @@ export default function AboutBlockSlider({ images }: Props) {
     <div className="relative">
       {/* 이미지 */}
       <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-rule">
-        <img
+        {/* 보이는 크기를 알려 준다 — 없으면 500KB가 넘는 원본을 그대로 내려받는다 */}
+        <Image
           src={images[current]}
           alt={`Slide ${current + 1}`}
+          fill
+          sizes="(max-width: 1024px) 100vw, 512px"
           className="w-full h-full object-cover transition-opacity duration-300"
         />
       </div>

@@ -9,6 +9,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ensureOnboardedPhone, buildPhoneGateRedirect } from '@/lib/onboarding'
 import DashboardShell from './_components/DashboardShell'
 
+// 설명 문구는 여기 한 곳에만 둔다 — 회원 화면은 저마다 제목만 정하고 설명은 이것을 물려받는다.
+// (이게 없으면 홈 화면 소개 문구가 회원 화면에까지 따라붙는다)
+export const metadata = {
+  description: '구매한 제품의 라이선스와 결제 내역을 확인하고 계정을 관리하는 회원 전용 화면입니다.',
+}
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
 

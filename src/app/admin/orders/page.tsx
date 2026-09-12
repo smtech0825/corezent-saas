@@ -10,6 +10,8 @@ import type { Order } from './OrderTable'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '주문 관리' }
+
 export default async function OrdersPage() {
   const adminClient = createAdminClient()
 

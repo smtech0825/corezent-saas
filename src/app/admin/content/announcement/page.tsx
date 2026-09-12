@@ -13,6 +13,8 @@ import { logAdminActivity, diffKeyChanges, buildChangeDetail, currentUserIdForLo
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '공지 배너 편집' }
+
 const bannerKeys = [
   'banner_text', 'banner_text_mobile', 'banner_link_text', 'banner_link_url', 'banner_visible',
 ]

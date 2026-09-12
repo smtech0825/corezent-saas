@@ -10,6 +10,8 @@ import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '시스템 설정' }
+
 export default async function SettingsPage() {
   const adminClient = createAdminClient()
 

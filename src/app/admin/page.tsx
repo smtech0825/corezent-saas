@@ -19,6 +19,8 @@ import InitialAvatar from '@/components/common/InitialAvatar'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '관리자 개요' }
+
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US').format(n)
 }

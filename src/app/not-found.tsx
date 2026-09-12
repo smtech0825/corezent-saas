@@ -10,6 +10,7 @@ import Footer from '@/components/Footer'
 
 export const metadata = {
   title: '페이지를 찾을 수 없습니다',
+  description: '요청하신 주소의 페이지가 없습니다. 홈이나 제품 목록에서 다시 찾아보세요.',
 }
 
 export default function NotFound() {

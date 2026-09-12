@@ -13,6 +13,8 @@ import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/ad
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '고객 후기 편집' }
+
 type TestimonialData = {
   quote: string
   author_name: string
