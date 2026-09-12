@@ -105,15 +105,15 @@ function AreaForm({ initial, onDone }: { initial: TaxRegulatedArea | null; onDon
         <Field label="적용 세목" htmlFor="area-applies" required
           hint="같은 지역이라도 세목마다 적용 시작일이 다르면 이력을 나눠 등록하세요.">
           <div className="space-y-2 pt-1">
-            <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+            <label className="flex items-center gap-2 min-h-11 text-sm text-ink cursor-pointer">
               <input type="checkbox" checked={appliesAll}
                 onChange={(e) => setAppliesAll(e.target.checked)} className="h-4 w-4 accent-pen" />
               전 세목 적용 (all)
             </label>
             {!appliesAll && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              <div className="flex flex-wrap gap-x-4 gap-y-0">
                 {TAX_TYPES.map((t) => (
-                  <label key={t} className="flex items-center gap-1.5 text-xs text-ink cursor-pointer">
+                  <label key={t} className="flex items-center gap-1.5 min-h-11 text-xs text-ink cursor-pointer">
                     <input type="checkbox" checked={appliesTo.includes(t)}
                       onChange={() => toggleTaxType(t)} className="h-3.5 w-3.5 accent-pen" />
                     {TAX_TYPE_LABELS[t]}
@@ -259,7 +259,7 @@ export default function AreasManager({ areas }: { areas: TaxRegulatedArea[] }) {
                 </div>
                 <button
                   onClick={() => { setSavedNotice(false); setEditing(area) }}
-                  className="flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ink border border-rule rounded-md px-2.5 py-1.5 transition-colors"
+                  className="flex items-center gap-1 min-h-11 text-xs font-medium text-ink-soft hover:text-ink border border-rule rounded-md px-3 py-1.5 transition-colors"
                 >
                   <Pencil size={12} />
                   수정

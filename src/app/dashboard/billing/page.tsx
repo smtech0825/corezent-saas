@@ -258,6 +258,8 @@ export default async function BillingPage({
             boxed
             icon={<CreditCard size={20} className="text-ink-faint" />}
             message="아직 결제 내역이 없습니다."
+            description="제품을 구매하면 결제·구독 내역이 여기에 표시됩니다."
+            cta={{ label: '제품 둘러보기', href: '/pricing' }}
           />
         )}
       </section>

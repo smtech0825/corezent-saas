@@ -25,7 +25,9 @@ export default function DocsRootLayout({ children }: { children: ReactNode }) {
   return (
     <RootProvider theme={{ enabled: false }}>
       <div className="theme-paper bg-paper text-ink">
-        <Navbar />
+        {/* 매뉴얼은 자체 상단 띠(문서 바·목차 바)가 이미 두 개라 사이트 머리말까지 고정하면
+            폰에서 화면 위쪽을 1/4 넘게 가린다. 머리말은 본문과 함께 올라가게 둔다. */}
+        <Navbar sticky={false} />
         <NavHeightSync />
         <DocsLayout tree={source.pageTree} {...baseOptions()}>
           {children}

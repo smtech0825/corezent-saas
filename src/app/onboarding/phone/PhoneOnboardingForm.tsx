@@ -72,8 +72,8 @@ export default function PhoneOnboardingForm({ redirectTo }: { redirectTo: string
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm text-ink-soft mb-1.5">휴대폰 번호</label>
-            <input
+            <label htmlFor="phone-onboard-f1" className="block text-sm text-ink-soft mb-1.5">휴대폰 번호</label>
+            <input id="phone-onboard-f1"
               type="tel"
               inputMode="numeric"
               autoComplete="tel"

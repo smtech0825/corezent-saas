@@ -141,8 +141,8 @@ export default function VerifyForm({ email, next }: { email: string; next: strin
 
         <form onSubmit={handleVerify} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm text-ink-soft mb-1.5">인증 코드</label>
-            <input
+            <label htmlFor="verify-f1" className="block text-sm text-ink-soft mb-1.5">인증 코드</label>
+            <input id="verify-f1"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"

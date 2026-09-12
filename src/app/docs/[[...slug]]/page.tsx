@@ -26,6 +26,9 @@ export default async function Page(props: DocsPageProps) {
   const params = await props.params
   const page = source.getPage(params.slug)
   if (!page) notFound()
+  // hidden: true 문서는 사이드바·검색·사이트맵에서만 빠져 있고 주소를 직접 치면 열렸다.
+  // 표식의 뜻을 "공개하지 않음"으로 통일해 주소로도 열리지 않게 한다(문서 파일은 그대로 둔다).
+  if (page.data.hidden === true) notFound()
 
   const MDX = page.data.body
 
@@ -61,7 +64,7 @@ export function generateStaticParams() {
 export async function generateMetadata(props: DocsPageProps): Promise<Metadata> {
   const params = await props.params
   const page = source.getPage(params.slug)
-  if (!page) notFound()
+  if (!page || page.data.hidden === true) notFound()
 
   return {
     title: page.data.title,

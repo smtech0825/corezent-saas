@@ -8,6 +8,7 @@
  */
 
 import { Loader2 } from 'lucide-react'
+import LabeledField from '@/components/common/LabeledField'
 
 /** 설정 화면 입력칸 공통 클래스 */
 export const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors'
@@ -15,13 +16,14 @@ export const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3
 /**
  * @컴포넌트: FormField
  * @설명: 라벨 + 입력 요소 한 줄 묶음.
+ *        연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 화면낭독기가 칸 이름을 읽는다.
+ *        모양(글자 크기·색·간격)은 이전과 같다.
  */
 export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
+    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </div>
+    </LabeledField>
   )
 }
 

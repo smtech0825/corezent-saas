@@ -58,24 +58,24 @@ export default function HeroEditor({ initial, onSave }: Props) {
       {saved && !isPending && <p className="text-xs text-ok">저장되었습니다.</p>}
 
       <div className="space-y-1.5">
-        <label className={labelCls}>뱃지 텍스트</label>
-        <input value={form.badge} onChange={(e) => set('badge', e.target.value)} placeholder={HERO_DEFAULTS.badge} className={inputCls} />
+        <label htmlFor="hero-f1" className={labelCls}>뱃지 텍스트</label>
+        <input id="hero-f1" value={form.badge} onChange={(e) => set('badge', e.target.value)} placeholder={HERO_DEFAULTS.badge} className={inputCls} />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>헤드라인 1번째 줄</label>
-          <input value={form.headline1} onChange={(e) => set('headline1', e.target.value)} placeholder={HERO_DEFAULTS.headline1} className={inputCls} />
+          <label htmlFor="hero-f2" className={labelCls}>헤드라인 1번째 줄</label>
+          <input id="hero-f2" value={form.headline1} onChange={(e) => set('headline1', e.target.value)} placeholder={HERO_DEFAULTS.headline1} className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>헤드라인 2번째 줄 (그라데이션)</label>
-          <input value={form.headline2} onChange={(e) => set('headline2', e.target.value)} placeholder={HERO_DEFAULTS.headline2} className={inputCls} />
+          <label htmlFor="hero-f3" className={labelCls}>헤드라인 2번째 줄 (그라데이션)</label>
+          <input id="hero-f3" value={form.headline2} onChange={(e) => set('headline2', e.target.value)} placeholder={HERO_DEFAULTS.headline2} className={inputCls} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelCls}>부가 설명</label>
-        <textarea
+        <label htmlFor="hero-f4" className={labelCls}>부가 설명</label>
+        <textarea id="hero-f4"
           value={form.subtext}
           onChange={(e) => set('subtext', e.target.value)}
           rows={3}
@@ -85,23 +85,23 @@ export default function HeroEditor({ initial, onSave }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>기본 CTA 텍스트</label>
-          <input value={form.cta1_text} onChange={(e) => set('cta1_text', e.target.value)} placeholder={HERO_DEFAULTS.cta1_text} className={inputCls} />
+          <label htmlFor="hero-f5" className={labelCls}>기본 CTA 텍스트</label>
+          <input id="hero-f5" value={form.cta1_text} onChange={(e) => set('cta1_text', e.target.value)} placeholder={HERO_DEFAULTS.cta1_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>기본 CTA 링크</label>
-          <input value={form.cta1_href} onChange={(e) => set('cta1_href', e.target.value)} placeholder={HERO_DEFAULTS.cta1_href} className={inputCls} />
+          <label htmlFor="hero-f6" className={labelCls}>기본 CTA 링크</label>
+          <input id="hero-f6" value={form.cta1_href} onChange={(e) => set('cta1_href', e.target.value)} placeholder={HERO_DEFAULTS.cta1_href} className={inputCls} />
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelCls}>보조 CTA 텍스트</label>
-          <input value={form.cta2_text} onChange={(e) => set('cta2_text', e.target.value)} placeholder={HERO_DEFAULTS.cta2_text} className={inputCls} />
+          <label htmlFor="hero-f7" className={labelCls}>보조 CTA 텍스트</label>
+          <input id="hero-f7" value={form.cta2_text} onChange={(e) => set('cta2_text', e.target.value)} placeholder={HERO_DEFAULTS.cta2_text} className={inputCls} />
         </div>
         <div className="space-y-1.5">
-          <label className={labelCls}>보조 CTA 링크</label>
-          <input value={form.cta2_href} onChange={(e) => set('cta2_href', e.target.value)} placeholder={HERO_DEFAULTS.cta2_href} className={inputCls} />
+          <label htmlFor="hero-f8" className={labelCls}>보조 CTA 링크</label>
+          <input id="hero-f8" value={form.cta2_href} onChange={(e) => set('cta2_href', e.target.value)} placeholder={HERO_DEFAULTS.cta2_href} className={inputCls} />
         </div>
       </div>
 

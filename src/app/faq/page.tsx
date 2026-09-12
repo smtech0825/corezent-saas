@@ -47,7 +47,9 @@ export default async function FaqPage() {
       {faqSchema && <JsonLd data={faqSchema} />}
       <Navbar />
 
-      <main className="flex-1 pt-10 sm:pt-14">
+      {/* 위쪽 여백을 따로 주지 않는다 — FAQ 섹션이 이미 py-16 sm:py-24를 갖고 있어,
+          여백을 겹쳐 주면 머리말 아래에 빈 띠가 생기고 섹션 윗선만 덩그러니 그어진다 */}
+      <main className="flex-1">
         {faqItems.length > 0 ? (
           <FAQSection faqs={faqItems} headingLevel="h1" />
         ) : (

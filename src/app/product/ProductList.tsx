@@ -108,7 +108,7 @@ export default function ProductList({ products }: Props) {
           return (
             <div
               key={product.id}
-              className={`relative flex flex-col border rounded-lg transition-all duration-300 group ${
+              className={`relative flex flex-col border rounded-lg overflow-hidden transition-all duration-300 group ${
                 product.is_active
                   ? 'border-rule bg-paper-raised shadow-[0_1px_2px_rgba(35,39,46,0.05)] hover:border-ink-faint hover:shadow-[0_6px_20px_rgba(35,39,46,0.08)]'
                   : 'border-dashed border-rule bg-paper-shade/50 opacity-70'

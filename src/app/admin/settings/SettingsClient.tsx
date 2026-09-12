@@ -11,6 +11,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
+import LabeledField from '@/components/common/LabeledField'
 import { HOME_FEATURED_PRODUCT_DEFAULT } from '@/lib/front-defaults'
 import { TRIAL_APPLY_URL_DEFAULT } from '@/lib/trial'
 import { createClient } from '@/lib/supabase/client'
@@ -103,11 +104,11 @@ function SaveButton({
 // ─── 레이블 + 인풋 래퍼 ──────────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  // 연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 모양은 그대로.
   return (
-    <div>
-      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
+    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </div>
+    </LabeledField>
   )
 }
 

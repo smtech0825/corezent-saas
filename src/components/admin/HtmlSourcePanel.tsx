@@ -70,6 +70,7 @@ export default function HtmlSourcePanel({ value, onChange, onError }: Props) {
       </div>
       <textarea
         ref={taRef}
+        aria-label="HTML 원본 편집"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}

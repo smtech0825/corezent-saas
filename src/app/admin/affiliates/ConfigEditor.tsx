@@ -12,6 +12,7 @@ import { useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toMinorUnits } from '@/lib/money'
 import SelectField from '@/components/common/SelectField'
+import LabeledField from '@/components/common/LabeledField'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
 
@@ -110,13 +111,12 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
   )
 }
 
-/** 레이블 + 입력 래퍼 */
+/** 레이블 + 입력 래퍼 — 연결은 공용 LabeledField가 처리(모양은 그대로) */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-sm text-ink-soft mb-1.5">{label}</label>
+    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </div>
+    </LabeledField>
   )
 }
 

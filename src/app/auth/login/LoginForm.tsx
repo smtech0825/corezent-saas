@@ -218,6 +218,15 @@ export default function LoginForm() {
             </Link>
           </p>
 
+          {/* 로그인이 필요한 화면(업데이트 내역·고객지원 등)에서 넘어온 경우 이유를 밝힌다.
+              메뉴·푸터 링크든 주소를 직접 친 경우든 모두 이 화면으로 모이므로 안내도 여기 한 곳에 둔다.
+              (이전에는 아무 설명 없이 로그인 화면으로 튕겨 손님이 이유를 알 수 없었다) */}
+          {redirect !== '/' && (
+            <p className="text-sm text-pen bg-pen/5 border border-pen/30 rounded-md px-4 py-2.5 mb-6">
+              로그인이 필요합니다. 로그인하면 보시려던 화면으로 이동합니다.
+            </p>
+          )}
+
           {/* OAuth 버튼 */}
           <div className="flex flex-col gap-3 mb-6">
             <AuthSocialButton
@@ -258,8 +267,9 @@ export default function LoginForm() {
           {/* 이메일 폼 (자동완성 차단 — 저장은 "아이디 저장"으로만 제어) */}
           <form onSubmit={handleEmailLogin} autoComplete="off" className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-ink-soft mb-1.5">이메일</label>
+              <label htmlFor="login-email" className="block text-sm text-ink-soft mb-1.5">이메일</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -272,13 +282,14 @@ export default function LoginForm() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm text-ink-soft">비밀번호</label>
+                <label htmlFor="login-password" className="block text-sm text-ink-soft">비밀번호</label>
                 <Link href="/auth/reset-password" className="text-xs text-pen hover:underline">
                   비밀번호를 잊으셨나요?
                 </Link>
               </div>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -290,6 +301,7 @@ export default function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-soft transition-colors focus-visible:ring-2 focus-visible:ring-pen/40 rounded"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

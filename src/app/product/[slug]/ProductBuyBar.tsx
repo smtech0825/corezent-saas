@@ -46,6 +46,12 @@ interface Props {
 const BUY_BTN_CLS =
   'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold bg-pen text-white hover:bg-pen-dark hover:shadow-[0_8px_24px_rgba(29,63,176,0.25)] transition-all duration-200 whitespace-nowrap shrink-0 max-lg:flex-1'
 
+// 결제방법 선택지 — 세그먼트 컨트롤과 폰 요약줄이 같은 이름을 쓰도록 한 곳에 둔다
+const PAY_OPTIONS = [
+  { value: 'card', label: '신용카드' },
+  { value: 'bank_transfer', label: '계좌이체' },
+] as const
+
 /** 중복 제거 + 첫 등장 순서 유지 */
 function uniqueInOrder(values: (string | null)[]): string[] {
   const seen = new Set<string>()
@@ -77,6 +83,9 @@ export default function ProductBuyBar({
   // 결제방법(계좌이체 활성 시 노출) + 계좌이체 모달
   const [payMethod, setPayMethod] = useState<'card' | 'bank_transfer'>('card')
   const [modalOpen, setModalOpen] = useState(false)
+  // 폰에서 옵션 줄을 접는다 — 바가 화면 높이의 1/4을 덮어 본문을 가리던 문제.
+  // 접힌 상태에서는 선택 내용을 한 줄 요약으로 보여 주고, 누르면 펼쳐진다(lg 이상은 항상 펼침).
+  const [optionsOpen, setOptionsOpen] = useState(false)
   useEffect(() => {
     const supa = createClient()
     supa.auth.getUser().then(async ({ data }) => {
@@ -146,6 +155,15 @@ export default function ProductBuyBar({
   if (rows.length === 0 || !selected) return null
 
   const displayPrice = selected.price * qty
+  // 폰에서 접혀 있을 때 보여 줄 선택 요약(예: "월간 · 1PC용 · 신용카드")
+  const summaryParts = [
+    showAxis1 ? a1 : null,
+    hasAxis2 ? a2 : null,
+    qty > 1 ? `${qty}개` : null,
+    bankTransfer.enabled ? (PAY_OPTIONS.find((o) => o.value === payMethod)?.label ?? null) : null,
+  ].filter(Boolean)
+  const optionSummary = summaryParts.length > 0 ? summaryParts.join(' · ') : `수량 ${qty}개`
+
   const checkoutUrl = buildCheckoutUrl(
     selected.checkoutUrl,
     userId,
@@ -164,8 +182,25 @@ export default function ProductBuyBar({
       {/* 좌우 패딩·max-width는 본문(px-4 sm:px-6 · max-w-4xl)과 동일 — 바 내용이 본문 폭 안에 머문다 */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+          {/* 폰에서 옵션이 접혀 있을 때만 보이는 요약 줄 — 무엇을 고른 상태인지 보여 주고 눌러서 펼친다 */}
+          {!optionsOpen && (
+            <button
+              type="button"
+              onClick={() => setOptionsOpen(true)}
+              aria-expanded={false}
+              className="lg:hidden flex items-center justify-between gap-2 w-full h-10 px-3 border border-rule rounded-md bg-paper text-xs text-ink-soft cursor-pointer"
+            >
+              <span className="truncate">{optionSummary}</span>
+              <span className="shrink-0 font-medium text-pen">변경</span>
+            </button>
+          )}
+
           {/* 옵션1 · 옵션2 · 수량 · 결제방법 — lg 이상에서 한 줄(줄바꿈 방지), 그 아래는 접힘 */}
-          <div className="flex items-center flex-wrap lg:flex-nowrap gap-2.5 md:gap-3 min-w-0">
+          <div
+            className={`flex items-center flex-wrap lg:flex-nowrap gap-2.5 md:gap-3 min-w-0 ${
+              optionsOpen ? '' : 'max-lg:hidden'
+            }`}
+          >
             {/* 옵션1(기간) — 값 2개 이하는 세그먼트, 3개 이상은 드롭업(폭 절약·상품 무관 일반 규칙) */}
             {showAxis1 && (
               axis1Options.length >= 3 ? (
@@ -219,12 +254,18 @@ export default function ProductBuyBar({
                 label="결제방법"
                 value={payMethod}
                 onChange={(v) => setPayMethod(v === 'bank_transfer' ? 'bank_transfer' : 'card')}
-                options={[
-                  { value: 'card', label: '신용카드' },
-                  { value: 'bank_transfer', label: '계좌이체' },
-                ]}
+                options={[...PAY_OPTIONS]}
               />
             )}
+
+            {/* 폰에서 펼친 옵션을 다시 접는다(lg 이상은 항상 펼친 상태라 나오지 않는다) */}
+            <button
+              type="button"
+              onClick={() => setOptionsOpen(false)}
+              className="lg:hidden self-end h-10 px-3 text-xs font-medium text-pen underline underline-offset-2 cursor-pointer"
+            >
+              접기
+            </button>
           </div>
 
           {/* 가격 + 구매하기 */}

@@ -34,6 +34,15 @@
   font-display: swap;
 }
 
+/* 글꼴 스택 정본 — 값은 여기 한 곳에만 적는다.
+   매뉴얼(/docs)·블로그(/blog)는 fumadocs.css가 Tailwind 기본 테마를 한 번 더 불러오면서
+   --font-sans/--font-mono를 기본값으로 덮어써 Pretendard가 빠졌다. 그 파일이 이 변수를
+   다시 가리키게 해 두 곳이 같은 값을 쓰되 스택 문자열은 한 번만 적는다. */
+:root {
+  --font-sans-site: 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-mono-site: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
 /* ----------------------------------------------------------
  * CoreZent 디자인 토큰 (CSS 변수)
  * ---------------------------------------------------------- */
@@ -57,9 +66,9 @@
   --color-warning:         #ffc107;
   --color-error:           #ff5252;
 
-  /* 폰트 */
-  --font-sans:             'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-mono:             'JetBrains Mono', 'Fira Code', monospace;
+  /* 폰트 — 값은 위 :root(--font-sans-site·--font-mono-site)가 정본 */
+  --font-sans:             var(--font-sans-site);
+  --font-mono:             var(--font-mono-site);
 }
 
 /* ----------------------------------------------------------

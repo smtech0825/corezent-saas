@@ -232,6 +232,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                           {/* 답변 입력 */}
                           <div className="relative">
                             <textarea
+                              aria-label="답변 내용"
                               rows={3}
                               value={replyTexts[ticket.id] ?? ''}
                               onChange={(e) => setReplyTexts((prev) => ({ ...prev, [ticket.id]: e.target.value }))}
@@ -241,6 +242,7 @@ export default function TicketList({ tickets }: { tickets: Ticket[] }) {
                             <button
                               type="button"
                               onClick={() => submitReply(ticket.id)}
+                              aria-label="답변 보내기"
                               disabled={submitting || !(replyTexts[ticket.id] ?? '').trim()}
                               className="absolute right-3 bottom-3 text-mark hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
