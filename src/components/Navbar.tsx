@@ -41,7 +41,13 @@ function hashColor(str: string) {
   return AVATAR_PALETTES[Math.abs(hash) % AVATAR_PALETTES.length]
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  /** false면 머리말을 화면 위에 고정하지 않고 본문과 함께 스크롤시킨다.
+   *  매뉴얼(/docs)처럼 이미 자체 상단 띠가 두 개 더 있는 화면에서 폰 화면을 덜 가리기 위함. */
+  sticky?: boolean
+}
+
+export default function Navbar({ sticky = true }: NavbarProps) {
   const router = useRouter()
 
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -172,7 +178,10 @@ export default function Navbar() {
   }, [mobileOpen])
 
   return (
-    <header ref={headerRef} className="sticky top-0 inset-x-0 z-50 flex flex-col">
+    <header
+      ref={headerRef}
+      className={`${sticky ? 'sticky top-0' : 'relative'} inset-x-0 z-50 flex flex-col`}
+    >
       {/* 공지 배너 — Admin에서 관리 */}
       {banner.visible === 'true' && (
         <div className="w-full bg-paper-shade border-b border-rule py-2 text-center text-xs text-ink-soft px-4">

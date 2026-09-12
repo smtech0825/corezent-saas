@@ -14,6 +14,12 @@
  * 항상 먼저 로드되므로 var가 해석되며, 만일을 대비해 동일 HEX 폴백을 둔다.
  * 사이트가 라이트 전용이라 .dark 값은 재정의하지 않는다(다크는 비활성). */
 :root {
+  /* 글꼴 — 위 `@import 'tailwindcss'`가 기본 스택으로 덮어쓴 것을 사이트 정본으로 되돌린다.
+     (이게 없으면 매뉴얼/블로그만 Pretendard가 빠져 글자가 넓어지고 공지 배너가 두 줄로 늘어난다.
+      스택 문자열은 globals.css의 --font-sans-site 한 곳에만 있다) */
+  --font-sans: var(--font-sans-site, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--font-mono-site, ui-monospace, monospace);
+
   --color-fd-background: var(--color-paper, #fbfaf6);          /* 종이 */
   --color-fd-foreground: var(--color-ink, #23272e);           /* 먹 */
   --color-fd-muted: var(--color-paper-shade, #f1efe7);        /* 종이 음영 */

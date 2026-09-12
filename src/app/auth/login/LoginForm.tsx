@@ -218,6 +218,15 @@ export default function LoginForm() {
             </Link>
           </p>
 
+          {/* 로그인이 필요한 화면(업데이트 내역·고객지원 등)에서 넘어온 경우 이유를 밝힌다.
+              메뉴·푸터 링크든 주소를 직접 친 경우든 모두 이 화면으로 모이므로 안내도 여기 한 곳에 둔다.
+              (이전에는 아무 설명 없이 로그인 화면으로 튕겨 손님이 이유를 알 수 없었다) */}
+          {redirect !== '/' && (
+            <p className="text-sm text-pen bg-pen/5 border border-pen/30 rounded-md px-4 py-2.5 mb-6">
+              로그인이 필요합니다. 로그인하면 보시려던 화면으로 이동합니다.
+            </p>
+          )}
+
           {/* OAuth 버튼 */}
           <div className="flex flex-col gap-3 mb-6">
             <AuthSocialButton

@@ -28,8 +28,15 @@ export default function FAQSection({ faqs, headingLevel = 'h2' }: Props) {
 
   if (!faqs || faqs.length === 0) return null
 
+  // headingLevel='h1' = 이 섹션이 곧 페이지(/faq). 머리말 바로 아래라 윗선은 긋지 않는다
+  // (홈처럼 섹션 사이에 낄 때만 위아래 구분선이 의미가 있다)
+  const standalone = headingLevel === 'h1'
+
   return (
-    <section id="faq" className="py-16 sm:py-24 bg-paper-shade/60 border-y border-rule">
+    <section
+      id="faq"
+      className={`py-16 sm:py-24 bg-paper-shade/60 border-rule ${standalone ? 'border-b' : 'border-y'}`}
+    >
       <Container width="text">
         <SectionHeader label="FAQ" title="자주 묻는 질문" align="center" headingLevel={headingLevel} />
 

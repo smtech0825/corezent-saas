@@ -16,5 +16,8 @@ export function baseOptions(): BaseLayoutProps {
       title: 'CoreZent 매뉴얼',
       url: '/',
     },
+    // 사이트가 라이트 전용이라 다크 모드를 꺼 두었는데(레이아웃의 theme.enabled=false)
+    // 해/달 버튼만 남아 눌러도 아무 일이 없었다. 버튼 자체를 없앤다.
+    themeSwitch: { enabled: false },
   }
 }
