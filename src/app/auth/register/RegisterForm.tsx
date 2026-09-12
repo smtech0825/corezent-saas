@@ -17,6 +17,7 @@ import AuthSocialButton from '../_components/AuthSocialButton'
 import { EVENT, trackEvent } from '@/lib/analytics-events'
 import { SIGNUP_TRACKED_KEY } from '@/lib/signup-tracking'
 import AuthBrand from '../_components/AuthBrand'
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password'
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -41,8 +42,9 @@ export default function RegisterForm() {
       setError('올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)')
       return
     }
-    if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.')
+    const pwError = validatePassword(password)
+    if (pwError) {
+      setError(pwError)
       return
     }
 
@@ -252,7 +254,7 @@ export default function RegisterForm() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="8자 이상 입력하세요"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
                   minLength={8}
                   autoComplete="new-password"

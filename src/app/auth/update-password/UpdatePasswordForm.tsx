@@ -14,6 +14,7 @@ import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isRateLimited } from '@/lib/auth-error'
 import AuthBrand from '../_components/AuthBrand'
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password'
 
 export default function UpdatePasswordForm() {
   const router = useRouter()
@@ -46,8 +47,9 @@ export default function UpdatePasswordForm() {
     e.preventDefault()
     setError('')
 
-    if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.')
+    const pwError = validatePassword(password)
+    if (pwError) {
+      setError(pwError)
       return
     }
     if (password !== confirm) {
@@ -128,7 +130,7 @@ export default function UpdatePasswordForm() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="8자 이상 입력하세요"
+                      placeholder={PASSWORD_RULE_TEXT}
                       required
                       minLength={8}
                       className="w-full bg-paper-raised border border-rule rounded-md px-4 py-2.5 pr-10 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-pen focus:ring-2 focus:ring-pen/15 transition-colors"

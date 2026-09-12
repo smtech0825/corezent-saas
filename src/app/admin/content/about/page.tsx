@@ -13,6 +13,8 @@ import { updateHero, createStat, updateStat, deleteStat, createBlock, updateBloc
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '소개 페이지 편집' }
+
 export default async function AboutAdminPage() {
   const c = createAdminClient()
 

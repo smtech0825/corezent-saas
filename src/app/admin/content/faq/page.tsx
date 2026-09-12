@@ -14,6 +14,8 @@ import { logAdminActivity, summarizeForLog, currentUserIdForLog } from '@/lib/ad
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: 'FAQ 편집' }
+
 /** 추가된 FAQ 한 줄 — 화면 목록에 바로 끼워 넣기 위해 돌려준다 */
 type FaqRow = { id: string; question: string; answer: string; is_published: boolean; order_index: number }
 

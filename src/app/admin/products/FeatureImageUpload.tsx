@@ -9,6 +9,7 @@
 import { useState, useRef } from 'react'
 import { Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 /**
  * @함수명: FeatureImageUpload
@@ -54,8 +55,7 @@ export default function FeatureImageUpload({ value, onChange }: { value: string;
     <div className="space-y-1">
       {value ? (
         <div className="flex items-center gap-2 p-2 bg-paper-raised rounded-lg border border-rule">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="feature preview" className="w-8 h-8 object-contain rounded shrink-0" />
+          <Image src={value} alt="feature preview" width={32} height={32} className="w-8 h-8 object-contain rounded shrink-0" />
           <span className="text-xs text-ink-faint truncate flex-1">{value.split('/').pop()}</span>
           <button type="button" onClick={clear} title="이미지 제거" aria-label="이미지 제거" className="shrink-0 text-ink-faint hover:text-danger transition-colors">
             <X size={12} />

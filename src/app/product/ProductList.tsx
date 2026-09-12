@@ -145,6 +145,8 @@ export default function ProductList({ products }: Props) {
                         src={product.logo_url}
                         alt={`${product.name} logo`}
                         fill
+                        /* 보이는 크기를 알려 준다 — 없으면 화면 폭만 한 큰 파일을 내려받는다 */
+                        sizes="56px"
                         className="object-contain"
                       />
                     </div>

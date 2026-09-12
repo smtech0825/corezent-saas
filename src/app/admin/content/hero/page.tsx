@@ -13,6 +13,8 @@ import { logAdminActivity, diffKeyChanges, buildChangeDetail, currentUserIdForLo
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '히어로 섹션 편집' }
+
 const heroKeys = [
   'hero_badge', 'hero_headline1', 'hero_headline2', 'hero_subtext',
   'hero_cta1_text', 'hero_cta1_href', 'hero_cta2_text', 'hero_cta2_href',

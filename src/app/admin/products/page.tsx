@@ -16,6 +16,8 @@ import EmptyState from '@/components/common/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '제품 관리' }
+
 type DeleteResult =
   | { ok: true; mode: 'deleted' | 'deactivated' }
   | { ok: false; message: string }

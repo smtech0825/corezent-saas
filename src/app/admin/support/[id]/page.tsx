@@ -20,6 +20,8 @@ import { logAdminActivity, currentUserIdForLog } from '@/lib/adminActivityLog'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '고객지원 티켓 상세' }
+
 function fmtDate(d: string) {
   return new Date(d).toLocaleString('ko-KR', {
     month: 'short', day: 'numeric', year: 'numeric',

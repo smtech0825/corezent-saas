@@ -12,6 +12,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ChecksumList from '@/components/common/ChecksumList'
 import { PLATFORM_LABELS } from '@/lib/platforms'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,8 +133,8 @@ export default async function ChangelogPage({
                   }`}
                 >
                   {p.logo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.logo_url} alt="" className="w-6 h-6 rounded-md object-contain shrink-0" />
+                    // 보이는 크기(24px)로 줄여 내려받는다 — 원본은 1MB가 넘는다
+                    <Image src={p.logo_url} alt="" width={24} height={24} className="w-6 h-6 rounded-md object-contain shrink-0" />
                   ) : (
                     <div className="w-6 h-6 rounded-md bg-paper-shade flex items-center justify-center shrink-0">
                       <Tag size={11} className="text-ink-faint" />

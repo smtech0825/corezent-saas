@@ -13,6 +13,8 @@ import { supportCategoryLabel } from '@/lib/support-categories'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '고객지원 티켓' }
+
 const PAGE_SIZE = 10
 
 function fmtDate(d: string) {

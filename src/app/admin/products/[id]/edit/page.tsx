@@ -17,6 +17,8 @@ import PageContainer from '@/components/common/PageContainer'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: '제품 편집' }
+
 /**
  * @함수명: isMissingColumnError
  * @설명: 조달청 등록번호 컬럼(054)이 아직 적용되지 않은 DB에서 나는 오류인지 판별합니다.
