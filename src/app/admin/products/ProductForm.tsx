@@ -536,6 +536,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 <input
                   ref={fileInputRef}
                   type="file"
+                  aria-label="로고 파일 선택"
                   accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
                   className="hidden"
                   disabled={logoMode === 'url' || uploading}
@@ -671,6 +672,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 set('pricing_features', next.filter((t, idx) => t || idx < i))
               }}
               placeholder={`특징 ${i + 1} — 예: 쿼드 엔진 AI 생성: 4개의 프리미엄 AI 엔진으로 구동되는 고품질 콘텐츠.`}
+              aria-label={`요금제 특징 ${i + 1}`}
               className={inputCls}
             />
           ))}
