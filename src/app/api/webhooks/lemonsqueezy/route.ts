@@ -40,6 +40,7 @@ import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/li
 import { notifyNewOrder } from '@/lib/admin-notify'
 import { formatMoney, fromProviderAmount, toMinorUnits } from '@/lib/money'
 import { logSystemActivity } from '@/lib/adminActivityLog'
+import { isKnownTier } from '@/lib/license-tiers'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
@@ -97,8 +98,9 @@ function tierFromGenieWork(slug: string | null | undefined): SupaTier | null {
  */
 function normalizeTier(value: unknown): SupaTier | null {
   const s = String(value ?? '').toLowerCase().trim()
-  const valid: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
-  return valid.includes(s) ? (s as SupaTier) : null
+  // 목록은 lib/license-tiers.ts 한 곳에서만 정의한다(여기 사본이 마지막이었다).
+  // '해당 없음'(none)은 발급 대상이 아니라 여기서 null이 된다 — 의도한 동작이다.
+  return isKnownTier(s) ? (s as SupaTier) : null
 }
 
 /**
