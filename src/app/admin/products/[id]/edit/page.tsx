@@ -247,7 +247,10 @@ export default async function EditProductPage({
       }
       if (price.option_axis1_label) priceUpdate.option_axis1_label = price.option_axis1_label
       if (price.option_axis2_label) priceUpdate.option_axis2_label = price.option_axis2_label
-      if (price.license_tier) priceUpdate.license_tier = price.license_tier
+      // 등급은 값이 있을 때만이 아니라 **항상** 보낸다. 예전처럼 빈 값일 때 칸을 빼면
+      // DB의 옛 값이 남아 화면과 저장 내용이 어긋난다('해당 없음'으로 바꿔도 반영이 안 됨).
+      // 빈 값은 위 validateOptionRows가 이미 막았으므로 여기 도달하는 값은 목록 안의 값이다.
+      priceUpdate.license_tier = price.license_tier.trim().toLowerCase()
       const so = parseInt(price.sort_order, 10)
       if (Number.isFinite(so)) priceUpdate.sort_order = so
 
@@ -286,7 +289,7 @@ export default async function EditProductPage({
         }
         if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
         if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
-        if (p.license_tier) row.license_tier = p.license_tier
+        row.license_tier = p.license_tier.trim().toLowerCase()
         const so = parseInt(p.sort_order, 10)
         row.sort_order = Number.isFinite(so) ? so : i + 1
         return row

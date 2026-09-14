@@ -114,7 +114,8 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
         }
         if (p.option_axis1_label) row.option_axis1_label = p.option_axis1_label
         if (p.option_axis2_label) row.option_axis2_label = p.option_axis2_label
-        if (p.license_tier) row.license_tier = p.license_tier
+        // 항상 보낸다 — 빈 값은 validateOptionRows가 막았고, '해당 없음'도 저장돼야 한다
+        row.license_tier = p.license_tier.trim().toLowerCase()
         // 표시 순서(041) — 비었으면 입력 순서로 폴백
         const so = parseInt(p.sort_order, 10)
         row.sort_order = Number.isFinite(so) ? so : i + 1

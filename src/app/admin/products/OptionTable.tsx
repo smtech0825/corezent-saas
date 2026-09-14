@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import CopyButton from '@/components/common/CopyButton'
 import SelectField from '@/components/common/SelectField'
+import { TIER_OPTIONS } from '@/lib/license-tiers'
 import type { PriceEntry } from './ProductForm'
 
 interface Props {
@@ -26,8 +27,8 @@ interface Props {
 
 const cellInput =
   'w-full bg-paper border border-rule text-ink text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
-// 열 폭 — 내용 길이에 맞춤(순서 48 · 축 110 · 유형/주기 92 · 가격 110 · tier 80 · variant 110 · URL 유동)
-const GRID = 'grid-cols-[48px_110px_110px_92px_92px_110px_80px_110px_minmax(180px,1fr)_40px]'
+// 열 폭 — 내용 길이에 맞춤(순서 48 · 축 110 · 유형/주기 92 · 가격 110 · tier 104 · variant 110 · URL 유동)
+const GRID = 'grid-cols-[48px_110px_110px_92px_92px_110px_104px_110px_minmax(180px,1fr)_40px]'
 const dupCell = 'bg-caution-soft border-caution'
 
 /**
@@ -203,13 +204,20 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                 </SelectField>
                 {/* 가격 */}
                 <PriceInput value={price.price} onChange={(v) => onUpdate(idx, 'price', v)} />
-                {/* tier */}
-                <input
+                {/* tier — 자유 입력이면 공란·오타('3 pc')가 그대로 저장돼 결제 후 라이선스가
+                    발급되지 않는다. 목록에서만 고르게 한다. 값 목록은 lib/license-tiers.ts 한 곳. */}
+                <SelectField
+                  size="xs"
                   value={price.license_tier}
                   onChange={(e) => onUpdate(idx, 'license_tier', e.target.value)}
-                  placeholder="3pc"
-                  className={`${cellInput} font-mono`}
-                />
+                  className="font-mono"
+                >
+                  {/* 아직 안 고른 행 — 저장하려 하면 막힌다(고르라는 뜻으로 남겨 둔다) */}
+                  <option value="">선택</option>
+                  {TIER_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </SelectField>
                 {/* Variant ID — 중복 경고 */}
                 <input
                   value={price.lemon_squeezy_variant_id}
