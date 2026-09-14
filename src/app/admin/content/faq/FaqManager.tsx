@@ -122,8 +122,8 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                 aria-label="질문"
               />
               <div>
-                <label className="block text-xs text-ink-faint mb-1">답변</label>
-                <RichTextEditor value={form.answer} onChange={(html) => setForm({ ...form, answer: html })} />
+                <span className="block text-xs text-ink-faint mb-1">답변</span>
+                <RichTextEditor value={form.answer} onChange={(html) => setForm({ ...form, answer: html })} ariaLabel="답변" />
               </div>
               <div className="flex gap-2">
                 <button
@@ -197,8 +197,8 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             autoFocus
           />
           <div>
-            <label className="block text-xs text-ink-faint mb-1">답변</label>
-            <RichTextEditor value={newForm.answer} onChange={(html) => setNewForm({ ...newForm, answer: html })} />
+            <span className="block text-xs text-ink-faint mb-1">답변</span>
+            <RichTextEditor value={newForm.answer} onChange={(html) => setNewForm({ ...newForm, answer: html })} ariaLabel="답변" />
           </div>
           <div className="flex gap-2">
             <button

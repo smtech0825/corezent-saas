@@ -6,7 +6,7 @@
  *        Logo: URL 직접 입력 또는 파일 업로드 (상호 배타적)
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -117,16 +117,19 @@ function ProductRow({
 /**
  * @컴포넌트: ProductRowGroup
  * @설명: 이름표 + "입력칸 하나로 볼 수 없는 덩어리"(리치 에디터·이미지 업로더·여러 개 묶음).
- *        이런 자리는 htmlFor로 가리킬 대상이 없다. 예전에는 그래도 htmlFor를 내보내
+ *        이런 자리는 <label for>로 가리킬 대상이 없다 — contenteditable이나 <div>는
+ *        이름표가 가리킬 수 있는 요소가 아니다. 예전에는 그래도 htmlFor를 내보내
  *        존재하지 않는 id나 <div>를 가리켰고, 점검 도구에만 "연결됨"으로 보였다.
- *        지금은 거짓 연결을 만들지 않는다 — 실제 연결은 다음 단계(갈래 B)에서
- *        각 부품이 id를 받아 안쪽 요소에 넘기도록 고치며 붙인다.
+ *        대신 덩어리 전체를 하나의 묶음(group)으로 선언하고 그 묶음에 이름을 준다 —
+ *        화면낭독기가 "설명, 묶음"처럼 읽어 안에 들어왔다는 것을 알려 준다.
+ *        모양은 바뀌지 않는다(span·div는 화면에 아무 영향이 없다).
  */
 function ProductRowGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  const labelId = useId()
   return (
     <div className="space-y-1.5">
-      <span className="block text-xs font-medium text-ink-soft uppercase tracking-wider">{label}</span>
-      {children}
+      <span id={labelId} className="block text-xs font-medium text-ink-soft uppercase tracking-wider">{label}</span>
+      <div role="group" aria-labelledby={labelId}>{children}</div>
     </div>
   )
 }
@@ -382,7 +385,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
 
         <ProductRowGroup label="설명">
           {/* 편집 폭을 상세 표시 박스(max-w-4xl)와 맞춰 편집 화면이 실제 결과와 비슷하게 보이도록 제한 */}
-          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} maxWidthClass="max-w-4xl" />
+          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} maxWidthClass="max-w-4xl" ariaLabel="설명" />
           <p className="text-xs text-ink-faint mt-2">
             문서 편집기처럼 제목·굵게·밑줄·글자색·링크·이미지·목록을 사용할 수 있습니다. 이미지는 버튼으로 업로드 후
             선택하면 크기(소/중/대/원본)를 조절할 수 있고, 유튜브 URL은 공개 페이지에서 영상으로 표시됩니다.

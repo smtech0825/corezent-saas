@@ -293,9 +293,9 @@ export default function AboutManager({
               <input id="about-hero-title" value={heroTitle} onChange={(e) => changeHero('title', e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
+              <span className="text-[10px] text-ink-faint mb-1 block">설명</span>
               {/* 콘텐츠 블록과 동일한 리치 에디터 — 서식·정렬·이미지·유튜브·표. 저장 시 서버에서 sanitize된다 */}
-              <RichTextEditor value={heroDesc} onChange={(html) => changeHero('description', html)} />
+              <RichTextEditor value={heroDesc} onChange={(html) => changeHero('description', html)} ariaLabel="설명" />
             </div>
             <div className="flex items-center gap-3">
               <button onClick={handleHeroSave} disabled={isPending} className={btnPrimary}>
@@ -376,12 +376,12 @@ export default function AboutManager({
                   <div className="p-4 space-y-3">
                     <input value={blockForm.title} onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                     <div>
-                      <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
-                      <RichTextEditor value={blockForm.description} onChange={(html) => setBlockForm({ ...blockForm, description: html })} />
+                      <span className="text-[10px] text-ink-faint mb-1 block">설명</span>
+                      <RichTextEditor value={blockForm.description} onChange={(html) => setBlockForm({ ...blockForm, description: html })} ariaLabel="설명" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</label>
-                      <ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} />
+                      <span id="about-imgs-block" className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개) — 오른쪽에 슬라이더로 표시</span>
+                      <div role="group" aria-labelledby="about-imgs-block"><ImageUploader images={blockForm.images} onChange={(imgs) => setBlockForm({ ...blockForm, images: imgs })} /></div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleUpdateBlock(b.id)} disabled={isPending} className={btnPrimary}>저장</button>
@@ -419,12 +419,12 @@ export default function AboutManager({
                 <div className="border border-mark/30 bg-mark/5 rounded-lg p-4 space-y-3">
                   <input value={newBlockForm.title} onChange={(e) => setNewBlockForm({ ...newBlockForm, title: e.target.value })} placeholder="블록 제목 (선택)" className={inputCls} />
                   <div>
-                    <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
-                    <RichTextEditor value={newBlockForm.description} onChange={(html) => setNewBlockForm({ ...newBlockForm, description: html })} />
+                    <span className="text-[10px] text-ink-faint mb-1 block">설명</span>
+                    <RichTextEditor value={newBlockForm.description} onChange={(html) => setNewBlockForm({ ...newBlockForm, description: html })} ariaLabel="설명" />
                   </div>
                   <div>
-                    <label className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개)</label>
-                    <ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} />
+                    <span id="about-imgs-new" className="text-[10px] text-ink-faint mb-1.5 block">이미지 (최대 3개)</span>
+                    <div role="group" aria-labelledby="about-imgs-new"><ImageUploader images={newBlockForm.images} onChange={(imgs) => setNewBlockForm({ ...newBlockForm, images: imgs })} /></div>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleCreateBlock} disabled={isPending} className={btnPrimary}>블록 추가</button>

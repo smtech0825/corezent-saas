@@ -40,9 +40,15 @@ interface Props {
   onChange: (html: string) => void
   /** 편집 영역 최대 폭 클래스(예: 'max-w-4xl') — 상품 상세 표시 폭과 비슷하게 보이도록 제한. 미지정 시 폼 폭 전체 */
   maxWidthClass?: string
+  /**
+   * 편집 영역의 이름 — 화면낭독기가 "무슨 칸인지" 읽는 값.
+   * 편집 영역은 <textarea>가 아니라 contenteditable 이라 <label for>로는 가리킬 수 없다.
+   * 그래서 이름표 글자를 이 인자로 그대로 넘겨 편집 영역 자신이 이름을 갖게 한다.
+   */
+  ariaLabel?: string
 }
 
-export default function RichTextEditor({ value, onChange, maxWidthClass }: Props) {
+export default function RichTextEditor({ value, onChange, maxWidthClass, ariaLabel }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
@@ -77,7 +83,15 @@ export default function RichTextEditor({ value, onChange, maxWidthClass }: Props
       PreserveStyle,
     ],
     content: looksLikeHtml(value) ? value : legacyToHtml(value),
-    editorProps: { attributes: { class: 'rich-content min-h-[12rem] px-4 py-3 focus:outline-none' } },
+    editorProps: {
+      attributes: {
+        class: 'rich-content min-h-[12rem] px-4 py-3 focus:outline-none',
+        // contenteditable 영역에 이름·역할을 직접 얹는다(<label for>로는 가리킬 수 없는 요소)
+        role: 'textbox',
+        'aria-multiline': 'true',
+        ...(ariaLabel ? { 'aria-label': ariaLabel } : {}),
+      },
+    },
     // 빈 편집기는 <p></p>를 반환 → 빈 설명이 null이 아니게 저장되는 것을 막기 위해 빈 문자열로 정규화
     onUpdate: ({ editor }) => onChange(editor.isEmpty ? '' : editor.getHTML()),
   })
