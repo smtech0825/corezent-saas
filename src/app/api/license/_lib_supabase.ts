@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js'
 // 잡아낸 예외를 객체째 찍으면 그 안에 실린 값(요청 본문·응답 본문 등)까지 로그에 남는다.
 // 무엇이 잘못됐는지는 남기되 값은 남기지 않도록, 사람이 읽는 한 줄로 바꿔 가린 뒤 기록한다.
 import { maskSecret, maskSecretsInText, maskPgUniqueViolation } from '@/lib/mask'
+import { isKnownTier as isKnownTierValue } from '@/lib/license-tiers'
 
 // 라이선스 데이터(license_keys / hwid_mapping)는 별도 Supabase 프로젝트에 보관.
 // CoreZent 본체용 createAdminClient(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)와
@@ -103,18 +104,22 @@ export const HWID_LIMITS: Record<string, number> = {
  * (license-migrations/001) 및 웹훅의 normalizeTier와 같은 집합이다.
  * 플랜 올리기 화면·요청 검증이 이 목록 밖의 tier(빈 값·'2pc' 같은 미등록 값)를
  * 후보로 삼으면, 결제는 되는데 웹훅·DB에서 거부돼 반영이 영구 실패한다(검증 지적).
+ *
+ * ★ 목록의 정의는 `lib/license-tiers.ts` 한 곳에 있다 — 관리자 화면(브라우저 코드)도
+ *   같은 목록을 써야 하는데 이 파일은 서버 전용(서비스 키를 읽는다)이라 가져갈 수 없어서다.
+ *   여기서는 그대로 다시 내보내고, 타입 좁힘(value is Tier)만 얹는다.
  */
-export const KNOWN_TIERS = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc'] as const
+export { KNOWN_TIERS } from '@/lib/license-tiers'
 
 /**
  * @함수명: isKnownTier
- * @설명: 값이 발급·저장 가능한 tier인지 판정합니다(위 KNOWN_TIERS 기준).
+ * @설명: 값이 발급·저장 가능한 tier인지 판정합니다(KNOWN_TIERS 기준).
+ *        판정 자체는 공용 모듈이 하고, 이 함수는 호출부가 쓰는 타입 좁힘만 더합니다.
  * @매개변수: value - 검사할 값(옵션 행의 license_tier 등)
  * @반환값: 허용 tier면 true
  */
 export function isKnownTier(value: unknown): value is Tier {
-  const s = String(value ?? '').toLowerCase().trim()
-  return (KNOWN_TIERS as readonly string[]).includes(s)
+  return isKnownTierValue(value)
 }
 
 /**

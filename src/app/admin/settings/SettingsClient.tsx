@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import SelectField from '@/components/common/SelectField'
-import LabeledField from '@/components/common/LabeledField'
+import { Field } from '@/components/ui/Input'
 import { HOME_FEATURED_PRODUCT_DEFAULT } from '@/lib/front-defaults'
 import { TRIAL_APPLY_URL_DEFAULT } from '@/lib/trial'
 import { createClient } from '@/lib/supabase/client'
@@ -103,12 +103,16 @@ function SaveButton({
 
 // ─── 레이블 + 인풋 래퍼 ──────────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  // 연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 모양은 그대로.
+function SettingRow({
+  label, htmlFor, children,
+}: { label: string; htmlFor: string; children: React.ReactNode }) {
+  // 연결(이름표↔입력칸)은 공용 Field가 처리한다 — 모양은 그대로.
+  // 이름을 SettingRow로 바꾼 이유: 공용 부품 ui/Input의 Field와 이름이 같아 헷갈렸다.
+  // htmlFor는 필수 — 자식이 여럿인 줄(입력칸 + 버튼)에서 자동 연결이 조용히 실패했다.
   return (
-    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
+    <Field label={label} htmlFor={htmlFor} className="" labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </LabeledField>
+    </Field>
   )
 }
 
@@ -259,20 +263,20 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         description="기본 사이트 구성"
         footer={<SaveButton section="general" {...btnProps} />}
       >
-        <Field label="사이트 이름">
-          <input value={values.site_name ?? ''} onChange={(e) => update('site_name', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="사이트 URL">
-          <input type="url" value={values.site_url ?? ''} onChange={(e) => update('site_url', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="고객지원 이메일">
-          <input type="email" value={values.support_email ?? ''} onChange={(e) => update('support_email', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="푸터 저작권">
-          <input value={values.footer_copyright ?? ''} onChange={(e) => update('footer_copyright', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="홈 대표 제품 (제품 주소 이름)">
-          <input
+        <SettingRow label="사이트 이름" htmlFor="admin-set-site-name">
+          <input id="admin-set-site-name" value={values.site_name ?? ''} onChange={(e) => update('site_name', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="사이트 URL" htmlFor="admin-set-site-url">
+          <input id="admin-set-site-url" type="url" value={values.site_url ?? ''} onChange={(e) => update('site_url', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="고객지원 이메일" htmlFor="admin-set-support-email">
+          <input id="admin-set-support-email" type="email" value={values.support_email ?? ''} onChange={(e) => update('support_email', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="푸터 저작권" htmlFor="admin-set-footer-copyright">
+          <input id="admin-set-footer-copyright" value={values.footer_copyright ?? ''} onChange={(e) => update('footer_copyright', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="홈 대표 제품 (제품 주소 이름)" htmlFor="admin-set-home-featured-product">
+          <input id="admin-set-home-featured-product"
             value={values.home_featured_product ?? ''}
             onChange={(e) => update('home_featured_product', e.target.value)}
             placeholder={HOME_FEATURED_PRODUCT_DEFAULT}
@@ -282,9 +286,9 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             홈 화면에 이 제품 하나만 보여줍니다. 비워 두면 {HOME_FEATURED_PRODUCT_DEFAULT}, 해당 제품이 없거나
             판매 중지 상태면 판매 중인 제품 전체가 보입니다. 요금 페이지·제품 목록에는 영향이 없습니다.
           </p>
-        </Field>
-        <Field label="무료 체험 신청 주소">
-          <input
+        </SettingRow>
+        <SettingRow label="무료 체험 신청 주소" htmlFor="admin-set-trial-apply-url">
+          <input id="admin-set-trial-apply-url"
             type="url"
             value={values.trial_apply_url ?? ''}
             onChange={(e) => update('trial_apply_url', e.target.value)}
@@ -295,10 +299,10 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             상단 메뉴와 요금 페이지의 「무료 체험 신청」 버튼이 새 창으로 여는 주소입니다.
             비워 두고 저장하면 버튼이 사이트에서 숨겨집니다. 바꾸면 1분 안에 반영됩니다.
           </p>
-        </Field>
-        <Field label="사용설명서 파일 (HTML)">
+        </SettingRow>
+        <SettingRow label="사용설명서 파일 (HTML)" htmlFor="admin-set-manual-file-url">
           <div className="flex items-center gap-2">
-            <input
+            <input id="admin-set-manual-file-url"
               value={values.manual_file_url ?? ''}
               onChange={(e) => update('manual_file_url', e.target.value)}
               placeholder="아래 「파일 올리기」를 누르면 자동으로 채워집니다"
@@ -321,7 +325,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             대시보드 라이선스 화면의 「사용설명서 보기」 버튼이 여는 파일입니다. 파일을 올린 뒤
             반드시 「저장」을 눌러야 반영됩니다. 비워 두고 저장하면 버튼이 숨겨집니다.
           </p>
-        </Field>
+        </SettingRow>
       </SectionCard>
 
       {/* ── Footer Information ───────────────────────────────────────────── */}
@@ -342,22 +346,22 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
           <p className="text-xs text-ink-faint mt-1.5">입력한 줄바꿈 그대로 Footer에 출력됩니다.</p>
         </div>
 
-        <Field label="조달청 물품식별번호">
-          <input
+        <SettingRow label="조달청 물품식별번호" htmlFor="admin-set-procurement-item-number">
+          <input id="admin-set-procurement-item-number"
             value={values.procurement_item_number ?? ''}
             onChange={(e) => update('procurement_item_number', e.target.value)}
             placeholder="예: 26391406"
             className={INPUT_CLS}
           />
-        </Field>
-        <Field label="조달청 물품분류번호">
-          <input
+        </SettingRow>
+        <SettingRow label="조달청 물품분류번호" htmlFor="admin-set-procurement-class-number">
+          <input id="admin-set-procurement-class-number"
             value={values.procurement_class_number ?? ''}
             onChange={(e) => update('procurement_class_number', e.target.value)}
             placeholder="예: 43232698"
             className={INPUT_CLS}
           />
-        </Field>
+        </SettingRow>
         <p className="text-xs text-ink-faint">
           입력하면 푸터와 기관 도입 페이지에 표시됩니다. 비워 두면 그 줄이 아예 나오지 않습니다.
         </p>
@@ -370,34 +374,34 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         description="검색 엔진 최적화 및 분석 설정"
         footer={<SaveButton section="seo" {...btnProps} />}
       >
-        <Field label="Google Analytics 추적 ID (UA-1xxxxx) 또는 (G-xxxxxx)">
-          <input
+        <SettingRow label="Google Analytics 추적 ID (UA-1xxxxx) 또는 (G-xxxxxx)" htmlFor="admin-set-seo-ga-tracking-id">
+          <input id="admin-set-seo-ga-tracking-id"
             value={values.seo_ga_tracking_id ?? ''}
             onChange={(e) => update('seo_ga_tracking_id', e.target.value)}
             placeholder="G-XXXXXXXXXX"
             className={INPUT_CLS}
           />
-        </Field>
-        <Field label="메타 제목">
-          <input value={values.seo_meta_title ?? ''} onChange={(e) => update('seo_meta_title', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="메타 설명">
-          <textarea
+        </SettingRow>
+        <SettingRow label="메타 제목" htmlFor="admin-set-seo-meta-title">
+          <input id="admin-set-seo-meta-title" value={values.seo_meta_title ?? ''} onChange={(e) => update('seo_meta_title', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="메타 설명" htmlFor="admin-set-seo-meta-description">
+          <textarea id="admin-set-seo-meta-description"
             value={values.seo_meta_description ?? ''}
             onChange={(e) => update('seo_meta_description', e.target.value)}
             rows={3}
             className={TEXTAREA_CLS}
           />
-        </Field>
-        <Field label="메타 키워드">
-          <textarea
+        </SettingRow>
+        <SettingRow label="메타 키워드" htmlFor="admin-set-seo-meta-keywords">
+          <textarea id="admin-set-seo-meta-keywords"
             value={values.seo_meta_keywords ?? ''}
             onChange={(e) => update('seo_meta_keywords', e.target.value)}
             rows={2}
             placeholder="ChatGPT, AI Writer, AI Image Generator, AI Chat"
             className={TEXTAREA_CLS}
           />
-        </Field>
+        </SettingRow>
       </SectionCard>
 
       {/* ── 계좌이체(무통장 입금) 설정 ──────────────────────────────────── */}
@@ -407,8 +411,8 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         description="상품 상세 페이지 결제방법에 '계좌이체'를 노출합니다. 활성화하려면 계좌번호까지 입력하세요."
         footer={<SaveButton section="bank" {...btnProps} />}
       >
-        <Field label="계좌이체 결제 사용">
-          <SelectField
+        <SettingRow label="계좌이체 결제 사용" htmlFor="admin-set-bank-transfer-enabled">
+          <SelectField id="admin-set-bank-transfer-enabled"
             size="md"
             value={displayValue('bank_transfer_enabled', values.bank_transfer_enabled ?? '')}
             onChange={(e) => update('bank_transfer_enabled', e.target.value)}
@@ -416,16 +420,16 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             <option value="false">비활성</option>
             <option value="true">활성</option>
           </SelectField>
-        </Field>
-        <Field label="은행">
-          <input value={values.bank_transfer_bank ?? ''} onChange={(e) => update('bank_transfer_bank', e.target.value)} placeholder="예: 국민은행" className={INPUT_CLS} />
-        </Field>
-        <Field label="계좌번호">
-          <input value={values.bank_transfer_account_number ?? ''} onChange={(e) => update('bank_transfer_account_number', e.target.value)} placeholder="예: 123456-01-234567" className={INPUT_CLS} />
-        </Field>
-        <Field label="예금주">
-          <input value={values.bank_transfer_account_holder ?? ''} onChange={(e) => update('bank_transfer_account_holder', e.target.value)} placeholder="예: 홍길동" className={INPUT_CLS} />
-        </Field>
+        </SettingRow>
+        <SettingRow label="은행" htmlFor="admin-set-bank-transfer-bank">
+          <input id="admin-set-bank-transfer-bank" value={values.bank_transfer_bank ?? ''} onChange={(e) => update('bank_transfer_bank', e.target.value)} placeholder="예: 국민은행" className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="계좌번호" htmlFor="admin-set-bank-transfer-account-number">
+          <input id="admin-set-bank-transfer-account-number" value={values.bank_transfer_account_number ?? ''} onChange={(e) => update('bank_transfer_account_number', e.target.value)} placeholder="예: 123456-01-234567" className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="예금주" htmlFor="admin-set-bank-transfer-account-holder">
+          <input id="admin-set-bank-transfer-account-holder" value={values.bank_transfer_account_holder ?? ''} onChange={(e) => update('bank_transfer_account_holder', e.target.value)} placeholder="예: 홍길동" className={INPUT_CLS} />
+        </SettingRow>
         <p className="text-xs text-ink-faint">
           계좌이체는 자동 갱신이 없어 <b className="text-ink-soft">1회 결제</b>로 기록됩니다. 입금 확인은 <b className="text-ink-soft">주문</b> 화면에서 [결제 확인]으로 처리하며, 라이선스는 수동 발송해야 합니다.
         </p>
@@ -438,8 +442,8 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         description="새 주문·새 고객지원 티켓이 생기면 지원 이메일로 알림 메일을 보냅니다. 기본은 모두 켜짐입니다."
         footer={<SaveButton section="notify" {...btnProps} />}
       >
-        <Field label="새 주문 알림 (카드·계좌이체)">
-          <SelectField
+        <SettingRow label="새 주문 알림 (카드·계좌이체)" htmlFor="admin-set-notify-new-order">
+          <SelectField id="admin-set-notify-new-order"
             size="md"
             value={displayValue('notify_new_order', values.notify_new_order ?? '')}
             onChange={(e) => update('notify_new_order', e.target.value)}
@@ -447,9 +451,9 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             <option value="true">켜짐</option>
             <option value="false">꺼짐</option>
           </SelectField>
-        </Field>
-        <Field label="새 고객지원 티켓 알림">
-          <SelectField
+        </SettingRow>
+        <SettingRow label="새 고객지원 티켓 알림" htmlFor="admin-set-notify-new-ticket">
+          <SelectField id="admin-set-notify-new-ticket"
             size="md"
             value={displayValue('notify_new_ticket', values.notify_new_ticket ?? '')}
             onChange={(e) => update('notify_new_ticket', e.target.value)}
@@ -457,7 +461,7 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
             <option value="true">켜짐</option>
             <option value="false">꺼짐</option>
           </SelectField>
-        </Field>
+        </SettingRow>
         <p className="text-xs text-ink-faint">
           받는 주소는 <b className="text-ink-soft">일반 설정의 고객지원 이메일</b>입니다. 주소가 비어 있으면 알림을 건너뛰고 모니터링 로그에 남깁니다. 새 문의 알림은 별도 스위치 없이 항상 발송됩니다(스팸은 자동 차단).
         </p>
@@ -471,28 +475,28 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         footer={<SaveButton section="company" {...btnProps} />}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="상호(법인명)">
-            <input value={values.company_name ?? ''} onChange={(e) => update('company_name', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="사업자등록번호">
-            <input value={values.company_biz_no ?? ''} onChange={(e) => update('company_biz_no', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="대표자">
-            <input value={values.company_ceo ?? ''} onChange={(e) => update('company_ceo', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="전화번호">
-            <input value={values.company_phone ?? ''} onChange={(e) => update('company_phone', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="업태">
-            <input value={values.company_biz_type ?? ''} onChange={(e) => update('company_biz_type', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="종목">
-            <input value={values.company_biz_item ?? ''} onChange={(e) => update('company_biz_item', e.target.value)} className={INPUT_CLS} />
-          </Field>
+          <SettingRow label="상호(법인명)" htmlFor="admin-set-company-name">
+            <input id="admin-set-company-name" value={values.company_name ?? ''} onChange={(e) => update('company_name', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="사업자등록번호" htmlFor="admin-set-company-biz-no">
+            <input id="admin-set-company-biz-no" value={values.company_biz_no ?? ''} onChange={(e) => update('company_biz_no', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="대표자" htmlFor="admin-set-company-ceo">
+            <input id="admin-set-company-ceo" value={values.company_ceo ?? ''} onChange={(e) => update('company_ceo', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="전화번호" htmlFor="admin-set-company-phone">
+            <input id="admin-set-company-phone" value={values.company_phone ?? ''} onChange={(e) => update('company_phone', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="업태" htmlFor="admin-set-company-biz-type">
+            <input id="admin-set-company-biz-type" value={values.company_biz_type ?? ''} onChange={(e) => update('company_biz_type', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="종목" htmlFor="admin-set-company-biz-item">
+            <input id="admin-set-company-biz-item" value={values.company_biz_item ?? ''} onChange={(e) => update('company_biz_item', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
         </div>
-        <Field label="주소">
-          <input value={values.company_address ?? ''} onChange={(e) => update('company_address', e.target.value)} className={INPUT_CLS} />
-        </Field>
+        <SettingRow label="주소" htmlFor="admin-set-company-address">
+          <input id="admin-set-company-address" value={values.company_address ?? ''} onChange={(e) => update('company_address', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
       </SectionCard>
 
       {/* ── SMTP Settings ────────────────────────────────────────────────── */}
@@ -502,29 +506,29 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         description="이메일 발송 설정"
         footer={<SaveButton section="smtp" {...btnProps} />}
       >
-        <Field label="SMTP 호스트">
-          <input value={values.smtp_host ?? ''} onChange={(e) => update('smtp_host', e.target.value)} placeholder="smtp.example.com" className={INPUT_CLS} />
-        </Field>
+        <SettingRow label="SMTP 호스트" htmlFor="admin-set-smtp-host">
+          <input id="admin-set-smtp-host" value={values.smtp_host ?? ''} onChange={(e) => update('smtp_host', e.target.value)} placeholder="smtp.example.com" className={INPUT_CLS} />
+        </SettingRow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="SMTP 포트">
-            <input type="number" value={values.smtp_port ?? ''} onChange={(e) => update('smtp_port', e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="암호화">
-            <input value={values.smtp_encryption ?? ''} onChange={(e) => update('smtp_encryption', e.target.value)} placeholder="tls / ssl" className={INPUT_CLS} />
-          </Field>
+          <SettingRow label="SMTP 포트" htmlFor="admin-set-smtp-port">
+            <input id="admin-set-smtp-port" type="number" value={values.smtp_port ?? ''} onChange={(e) => update('smtp_port', e.target.value)} className={INPUT_CLS} />
+          </SettingRow>
+          <SettingRow label="암호화" htmlFor="admin-set-smtp-encryption">
+            <input id="admin-set-smtp-encryption" value={values.smtp_encryption ?? ''} onChange={(e) => update('smtp_encryption', e.target.value)} placeholder="tls / ssl" className={INPUT_CLS} />
+          </SettingRow>
         </div>
-        <Field label="SMTP 사용자 이름">
-          <input value={values.smtp_username ?? ''} onChange={(e) => update('smtp_username', e.target.value)} className={INPUT_CLS} />
-        </Field>
-        <Field label="SMTP 비밀번호">
-          <input type="password" value={values.smtp_password ?? ''} onChange={(e) => update('smtp_password', e.target.value)} placeholder="••••••••" className={INPUT_CLS} />
-        </Field>
-        <Field label="발신 이메일">
-          <input value={values.smtp_from_email ?? ''} onChange={(e) => update('smtp_from_email', e.target.value)} placeholder="no-reply@corezent.com" className={INPUT_CLS} />
-        </Field>
-        <Field label="발신자 이름">
-          <input value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
-        </Field>
+        <SettingRow label="SMTP 사용자 이름" htmlFor="admin-set-smtp-username">
+          <input id="admin-set-smtp-username" value={values.smtp_username ?? ''} onChange={(e) => update('smtp_username', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="SMTP 비밀번호" htmlFor="admin-set-smtp-password">
+          <input id="admin-set-smtp-password" type="password" value={values.smtp_password ?? ''} onChange={(e) => update('smtp_password', e.target.value)} placeholder="••••••••" className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="발신 이메일" htmlFor="admin-set-smtp-from-email">
+          <input id="admin-set-smtp-from-email" value={values.smtp_from_email ?? ''} onChange={(e) => update('smtp_from_email', e.target.value)} placeholder="no-reply@corezent.com" className={INPUT_CLS} />
+        </SettingRow>
+        <SettingRow label="발신자 이름" htmlFor="admin-set-smtp-from-name">
+          <input id="admin-set-smtp-from-name" value={values.smtp_from_name ?? ''} onChange={(e) => update('smtp_from_name', e.target.value)} className={INPUT_CLS} />
+        </SettingRow>
       </SectionCard>
 
       {/* ── 할인코드 안내 (정적) — 생성·관리는 Lemon Squeezy 대시보드에서 ──── */}

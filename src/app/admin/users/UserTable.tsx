@@ -186,6 +186,7 @@ export default function UserTable({ users, total, page, pageSize, q, sort }: Pro
               name="q"
               defaultValue={q}
               placeholder="이메일 또는 이름으로 검색..."
+              aria-label="검색"
               className="w-full bg-paper border border-rule rounded-xl pl-9 pr-8 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
             />
             {sort !== 'joined' && <input type="hidden" name="sort" value={sort} />}

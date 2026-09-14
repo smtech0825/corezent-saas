@@ -137,8 +137,9 @@ export default function BankTransferModal({
 
           {/* ④ 가입 이메일 입력 + 일치 검증 */}
           <div>
-            <label className="block text-xs text-ink-faint mb-1.5">가입 이메일 확인</label>
+            <label htmlFor="bt-email" className="block text-xs text-ink-faint mb-1.5">가입 이메일 확인</label>
             <input
+              id="bt-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

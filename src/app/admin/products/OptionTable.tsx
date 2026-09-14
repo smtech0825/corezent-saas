@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import CopyButton from '@/components/common/CopyButton'
 import SelectField from '@/components/common/SelectField'
+import { TIER_OPTIONS } from '@/lib/license-tiers'
 import type { PriceEntry } from './ProductForm'
 
 interface Props {
@@ -26,15 +27,15 @@ interface Props {
 
 const cellInput =
   'w-full bg-paper border border-rule text-ink text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-mark placeholder:text-ink-faint'
-// 열 폭 — 내용 길이에 맞춤(순서 48 · 축 110 · 유형/주기 92 · 가격 110 · tier 80 · variant 110 · URL 유동)
-const GRID = 'grid-cols-[48px_110px_110px_92px_92px_110px_80px_110px_minmax(180px,1fr)_40px]'
+// 열 폭 — 내용 길이에 맞춤(순서 48 · 축 110 · 유형/주기 92 · 가격 110 · tier 104 · variant 110 · URL 유동)
+const GRID = 'grid-cols-[48px_110px_110px_92px_92px_110px_104px_110px_minmax(180px,1fr)_40px]'
 const dupCell = 'bg-caution-soft border-caution'
 
 /**
  * @함수명: PriceInput
  * @설명: 가격 셀 — 포커스 시 원본 숫자, 벗어나면 천단위 콤마로 표시. 저장 값은 숫자 문자열만.
  */
-function PriceInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function PriceInput({ value, onChange, ariaLabel }: { value: string; onChange: (v: string) => void; ariaLabel: string }) {
   const [focused, setFocused] = useState(false)
   const display = focused
     ? value
@@ -49,6 +50,7 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
       onBlur={() => setFocused(false)}
       onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
       placeholder="0"
+      aria-label={ariaLabel}
       className={`${cellInput} text-right tabular-nums`}
     />
   )
@@ -58,7 +60,7 @@ function PriceInput({ value, onChange }: { value: string; onChange: (v: string) 
  * @함수명: UrlCell
  * @설명: Checkout URL 셀 — 평소엔 끝 8자 + 복사, 클릭하면 전체 편집 input으로 전환.
  */
-function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChange: (v: string) => void }) {
+function UrlCell({ value, dup, onChange, ariaLabel }: { value: string; dup: boolean; onChange: (v: string) => void; ariaLabel: string }) {
   const [editing, setEditing] = useState(false)
 
   if (editing) {
@@ -69,6 +71,7 @@ function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChan
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => setEditing(false)}
         placeholder="https://corezent.lemonsqueezy.com/checkout/buy/..."
+        aria-label={ariaLabel}
         className={`${cellInput} font-mono ${dup ? dupCell : ''}`}
       />
     )
@@ -83,6 +86,7 @@ function UrlCell({ value, dup, onChange }: { value: string; dup: boolean; onChan
         type="button"
         onClick={() => setEditing(true)}
         title={trimmed || '클릭해 URL 입력'}
+        aria-label={`${ariaLabel} — 누르면 편집`}
         className="flex-1 text-left text-xs font-mono text-ink truncate min-w-0"
       >
         {tail || <span className="text-ink-faint">클릭해 입력</span>}
@@ -166,6 +170,7 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   value={price.sort_order}
                   onChange={(e) => onUpdate(idx, 'sort_order', e.target.value)}
                   title="작을수록 먼저 표시됩니다 (오름차순)"
+                  aria-label={`${idx + 1}행 순서`}
                   className={`${cellInput} text-center`}
                 />
                 {/* 축1(기간) */}
@@ -173,6 +178,7 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   value={price.option_axis1_label}
                   onChange={(e) => onUpdate(idx, 'option_axis1_label', e.target.value)}
                   placeholder="월간"
+                  aria-label={`${idx + 1}행 ${axis1Name || '옵션값1'}`}
                   className={cellInput}
                 />
                 {/* 축2(PC개수) */}
@@ -180,6 +186,7 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   value={price.option_axis2_label}
                   onChange={(e) => onUpdate(idx, 'option_axis2_label', e.target.value)}
                   placeholder="3PC용"
+                  aria-label={`${idx + 1}행 ${axis2Name || '옵션값2'}`}
                   className={cellInput}
                 />
                 {/* 유형 */}
@@ -187,6 +194,7 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   size="xs"
                   value={price.type}
                   onChange={(e) => onUpdate(idx, 'type', e.target.value)}
+                  aria-label={`${idx + 1}행 유형`}
                 >
                   <option value="subscription">구독</option>
                   <option value="one_time">단일</option>
@@ -197,29 +205,40 @@ export default function OptionTable({ prices, axis1Name, axis2Name, onAdd, onUpd
                   value={price.interval}
                   onChange={(e) => onUpdate(idx, 'interval', e.target.value)}
                   disabled={price.type === 'one_time'}
+                  aria-label={`${idx + 1}행 주기`}
                 >
                   <option value="monthly">월간</option>
                   <option value="annual">연간</option>
                 </SelectField>
                 {/* 가격 */}
-                <PriceInput value={price.price} onChange={(v) => onUpdate(idx, 'price', v)} />
-                {/* tier */}
-                <input
+                <PriceInput value={price.price} onChange={(v) => onUpdate(idx, 'price', v)} ariaLabel={`${idx + 1}행 가격`} />
+                {/* tier — 자유 입력이면 공란·오타('3 pc')가 그대로 저장돼 결제 후 라이선스가
+                    발급되지 않는다. 목록에서만 고르게 한다. 값 목록은 lib/license-tiers.ts 한 곳. */}
+                <SelectField
+                  size="xs"
                   value={price.license_tier}
                   onChange={(e) => onUpdate(idx, 'license_tier', e.target.value)}
-                  placeholder="3pc"
-                  className={`${cellInput} font-mono`}
-                />
+                  aria-label={`${idx + 1}행 라이선스 등급`}
+                  className="font-mono"
+                >
+                  {/* 아직 안 고른 행 — 저장하려 하면 막힌다(고르라는 뜻으로 남겨 둔다) */}
+                  <option value="">선택</option>
+                  {TIER_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </SelectField>
                 {/* Variant ID — 중복 경고 */}
                 <input
                   value={price.lemon_squeezy_variant_id}
                   onChange={(e) => onUpdate(idx, 'lemon_squeezy_variant_id', e.target.value)}
                   placeholder="123456"
+                  aria-label={`${idx + 1}행 Variant ID`}
                   title={dupVariant(price.lemon_squeezy_variant_id) ? '다른 행과 Variant ID가 중복입니다' : undefined}
                   className={`${cellInput} font-mono ${dupVariant(price.lemon_squeezy_variant_id) ? dupCell : ''}`}
                 />
                 {/* Checkout URL — 끝 8자 + 복사 · 클릭 편집, 중복 경고 */}
                 <UrlCell
+                  ariaLabel={`${idx + 1}행 Checkout URL`}
                   value={price.checkout_url}
                   dup={dupUrl(price.checkout_url)}
                   onChange={(v) => onUpdate(idx, 'checkout_url', v)}

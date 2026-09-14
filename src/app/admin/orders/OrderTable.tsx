@@ -200,6 +200,7 @@ export default function OrderTable({ orders, totalRevenueLabel }: Props) {
             value={rawSearch}
             onChange={(e) => setRawSearch(e.target.value)}
             placeholder="주문 ID 또는 이메일로 검색…"
+              aria-label="검색"
             className="w-64 bg-paper border border-rule rounded-lg pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors"
           />
         </div>

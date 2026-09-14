@@ -94,8 +94,8 @@ export default function EmailChangeSection({ currentEmail, pendingEmail }: {
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <FormField label="현재 이메일">
-          <input type="email" value={currentEmail} disabled className={`${inputCls} opacity-50 cursor-not-allowed`} />
+        <FormField label="현재 이메일" htmlFor="set-email-current">
+          <input id="set-email-current" type="email" value={currentEmail} disabled className={`${inputCls} opacity-50 cursor-not-allowed`} />
         </FormField>
 
         {waitingEmail && (
@@ -105,8 +105,8 @@ export default function EmailChangeSection({ currentEmail, pendingEmail }: {
           </div>
         )}
 
-        <FormField label="새 이메일">
-          <input
+        <FormField label="새 이메일" htmlFor="set-email-new">
+          <input id="set-email-new"
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}

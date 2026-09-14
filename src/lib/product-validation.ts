@@ -15,7 +15,10 @@ export interface OptionRowInput {
   option_axis2_label: string
 }
 
-const VALID_TIERS: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
+import { TIER_OPTIONS, isValidTierChoice } from '@/lib/license-tiers'
+
+/** 오류 문구에 보여 줄 선택지 — 목록 자체는 lib/license-tiers.ts 한 곳에서만 정의한다 */
+const TIER_CHOICE_TEXT = TIER_OPTIONS.map((t) => t.label).join(' / ')
 
 /**
  * @함수명: validateOptionRows
@@ -45,10 +48,16 @@ export function validateOptionRows(rows: OptionRowInput[]): string | null {
       return `옵션 ${no}행: 가격은 0보다 큰 숫자여야 합니다.`
     }
 
-    // ② tier — 비었으면 허용(웹훅이 slug로 폴백/제품별 강제), 있으면 유효값이어야 함
+    // ② tier — 반드시 목록에서 고른 값이어야 한다. 빈 값도 막는다.
+    //    빈 채로 저장되면 결제는 성사되는데 웹훅이 등급을 못 정해 라이선스가 발급되지 않는다.
+    //    라이선스 개념이 없는 상품은 "해당 없음"(none)을 고른다 — 빈 값과 구별해야
+    //    "아직 안 정함(실수)"과 "정했고 없음(의도)"이 갈린다.
     const tier = r.license_tier.trim().toLowerCase()
-    if (tier && !VALID_TIERS.includes(tier)) {
-      return `옵션 ${no}행: 라이선스 tier "${r.license_tier}"가 유효하지 않습니다. (${VALID_TIERS.join(' / ')})`
+    if (!tier) {
+      return `옵션 ${no}행: 라이선스 등급을 골라 주세요. 라이선스가 없는 상품이면 "해당 없음"을 고르세요.`
+    }
+    if (!isValidTierChoice(tier)) {
+      return `옵션 ${no}행: 라이선스 등급 "${r.license_tier}"는 고를 수 없는 값입니다. (${TIER_CHOICE_TEXT})`
     }
 
     // ③ variant_id — 비었으면 허용, 있으면 숫자 문자열

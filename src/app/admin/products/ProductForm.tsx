@@ -6,7 +6,7 @@
  *        Logo: URL 직접 입력 또는 파일 업로드 (상호 배타적)
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload, X, Tag, Sparkles, LayoutGrid, Image as ImageIcon, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -14,7 +14,7 @@ import { validateOptionRows } from '@/lib/product-validation'
 import { PRODUCT_BADGE_COLORS_PAPER } from '@/lib/products'
 import OptionTable from './OptionTable'
 import SelectField from '@/components/common/SelectField'
-import LabeledField from '@/components/common/LabeledField'
+import { Field } from '@/components/ui/Input'
 import FeatureImageUpload from './FeatureImageUpload'
 import nextDynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -98,16 +98,39 @@ function slugify(text: string) {
     .replace(/^-|-$/g, '')
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  // 연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 모양은 그대로.
+function ProductRow({
+  label, htmlFor, children,
+}: { label: string; htmlFor: string; children: React.ReactNode }) {
+  // 연결(이름표↔입력칸)은 공용 Field가 처리한다 — 모양은 그대로.
   return (
-    <LabeledField
+    <Field
       label={label}
+      htmlFor={htmlFor}
       className="space-y-1.5"
       labelClassName="block text-xs font-medium text-ink-soft uppercase tracking-wider"
     >
       {children}
-    </LabeledField>
+    </Field>
+  )
+}
+
+/**
+ * @컴포넌트: ProductRowGroup
+ * @설명: 이름표 + "입력칸 하나로 볼 수 없는 덩어리"(리치 에디터·이미지 업로더·여러 개 묶음).
+ *        이런 자리는 <label for>로 가리킬 대상이 없다 — contenteditable이나 <div>는
+ *        이름표가 가리킬 수 있는 요소가 아니다. 예전에는 그래도 htmlFor를 내보내
+ *        존재하지 않는 id나 <div>를 가리켰고, 점검 도구에만 "연결됨"으로 보였다.
+ *        대신 덩어리 전체를 하나의 묶음(group)으로 선언하고 그 묶음에 이름을 준다 —
+ *        화면낭독기가 "설명, 묶음"처럼 읽어 안에 들어왔다는 것을 알려 준다.
+ *        모양은 바뀌지 않는다(span·div는 화면에 아무 영향이 없다).
+ */
+function ProductRowGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  const labelId = useId()
+  return (
+    <div className="space-y-1.5">
+      <span id={labelId} className="block text-xs font-medium text-ink-soft uppercase tracking-wider">{label}</span>
+      <div role="group" aria-labelledby={labelId}>{children}</div>
+    </div>
   )
 }
 
@@ -315,40 +338,40 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
         <h2 className="text-sm font-semibold text-ink">기본 정보</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="제품 이름 *">
-            <input
+          <ProductRow label="제품 이름 *" htmlFor="pf-name">
+            <input id="pf-name"
               required
               value={form.name}
               onChange={handleNameChange}
               placeholder="예: 지니포스트"
               className={inputCls}
             />
-          </Field>
+          </ProductRow>
 
-          <Field label="Slug *">
+          <ProductRow label="Slug *" htmlFor="pf-slug">
             {/* Slug는 입력 길이가 짧아 콘텐츠 폭(320px)으로 제한 */}
-            <input
+            <input id="pf-slug"
               required
               value={form.slug}
               onChange={(e) => { setSlugManual(true); set('slug', e.target.value) }}
               placeholder="예: geniepost"
               className={`${inputCls} max-w-[320px]`}
             />
-          </Field>
+          </ProductRow>
         </div>
 
-        <Field label="태그라인">
-          <input
+        <ProductRow label="태그라인" htmlFor="pf-tagline">
+          <input id="pf-tagline"
             value={form.tagline}
             onChange={(e) => set('tagline', e.target.value)}
             placeholder="한 줄 소개 문구"
             className={inputCls}
           />
-        </Field>
+        </ProductRow>
 
-        <Field label="목록용 짧은 소개">
+        <ProductRow label="목록용 짧은 소개" htmlFor="pf-summary">
           {/* 목록 카드·홈 화면 전용 plain text. 비우면 목록에서 설명 미표시(상세 본문은 아래 '설명'의 리치 HTML을 사용) */}
-          <textarea
+          <textarea id="pf-summary"
             value={form.list_description}
             onChange={(e) => set('list_description', e.target.value)}
             rows={3}
@@ -358,29 +381,29 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           <p className="text-xs text-ink-faint mt-1">
             상품 목록 카드·홈 화면에 표시됩니다. 비우면 목록에서 설명이 표시되지 않습니다. (권장 80~150자, HTML 불가)
           </p>
-        </Field>
+        </ProductRow>
 
-        <Field label="설명">
+        <ProductRowGroup label="설명">
           {/* 편집 폭을 상세 표시 박스(max-w-4xl)와 맞춰 편집 화면이 실제 결과와 비슷하게 보이도록 제한 */}
-          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} maxWidthClass="max-w-4xl" />
+          <RichTextEditor value={form.description} onChange={(html) => set('description', html)} maxWidthClass="max-w-4xl" ariaLabel="설명" />
           <p className="text-xs text-ink-faint mt-2">
             문서 편집기처럼 제목·굵게·밑줄·글자색·링크·이미지·목록을 사용할 수 있습니다. 이미지는 버튼으로 업로드 후
             선택하면 크기(소/중/대/원본)를 조절할 수 있고, 유튜브 URL은 공개 페이지에서 영상으로 표시됩니다.
           </p>
-        </Field>
+        </ProductRowGroup>
 
-        <Field label="카테고리">
-          <input
+        <ProductRow label="카테고리" htmlFor="pf-category">
+          <input id="pf-category"
             value={form.category_group}
             onChange={(e) => set('category_group', e.target.value)}
             placeholder="예: 행정, 투자, 마케팅 (공개 목록 분류·필터용, 자유 입력)"
             className={inputCls}
           />
-        </Field>
+        </ProductRow>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="플랫폼 유형 *">
-            <SelectField
+          <ProductRow label="플랫폼 유형 *" htmlFor="pf-platform">
+            <SelectField id="pf-platform"
               size="sm"
               required
               value={form.category}
@@ -390,10 +413,10 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <option value="web">웹</option>
               <option value="chrome-extension">크롬 익스텐션</option>
             </SelectField>
-          </Field>
+          </ProductRow>
 
-          <Field label="상태">
-            <SelectField
+          <ProductRow label="상태" htmlFor="pf-status">
+            <SelectField id="pf-status"
               size="sm"
               value={form.is_active ? 'true' : 'false'}
               onChange={(e) => set('is_active', e.target.value === 'true')}
@@ -401,11 +424,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <option value="true">활성</option>
               <option value="false">비활성</option>
             </SelectField>
-          </Field>
+          </ProductRow>
         </div>
 
         {/* Badge — 색상 선택 + 텍스트 입력 */}
-        <Field label="뱃지">
+        <ProductRow label="뱃지" htmlFor="pf-badge">
           <div className="space-y-2.5">
             {/* 색상 선택 — 손님이 보는 화면과 같은 뱃지 색(lib/products의 페이퍼 테마 공용 값)을 쓴다.
                 예전에는 옛 어두운 테마 hex를 직접 적어 대비가 1.82~2.01:1로 읽기 어려웠고,
@@ -435,7 +458,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             </div>
             {/* 텍스트 입력 */}
             <div className="flex items-center gap-2">
-              <input
+              <input id="pf-badge"
                 value={form.badge_text}
                 onChange={(e) => set('badge_text', e.target.value)}
                 placeholder='예: 지금 사용 가능, 출시 예정, 베타 (비우면 뱃지 숨김)'
@@ -469,14 +492,14 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               </div>
             )}
           </div>
-        </Field>
+        </ProductRow>
 
         {/* Logo — URL 입력 또는 파일 업로드 */}
-        <Field label="로고">
+        <ProductRow label="로고" htmlFor="pf-logo">
           <div className="space-y-2">
             {/* URL 입력 */}
             <div className="flex items-center gap-2">
-              <input
+              <input id="pf-logo"
                 value={form.logo_url}
                 onChange={handleLogoUrlChange}
                 readOnly={logoMode === 'file'}
@@ -541,21 +564,21 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               </div>
             )}
           </div>
-        </Field>
+        </ProductRow>
 
-        <Field label="매뉴얼 URL">
-          <input
+        <ProductRow label="매뉴얼 URL" htmlFor="pf-manual">
+          <input id="pf-manual"
             value={form.manual_url}
             onChange={(e) => set('manual_url', e.target.value)}
             placeholder="https://..."
             className={inputCls}
           />
-        </Field>
+        </ProductRow>
 
         {/* 조달청 등록번호(054) — 조달 등록 상품만 입력. 둘 다 비면 공개 화면에 배지가 그려지지 않는다 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="물품분류번호">
-            <input
+          <ProductRow label="물품분류번호" htmlFor="pf-proc-class">
+            <input id="pf-proc-class"
               value={form.procurement_class_number}
               onChange={(e) => set('procurement_class_number', e.target.value)}
               placeholder="예: 43232698"
@@ -567,10 +590,10 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             {hasNonDigit(form.procurement_class_number) && (
               <p className="text-xs text-ink-faint mt-1">숫자 외 문자가 있습니다. 저장은 되지만 확인해 주세요.</p>
             )}
-          </Field>
+          </ProductRow>
 
-          <Field label="물품식별번호">
-            <input
+          <ProductRow label="물품식별번호" htmlFor="pf-proc-item">
+            <input id="pf-proc-item"
               value={form.procurement_item_number}
               onChange={(e) => set('procurement_item_number', e.target.value)}
               placeholder="예: 26391406"
@@ -582,7 +605,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             {hasNonDigit(form.procurement_item_number) && (
               <p className="text-xs text-ink-faint mt-1">숫자 외 문자가 있습니다. 저장은 되지만 확인해 주세요.</p>
             )}
-          </Field>
+          </ProductRow>
         </div>
         <p className="text-xs text-ink-faint">
           조달청에 등록된 상품만 입력합니다. 두 칸이 모두 비어 있으면 공개 화면에 조달청 배지가 표시되지 않습니다.
@@ -622,6 +645,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               onKeyDown={handleTagKey}
               onBlur={addTag}
               placeholder="태그 입력 후 Enter (최대 5개)"
+              aria-label="태그 입력"
               maxLength={20}
               className={`${inputCls} max-w-[320px]`}
             />
@@ -708,6 +732,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="Lucide: Cpu  |  Tabler: tb:Cpu  |  Radix: ri:Accessibility"
+                aria-label={`${idx + 1}번째 기능 아이콘`}
                 className={inputCls + ' text-xs'}
               />
 
@@ -728,6 +753,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="제목 *"
+                aria-label={`${idx + 1}번째 기능 제목`}
                 className={inputCls + ' text-xs'}
               />
 
@@ -740,6 +766,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="설명"
+                aria-label={`${idx + 1}번째 기능 설명`}
                 className={inputCls + ' text-xs resize-none'}
               />
             </div>
@@ -755,11 +782,11 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
           <span className="text-xs text-ink-faint">— 상품 상세 페이지에 표시</span>
         </div>
 
-        <Field label="대표 이미지">
+        <ProductRowGroup label="대표 이미지">
           <FeatureImageUpload value={form.hero_image_url} onChange={(url) => set('hero_image_url', url)} />
-        </Field>
+        </ProductRowGroup>
 
-        <Field label="스크린샷 (복수)">
+        <ProductRowGroup label="스크린샷 (복수)">
           <div className="space-y-2">
             {form.screenshots.map((url, i) => (
               <div key={i} className="flex items-start gap-2">
@@ -785,26 +812,26 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               <Plus size={13} /> 스크린샷 추가
             </button>
           </div>
-        </Field>
+        </ProductRowGroup>
 
-        <Field label="시스템 요구사항">
-          <textarea
+        <ProductRow label="시스템 요구사항" htmlFor="pf-sysreq">
+          <textarea id="pf-sysreq"
             rows={4}
             value={form.system_requirements}
             onChange={(e) => set('system_requirements', e.target.value)}
             placeholder="예: Windows 10 이상 · RAM 4GB · 500MB 저장 공간…"
             className={inputCls + ' resize-none'}
           />
-        </Field>
+        </ProductRow>
 
-        <Field label="버전정보 링크 (선택)">
-          <input
+        <ProductRow label="버전정보 링크 (선택)" htmlFor="pf-changelog">
+          <input id="pf-changelog"
             value={form.version_info_url}
             onChange={(e) => set('version_info_url', e.target.value)}
             placeholder="https://... (또는 /changelog)"
             className={inputCls}
           />
-        </Field>
+        </ProductRow>
       </section>
 
       {/* 상품 FAQ */}
@@ -835,6 +862,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 value={faq.question}
                 onChange={(e) => updateFaq(idx, 'question', e.target.value)}
                 placeholder="질문"
+                aria-label={`${idx + 1}번째 FAQ 질문`}
                 className={inputCls}
               />
               <textarea
@@ -842,6 +870,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 value={faq.answer}
                 onChange={(e) => updateFaq(idx, 'answer', e.target.value)}
                 placeholder="답변"
+                aria-label={`${idx + 1}번째 FAQ 답변`}
                 className={inputCls + ' resize-none'}
               />
             </div>
@@ -878,22 +907,22 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
             예) 축1 = 기간(월간/연간), 축2 = PC 개수(선택). 기준이 1개면 축2는 비웁니다.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="축1 제목">
-              <input
+            <ProductRow label="축1 제목" htmlFor="pf-axis1">
+              <input id="pf-axis1"
                 value={form.option_axis1_name}
                 onChange={(e) => set('option_axis1_name', e.target.value)}
                 placeholder="예: 기간 (월간/연간)"
                 className={inputCls}
               />
-            </Field>
-            <Field label="축2 제목 (선택)">
-              <input
+            </ProductRow>
+            <ProductRow label="축2 제목 (선택)" htmlFor="pf-axis2">
+              <input id="pf-axis2"
                 value={form.option_axis2_name}
                 onChange={(e) => set('option_axis2_name', e.target.value)}
                 placeholder="예: PC 개수 — 기준이 1개면 비움"
                 className={inputCls}
               />
-            </Field>
+            </ProductRow>
           </div>
         </div>
 

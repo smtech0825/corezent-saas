@@ -159,6 +159,7 @@ export default function LicenseTable({ licenses }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 또는 이메일로 검색..."
+              aria-label="검색"
             className="w-full bg-paper border border-rule text-ink text-sm rounded-xl pl-9 pr-4 py-2.5 placeholder:text-ink-faint focus:outline-none focus:border-mark"
           />
         </div>
