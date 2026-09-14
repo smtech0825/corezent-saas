@@ -645,6 +645,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
               onKeyDown={handleTagKey}
               onBlur={addTag}
               placeholder="태그 입력 후 Enter (최대 5개)"
+              aria-label="태그 입력"
               maxLength={20}
               className={`${inputCls} max-w-[320px]`}
             />
@@ -731,6 +732,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="Lucide: Cpu  |  Tabler: tb:Cpu  |  Radix: ri:Accessibility"
+                aria-label={`${idx + 1}번째 기능 아이콘`}
                 className={inputCls + ' text-xs'}
               />
 
@@ -751,6 +753,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="제목 *"
+                aria-label={`${idx + 1}번째 기능 제목`}
                 className={inputCls + ' text-xs'}
               />
 
@@ -763,6 +766,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                   set('product_features', next)
                 }}
                 placeholder="설명"
+                aria-label={`${idx + 1}번째 기능 설명`}
                 className={inputCls + ' text-xs resize-none'}
               />
             </div>
@@ -858,6 +862,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 value={faq.question}
                 onChange={(e) => updateFaq(idx, 'question', e.target.value)}
                 placeholder="질문"
+                aria-label={`${idx + 1}번째 FAQ 질문`}
                 className={inputCls}
               />
               <textarea
@@ -865,6 +870,7 @@ export default function ProductForm({ initialData, onSubmit, submitLabel }: Prop
                 value={faq.answer}
                 onChange={(e) => updateFaq(idx, 'answer', e.target.value)}
                 placeholder="답변"
+                aria-label={`${idx + 1}번째 FAQ 답변`}
                 className={inputCls + ' resize-none'}
               />
             </div>
