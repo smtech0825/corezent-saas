@@ -15,7 +15,7 @@ import RulesManager from './RulesManager'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '세금 룰 편집 — 관리자',
+  title: '세금 룰 편집',
 }
 
 export default async function AdminTaxRulesPage() {

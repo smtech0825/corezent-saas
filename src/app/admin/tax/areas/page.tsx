@@ -15,7 +15,7 @@ import AreasManager from './AreasManager'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '규제지역 관리 — 관리자',
+  title: '규제지역 관리',
 }
 
 export default async function AdminTaxAreasPage() {

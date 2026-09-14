@@ -19,7 +19,7 @@ import LawChangesManager, { type LawChangeRow } from './LawChangesManager'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '법령 개정 감지 — 관리자',
+  title: '법령 개정 감지',
 }
 
 /** 국가법령정보센터 신구법 비교 화면 주소 — 인증키 없이 열리는 공개 화면 */
