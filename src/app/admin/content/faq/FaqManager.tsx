@@ -119,6 +119,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
                 onChange={(e) => setForm({ ...form, question: e.target.value })}
                 className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-mark"
                 placeholder="질문"
+                aria-label="질문"
               />
               <div>
                 <label className="block text-xs text-ink-faint mb-1">답변</label>
@@ -192,6 +193,7 @@ export default function FaqManager({ faqs, onCreate, onUpdate, onDelete, onToggl
             onChange={(e) => setNewForm({ ...newForm, question: e.target.value })}
             className="w-full bg-paper border border-rule rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark"
             placeholder="질문"
+                aria-label="질문"
             autoFocus
           />
           <div>

@@ -33,13 +33,18 @@ export default function LabeledField({ label, labelClassName, className, childre
   const autoId = useId()
 
   // 입력칸에 id를 심어 이름표와 묶는다. 이미 id가 있으면 그대로 둔다.
-  let controlId = autoId
+  // ★ id를 심지 못하는 경우(자식이 여럿이거나 조각이거나)에는 htmlFor를 아예 그리지 않는다.
+  //   예전에는 그래도 htmlFor를 내보내서, 존재하지 않는 id를 가리키는 이름표가 만들어졌다.
+  //   점검 도구에는 "연결됨"으로 보이고 화면낭독기 결과는 안 붙은 것과 똑같은 상태였다.
+  //   연결이 안 될 바에는 거짓 연결을 남기지 않는 쪽이 낫다(문제가 드러나야 고쳐진다).
+  let controlId: string | undefined
   let control = children
   if (isValidElement(children)) {
     const el = children as ReactElement<{ id?: string }>
     if (el.props.id) {
       controlId = el.props.id
     } else {
+      controlId = autoId
       control = cloneElement(el, { id: autoId })
     }
   }

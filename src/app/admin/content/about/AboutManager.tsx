@@ -289,8 +289,8 @@ export default function AboutManager({
         {heroOpen && (
           <div className="space-y-3 mt-3">
             <div>
-              <label className="text-[10px] text-ink-faint mb-1 block">제목</label>
-              <input value={heroTitle} onChange={(e) => changeHero('title', e.target.value)} placeholder="About CoreZent" className={inputCls} />
+              <label htmlFor="about-hero-title" className="text-[10px] text-ink-faint mb-1 block">제목</label>
+              <input id="about-hero-title" value={heroTitle} onChange={(e) => changeHero('title', e.target.value)} placeholder="About CoreZent" className={inputCls} />
             </div>
             <div>
               <label className="text-[10px] text-ink-faint mb-1 block">설명</label>

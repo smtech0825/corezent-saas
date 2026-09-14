@@ -8,7 +8,7 @@
  */
 
 import { Loader2 } from 'lucide-react'
-import LabeledField from '@/components/common/LabeledField'
+import { Field } from '@/components/ui/Input'
 
 /** 설정 화면 입력칸 공통 클래스 */
 export const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-mark transition-colors'
@@ -16,14 +16,18 @@ export const inputCls = 'w-full bg-paper border border-rule rounded-lg px-4 py-3
 /**
  * @컴포넌트: FormField
  * @설명: 라벨 + 입력 요소 한 줄 묶음.
- *        연결(이름표↔입력칸)은 공용 LabeledField가 처리한다 — 화면낭독기가 칸 이름을 읽는다.
- *        모양(글자 크기·색·간격)은 이전과 같다.
+ *        연결(이름표↔입력칸)은 공용 Field가 처리한다 — 화면낭독기가 칸 이름을 읽는다.
+ *        htmlFor는 필수다. 자동으로 심어 주는 방식은 자식이 여럿인 줄(입력칸 + 안내 문구)에서
+ *        조용히 실패했다 — 그래서 호출부가 id를 직접 적고 입력칸에 같은 id를 단다.
+ *        모양(글자 크기·색·간격)은 이전과 같다 — labelClassName·className으로 그대로 넘긴다.
  */
-export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+export function FormField({
+  label, htmlFor, children,
+}: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (
-    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
+    <Field label={label} htmlFor={htmlFor} className="" labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </LabeledField>
+    </Field>
   )
 }
 

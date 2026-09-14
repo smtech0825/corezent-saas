@@ -110,8 +110,8 @@ export default function OrgProfileSection() {
       </p>
 
       <form onSubmit={handleSave} className="flex flex-col gap-4">
-        <FormField label="기관·회사명">
-          <input
+        <FormField label="기관·회사명" htmlFor="set-org-name">
+          <input id="set-org-name"
             type="text"
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
@@ -120,8 +120,8 @@ export default function OrgProfileSection() {
           />
         </FormField>
 
-        <FormField label="사업자등록번호">
-          <input
+        <FormField label="사업자등록번호" htmlFor="set-org-bizno">
+          <input id="set-org-bizno"
             type="text"
             inputMode="numeric"
             value={bizRegNo}
@@ -136,8 +136,8 @@ export default function OrgProfileSection() {
           )}
         </FormField>
 
-        <FormField label="담당자 이름">
-          <input
+        <FormField label="담당자 이름" htmlFor="set-org-manager">
+          <input id="set-org-manager"
             type="text"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
@@ -146,8 +146,8 @@ export default function OrgProfileSection() {
           />
         </FormField>
 
-        <FormField label="세금계산서 받을 이메일">
-          <input
+        <FormField label="세금계산서 받을 이메일" htmlFor="set-org-email">
+          <input id="set-org-email"
             type="email"
             value={taxEmail}
             onChange={(e) => setTaxEmail(e.target.value)}

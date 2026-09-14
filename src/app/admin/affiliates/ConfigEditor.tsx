@@ -12,7 +12,7 @@ import { useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toMinorUnits } from '@/lib/money'
 import SelectField from '@/components/common/SelectField'
-import LabeledField from '@/components/common/LabeledField'
+import { Field } from '@/components/ui/Input'
 import { updateAffiliateConfigAction } from './actions'
 import type { AffiliateConfigInput } from './types'
 
@@ -60,36 +60,36 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="커미션 유형">
-            <SelectField size="md" value={v.commission_type} onChange={(e) => set('commission_type', e.target.value)}>
+          <ConfigRow label="커미션 유형" htmlFor="aff-commission-type">
+            <SelectField id="aff-commission-type" size="md" value={v.commission_type} onChange={(e) => set('commission_type', e.target.value)}>
               <option value="percent">percent (%)</option>
               <option value="flat">flat (고정 cents)</option>
             </SelectField>
-          </Field>
-          <Field label={v.commission_type === 'flat' ? '커미션 값 (cents)' : '커미션 값 (%)'}>
-            <input type="number" value={v.commission_value} onChange={(e) => set('commission_value', Number(e.target.value))} className={INPUT_CLS} />
-          </Field>
-          <Field label="반복 적립 개월 캡">
-            <input type="number" value={v.recurring_months_cap} onChange={(e) => set('recurring_months_cap', Number(e.target.value))} className={INPUT_CLS} />
-          </Field>
-          <Field label="쿠키 귀속 일수">
-            <input type="number" value={v.cookie_days} onChange={(e) => set('cookie_days', Number(e.target.value))} className={INPUT_CLS} />
-          </Field>
-          <Field label="보류(hold) 일수">
-            <input type="number" value={v.hold_days} onChange={(e) => set('hold_days', Number(e.target.value))} className={INPUT_CLS} />
-          </Field>
-          <Field label="최소 전환 금액 (원)">
-            <input type="number" step="1" min="0" value={minWon} onChange={(e) => setMinWon(e.target.value)} className={INPUT_CLS} />
-          </Field>
-          <Field label="통화">
-            <SelectField size="md" value={v.currency} onChange={(e) => set('currency', e.target.value)}>
+          </ConfigRow>
+          <ConfigRow label={v.commission_type === 'flat' ? '커미션 값 (cents)' : '커미션 값 (%)'} htmlFor="aff-commission-value">
+            <input id="aff-commission-value" type="number" value={v.commission_value} onChange={(e) => set('commission_value', Number(e.target.value))} className={INPUT_CLS} />
+          </ConfigRow>
+          <ConfigRow label="반복 적립 개월 캡" htmlFor="aff-recurring-cap">
+            <input id="aff-recurring-cap" type="number" value={v.recurring_months_cap} onChange={(e) => set('recurring_months_cap', Number(e.target.value))} className={INPUT_CLS} />
+          </ConfigRow>
+          <ConfigRow label="쿠키 귀속 일수" htmlFor="aff-cookie-days">
+            <input id="aff-cookie-days" type="number" value={v.cookie_days} onChange={(e) => set('cookie_days', Number(e.target.value))} className={INPUT_CLS} />
+          </ConfigRow>
+          <ConfigRow label="보류(hold) 일수" htmlFor="aff-hold-days">
+            <input id="aff-hold-days" type="number" value={v.hold_days} onChange={(e) => set('hold_days', Number(e.target.value))} className={INPUT_CLS} />
+          </ConfigRow>
+          <ConfigRow label="최소 전환 금액 (원)" htmlFor="aff-min-payout">
+            <input id="aff-min-payout" type="number" step="1" min="0" value={minWon} onChange={(e) => setMinWon(e.target.value)} className={INPUT_CLS} />
+          </ConfigRow>
+          <ConfigRow label="통화" htmlFor="aff-currency">
+            <SelectField id="aff-currency" size="md" value={v.currency} onChange={(e) => set('currency', e.target.value)}>
               <option value="KRW">KRW (원)</option>
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
               <option value="JPY">JPY (¥)</option>
               <option value="GBP">GBP (£)</option>
             </SelectField>
-          </Field>
+          </ConfigRow>
         </div>
 
         {msg && (
@@ -111,12 +111,15 @@ export default function ConfigEditor({ initial, minPayoutWon }: Props) {
   )
 }
 
-/** 레이블 + 입력 래퍼 — 연결은 공용 LabeledField가 처리(모양은 그대로) */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** 레이블 + 입력 래퍼 — 연결은 공용 Field가 처리(모양은 그대로).
+ *  이름을 ConfigRow로 바꾼 이유: 공용 부품 ui/Input의 Field와 이름이 같아 헷갈렸다. */
+function ConfigRow({
+  label, htmlFor, children,
+}: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (
-    <LabeledField label={label} labelClassName="block text-sm text-ink-soft mb-1.5">
+    <Field label={label} htmlFor={htmlFor} className="" labelClassName="block text-sm text-ink-soft mb-1.5">
       {children}
-    </LabeledField>
+    </Field>
   )
 }
 

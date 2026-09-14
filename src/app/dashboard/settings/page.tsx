@@ -197,8 +197,8 @@ export default function SettingsPage() {
       <section className="bg-paper-raised border border-rule rounded-card p-6 mb-6 max-w-2xl">
         <h2 className="text-base font-semibold text-ink mb-5">프로필</h2>
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-          <FormField label="이름">
-            <input
+          <FormField label="이름" htmlFor="set-profile-name">
+            <input id="set-profile-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -207,8 +207,8 @@ export default function SettingsPage() {
             />
           </FormField>
 
-          <FormField label="휴대폰 번호">
-            <input
+          <FormField label="휴대폰 번호" htmlFor="set-profile-phone">
+            <input id="set-profile-phone"
               type="tel"
               inputMode="numeric"
               autoComplete="tel"
@@ -238,8 +238,8 @@ export default function SettingsPage() {
       <section className="bg-paper-raised border border-rule rounded-card p-6 max-w-2xl mt-6">
         <h2 className="text-base font-semibold text-ink mb-5">비밀번호 변경</h2>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
-          <FormField label="현재 비밀번호">
-            <input
+          <FormField label="현재 비밀번호" htmlFor="set-pw-current">
+            <input id="set-pw-current"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -249,8 +249,8 @@ export default function SettingsPage() {
             />
           </FormField>
 
-          <FormField label="새 비밀번호">
-            <input
+          <FormField label="새 비밀번호" htmlFor="set-pw-new">
+            <input id="set-pw-new"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}

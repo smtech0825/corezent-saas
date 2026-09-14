@@ -5,7 +5,7 @@
  * @설명: How It Works 섹션 단계 항목 CRUD 관리
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useId } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
@@ -34,12 +34,14 @@ const inputCls = 'w-full bg-paper border border-rule rounded-lg px-3 py-2 text-s
 
 // ─── FormFields — 컴포넌트 외부에 정의하여 unmount/remount 방지 ──────────
 function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyForm) => void }) {
+  // 목록 안에서 여러 벌 그려지므로 id는 벌마다 다르게 만든다
+  const uid = useId()
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] text-ink-faint mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
-          <input
+          <label htmlFor={`${uid}-icon`} className="text-[10px] text-ink-faint mb-1 block">아이콘  (lu: / tb: / ri: / &lt;svg&gt;)</label>
+          <input id={`${uid}-icon`}
             value={f.icon}
             onChange={(e) => setF({ ...f, icon: e.target.value })}
             placeholder="Zap · tb:Cpu · ri:Star · <svg>..."
@@ -47,8 +49,8 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
           />
         </div>
         <div>
-          <label className="text-[10px] text-ink-faint mb-1 block">제목</label>
-          <input
+          <label htmlFor={`${uid}-title`} className="text-[10px] text-ink-faint mb-1 block">제목</label>
+          <input id={`${uid}-title`}
             value={f.title}
             onChange={(e) => setF({ ...f, title: e.target.value })}
             placeholder="단계 제목"
@@ -57,8 +59,8 @@ function FormFields({ f, setF }: { f: typeof emptyForm; setF: (v: typeof emptyFo
         </div>
       </div>
       <div>
-        <label className="text-[10px] text-ink-faint mb-1 block">설명</label>
-        <textarea
+        <label htmlFor={`${uid}-description`} className="text-[10px] text-ink-faint mb-1 block">설명</label>
+        <textarea id={`${uid}-description`}
           value={f.description}
           onChange={(e) => setF({ ...f, description: e.target.value })}
           rows={3}

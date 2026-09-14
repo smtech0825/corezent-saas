@@ -6,7 +6,7 @@
  *        버전 목록 조회 + 추가/수정/삭제 인라인 폼
  */
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Loader2, X } from 'lucide-react'
 import { upsertChangelog, deleteChangelog, type ChangelogContent, type ChangelogFormData } from './changelog-actions'
 import { PLATFORMS } from '@/lib/platforms'
@@ -46,6 +46,8 @@ function emptyForm(): ChangelogFormData {
 }
 
 export default function ChangelogSection({ productId, initialChangelogs }: Props) {
+  // 목록 안에서 여러 벌 그려지므로 이름표 연결용 id는 벌마다 다르게 만든다
+  const uid = useId()
   const [changelogs, setChangelogs] = useState<ChangelogEntry[]>(initialChangelogs)
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -282,10 +284,11 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
           {/* 기본 정보 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-ink-soft">
+              <label htmlFor={`${uid}-version`} className="text-xs font-medium text-ink-soft">
                 버전 <span className="text-danger">*</span>
               </label>
               <input
+                id={`${uid}-version`}
                 type="text"
                 value={form.version}
                 onChange={(e) => setForm((p) => ({ ...p, version: e.target.value }))}
@@ -294,10 +297,11 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-ink-soft">
+              <label htmlFor={`${uid}-release`} className="text-xs font-medium text-ink-soft">
                 릴리스 날짜 <span className="text-danger">*</span>
               </label>
               <input
+                id={`${uid}-release`}
                 type="date"
                 value={form.release_date}
                 onChange={(e) => setForm((p) => ({ ...p, release_date: e.target.value }))}
@@ -332,8 +336,9 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
                 const hasUrl = (form.download_urls[key] ?? '').trim() !== ''
                 return (
                 <div key={key} className="space-y-1">
-                  <label className="text-xs text-ink-faint">{label}</label>
+                  <label htmlFor={`${uid}-dl-${key}`} className="text-xs text-ink-faint">{label}</label>
                   <input
+                    id={`${uid}-dl-${key}`}
                     type="url"
                     value={form.download_urls[key] ?? ''}
                     onChange={(e) =>

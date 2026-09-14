@@ -5,7 +5,7 @@
  * @설명: 랜딩 페이지 Features 섹션 CRUD
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useId } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { runAdminAction } from '@/app/admin/_lib/runAdminAction'
 import type { AdminActionResult } from '@/app/admin/_lib/adminActionResult'
@@ -37,11 +37,15 @@ const emptyForm = { icon: '', tag: '', title: '', description: '' }
 function InputField({ label, value, onChange, placeholder, multiline = false }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean
 }) {
+  // 이름표를 입력칸에 실제로 연결한다 — 이 부품 하나를 고치면 이 화면의 칸이 전부 따라온다.
+  // 목록 안에서 여러 벌 그려지므로 id는 useId로 벌마다 다르게 만든다.
+  const id = useId()
   return (
     <div>
-      <label className="block text-xs text-ink-faint mb-1">{label}</label>
+      <label htmlFor={id} className="block text-xs text-ink-faint mb-1">{label}</label>
       {multiline ? (
         <textarea
+          id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={2}
@@ -50,6 +54,7 @@ function InputField({ label, value, onChange, placeholder, multiline = false }: 
         />
       ) : (
         <input
+          id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}

@@ -201,8 +201,9 @@ function FormFields({
       </div>
 
       <div className="flex items-center gap-3">
-        <label className="text-xs text-ink-faint">평점</label>
-        <div className="flex gap-1">
+        {/* 별 버튼 5개 묶음 — 가리킬 입력칸이 하나가 아니라 묶음 자체에 이름을 준다 */}
+        <span className="text-xs text-ink-faint" id="tm-rating-label">평점</span>
+        <div className="flex gap-1" role="group" aria-labelledby="tm-rating-label">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
