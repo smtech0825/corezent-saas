@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { blog } from '@/lib/source'
 import { SITE_URL } from '@/lib/site'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 /** 한 쪽에 보여줄 글 수 — 2열 격자라 12편이면 6줄로 떨어진다 */
 const PER_PAGE = 12
@@ -122,6 +123,7 @@ export default async function BlogListPage({
 
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
+      <PageBreadcrumb trail={[{ name: '블로그', path: '/blog' }]} />
       <Navbar />
 
       <main className="flex-1 pt-10 sm:pt-14 pb-20 px-4 sm:px-6">

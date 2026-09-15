@@ -10,6 +10,7 @@ import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ContactFormWrapper from './ContactFormWrapper'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/contact',
@@ -20,6 +21,7 @@ export const metadata: Metadata = buildPageMetadata({
 export default function ContactPage() {
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink font-sans">
+      <PageBreadcrumb trail={[{ name: '문의하기', path: '/contact' }]} />
       <Navbar />
 
       {/* Hero */}

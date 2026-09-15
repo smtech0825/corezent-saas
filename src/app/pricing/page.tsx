@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { buildPageMetadata } from '@/lib/seo'
 import PricingClient, { type PricingProduct } from './PricingClient'
 import { lowestPriceRow } from '@/lib/product-pricing'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 // 매 요청마다 서버가 다시 그리면 한 번에 1.6~2.4초를 쓴다(운영 실측).
 // 관리자가 고친 내용이 늦게 보이면 안 되므로 60초로 짧게 잡는다 —
@@ -142,6 +143,7 @@ export default async function PricingPage() {
 
   return (
     <div className="theme-paper min-h-screen bg-paper font-sans text-ink">
+      <PageBreadcrumb trail={[{ name: '요금제', path: '/pricing' }]} />
       <Navbar />
 
       <main>

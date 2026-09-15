@@ -15,6 +15,7 @@ import { getMDXComponents } from '@/mdx-components'
 import { createRelativeLink } from 'fumadocs-ui/mdx'
 import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/site'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 type DocsPageProps = { params: Promise<{ slug?: string[] }> }
 
@@ -35,6 +36,7 @@ export default async function Page(props: DocsPageProps) {
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
+      <PageBreadcrumb trail={[{ name: '매뉴얼', path: '/docs' }, { name: page.data.title, path: page.url }]} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
