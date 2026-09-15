@@ -13,8 +13,12 @@ import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import StampForm from './StampForm'
+import CalcJsonLd from '../_components/CalcJsonLd'
 
-export const dynamic = 'force-dynamic'
+// 매 요청마다 서버가 다시 그리면 한 번에 1.2~1.7초를 쓴다(실측).
+// 이 화면은 사용자별 내용이 없고 법령 룰만 읽으므로 10분간 캐시한다.
+// 룰을 고치면 최대 10분 뒤에 반영된다.
+export const revalidate = 600
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/tax/stamp',
@@ -26,6 +30,7 @@ export const metadata: Metadata = buildPageMetadata({
 export default async function StampTaxPage() {
   return (
     <>
+      <CalcJsonLd name="부동산 인지세 계산기" description={"부동산 매매계약서에 붙는 인지세를 계약금액 기준으로 계산합니다. 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시하고, 비과세면 그 사유까지 보여드립니다."} path="/tax/stamp" />
       {/* Hero */}
       <section className="pt-8 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">

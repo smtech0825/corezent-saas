@@ -13,8 +13,12 @@ import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import PropertyForm from './PropertyForm'
+import CalcJsonLd from '../_components/CalcJsonLd'
 
-export const dynamic = 'force-dynamic'
+// 매 요청마다 서버가 다시 그리면 한 번에 1.2~1.7초를 쓴다(실측).
+// 이 화면은 사용자별 내용이 없고 법령 룰만 읽으므로 10분간 캐시한다.
+// 룰을 고치면 최대 10분 뒤에 반영된다.
+export const revalidate = 600
 
 /** 이 계산기의 목록 항목 — 열림 여부(available)의 단일 출처는 calculators.ts */
 const CALC_INFO = TAX_CALCULATORS.find((c) => c.slug === 'property')
@@ -34,6 +38,7 @@ export const metadata: Metadata = {
 export default function PropertyTaxPage() {
   return (
     <>
+      <CalcJsonLd name="부동산 재산세 계산기" description={"아파트 재산세를 법령 근거와 함께 계산합니다. 공정시장가액비율과 1세대 1주택 특례, 과세표준·세부담 상한, 지방교육세·도시지역분까지, 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시합니다."} path="/tax/property" />
       {/* Hero */}
       <section className="pt-8 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">

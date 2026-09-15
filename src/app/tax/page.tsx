@@ -15,6 +15,7 @@ import {
   TAX_CALCULATORS,
 } from '@/lib/tax/calculators'
 import CalcSection from './_components/CalcSection'
+import CalcJsonLd from './_components/CalcJsonLd'
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/tax',
@@ -26,6 +27,7 @@ export const metadata: Metadata = buildPageMetadata({
 export default function TaxHubPage() {
   return (
     <>
+      <CalcJsonLd name="부동산 계산기" description={"부동산을 사고, 보유하고, 팔고, 물려줄 때 필요한 세금·비용 계산기를 한곳에 모았습니다. 적용된 법령명·조문·시행일·원문 링크를 결과와 함께 보여드립니다."} path="/tax" />
       {/* Hero */}
       <section className="pt-10 sm:pt-12 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">
