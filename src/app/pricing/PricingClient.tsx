@@ -167,16 +167,17 @@ export default function PricingClient({ products }: Props) {
           </div>
         )}
 
-        {/* 제품 카드 그리드 */}
+        {/* 제품 카드 그리드 — 제품이 몇 개든 한 줄에 최대 2개.
+            3열은 카드가 325px까지 좁아져 가격·기능이 눌렸다. 2열이면 같은 너비에서 500px가 되어
+            상품이 늘어도 카드 폭이 그대로 유지된다.
+            제품이 하나일 때만 예외로 좁게 잡아 가운데 정렬한다(카드 하나가 전폭으로 늘어지지 않게). */}
         {filtered.length === 0 ? (
           <p className="text-center text-ink-soft py-20">이 카테고리에 제품이 없습니다.</p>
         ) : (
           <div className={`grid gap-6 mb-20 ${
             filtered.length === 1
               ? 'grid-cols-1 max-w-md mx-auto'
-              : filtered.length === 2
-              ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto'
-              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+              : 'grid-cols-1 sm:grid-cols-2'
           }`}>
             {filtered.map((product) => {
               // 옵션 행이 2개 이상이면 = 옵션 상품 → 카드엔 "부터" 대표가만, 실제 선택·구매는 상세 페이지에서.
