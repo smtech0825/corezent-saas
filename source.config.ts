@@ -25,9 +25,11 @@ export const docs = defineDocs({
   },
 })
 
-// 블로그(blog) 컬렉션 — 목록/상세에 필요한 date·tags 프론트매터를 추가로 정의
+// 블로그(blog) 컬렉션 — 목록/상세에 필요한 date·category·tags 프론트매터를 추가로 정의
 // date는 따옴표 없이 쓰면 YAML이 Date로 파싱하므로, 문자열/Date 모두 받아 'YYYY-MM-DD' 문자열로 정규화한다
 // (앞으로 글을 추가할 때 date 표기 방식에 신경 쓰지 않아도 되도록 — 보편 해결)
+// category는 선택 항목이다. 비워 둔 글도 목록에 그대로 나오고 '전체'에서만 보인다
+// (필수로 만들면 기존 글이 빌드를 깨뜨린다).
 export const blog = defineCollections({
   type: 'doc',
   dir: 'content/blog',
@@ -35,6 +37,7 @@ export const blog = defineCollections({
     date: z
       .union([z.string(), z.date()])
       .transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
+    category: z.string().optional(),
     tags: z.array(z.string()).optional(),
   }),
 })
