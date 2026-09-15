@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import lazy from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderRichHtml } from '@/lib/sanitize-html'
-import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import { buildPageMetadata } from '@/lib/seo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -23,7 +22,9 @@ const TestimonialsSection = lazy(() => import('@/components/sections/Testimonial
 const FAQSection          = lazy(() => import('@/components/sections/FAQSection'))
 const CTASection          = lazy(() => import('@/components/sections/CTASection'))
 
-export const dynamic = 'force-dynamic'
+// 관리자가 고친 내용이 1분 안에 보이도록 짧게 잡는다. 그 사이 방문자는 캐시를 받아 즉시 열린다.
+// 제휴 코드를 빼서 방문자별 내용이 없어졌기에 캐시할 수 있게 됐다(위 주석 참조).
+export const revalidate = 60
 
 /**
  * @함수명: generateMetadata
@@ -76,7 +77,7 @@ export default async function HomePage() {
   const client = createAdminClient()
 
   // 병렬로 모든 DB 데이터 조회
-  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, affiliateRef, homeFeaturedSlug, orgRes] = await Promise.all([
+  const [sectionsRes, featuresRes, testimonialsRes, faqsRes, contentRes, stepsRes, pricingRes, homeFeaturedSlug, orgRes] = await Promise.all([
     client.from('front_sections').select('name, is_visible, order_index').order('order_index'),
     client.from('front_features').select('id, icon, tag, title, description').eq('is_published', true).order('order_index'),
     client.from('front_interviews').select('id, quote, author_name, author_title, author_avatar, rating').eq('is_published', true),
@@ -88,8 +89,6 @@ export default async function HomePage() {
       .select(PRICING_OPT_COLS)
       .eq('is_active', true)
       .order('order_index'),
-    // 체크아웃 추천인 코드(httpOnly cz_ref는 서버에서만 읽음)
-    resolveCheckoutAffiliateRef(),
     // 홈 대표 제품 slug(관리자 설정, 기본 geniework) — 홈에만 적용
     fetchHomeFeaturedSlug(client),
     // 구조화 데이터(Organization)용 상호·연락처 — 관리자 설정을 그대로 쓴다(중복 입력 없음)
@@ -205,7 +204,11 @@ export default async function HomePage() {
     product:      <ProductSection />,
     how_it_works: <HowItWorksSection steps={steps.length > 0 ? steps : undefined} />,
     features:     <FeaturesSection features={features.length > 0 ? features : undefined} />,
-    pricing:      <PricingSection products={featuredProducts} affiliateRef={affiliateRef} showViewPricing={homeFiltered} />,
+    // 제휴 코드는 넣지 않는다(대표 결정 — 제휴 미사용).
+    // 이걸 넣으면 방문자별 값이라 이 화면을 캐시할 수 없고, 캐시하면 한 사람의 코드가
+    // 굳어 모든 구매가 그 사람 실적이 된다. 되살리려면 resolveCheckoutAffiliateRef()를
+    // 다시 불러 넘기고 아래 revalidate를 force-dynamic으로 되돌린다.
+    pricing:      <PricingSection products={featuredProducts} affiliateRef="" showViewPricing={homeFiltered} />,
     testimonials: <TestimonialsSection testimonials={testimonials.length > 0 ? testimonials : undefined} />,
     faq:          <FAQSection faqs={faqs} />,
     cta:          <CTASection content={ctaContent} />,

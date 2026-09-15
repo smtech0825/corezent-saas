@@ -22,7 +22,6 @@ import PublicSectorBanner from '@/components/common/PublicSectorBanner'
 import { CATEGORY_BADGE_PAPER, CATEGORY_LABELS } from '@/lib/products'
 import { formatPrice } from '@/lib/price'
 import { getProductOptions, type OptionRow } from '@/lib/product-options'
-import { resolveCheckoutAffiliateRef } from '@/lib/affiliate'
 import ProductBuyBar from './ProductBuyBar'
 import ScrollTopButton from './ScrollTopButton'
 import RichContent from '@/components/common/RichContent'
@@ -30,7 +29,9 @@ import ProcurementBadge from '@/components/common/ProcurementBadge'
 import { richToPlainText } from '@/lib/rich-html'
 import { JsonLd, productJsonLd, breadcrumbJsonLd, faqJsonLd } from '@/lib/jsonld'
 
-export const dynamic = 'force-dynamic'
+// 관리자가 고친 내용이 1분 안에 보이도록 짧게 잡는다. 그 사이 방문자는 캐시를 받아 즉시 열린다.
+// 제휴 코드를 빼서 방문자별 내용이 없어졌기에 캐시할 수 있게 됐다(위 주석 참조).
+export const revalidate = 60
 
 // 상세 콘텐츠 컬럼 포함 select(035/036 적용 후) / 기본 select(폴백). checkout_url은 항상 존재하는 기본 컬럼.
 // 조달청 등록번호(054)도 FULL_COLS에만 넣는다 — 미적용 환경에서는 BASE_COLS 폴백으로 상세가 계속 열린다
@@ -53,6 +54,25 @@ async function getProduct(slug: string) {
   if (!withRes.error) return withRes.data as Record<string, unknown> | null
   const baseRes = await client.from('products').select(BASE_COLS).eq('slug', slug).maybeSingle()
   return baseRes.data as Record<string, unknown> | null
+}
+
+/**
+ * @함수명: generateStaticParams
+ * @설명: 빌드 시 미리 만들어 둘 상품 주소 목록을 냅니다.
+ *        이게 없으면 주소에 [slug]가 든 화면은 매 요청마다 서버가 새로 그립니다(캐시 안 됨).
+ *        목록에 없는 새 상품도 첫 요청 때 만들어져 캐시됩니다(dynamicParams 기본값 true).
+ * @반환값: [{ slug }] 배열. 조회 실패 시 빈 배열(그때는 기존처럼 요청 시 생성)
+ */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  try {
+    const { data } = await createAdminClient()
+      .from('products')
+      .select('slug')
+      .eq('is_active', true)
+    return (data ?? []).map((p) => ({ slug: p.slug as string })).filter((p) => p.slug)
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -90,9 +110,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   // 옵션 있는 상품이면 하단 바에서 바로 옵션 선택·구매 (공용 조회기)
   const optClient = createAdminClient()
-  const [{ optionRows, axis1Name, axis2Name }, affiliateRef, bankRes] = await Promise.all([
+  // 제휴 코드는 넣지 않는다(대표 결정 — 제휴 미사용). 방문자별 값이라 이 화면을 캐시할 수
+  // 없게 만들고, 캐시하면 한 사람의 코드가 굳어 모든 구매가 그 사람 실적이 된다.
+  // 되살리려면 resolveCheckoutAffiliateRef()를 다시 불러 아래 affiliateRef에 넘긴다.
+  const affiliateRef = ''
+  const [{ optionRows, axis1Name, axis2Name }, bankRes] = await Promise.all([
     getProductOptions(optClient, product.id as string),
-    resolveCheckoutAffiliateRef(),
     optClient.from('front_settings').select('key, value')
       .in('key', ['bank_transfer_enabled', 'bank_transfer_bank', 'bank_transfer_account_number', 'bank_transfer_account_holder']),
   ])
