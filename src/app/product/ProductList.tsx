@@ -98,8 +98,16 @@ export default function ProductList({ products }: Props) {
         </div>
       )}
 
-      {/* 카드 그리드 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* 카드 그리드 — 제품이 몇 개든 한 줄에 최대 2개. 요금제 화면과 같은 규칙이다.
+          3열은 카드가 410px까지 좁아졌는데 2열이면 같은 너비에서 628px가 되어,
+          상품이 늘어도 카드 폭이 그대로 유지된다.
+          제품이 하나일 때만 좁게 잡아 가운데 정렬한다 — 폭(672px)은 2열일 때의 카드 크기에 맞춰
+          혼자 있을 때만 유독 커 보이지 않게 했다. */}
+      <div className={`grid gap-6 ${
+        visibleProducts.length === 1
+          ? 'grid-cols-1 max-w-2xl mx-auto'
+          : 'grid-cols-1 md:grid-cols-2'
+      }`}>
         {visibleProducts.map((product) => {
           // 목록 전용 짧은 소개(plain text)를 클램프 표시. 비어 있으면 아래 조건부 렌더로 설명 영역 자체를 생략
           const desc = (product.list_description ?? '').trim()
