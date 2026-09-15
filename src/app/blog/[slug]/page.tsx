@@ -12,6 +12,7 @@ import Footer from '@/components/Footer'
 import { blog } from '@/lib/source'
 import { SITE_URL } from '@/lib/site'
 import { JsonLd, articleJsonLd, breadcrumbJsonLd } from '@/lib/jsonld'
+import { getMDXComponents } from '@/mdx-components'
 
 type BlogPostProps = { params: Promise<{ slug: string }> }
 
@@ -133,7 +134,11 @@ export default async function BlogPostPage(props: BlogPostProps) {
 
           {/* 본문 — 기존 사이트와 동일한 .rich-content 브랜드 prose(문서 사이드바 UI 아님) */}
           <div className="rich-content text-base leading-7">
-            <MDX components={{}} />
+            {/* ★ 빈 객체를 넘기면 안 된다. fumadocs가 마크다운 이미지를 정적 import 객체로
+                바꿔 두는데, 그 객체를 다룰 컴포넌트가 없으면 src="[object Object]"가 박혀
+                글의 이미지가 통째로 깨진다(실제로 218장이 그렇게 나갔다).
+                매뉴얼(/docs)이 쓰는 공용 컴포넌트를 그대로 쓴다. */}
+            <MDX components={getMDXComponents()} />
           </div>
 
           {/* 관련 글 — 같은 분류의 다른 글. 글마다 링크를 손으로 적지 않아도

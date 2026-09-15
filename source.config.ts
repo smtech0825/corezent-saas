@@ -45,4 +45,13 @@ export const blog = defineCollections({
   }),
 })
 
-export default defineConfig()
+export default defineConfig({
+  mdxOptions: {
+    // ★ 이미지를 정적 import로 바꾸지 않는다.
+    // 기본값(useImport: true)은 마크다운 이미지를 import 객체로 바꾸는데, 그 객체가 그대로
+    // src에 실려 `src="[object Object]"`가 되면서 블로그 이미지 218장이 전부 깨졌다.
+    // false로 두면 경로 문자열이 그대로 남고, 플러그인이 파일에서 가로·세로를 읽어 붙여 준다
+    // (크기가 붙으면 글을 읽는 중 이미지가 뒤늦게 뜨며 본문이 밀리는 일도 없어진다).
+    remarkImageOptions: { useImport: false },
+  },
+})
