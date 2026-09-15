@@ -6,6 +6,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { revalidateProductPages } from '@/lib/revalidate-public'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/require-admin'
 import { validateOptionRows } from '@/lib/product-validation'
@@ -146,6 +147,9 @@ async function createProduct(data: ProductFormData): Promise<{ error?: string }>
   })
 
   revalidatePath('/admin/products')
+    // 공개 화면(홈 요금 섹션·요금제·상품 목록·상품 상세)의 보관본도 비운다.
+    // 이게 없으면 고친 상품이 최대 1분 뒤에야 보인다.
+    revalidateProductPages()
   return {}
 }
 
