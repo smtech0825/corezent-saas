@@ -16,6 +16,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Section, { SectionHeader } from '@/components/ui/Section'
 import QuoteForm from './QuoteForm'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 // 매 요청마다 서버가 다시 그리면 한 번에 1.6~2.4초를 쓴다(운영 실측).
 // 관리자가 고친 내용이 늦게 보이면 안 되므로 60초로 짧게 잡는다 —
@@ -133,6 +134,7 @@ export default async function PublicSectorPage() {
 
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
+      <PageBreadcrumb trail={[{ name: '기관 도입', path: '/public-sector' }]} />
       <Navbar />
 
       <main className="flex-1">

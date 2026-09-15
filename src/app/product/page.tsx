@@ -13,6 +13,7 @@ import Footer from '@/components/Footer'
 import ProductList from './ProductList'
 import PublicSectorBanner from '@/components/common/PublicSectorBanner'
 import { lowestPriceRow } from '@/lib/product-pricing'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb'
 
 // 매 요청마다 서버가 다시 그리면 한 번에 1.6~2.4초를 쓴다(운영 실측).
 // 관리자가 고친 내용이 늦게 보이면 안 되므로 60초로 짧게 잡는다 —
@@ -78,6 +79,7 @@ export default async function ProductPage() {
 
   return (
     <>
+      <PageBreadcrumb trail={[{ name: '제품', path: '/product' }]} />
       <Navbar />
       <main className="theme-paper min-h-screen bg-paper text-ink">
         <section className="relative pt-10 sm:pt-14 pb-24 px-4 sm:px-6">
