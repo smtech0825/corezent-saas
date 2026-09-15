@@ -39,6 +39,9 @@ export const blog = defineCollections({
       .transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
     category: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    // 공유 미리보기 이미지 경로('/blog/…'). 비우면 사이트 기본 이미지를 쓴다.
+    // 외부 주소는 넣지 말 것 — 네이버 등은 다른 사이트에서 불러오면 차단되어 깨진 채로 공유된다.
+    image: z.string().optional(),
   }),
 })
 

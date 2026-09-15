@@ -207,6 +207,8 @@ interface ArticleJsonLdInput {
   /** 'YYYY-MM-DD' 형식 발행일 */
   date?: string | null
   path: string
+  /** 대표 이미지 경로('/blog/…'). 검색결과에 이미지가 함께 나올 때 쓰인다 */
+  image?: string | null
 }
 
 /**
@@ -223,6 +225,8 @@ export function articleJsonLd(input: ArticleJsonLdInput): Schema {
     headline: input.title.slice(0, 110),
     description: input.description?.trim(),
     datePublished: input.date?.trim(),
+    // 상대 경로는 절대 주소로 바꿔서 넣는다 — 검색엔진이 상대 경로를 못 읽는다
+    image: input.image?.startsWith('/') ? `${SITE_URL}${input.image}` : (input.image ?? undefined),
     mainEntityOfPage: url,
     url,
     inLanguage: 'ko-KR',
