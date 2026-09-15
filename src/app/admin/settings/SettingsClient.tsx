@@ -336,10 +336,13 @@ export default function SettingsClient({ initial }: { initial: Settings }) {
         footer={<SaveButton section="footer" {...btnProps} />}
       >
         <div>
+          {/* 이 칸만 구역에 하나뿐이라 자기 이름표가 없다(구역 제목이 이름 구실을 한다).
+              화면낭독기에는 구역 제목이 전달되지 않으므로 칸 자신에게 이름을 준다. */}
           <textarea
             value={values.footer_info ?? ''}
             onChange={(e) => update('footer_info', e.target.value)}
             rows={5}
+            aria-label="푸터 정보"
             placeholder={'사업자등록번호: 000-00-00000\n대표: 홍길동\n통신판매업신고: 2024-서울강남-00000\n이메일: support@corezent.com'}
             className={TEXTAREA_CLS}
           />
