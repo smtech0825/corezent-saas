@@ -234,3 +234,41 @@ export function articleJsonLd(input: ArticleJsonLdInput): Schema {
     publisher: PUBLISHER_REF,
   })
 }
+
+interface CalculatorJsonLdInput {
+  /** 화면에 보이는 계산기 이름 (h1과 같게) */
+  name: string
+  description?: string | null
+  /** '/tax/acquisition' 형태 경로 */
+  path: string
+}
+
+/**
+ * @함수명: calculatorJsonLd
+ * @설명: 부동산 계산기용 WebApplication 스키마를 만듭니다.
+ *        계산기는 문서가 아니라 도구이므로 Article이 아니라 WebApplication으로 알립니다.
+ *        무료라는 사실(price 0)을 함께 알려야 검색엔진이 유료 도구와 구분합니다.
+ * @매개변수: input - 이름·설명·경로
+ * @반환값: WebApplication 스키마 객체
+ */
+export function calculatorJsonLd(input: CalculatorJsonLdInput): Schema {
+  const url = `${SITE_URL}${input.path}`
+  return compact({
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: input.name,
+    description: input.description?.trim(),
+    url,
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'All',
+    browserRequirements: '최신 웹 브라우저',
+    inLanguage: 'ko-KR',
+    isAccessibleForFree: true,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'KRW',
+    },
+    publisher: PUBLISHER_REF,
+  })
+}

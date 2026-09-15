@@ -9,15 +9,19 @@
 import type { Metadata } from 'next'
 import { Building } from 'lucide-react'
 import { buildPageMetadata } from '@/lib/seo'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { TAX_CALCULATORS } from '@/lib/tax/calculators'
 import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import { fetchAutoRegulatedEnabled } from '../_components/coverage-rule'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import TransferForm from './TransferForm'
+import CalcJsonLd from '../_components/CalcJsonLd'
 
-export const dynamic = 'force-dynamic'
+// 매 요청마다 서버가 다시 그리면 한 번에 1.2~1.7초를 쓴다(실측).
+// 이 화면은 사용자별 내용이 없고 법령 룰만 읽으므로 10분간 캐시한다.
+// 룰을 고치면 최대 10분 뒤에 반영된다.
+export const revalidate = 600
 
 /** 이 계산기의 목록 항목 — 열림 여부(available)의 단일 출처는 calculators.ts */
 const CALC_INFO = TAX_CALCULATORS.find((c) => c.slug === 'transfer')
@@ -46,7 +50,8 @@ function todayKst(): string {
  *        폼은 날짜 없는 일반 문구를 표시합니다(마감일의 단일 출처는 룰).
  */
 async function fetchGraceDeadlineText(): Promise<string | null> {
-  const supabase = await createClient()
+  // 쿠키 클라이언트를 쓰면 이 화면이 매 요청마다 다시 그려진다. tax_rules는 공개 법령 정보다.
+  const supabase = createAdminClient()
   const today = todayKst()
   const { data, error } = await supabase
     .from('tax_rules')
@@ -77,6 +82,7 @@ export default async function TransferTaxPage() {
 
   return (
     <>
+      <CalcJsonLd name="부동산 양도소득세 계산기" description={"아파트 양도소득세를 법령 근거와 함께 계산합니다. 1세대 1주택 비과세·고가주택 안분·장기보유특별공제 두 표·다주택 중과와 경과조치·지방소득세까지, 적용된 법령명·조문·시행일·원문 링크를 결과에 그대로 표시합니다."} path="/tax/transfer" />
       {/* Hero */}
       <section className="pt-8 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">

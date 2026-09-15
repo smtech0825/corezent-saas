@@ -15,8 +15,12 @@ import ApartmentOnlyNotice from '../_components/ApartmentOnlyNotice'
 import CalcSection, { CalcNotes } from '../_components/CalcSection'
 import RuleBasisBanner from '../_components/RuleBasisBanner'
 import RegistrationForm from './RegistrationForm'
+import CalcJsonLd from '../_components/CalcJsonLd'
 
-export const dynamic = 'force-dynamic'
+// 매 요청마다 서버가 다시 그리면 한 번에 1.2~1.7초를 쓴다(실측).
+// 이 화면은 사용자별 내용이 없고 법령 룰만 읽으므로 10분간 캐시한다.
+// 룰을 고치면 최대 10분 뒤에 반영된다.
+export const revalidate = 600
 
 /** 이 계산기의 목록 항목 — 열림 여부(available)의 단일 출처는 calculators.ts */
 const CALC_INFO = TAX_CALCULATORS.find((c) => c.slug === 'registration')
@@ -36,6 +40,7 @@ export const metadata: Metadata = {
 export default function RegistrationCostPage() {
   return (
     <>
+      <CalcJsonLd name="부동산 등기비용 계산기" description={"아파트 매매 소유권 이전 등기에 드는 비용을 항목별로 계산합니다. 취득세·지방교육세·농어촌특별세·인지세·등기신청 수수료·국민주택채권 손실액·법무사 보수까지, 무엇이 얼마씩 나가는지 적용 법령 근거와 함께 보여드립니다."} path="/tax/registration" />
       {/* Hero */}
       <section className="pt-8 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-md bg-pen/10 border border-pen/20 mb-6">

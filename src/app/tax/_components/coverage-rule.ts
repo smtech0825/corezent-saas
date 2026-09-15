@@ -8,7 +8,7 @@
  *        양도소득세·매도 실수령액 페이지가 공유한다.
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { COMMON_RULE_KEYS } from '@/lib/tax/rule-store'
 
 /** 오늘 날짜(한국 시간) YYYY-MM-DD — 룰 유효기간 판정용 */
@@ -23,7 +23,9 @@ function todayKst(): string {
  * @반환값: 자동 판정 가능 여부
  */
 export async function fetchAutoRegulatedEnabled(): Promise<boolean> {
-  const supabase = await createClient()
+  // 쿠키 클라이언트를 쓰면 이 함수를 부르는 화면이 매 요청마다 다시 그려진다.
+  // tax_rules는 사용자와 무관한 공개 법령 정보다(같은 폴더 RuleBasisBanner와 같은 이유).
+  const supabase = createAdminClient()
   const today = todayKst()
   const { data, error } = await supabase
     .from('tax_rules')

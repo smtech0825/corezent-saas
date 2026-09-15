@@ -11,7 +11,7 @@
  */
 
 import { CalendarClock, TriangleAlert } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /** 배너가 보여줄 룰 한 건 */
 interface BannerRule {
@@ -38,7 +38,9 @@ export default async function RuleBasisBanner({ taxTypes }: {
   /** 이 계산기가 쓰는 룰의 세목 목록 — 예: ['acquisition', 'common'] */
   taxTypes: string[]
 }) {
-  const supabase = await createClient()
+  // 쿠키 기반 클라이언트를 쓰면 Next.js가 이 페이지를 매 요청마다 새로 그린다.
+  // tax_rules는 사용자와 무관한 공개 법령 정보라 쿠키가 필요 없다(홈 page.tsx와 같은 방식).
+  const supabase = createAdminClient()
   const today = todayKst()
   const { data, error } = await supabase
     .from('tax_rules')
