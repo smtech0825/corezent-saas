@@ -12,7 +12,11 @@ import DynamicIcon from '@/components/DynamicIcon'
 import RichContent from '@/components/common/RichContent'
 import AboutBlockSlider from './AboutBlockSlider'
 
-export const dynamic = 'force-dynamic'
+// 매 요청마다 서버가 다시 그리면 한 번에 1.6~2.4초를 쓴다(운영 실측).
+// 관리자가 고친 내용이 늦게 보이면 안 되므로 60초로 짧게 잡는다 —
+// 1분이면 편집 확인에 지장이 없고, 그 사이 들어온 방문자는 캐시를 받아 즉시 열린다.
+// ★ 제휴 코드가 박히는 화면(홈·상품 상세)은 캐시하면 수수료가 잘못 붙어 제외했다.
+export const revalidate = 60
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/about',
