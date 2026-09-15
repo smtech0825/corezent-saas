@@ -170,13 +170,14 @@ export default function PricingClient({ products }: Props) {
         {/* 제품 카드 그리드 — 제품이 몇 개든 한 줄에 최대 2개.
             3열은 카드가 325px까지 좁아져 가격·기능이 눌렸다. 2열이면 같은 너비에서 500px가 되어
             상품이 늘어도 카드 폭이 그대로 유지된다.
-            제품이 하나일 때만 예외로 좁게 잡아 가운데 정렬한다(카드 하나가 전폭으로 늘어지지 않게). */}
+            제품이 하나일 때는 가운데 정렬하되 폭(512px)을 2열일 때의 카드 크기에 맞춘다 —
+            혼자 있을 때만 유독 좁아 보이던 것이 "박스가 작다"는 지적의 실제 원인이었다. */}
         {filtered.length === 0 ? (
           <p className="text-center text-ink-soft py-20">이 카테고리에 제품이 없습니다.</p>
         ) : (
           <div className={`grid gap-6 mb-20 ${
             filtered.length === 1
-              ? 'grid-cols-1 max-w-md mx-auto'
+              ? 'grid-cols-1 max-w-lg mx-auto'
               : 'grid-cols-1 sm:grid-cols-2'
           }`}>
             {filtered.map((product) => {
