@@ -1,0 +1,14 @@
+{
+  "id": true,
+  "program_enabled": true,
+  "commission_type": "percent",
+  "commission_value": 10,
+  "is_recurring": false,
+  "recurring_months_cap": 12,
+  "cookie_days": 30,
+  "hold_days": 30,
+  "min_payout_credit": 100000,
+  "currency": "KRW",
+  "self_referral_blocked": false,
+  "updated_at": "2026-09-11T10:28:07.734647+00:00"
+}
