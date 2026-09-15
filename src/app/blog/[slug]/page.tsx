@@ -79,6 +79,14 @@ export default async function BlogPostPage(props: BlogPostProps) {
 
   const MDX = page.data.body
 
+  // 관련 글 — 같은 분류에서 최신 4편(자기 자신 제외). 분류가 없으면 표시하지 않는다.
+  const related = page.data.category
+    ? [...blog.getPages()]
+        .filter((p) => p.data.category === page.data.category && p.url !== page.url)
+        .sort((a, b) => (a.data.date < b.data.date ? 1 : -1))
+        .slice(0, 4)
+    : []
+
   // 검색엔진용 구조화 데이터 — 글(BlogPosting) + 경로(빵부스러기)
   const postJsonLd = [
     articleJsonLd({
@@ -127,6 +135,31 @@ export default async function BlogPostPage(props: BlogPostProps) {
           <div className="rich-content text-base leading-7">
             <MDX components={{}} />
           </div>
+
+          {/* 관련 글 — 같은 분류의 다른 글. 글마다 링크를 손으로 적지 않아도
+              글이 늘면 저절로 이어진다. 검색엔진이 글 사이 관계를 읽는 통로이기도 하다. */}
+          {related.length > 0 && (
+            <section aria-labelledby="related-heading" className="mt-12 border-t border-rule pt-8">
+              <h2 id="related-heading" className="mb-4 text-lg font-bold text-ink">
+                {page.data.category ? `${page.data.category} 다른 글` : '관련 글'}
+              </h2>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {related.map((r) => (
+                  <li key={r.url}>
+                    <Link
+                      href={r.url}
+                      className="block rounded-xl border border-rule bg-paper-raised p-4 transition-colors hover:border-pen/50"
+                    >
+                      <span className="block text-sm font-semibold text-ink">{r.data.title}</span>
+                      <time dateTime={r.data.date} className="mt-1 block text-xs text-ink-faint">
+                        {formatDate(r.data.date)}
+                      </time>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <div className="mt-12 border-t border-rule pt-6">
             <Link href="/blog" className="text-sm text-pen transition-colors hover:text-pen-dark">
