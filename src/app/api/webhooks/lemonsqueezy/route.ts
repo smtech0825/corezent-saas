@@ -1596,6 +1596,20 @@ async function createLicense(
         }
       } catch (supaErr) {
         console.error(`[LS Webhook] ${supaSlug} Supabase(license_keys) 등록 실패 (order_id=${lsOrderId ?? 'N/A'}, tier=${tier}):`, maskSecretsInText(String(supaErr)))
+        // 결제는 끝났는데 앱이 인증에 쓰는 전용 DB에 키가 없다 = 고객이 제품을 못 쓴다.
+        // 로그 한 줄로 끝내면 아무도 모른다 → 관리자 로그에 남긴다.
+        // ★ throw하지 않는다: 재전송이 오면 licenses가 비어 멱등 가드를 통과해 이 루프가 다시 도는데,
+        //   키 #2~N은 upsert가 아닌 일반 INSERT라 전용 DB에 키가 두 벌 생긴다.
+        //   after(): 기록이 발급 경로를 붙잡지 않게 한다(이 파일의 다른 알림과 같은 방식).
+        after(() => logNotification({
+          kind:   'webhook',
+          status: 'failure',
+          event:  'license_key_store_failed',
+          target: lsOrderId ?? null,
+          error:  `${supaSlug} 전용 DB(license_keys) 등록 실패 — 고객이 앱에서 인증할 수 없습니다. `
+                + `키 ${i + 1}/${keys.length}(${finalKey.slice(0, 8)}…), tier=${tier}. `
+                + `해당 키를 전용 DB에 수동 등록해야 합니다. 사유: ${maskSecretsInText(String(supaErr))}`,
+        }))
       }
 
       const row: Record<string, unknown> = {
@@ -1615,6 +1629,18 @@ async function createLicense(
     const { error: gsLicErr } = await admin.from('licenses').insert(coreRows)
     if (gsLicErr) {
       console.error(`[LS Webhook] ${supaSlug} CoreZent licenses INSERT 실패 — 대시보드 미표시 (order_id=${lsOrderId ?? 'N/A'}): ${maskSecretsInText(gsLicErr.message)}`)
+      // 전용 DB에는 키가 들어갔는데 본체에 없으면 "앱은 되는데 대시보드에 안 보이는" 상태로 끝난다.
+      // 고객은 키를 못 찾고 문의가 오는데 서버 기록엔 아무 신호가 없던 자리다.
+      // ★ throw하지 않는 이유는 위 catch와 같다(재전송 시 전용 DB 키 중복).
+      after(() => logNotification({
+        kind:   'webhook',
+        status: 'failure',
+        event:  'license_dashboard_missing',
+        target: lsOrderId ?? null,
+        error:  `${supaSlug} 본체 licenses 저장 실패 — 전용 DB에는 키가 있으나 고객 대시보드에 안 보입니다. `
+              + `키 ${coreRows.length}개(${coreRows.map((r) => String(r.serial_key).slice(0, 8)).join(', ')}…), tier=${tier}. `
+              + `licenses 테이블에 수동 등록이 필요합니다. 사유: ${maskSecretsInText(gsLicErr.message)}`,
+      }))
     }
 
     // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy
