@@ -309,10 +309,21 @@ export default function ChangelogSection({ productId, initialChangelogs }: Props
               />
             </div>
             <div className="flex items-end pb-1">
+              {/* 진짜 체크박스를 쓴다 — 예전에는 <div onClick>이라 탭으로 이동할 수도, 스페이스로
+                  켤 수도 없었고, 화면낭독기에 켜짐/꺼짐 상태가 전혀 전달되지 않았다.
+                  입력칸은 sr-only로 눈에서만 감추고(포커스는 받는다) 보이는 스위치는 그대로 둔다.
+                  클릭 처리는 <label>이 감싸는 것만으로 브라우저가 해 주므로 onClick을 없앴다
+                  (남겨 두면 label과 두 번 토글돼 서로 상쇄된다). */}
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_latest}
+                  onChange={(e) => setForm((p) => ({ ...p, is_latest: e.target.checked }))}
+                  className="sr-only peer"
+                />
                 <div
-                  onClick={() => setForm((p) => ({ ...p, is_latest: !p.is_latest }))}
-                  className={`w-9 h-5 rounded-full border transition-colors flex items-center px-0.5 ${
+                  aria-hidden
+                  className={`w-9 h-5 rounded-full border transition-colors flex items-center px-0.5 peer-focus-visible:ring-2 peer-focus-visible:ring-mark/40 ${
                     form.is_latest
                       ? 'bg-mark/20 border-mark/40'
                       : 'bg-paper-shade border-rule'

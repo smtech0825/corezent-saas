@@ -40,6 +40,7 @@ import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/li
 import { notifyNewOrder } from '@/lib/admin-notify'
 import { formatMoney, fromProviderAmount, toMinorUnits } from '@/lib/money'
 import { logSystemActivity } from '@/lib/adminActivityLog'
+import { isKnownTier } from '@/lib/license-tiers'
 import {
   findLicenseInAnyDb as supaFindLicenseInAnyDb,
   insertLicense as supaInsertLicense,
@@ -97,8 +98,9 @@ function tierFromGenieWork(slug: string | null | undefined): SupaTier | null {
  */
 function normalizeTier(value: unknown): SupaTier | null {
   const s = String(value ?? '').toLowerCase().trim()
-  const valid: readonly string[] = ['lite', 'pro', 'max', '1pc', '3pc', '5pc', '10pc']
-  return valid.includes(s) ? (s as SupaTier) : null
+  // 목록은 lib/license-tiers.ts 한 곳에서만 정의한다(여기 사본이 마지막이었다).
+  // '해당 없음'(none)은 발급 대상이 아니라 여기서 null이 된다 — 의도한 동작이다.
+  return isKnownTier(s) ? (s as SupaTier) : null
 }
 
 /**
@@ -761,14 +763,20 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
 
   const admin = createAdminClient()
 
-  const { data: existing } = await admin
+  // 이미 저장된 구독인지 확인한다. ★ 여기서 return하지 않는다 —
+  // 예전에는 곧바로 return해서, 구독 행은 저장됐는데 그 뒤 createLicense가 실패한 경우
+  // (등급 미결정 → throw → 500 → LS 재전송) 재전송이 이 줄에 걸려 라이선스가 영원히
+  // 발급되지 않았다. createLicense 안 주석이 약속하는 "재전송으로 자가 치유"는
+  // 주문(order_created) 경로에서만 참이었고 구독 경로에서는 거짓이었다.
+  // 건너뛸 것은 "구독 행 INSERT" 하나뿐이고, 라이선스 발급은 항상 지나가게 둔다.
+  // 중복 발급은 createLicense가 자기 멱등 가드로 막는다(같은 order_id의 licenses 행 존재 시 skip).
+  const { data: existingSub } = await admin
     .from('subscriptions')
     .select('id')
     .eq('lemon_squeezy_subscription_id', lsSubId)
     .single()
-  if (existing) {
-    console.log(`[LS Webhook] 이미 처리된 구독: ${lsSubId}`)
-    return
+  if (existingSub) {
+    console.log(`[LS Webhook] 이미 저장된 구독 — 구독 INSERT만 건너뛰고 라이선스 발급은 확인한다: ${lsSubId}`)
   }
 
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
@@ -858,17 +866,20 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   if (productPrice) subInsert.product_price_id = productPrice.id
   if (bundleId) subInsert.bundle_id = bundleId
 
-  const { data: sub, error: subErr } = await admin
-    .from('subscriptions')
-    .insert(subInsert)
-    .select('id')
-    .single()
+  // 구독 행은 없을 때만 만든다(재전송이면 위에서 이미 찾았다). 라이선스 발급은 아래에서 항상 확인한다.
+  if (!existingSub) {
+    const { data: sub, error: subErr } = await admin
+      .from('subscriptions')
+      .insert(subInsert)
+      .select('id')
+      .single()
 
-  if (subErr || !sub) {
-    throw new Error(`구독 생성 실패: ${subErr?.message}`)
+    if (subErr || !sub) {
+      throw new Error(`구독 생성 실패: ${subErr?.message}`)
+    }
+
+    console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
   }
-
-  console.log(`[LS Webhook] 구독 생성 완료: ${sub.id}`)
 
   if (productPrice?.product_id && orderId) {
     // 구독 수량(좌석) N → 라이선스 N개 발급. tier는 옵션 행 license_tier 우선(best-effort)
