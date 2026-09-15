@@ -14,6 +14,7 @@ import { notFound } from 'next/navigation'
 import { getMDXComponents } from '@/mdx-components'
 import { createRelativeLink } from 'fumadocs-ui/mdx'
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/site'
 
 type DocsPageProps = { params: Promise<{ slug?: string[] }> }
 
@@ -66,8 +67,19 @@ export async function generateMetadata(props: DocsPageProps): Promise<Metadata> 
   const page = source.getPage(params.slug)
   if (!page || page.data.hidden === true) notFound()
 
+  // canonical — 매뉴얼은 사이트맵에 올라가는 공개 문서인데 정식 주소가 없었다.
+  // 없으면 물음표가 붙은 주소(추적 파라미터 등)가 각각 다른 문서로 취급돼 순위가 갈린다.
+  const url = `${SITE_URL}${page.url}`
+
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: page.data.title,
+      description: page.data.description,
+      url,
+      type: 'article',
+    },
   }
 }
