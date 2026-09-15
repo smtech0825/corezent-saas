@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminOrThrow } from '@/lib/require-admin'
 import { revalidatePath } from 'next/cache'
+import { revalidateProductPages } from '@/lib/revalidate-public'
 import { Plus } from 'lucide-react'
 import ProductList, { type ProductRow } from './ProductList'
 import { formatPrice } from '@/lib/price'
@@ -55,9 +56,7 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
       targetId: id,
     })
     revalidatePath('/admin/products')
-    revalidatePath('/')
-    revalidatePath('/pricing')
-    revalidatePath('/product')
+    revalidateProductPages()
     return { ok: true, mode: 'deleted' }
   }
 
@@ -79,9 +78,7 @@ async function deleteProduct(id: string): Promise<DeleteResult> {
       detail: { reason: 'delete_blocked_by_fk' },
     })
     revalidatePath('/admin/products')
-    revalidatePath('/')
-    revalidatePath('/pricing')
-    revalidatePath('/product')
+    revalidateProductPages()
     return { ok: true, mode: 'deactivated' }
   }
 

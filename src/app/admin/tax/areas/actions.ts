@@ -9,6 +9,7 @@
  */
 
 import { revalidatePath } from 'next/cache'
+import { revalidateTaxPages } from '@/lib/revalidate-public'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { guardAdmin, dbFailure, type AdminActionResult } from '@/app/admin/_lib/adminActionResult'
 import { isValidDateString } from '@/lib/tax/rule-store'
@@ -99,5 +100,7 @@ export async function saveTaxArea(payload: TaxAreaPayload): Promise<AdminActionR
   if (error) return dbFailure('규제지역 저장', error)
 
   revalidatePath('/admin/tax/areas')
+  // 공개 계산기 화면의 보관본도 함께 비운다 — 이게 없으면 고친 룰이 최대 10분 뒤에야 보인다
+  revalidateTaxPages()
   return { status: 'ok' }
 }
