@@ -43,6 +43,13 @@ export async function generateMetadata(props: BlogPostProps): Promise<Metadata> 
   if (!page) return {}
 
   const url = `${SITE_URL}/blog/${slug}`
+
+  // 공유 미리보기 이미지 — 글 본문의 첫 이미지를 쓴다.
+  // 지정하지 않으면 모든 글이 사이트 기본 이미지 한 장으로 떨어져, 카카오톡에 붙였을 때
+  // 글이 달라도 전부 같아 보인다. 본문에 이미지가 없는 글은 그대로 기본 이미지를 쓴다.
+  const own = page.data.image
+  const images = own?.startsWith('/') ? [`${SITE_URL}${own}`] : undefined
+
   return {
     title: page.data.title,
     description: page.data.description,
@@ -53,9 +60,12 @@ export async function generateMetadata(props: BlogPostProps): Promise<Metadata> 
       url,
       type: 'article',
       publishedTime: page.data.date,
+      ...(images ? { images } : {}),
     },
+    ...(images ? { twitter: { card: 'summary_large_image' as const, images } } : {}),
   }
 }
+
 
 /**
  * @함수명: BlogPostPage
@@ -76,6 +86,7 @@ export default async function BlogPostPage(props: BlogPostProps) {
       description: page.data.description,
       date: page.data.date,
       path: `/blog/${slug}`,
+      image: page.data.image,
     }),
     breadcrumbJsonLd([
       { name: '홈', path: '/' },
