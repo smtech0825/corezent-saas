@@ -23,6 +23,36 @@ const BASE_DESC = 'CoreZent 제품 소식과 업무 자동화 활용법을 전�
  * @매개변수: page - 쪽 번호(1이면 생략)
  * @반환값: '/blog' 또는 '/blog?category=…&page=…'
  */
+/**
+ * @함수명: resolveListView
+ * @설명: 주소의 분류·쪽 번호를 실제로 보여줄 값으로 정리합니다.
+ *        ★ generateMetadata와 화면이 반드시 같은 값을 써야 합니다. 한쪽만 범위를 당기면
+ *        `?page=99`처럼 없는 쪽이 자기가 정본이라고 주장해, 무한한 주소가 같은 내용을
+ *        두고 중복으로 잡힙니다. 그래서 정리 규칙을 한 곳에 둡니다.
+ * @매개변수: sp - 주소 파라미터(category·page)
+ * @반환값: 거른 글 목록·유효 분류·당겨진 쪽 번호·전체 쪽 수
+ */
+function resolveListView(sp: { category?: string; page?: string }) {
+  const all = [...blog.getPages()].sort(
+    (a, b) => (a.data.date < b.data.date ? 1 : a.data.date > b.data.date ? -1 : 0),
+  )
+  const counts = new Map<string, number>()
+  all.forEach((p) => {
+    const c = p.data.category
+    if (c) counts.set(c, (counts.get(c) ?? 0) + 1)
+  })
+
+  // 목록에 없는 분류가 들어오면 거르지 않고 전체를 보여준다(빈 화면 방지)
+  const category = sp.category && counts.has(sp.category) ? sp.category : undefined
+  const filtered = category ? all.filter((p) => p.data.category === category) : all
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  // 범위를 벗어난 쪽 번호는 마지막 쪽으로 당긴다
+  const page = Math.min(totalPages, Math.max(1, Number(sp.page) || 1))
+
+  return { all, counts, category, filtered, page, totalPages }
+}
+
 function buildListUrl(category?: string, page = 1): string {
   const q = new URLSearchParams()
   if (category) q.set('category', category)
@@ -43,8 +73,8 @@ export async function generateMetadata({
   searchParams: Promise<{ category?: string; page?: string }>
 }): Promise<Metadata> {
   const sp = await searchParams
-  const page = Math.max(1, Number(sp.page) || 1)
-  const category = sp.category?.trim() || undefined
+  // 화면과 같은 규칙으로 정리한다 — 없는 쪽·없는 분류가 정식 주소로 나가지 않게
+  const { page, category } = resolveListView(sp)
 
   const parts = ['블로그']
   if (category) parts.push(category)
@@ -80,32 +110,15 @@ export default async function BlogListPage({
   searchParams: Promise<{ category?: string; page?: string }>
 }) {
   const sp = await searchParams
-  const active = sp.category
+  // 정리 규칙은 resolveListView 한 곳에만 둔다 — generateMetadata가 같은 함수를 쓴다.
+  // 두 곳에 같은 계산을 적으면 한쪽만 고쳐져 정식 주소와 화면이 어긋난다.
+  const { all, counts, category: activeCategory, filtered, page, totalPages } = resolveListView(sp)
 
-  // 최신순 정렬(date 내림차순)
-  const all = [...blog.getPages()].sort(
-    (a, b) => (a.data.date < b.data.date ? 1 : a.data.date > b.data.date ? -1 : 0),
-  )
-
-  // 카테고리 목록은 글에서 뽑는다 — 새 카테고리를 쓰면 탭이 저절로 생긴다(코드 수정 불필요).
+  // 분류 탭은 글에서 뽑는다 — 새 분류를 쓰면 탭이 저절로 생긴다(코드 수정 불필요).
   // 글 수가 많은 순으로 놓아 빈 탭이 앞에 오지 않게 한다.
-  const counts = new Map<string, number>()
-  all.forEach((p) => {
-    const c = p.data.category
-    if (c) counts.set(c, (counts.get(c) ?? 0) + 1)
-  })
   const categories = [...counts.entries()].sort((a, b) => b[1] - a[1])
 
-  // 목록에 없는 값이 주소로 들어오면 거르지 않고 전체를 보여준다(빈 화면 방지)
-  const isValid = active ? counts.has(active) : false
-  const filtered = isValid ? all.filter((p) => p.data.category === active) : all
-
-  // 쪽 나누기 — 글이 늘어도 한 화면에 전부 그리지 않는다.
-  // 범위를 벗어난 쪽 번호가 들어오면 마지막 쪽으로 당긴다(빈 화면 방지).
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const page = Math.min(totalPages, Math.max(1, Number(sp.page) || 1))
   const posts = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const activeCategory = isValid ? active : undefined
 
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex flex-col">
@@ -123,9 +136,9 @@ export default async function BlogListPage({
             <nav aria-label="카테고리" className="mb-10 flex flex-wrap justify-center gap-2">
               <Link
                 href="/blog"
-                aria-current={!isValid ? 'page' : undefined}
+                aria-current={!activeCategory ? 'page' : undefined}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                  !isValid
+                  !activeCategory
                     ? 'border-pen bg-pen text-white'
                     : 'border-rule text-ink-soft hover:border-pen/40 hover:text-ink'
                 }`}
@@ -136,9 +149,9 @@ export default async function BlogListPage({
                 <Link
                   key={name}
                   href={buildListUrl(name)}
-                  aria-current={active === name ? 'page' : undefined}
+                  aria-current={activeCategory === name ? 'page' : undefined}
                   className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                    active === name
+                    activeCategory === name
                       ? 'border-pen bg-pen text-white'
                       : 'border-rule text-ink-soft hover:border-pen/40 hover:text-ink'
                   }`}
