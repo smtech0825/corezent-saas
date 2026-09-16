@@ -85,7 +85,7 @@ export default async function BrokeragePage() {
 
         {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
         <div className="mt-8 border-t border-rule pt-5 text-center">
-          <p className="text-xs text-ink-soft leading-relaxed">
+          <p className="text-sm text-ink-soft leading-relaxed">
             본 계산기는 참고용이며 법적 효력이 없습니다. 실제 중개보수는 소재지 시·도
             조례와 중개대상물 확인·설명서, 개업공인중개사와의 협의를 통해 반드시
             확인하시기 바랍니다.

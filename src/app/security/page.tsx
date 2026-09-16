@@ -84,21 +84,21 @@ export default function SecurityPage() {
             <div className={CARD}>
               <p className="text-xs text-ink-faint mb-2">CoreZent 서버</p>
               <p className="text-base font-bold text-ink mb-2">작성한 문서를 받지 않습니다</p>
-              <p className="text-sm text-ink-soft leading-relaxed">
+              <p className="text-base text-ink-soft leading-relaxed">
                 문서 내용과 AI 키는 당사 서버를 거치지 않습니다. 서버가 받는 것은 라이선스 인증 값뿐입니다.
               </p>
             </div>
             <div className={CARD}>
               <p className="text-xs text-ink-faint mb-2">AI 회사</p>
               <p className="text-base font-bold text-ink mb-2">가린 글자가 전송됩니다</p>
-              <p className="text-sm text-ink-soft leading-relaxed">
+              <p className="text-base text-ink-soft leading-relaxed">
                 문서를 만들려면 AI 호출이 필요합니다. 개인정보를 가린 글자가 본인 명의 AI 계정으로 전송됩니다.
               </p>
             </div>
             <div className={CARD}>
               <p className="text-xs text-ink-faint mb-2">담당자 PC</p>
               <p className="text-base font-bold text-ink mb-2">원본이 남는 곳입니다</p>
-              <p className="text-sm text-ink-soft leading-relaxed">
+              <p className="text-base text-ink-soft leading-relaxed">
                 문서와 AI 키는 PC 안 로컬 데이터베이스에 저장되고, 개인정보 항목은 AES-256으로 암호화됩니다.
               </p>
             </div>
@@ -113,7 +113,7 @@ export default function SecurityPage() {
               <li key={`${step.title}-${i}`} className="flex flex-col md:flex-row md:items-center md:flex-1">
                 <div className={`${CARD} flex-1 text-center`}>
                   <p className="text-sm font-bold text-ink">{step.title}</p>
-                  <p className="mt-1.5 text-xs text-ink-soft leading-relaxed break-keep">{step.detail}</p>
+                  <p className="mt-1.5 text-sm text-ink-soft leading-relaxed break-keep">{step.detail}</p>
                 </div>
                 {/* 마지막 단계 뒤에는 화살표를 두지 않는다 */}
                 {i < FLOW_STEPS.length - 1 && (
@@ -125,7 +125,7 @@ export default function SecurityPage() {
               </li>
             ))}
           </ol>
-          <p className="mt-5 text-sm text-ink-soft leading-relaxed break-keep">
+          <p className="mt-5 text-base text-ink-soft leading-relaxed break-keep">
             금액·날짜 계산은 AI가 아니라 검증된 코드가 처리합니다. 한글(HWPX) 파일도 자체 엔진으로 PC 안에서 만듭니다.
           </p>
         </Section>
@@ -137,7 +137,7 @@ export default function SecurityPage() {
             title="무엇을 가리고, 무엇을 가리지 않는지"
             sub="가리지 않는 항목까지 밝혀야 검토가 됩니다."
           />
-          <div className="space-y-5 text-sm text-ink-soft leading-relaxed">
+          <div className="space-y-5 text-base text-ink-soft leading-relaxed">
             <div>
               <p className="font-bold text-ink mb-1.5">문서를 작성할 때</p>
               <p>
@@ -173,11 +173,11 @@ export default function SecurityPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={CARD}>
               <p className="text-base font-bold text-ink mb-2">내 PC에서 처리 <span className="text-xs font-normal text-ink-faint">(기본)</span></p>
-              <p className="text-sm text-ink-soft leading-relaxed">자료가 이 컴퓨터를 벗어나지 않습니다.</p>
+              <p className="text-base text-ink-soft leading-relaxed">자료가 이 컴퓨터를 벗어나지 않습니다.</p>
             </div>
             <div className={CARD}>
               <p className="text-base font-bold text-ink mb-2">빠른 처리</p>
-              <p className="text-sm text-ink-soft leading-relaxed">
+              <p className="text-base text-ink-soft leading-relaxed">
                 더 빠르고 정확합니다. 다만 자료가 AI 서비스에 보관되며, 묶음을 지우면 함께 지워집니다.
                 <b className="text-ink"> 대외비·개인정보가 든 자료는 「내 PC에서 처리」를 권합니다.</b>
               </p>
@@ -188,7 +188,7 @@ export default function SecurityPage() {
         {/* AI 키·라이선스 — 서버로 실제 전송되는 값을 숨기지 않고 밝힌다 */}
         <Section tone="shade" width="text">
           <SectionHeader label="키와 인증" title="AI 키와 라이선스는 이렇게 다룹니다" />
-          <div className="space-y-4 text-sm text-ink-soft leading-relaxed">
+          <div className="space-y-4 text-base text-ink-soft leading-relaxed">
             <p>
               <b className="text-ink">AI 키는 본인 것을 등록해 사용합니다.</b> 앱이 자체 AI 키를 갖고 있지 않습니다.
               문서 작성에는 Claude 키가, 자료·법령 조회에는 Gemini 키가 필요합니다. 등록한 키는 그 PC에만 암호화되어
@@ -205,7 +205,7 @@ export default function SecurityPage() {
         <Section width="text">
           <div className="border border-caution/20 bg-caution-soft rounded-xl p-6">
             <p className="text-base font-bold text-caution mb-3">도입 전에 확인해 주세요</p>
-            <ul className="space-y-2 text-sm text-ink-soft list-disc pl-5 leading-relaxed">
+            <ul className="space-y-2 text-base text-ink-soft list-disc pl-5 leading-relaxed">
               <li>인터넷에 연결된 PC에서 사용하는 프로그램입니다. 폐쇄망(내부망) 전용 환경은 지원하지 않습니다.</li>
               <li>문서 생성에 외부 AI 서비스를 이용합니다. 등록하신 AI 키로 해당 서비스에 요청이 전송되며, 그 회사의 데이터 처리 정책이 적용됩니다.</li>
               <li>사람이 최종 검토하는 초안 도구입니다. 생성된 문서를 그대로 결재에 올리는 용도가 아닙니다.</li>
@@ -221,7 +221,7 @@ export default function SecurityPage() {
             {FAQ_ITEMS.map((item) => (
               <div key={item.q} className="py-5">
                 <dt className="text-sm font-bold text-ink mb-1.5">{item.q}</dt>
-                <dd className="text-sm text-ink-soft leading-relaxed break-keep">{item.a}</dd>
+                <dd className="text-base text-ink-soft leading-relaxed break-keep">{item.a}</dd>
               </div>
             ))}
           </dl>
@@ -230,7 +230,7 @@ export default function SecurityPage() {
         {/* 관련 문서 */}
         <Section width="text" className="pt-0">
           <h2 className="text-lg font-serif font-black text-ink mb-4">함께 보기</h2>
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-2 text-base">
             <li>
               <Link href="/public-sector" className="text-mark underline underline-offset-4">기관 도입 안내</Link>
               <span className="text-ink-soft"> — 수의계약·견적서·세금계산서</span>

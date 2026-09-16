@@ -93,7 +93,7 @@ export default async function RuleBasisBanner({ taxTypes }: {
             <strong className="font-semibold">
               이 계산기의 기준: 시행 {formatKstDate(latestEffective)} 법령까지 반영
             </strong>
-            <span className="block text-xs text-ink-soft mt-0.5">
+            <span className="block text-sm text-ink-soft mt-0.5">
               마지막 룰 갱신 {formatKstDate(lastUpdated)} · 적용 룰 {rules.length}건
               {hasProposed && (
                 <strong className="text-caution"> · 국회 통과 전 개정안이 포함돼 있습니다 — 확정된 내용이 아닙니다</strong>
@@ -105,7 +105,7 @@ export default async function RuleBasisBanner({ taxTypes }: {
       </summary>
       <ul className="mt-3 pt-3 border-t border-rule space-y-2 max-w-4xl">
         {rules.map((r) => (
-          <li key={`${r.rule_key}-${r.effective_from}`} className="text-xs leading-relaxed">
+          <li key={`${r.rule_key}-${r.effective_from}`} className="text-sm leading-relaxed">
             <span className="font-mono text-ink-soft">{r.rule_key}</span>
             <span className="mx-1.5 text-rule">|</span>
             <span className="text-ink">{r.law_name} {r.law_article}</span>
