@@ -40,7 +40,7 @@ export function LegalChrome({
       </div>
 
       {/* 본문 */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-16">
         {/* 타이틀 */}
         <div className="mb-12">
           <div className="inline-flex items-center gap-2 bg-pen/10 border border-pen/20 text-pen text-xs font-semibold px-3 py-1.5 rounded mb-6">
@@ -67,7 +67,7 @@ export function LegalChrome({
             문의하기
           </Link>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
@@ -90,7 +90,7 @@ export function LegalSection({
             {badge}
           </span>
         )}
-        <h2 className="font-serif text-base font-bold text-ink">{title}</h2>
+        <h2 className="font-serif text-lg font-bold text-ink">{title}</h2>
       </div>
       <div className="px-7 py-6 space-y-4">{children}</div>
     </div>
@@ -99,12 +99,12 @@ export function LegalSection({
 
 /** 본문 단락 */
 export function P({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-ink-soft leading-relaxed">{children}</p>
+  return <p className="text-base text-ink-soft leading-relaxed">{children}</p>
 }
 
 /** 굵은 소제목 */
 export function SubLabel({ children }: { children: ReactNode }) {
-  return <p className="text-sm font-semibold text-ink">{children}</p>
+  return <p className="text-base font-semibold text-ink">{children}</p>
 }
 
 /** 소제목 + 본문을 하나로 묶는 그룹 */
@@ -127,7 +127,7 @@ export function Bullets({ items }: { items: ReactNode[] }) {
   return (
     <ul className="space-y-2">
       {items.map((it, i) => (
-        <li key={i} className="flex items-start gap-3 text-sm text-ink-soft leading-relaxed">
+        <li key={i} className="flex items-start gap-3 text-base text-ink-soft leading-relaxed">
           <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-pen/60 shrink-0" />
           <span>{it}</span>
         </li>
@@ -141,7 +141,7 @@ export function OL({ items }: { items: ReactNode[] }) {
   return (
     <ol className="space-y-2">
       {items.map((it, i) => (
-        <li key={i} className="flex items-start gap-3 text-sm text-ink-soft leading-relaxed">
+        <li key={i} className="flex items-start gap-3 text-base text-ink-soft leading-relaxed">
           <span className="shrink-0 font-semibold text-pen">{i + 1}.</span>
           <span>{it}</span>
         </li>
@@ -183,7 +183,7 @@ export function LegalTable({ head, rows }: { head: string[]; rows: string[][] })
 /** 강조 메모 박스 */
 export function Note({ children }: { children: ReactNode }) {
   return (
-    <p className="text-xs text-ink-soft leading-relaxed bg-paper-shade border border-rule rounded-md px-4 py-3">
+    <p className="text-sm text-ink-soft leading-relaxed bg-paper-shade border border-rule rounded-md px-4 py-3">
       {children}
     </p>
   )

@@ -57,7 +57,7 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex">
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
 
           {/* 모바일 로고 */}
@@ -123,7 +123,7 @@ export default function ResetPasswordForm() {
             </>
           )}
         </div>
-      </div>
+      </main>
       <AuthBrand />
     </div>
   )

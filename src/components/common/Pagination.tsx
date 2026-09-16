@@ -28,16 +28,16 @@ export default function Pagination({ page, total, pageSize, buildHref }: Props) 
 
   return (
     <div className="flex items-center justify-center gap-1.5 mt-5 select-none">
-      <Link href={buildHref(1)}        className={`${base} ${hasPrev ? on : off}`}><ChevronsLeft  size={14} /></Link>
-      <Link href={buildHref(page - 1)} className={`${base} ${hasPrev ? on : off}`}><ChevronLeft   size={14} /></Link>
+      <Link href={buildHref(1)}        aria-label="첫 쪽"    aria-disabled={!hasPrev} tabIndex={hasPrev ? undefined : -1} className={`${base} ${hasPrev ? on : off}`}><ChevronsLeft  size={14} /></Link>
+      <Link href={buildHref(page - 1)} aria-label="이전 쪽"   aria-disabled={!hasPrev} tabIndex={hasPrev ? undefined : -1} className={`${base} ${hasPrev ? on : off}`}><ChevronLeft   size={14} /></Link>
 
       <span className={`${base} ${cur}`}>{page}</span>
       {totalPages > 1 && (
         <span className="text-xs text-ink-faint px-1">/ {totalPages}</span>
       )}
 
-      <Link href={buildHref(page + 1)}     className={`${base} ${hasNext ? on : off}`}><ChevronRight  size={14} /></Link>
-      <Link href={buildHref(totalPages)}   className={`${base} ${hasNext ? on : off}`}><ChevronsRight size={14} /></Link>
+      <Link href={buildHref(page + 1)}     aria-label="다음 쪽"   aria-disabled={!hasNext} tabIndex={hasNext ? undefined : -1} className={`${base} ${hasNext ? on : off}`}><ChevronRight  size={14} /></Link>
+      <Link href={buildHref(totalPages)}   aria-label="마지막 쪽" aria-disabled={!hasNext} tabIndex={hasNext ? undefined : -1} className={`${base} ${hasNext ? on : off}`}><ChevronsRight size={14} /></Link>
     </div>
   )
 }

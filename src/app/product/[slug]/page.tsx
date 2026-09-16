@@ -220,7 +220,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <section className="relative pt-10 sm:pt-14 pb-16 px-4 sm:px-6">
             <div className="relative z-10 max-w-4xl mx-auto">
               {/* 뒤로 */}
-              <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors mb-8">
+              <Link href="/product" className="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink transition-colors py-2 -mt-2 mb-6">
                 <ArrowLeft size={14} /> 제품 목록
               </Link>
 
