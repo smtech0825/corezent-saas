@@ -200,7 +200,7 @@ export default function LoginForm() {
   return (
     <div className="theme-paper min-h-screen bg-paper text-ink flex">
       {/* 왼쪽: 폼 영역 */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           {/* 모바일 로고 */}
           <div className="lg:hidden mb-8 text-center">
@@ -349,7 +349,7 @@ export default function LoginForm() {
             </button>
           </form>
         </div>
-      </div>
+      </main>
 
       {/* 오른쪽: 브랜드 영역 (lg 이상에서만 표시) */}
       <AuthBrand />

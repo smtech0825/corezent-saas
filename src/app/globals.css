@@ -224,8 +224,8 @@
     background-attachment: local, local, scroll, scroll;
   }
 
-  /* overflow-x:auto — nowrap 등으로 컨테이너보다 넓어진 표를 좁은 화면에서 가로 스크롤로 수용(레이아웃 보호) */
-  .rich-content { color: var(--color-ink-soft); font-size: 0.875rem; line-height: 1.75; overflow-x: auto; }
+  /* overflow-x:auto — nowrap 등으로 컨테이너보다 넓어진 표를 좁은 화면에서 가로 스크롤로 수용(레이아웃 보호) · 본문 1rem — 14px가 작다는 지시로 상향(2026-09-16) */
+  .rich-content { color: var(--color-ink-soft); font-size: 1rem; line-height: 1.75; overflow-x: auto; }
   .rich-content > :first-child { margin-top: 0; }
   .rich-content > :last-child { margin-bottom: 0; }
 
@@ -233,14 +233,14 @@
     font-family: var(--font-serif);
     font-weight: 900;
     color: var(--color-ink);
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     line-height: 1.4;
     margin: 1.75rem 0 0.75rem;
   }
   .rich-content h3 {
     font-weight: 700;
     color: var(--color-ink);
-    font-size: 1rem;
+    font-size: 1.125rem;
     margin: 1.5rem 0 0.5rem;
   }
   .rich-content p { margin: 0.75rem 0; }
@@ -319,7 +319,7 @@
   .rich-content table {
     border-collapse: collapse;
     margin: 1rem auto;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
   .rich-content th,
   .rich-content td {

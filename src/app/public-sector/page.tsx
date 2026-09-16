@@ -177,7 +177,7 @@ export default async function PublicSectorPage() {
               ))}
             </div>
             {/* 우선구매·보유 자격·판매 채널 — 블록이 보일 때 항상 함께 표시(기존 톤 그대로) */}
-            <div className="mt-4 space-y-1.5 text-sm text-ink-soft">
+            <div className="mt-4 space-y-1.5 text-base text-ink-soft">
               {companyName && (
                 <p>
                   {companyName}는 「중소기업창업 지원법」에 따른 창업기업 확인서를 보유하고 있습니다.
@@ -197,7 +197,7 @@ export default async function PublicSectorPage() {
         <Section width="content">
           <SectionHeader label="요금" title="대수별 요금" sub="관리자에 등록된 옵션을 그대로 표시합니다." />
           {tables.length === 0 ? (
-            <p className="text-sm text-ink-soft text-center">
+            <p className="text-base text-ink-soft text-center">
               현재 표시할 대수별 옵션이 없습니다.{' '}
               <Link href="/pricing" className="text-mark underline">요금 페이지</Link>에서 확인해 주세요.
             </p>
@@ -257,8 +257,8 @@ export default async function PublicSectorPage() {
                   {i + 1}
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-ink">{title}</p>
-                  <p className="text-sm text-ink-soft mt-0.5">{desc}</p>
+                  <p className="text-base font-semibold text-ink">{title}</p>
+                  <p className="text-base text-ink-soft mt-0.5">{desc}</p>
                 </div>
               </li>
             ))}
@@ -299,7 +299,7 @@ export default async function PublicSectorPage() {
               카드 결제(홈페이지 즉시 결제) 건은 발행 주체 확인이 끝나지 않아 여기 넣지 않는다. */}
           <div className="mt-10">
             <h3 className="text-base font-bold font-serif text-ink mb-3">세금계산서 발행</h3>
-            <p className="text-sm text-ink-soft leading-relaxed">
+            <p className="text-base text-ink-soft leading-relaxed">
               기관 수의계약 및 계좌이체 구매 건은 세금계산서를 발행해 드립니다. 견적 요청 시
               기관명·사업자등록번호·담당자 연락처를 함께 적어 주시면 계약과 함께 처리해 드립니다.
             </p>
@@ -309,7 +309,7 @@ export default async function PublicSectorPage() {
         {/* 보안 — 요약만 두고 자세한 설명은 /security 한 곳에서 관리한다(두 곳이 서로 어긋나지 않게) */}
         <Section width="text">
           <SectionHeader label="보안" title="어떻게 동작하는지 그대로 말씀드립니다" />
-          <div className="space-y-4 text-sm text-ink-soft leading-relaxed">
+          <div className="space-y-4 text-base text-ink-soft leading-relaxed">
             <p>
               <b className="text-ink">AI 키는 본인 것을 등록해 사용합니다.</b> 앱이 자체 AI 키를 갖고 있지 않습니다.
               등록한 키는 그 PC에만 암호화되어 저장되며 당사 서버로 전송되지 않습니다.
@@ -320,8 +320,8 @@ export default async function PublicSectorPage() {
               문서 내용은 이 요청에 포함되지 않습니다.
             </p>
             <div className="border border-caution/20 bg-caution-soft rounded-xl p-5">
-              <p className="text-sm font-semibold text-caution mb-2">먼저 확인해 주세요</p>
-              <ul className="space-y-1.5 text-sm text-ink-soft list-disc pl-5">
+              <p className="text-base font-semibold text-caution mb-2">먼저 확인해 주세요</p>
+              <ul className="space-y-1.5 text-base text-ink-soft list-disc pl-5">
                 <li>인터넷에 연결된 PC에서 사용하는 프로그램입니다. 폐쇄망(내부망) 전용 환경은 지원하지 않습니다.</li>
                 <li>문서 생성에 외부 AI 서비스를 이용합니다. 등록하신 AI 키로 해당 서비스에 요청이 전송됩니다.</li>
                 <li>도입 전 기관의 보안 지침에 맞는지 담당 부서와 확인해 주시기 바랍니다.</li>

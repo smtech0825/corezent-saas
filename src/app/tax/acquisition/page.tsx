@@ -66,7 +66,7 @@ export default async function AcquisitionTaxPage() {
 
         {/* 하단 고정 문구 — 참고용 고지 (갱신일은 상단 기준일 배너가 단일 출처) */}
         <div className="mt-8 border-t border-rule pt-5 text-center">
-          <p className="text-xs text-ink-soft leading-relaxed">
+          <p className="text-sm text-ink-soft leading-relaxed">
             본 계산기는 참고용이며 법적 효력이 없습니다. 실제 신고·납부 세액은 위택스,
             관할 지방자치단체 또는 세무 전문가를 통해 반드시 확인하시기 바랍니다.
           </p>

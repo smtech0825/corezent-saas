@@ -41,7 +41,7 @@ export function generateStaticParams() {
 export async function generateMetadata(props: BlogPostProps): Promise<Metadata> {
   const { slug } = await props.params
   const page = blog.getPage([slug])
-  if (!page) return {}
+  if (!page) return { title: '글을 찾을 수 없습니다' }
 
   const url = `${SITE_URL}/blog/${slug}`
 

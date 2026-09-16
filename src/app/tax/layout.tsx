@@ -20,7 +20,7 @@ export default function TaxLayout({ children }: { children: React.ReactNode }) {
       <div className="pt-8 px-4 sm:px-6 text-center">
         <Link
           href="/tax"
-          className="inline-block text-xs font-semibold tracking-widest text-ink-soft hover:text-pen transition-colors"
+          className="inline-block py-2 -my-2 text-xs font-semibold tracking-widest text-ink-soft hover:text-pen transition-colors"
         >
           부동산 계산기
         </Link>
@@ -29,7 +29,7 @@ export default function TaxLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {children}
+      <main>{children}</main>
 
       <Footer />
     </div>
