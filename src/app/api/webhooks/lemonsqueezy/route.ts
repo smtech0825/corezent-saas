@@ -482,6 +482,10 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 사용자 없음 — 주문 미생성 (order_id=${lsOrderId}, email=${attrs.user_email})`)
+    after(() => logNotification({
+      kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: lsOrderId,
+      error: '결제 완료 주문의 구매자를 회원에서 찾지 못해 주문·라이선스를 만들지 않았습니다(GenieWork 주문이면 키는 비활성 상태로 남음). 구매자 확인 후 수동 발급 필요.',
+    }))
     return
   }
 
@@ -515,6 +519,10 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   if (!productPriceId && !bundleId) {
     console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음 — 주문만 기록·라이선스 미생성 (order_id=${lsOrderId})`)
+    after(() => logNotification({
+      kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: lsOrderId,
+      error: `결제사 상품(variant ${variantId})이 등록된 옵션과 맞지 않아 라이선스를 만들지 않았습니다. 옵션 연결 확인 후 수동 발급 필요.`,
+    }))
   }
 
   const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
@@ -783,6 +791,10 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 구독 사용자 없음 — 구독/라이선스 미생성 (order_id=${attrs.order_id}, sub=${lsSubId}, email=${attrs.user_email})`)
+    after(() => logNotification({
+      kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: String(attrs.order_id),
+      error: `구독(${lsSubId}) 구매자를 회원에서 찾지 못해 구독·라이선스를 만들지 않았습니다(GenieWork 주문이면 키는 비활성 상태로 남음). 구매자 확인 후 수동 발급 필요.`,
+    }))
     return
   }
 
@@ -808,6 +820,13 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
       .or(`lemon_squeezy_monthly_variant_id.eq.${variantId},lemon_squeezy_annual_variant_id.eq.${variantId}`)
       .single()
     if (bundleData) bundleId = bundleData.id
+  }
+  if (!productPrice && !bundleId) {
+    console.error(`[LS Webhook] (sub) variant_id ${variantId}에 매칭되는 상품 없음 — 라이선스 미생성 (sub=${lsSubId})`)
+    after(() => logNotification({
+      kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: String(attrs.order_id),
+      error: `구독(${lsSubId})의 결제사 상품(variant ${variantId})이 등록된 옵션과 맞지 않아 라이선스를 만들지 않았습니다. 옵션 연결 확인 후 수동 발급 필요.`,
+    }))
   }
 
   // 구독 수량(좌석) — 스텁 주문 기록·라이선스 N개 발급에 공용
@@ -844,10 +863,14 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
       // 경쟁: order_created가 먼저 INSERT함 → 기존 주문 사용(실금액 보존, 스텁 재생성 안 함)
       const { data: raced } = await admin
         .from('orders').select('id').eq('lemon_squeezy_order_id', lsOrderId).single()
-      orderId = raced?.id ?? null
+      // 재조회까지 실패하면 orderId가 null이 돼 발급이 조용히 건너뛰어진다 → 재전송으로 치유
+      if (!raced?.id) throw new Error(`(sub) 경쟁 감지 후 기존 주문 재조회 실패: ${lsOrderId}`)
+      orderId = raced.id
       console.log(`[LS Webhook] (sub) 경쟁 감지 — 기존 주문 사용: ${orderId}`)
     } else {
-      orderId = newOrder?.id ?? null
+      // 그 밖의 실패를 삼키면 orderId가 null이 돼 아래 발급이 조용히 건너뛰어진다 → 재전송으로 치유
+      if (insErr || !newOrder) throw new Error(`(sub) 스텁 주문 생성 실패: ${insErr?.message ?? '응답 없음'}`)
+      orderId = newOrder.id
     }
   }
 
@@ -1009,7 +1032,8 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
     // DB license.expires_at를 구독 갱신일과 동기화 (주문의 모든 라이선스 공통)
     await admin
       .from('licenses')
-      .update({ expires_at: attrs.renews_at, status: 'active' })
+      // 상태는 활성일 때만 되살린다 — expired 통지가 뒤늦게 와도 대시보드가 '활성'으로 돌아가지 않게
+      .update({ expires_at: attrs.renews_at, ...(newStatus === 'active' ? { status: 'active' } : {}) })
       .eq('order_id', licInfo.orderId)
 
     // 키별 라우팅: 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
@@ -1613,7 +1637,8 @@ async function createLicense(
           target: lsOrderId ?? null,
           error:  `${supaSlug} 전용 DB(license_keys) 등록 실패 — 고객이 앱에서 인증할 수 없습니다. `
                 + `키 ${i + 1}/${keys.length}(${finalKey.slice(0, 8)}…), tier=${tier}. `
-                + `해당 키를 전용 DB에 수동 등록해야 합니다. 사유: ${maskSecretsInText(String(supaErr))}`,
+                + `해당 키를 전용 DB에 수동 등록(tier·expires_at 기재, is_active=true)해야 합니다 — `
+                + `같은 ls_order_id 행이 이미 있으면 새로 넣지 말고 그 행을 그렇게 UPDATE. 사유: ${maskSecretsInText(String(supaErr))}`,
         }))
       }
 
