@@ -37,7 +37,7 @@ import { logNotification } from '@/lib/notification-log'
 import { sendEmail, orderConfirmationEmailHtml } from '@/lib/email'
 import { maskSecret, maskSecretsInText } from '@/lib/mask'
 import { appendLicenseRow, updateLicenseExpiry, updateLicenseStatus } from '@/lib/sheets'
-import { notifyNewOrder } from '@/lib/admin-notify'
+import { notifyNewOrder, notifyLicenseIssue } from '@/lib/admin-notify'
 import { formatMoney, fromProviderAmount, toMinorUnits } from '@/lib/money'
 import { logSystemActivity } from '@/lib/adminActivityLog'
 import { isKnownTier } from '@/lib/license-tiers'
@@ -148,6 +148,19 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/**
+ * @함수명: reportLicenseIssue
+ * @설명: 라이선스 발급 누락(수동 발급 필요)을 notification_logs에 남기고 관리자 메일도 보낸다.
+ *        둘 다 after() 안에서 돌아 발급 경로를 붙잡지 않으며, 어느 쪽도 예외를 올리지 않는다.
+ * @매개변수: entry - logNotification 입력과 같은 형태(kind·status·event·target·error)
+ */
+function reportLicenseIssue(entry: Parameters<typeof logNotification>[0]): void {
+  after(async () => {
+    await logNotification(entry)
+    await notifyLicenseIssue({ event: entry.event ?? 'license_issue', orderId: entry.target ?? null, detail: entry.error ?? '' })
+  })
 }
 
 /**
@@ -482,10 +495,10 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 사용자 없음 — 주문 미생성 (order_id=${lsOrderId}, email=${attrs.user_email})`)
-    after(() => logNotification({
+    reportLicenseIssue({
       kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: lsOrderId,
       error: '결제 완료 주문의 구매자를 회원에서 찾지 못해 주문·라이선스를 만들지 않았습니다(GenieWork 주문이면 키는 비활성 상태로 남음). 구매자 확인 후 수동 발급 필요.',
-    }))
+    })
     return
   }
 
@@ -519,10 +532,10 @@ async function handleOrderCreated(payload: LSWebhookPayload) {
 
   if (!productPriceId && !bundleId) {
     console.error(`[LS Webhook] variant_id ${variantId}에 매칭되는 상품 없음 — 주문만 기록·라이선스 미생성 (order_id=${lsOrderId})`)
-    after(() => logNotification({
+    reportLicenseIssue({
       kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: lsOrderId,
       error: `결제사 상품(variant ${variantId})이 등록된 옵션과 맞지 않아 라이선스를 만들지 않았습니다. 옵션 연결 확인 후 수동 발급 필요.`,
-    }))
+    })
   }
 
   const quantity = normalizeQuantity(attrs.first_order_item?.quantity)
@@ -791,10 +804,10 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   const userId = await findUserId(payload.meta.custom_data?.user_id, attrs.user_email)
   if (!userId) {
     console.error(`[LS Webhook] 구독 사용자 없음 — 구독/라이선스 미생성 (order_id=${attrs.order_id}, sub=${lsSubId}, email=${attrs.user_email})`)
-    after(() => logNotification({
+    reportLicenseIssue({
       kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: String(attrs.order_id),
       error: `구독(${lsSubId}) 구매자를 회원에서 찾지 못해 구독·라이선스를 만들지 않았습니다(GenieWork 주문이면 키는 비활성 상태로 남음). 구매자 확인 후 수동 발급 필요.`,
-    }))
+    })
     return
   }
 
@@ -823,10 +836,10 @@ async function handleSubscriptionCreated(payload: LSWebhookPayload) {
   }
   if (!productPrice && !bundleId) {
     console.error(`[LS Webhook] (sub) variant_id ${variantId}에 매칭되는 상품 없음 — 라이선스 미생성 (sub=${lsSubId})`)
-    after(() => logNotification({
+    reportLicenseIssue({
       kind: 'webhook', status: 'failure', event: 'license_issue_skipped', target: String(attrs.order_id),
       error: `구독(${lsSubId})의 결제사 상품(variant ${variantId})이 등록된 옵션과 맞지 않아 라이선스를 만들지 않았습니다. 옵션 연결 확인 후 수동 발급 필요.`,
-    }))
+    })
   }
 
   // 구독 수량(좌석) — 스텁 주문 기록·라이선스 N개 발급에 공용
@@ -1630,7 +1643,7 @@ async function createLicense(
         // ★ throw하지 않는다: 재전송이 오면 licenses가 비어 멱등 가드를 통과해 이 루프가 다시 도는데,
         //   키 #2~N은 upsert가 아닌 일반 INSERT라 전용 DB에 키가 두 벌 생긴다.
         //   after(): 기록이 발급 경로를 붙잡지 않게 한다(이 파일의 다른 알림과 같은 방식).
-        after(() => logNotification({
+        reportLicenseIssue({
           kind:   'webhook',
           status: 'failure',
           event:  'license_key_store_failed',
@@ -1639,7 +1652,7 @@ async function createLicense(
                 + `키 ${i + 1}/${keys.length}(${finalKey.slice(0, 8)}…), tier=${tier}. `
                 + `해당 키를 전용 DB에 수동 등록(tier·expires_at 기재, is_active=true)해야 합니다 — `
                 + `같은 ls_order_id 행이 이미 있으면 새로 넣지 말고 그 행을 그렇게 UPDATE. 사유: ${maskSecretsInText(String(supaErr))}`,
-        }))
+        })
       }
 
       const row: Record<string, unknown> = {
@@ -1662,7 +1675,7 @@ async function createLicense(
       // 전용 DB에는 키가 들어갔는데 본체에 없으면 "앱은 되는데 대시보드에 안 보이는" 상태로 끝난다.
       // 고객은 키를 못 찾고 문의가 오는데 서버 기록엔 아무 신호가 없던 자리다.
       // ★ throw하지 않는 이유는 위 catch와 같다(재전송 시 전용 DB 키 중복).
-      after(() => logNotification({
+      reportLicenseIssue({
         kind:   'webhook',
         status: 'failure',
         event:  'license_dashboard_missing',
@@ -1670,7 +1683,7 @@ async function createLicense(
         error:  `${supaSlug} 본체 licenses 저장 실패 — 전용 DB에는 키가 있으나 고객 대시보드에 안 보입니다. `
               + `키 ${coreRows.length}개(${coreRows.map((r) => String(r.serial_key).slice(0, 8)).join(', ')}…), tier=${tier}. `
               + `licenses 테이블에 수동 등록이 필요합니다. 사유: ${maskSecretsInText(gsLicErr.message)}`,
-      }))
+      })
     }
 
     // 키 이메일은 서버가 보내지 않는다 — geniestock·geniework는 LemonSqueezy

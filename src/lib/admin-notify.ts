@@ -16,12 +16,13 @@ import { sendEmail } from './email'
 import { logNotification } from './notification-log'
 
 /** 알림 종류 — 켬/끔 스위치(front_settings notify_*)와 기록의 분류 키 */
-export type AdminNotifyKind = 'new_order' | 'new_ticket'
+export type AdminNotifyKind = 'new_order' | 'new_ticket' | 'license_issue'
 
 /** 스위치 설정 키 — 값이 'false'일 때만 끔(없거나 다른 값이면 켜짐 = 기본 켜짐) */
 const NOTIFY_SETTING_KEY: Record<AdminNotifyKind, string> = {
   new_order:  'notify_new_order',
   new_ticket: 'notify_new_ticket',
+  license_issue: 'notify_license_issue',
 }
 
 /** HTML 이스케이프 — 손님 입력(이름·제목 등)을 본문에 넣기 전 반드시 통과.
@@ -229,5 +230,42 @@ export async function notifyNewTicket(input: {
     })
   } catch (err) {
     console.error('[admin-notify] 새 티켓 알림 조립 중 오류(무시):', err instanceof Error ? err.message : String(err))
+  }
+}
+
+/**
+ * @함수명: notifyLicenseIssue
+ * @설명: 라이선스 발급 누락 알림 — 결제는 끝났는데 키가 안 만들어졌거나(구매자·옵션 못 찾음)
+ *        전용 DB·대시보드 저장이 실패해 대표님이 수동 발급해야 하는 경우.
+ *        제목에 주문 번호와 사건 종류가 들어가므로 같은 주문의 재전송만 30분 창에서 걸러진다.
+ *        스위치 front_settings.notify_license_issue('false'일 때만 끔, 기본 켜짐).
+ *        ⚠️ 키는 호출부가 이미 앞 8자로 잘라 넘긴다(전문 금지).
+ * @매개변수: event - 기록 분류(license_issue_skipped 등) / orderId - LS 주문 번호 / detail - 사유·조치 안내
+ */
+export async function notifyLicenseIssue(input: {
+  event: string
+  orderId: string | null
+  detail: string
+}): Promise<void> {
+  try {
+    const order = String(input.orderId ?? '식별자 없음')
+    await notifyAdmin({
+      kind: 'license_issue',
+      subject: `[CoreZent] 라이선스 발급 누락 — 수동 발급 필요 (${input.event}, 주문 ${order})`,
+      html: adminAlertHtml(
+        '라이선스 발급 누락 — 수동 조치 필요',
+        [
+          ['LS 주문 번호', escapeHtml(order), true],
+          ['발생 시각', new Date().toISOString()],
+          ['종류', escapeHtml(input.event)],
+          ['사유·조치', escapeHtml(input.detail)],
+        ],
+        '결제는 완료된 주문입니다. 관리자 → 웹훅 로그(「실패」 필터)에서 같은 기록을 볼 수 있습니다.',
+      ),
+      target: `order:${order}`,
+      dedupeMinutes: 30,
+    })
+  } catch (err) {
+    console.error('[admin-notify] 발급 누락 알림 조립 중 오류(무시):', err instanceof Error ? err.message : String(err))
   }
 }
