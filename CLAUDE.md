@@ -364,8 +364,9 @@ Signed URL을 생성해 고객이 로그인 없이 결제 수단 업데이트·�
 ## 4. 웹훅 (Webhooks & Security)
 - **서명 검증:** 요청 헤더 `X-Signature`를 **rawBody**에 웹훅 시크릿으로 `HMAC-SHA256` 해싱한 값과 비교. 검증 통과 후 파싱.
 - **멱등성:** `lemon_squeezy_order_id` UNIQUE로 재전송 중복 INSERT 방지.
-- **처리 이벤트 (구현된 8종):**
-  `order_created` · `subscription_created` · `subscription_updated` · `subscription_cancelled` · `subscription_expired` · `subscription_payment_failed` · `subscription_paused`/`subscription_unpaused` · `order_refunded`
+- **처리 이벤트 (구현된 11종):**
+  `order_created` · `subscription_created` · `subscription_updated` · `subscription_cancelled` · `subscription_expired` · `subscription_payment_failed` · `subscription_paused`/`subscription_unpaused` · `order_refunded` · `subscription_payment_success` · `subscription_payment_refunded` · `license_key_created`
+  - `subscription_cancelled`는 자동 갱신 중단일 뿐 — 라이선스는 결제 기간 끝(`subscription_expired`)까지 유지. 갱신 환불도 라이선스를 끄지 않음(즉시 끊기는 관리자 「회수」)
   - `subscription_updated` 시 `licenses.expires_at = current_period_end` 동기화, 시트 만료일 갱신
 - **Next.js 구현:** App Router에서 `app/api/webhooks/lemonsqueezy/route.ts`가 `req.text()`로 rawBody 확보 → 서명 검증 → 파싱 → 분기 처리.
 

@@ -312,10 +312,12 @@ CoreZent_SaaS/
 - `order_created` → orders + licenses 생성, 시트 행 추가, 주문확인 메일
 - `subscription_created` → subscriptions 행 생성
 - `subscription_updated` → 구독 상태/만료일 갱신 + `license.expires_at` 동기화
-- `subscription_cancelled` / `subscription_expired` → 라이선스 expired + 시트 '중지'
+- `subscription_cancelled` → 구독 상태만 취소로 표시(라이선스는 결제 기간 끝까지 유지) / `subscription_expired` → 라이선스 expired + 시트 '중지'
 - `subscription_payment_failed` → 라이선스 expired + 시트 '중지'
 - `subscription_paused` / `subscription_unpaused` → 일시정지/해제
 - `order_refunded` → 라이선스 revoked
+- `subscription_payment_success` → 갱신 결제 처리 / `subscription_payment_refunded` → 갱신 커미션 반전만(라이선스 유지, 즉시 끊기는 관리자 「회수」)
+- `license_key_created` → LS 라이선스 키 기록(GenieWork는 stub을 is_active=false로 넣고 발급 때 켬)
 
 ### 2.7 비회원 문의 (Contact)
 
