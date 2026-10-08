@@ -7,7 +7,7 @@
  *   - order_created              → orders + licenses 생성 (수량 N 주문 → 라이선스 N개)
  *   - subscription_created       → subscriptions 생성
  *   - subscription_updated       → 구독 상태/만료일 업데이트 + license.expires_at 동기화
- *   - subscription_cancelled     → 취소 처리 + license expired
+ *   - subscription_cancelled     → 취소 처리 (라이선스는 결제 기간 끝까지 유지)
  *   - subscription_expired       → 만료 처리 + license expired
  *   - subscription_payment_success → 갱신(renewal) 결제 성공 → 추천 커미션 반복 적립
  *   - subscription_payment_failed → 결제 실패 → license expired + Sheets 중지
@@ -747,7 +747,8 @@ async function handleSubscriptionPaymentSuccess(payload: LSWebhookPayload) {
 // ─── subscription_payment_refunded 핸들러 (갱신 결제 환불 → 커미션 반전) ──────
 // 갱신 환불은 order_refunded가 아니라 이 이벤트로 도착(data = subscription-invoice).
 // data.id = 갱신 인보이스 id = 갱신 커미션의 source_id 와 일치하므로 그대로 반전한다.
-// (구독/라이선스 상태는 cancelled/expired 이벤트가 담당 — 여기선 커미션만)
+// (라이선스는 건드리지 않는다 — 취소돼도 기간 끝 expired 때 꺼진다. 즉시 끊으려면 관리자 회수.
+//  2026-10-08 운영자 결정)
 
 async function handleSubscriptionPaymentRefunded(payload: LSWebhookPayload) {
   const invoiceId = String(payload.data.id)
@@ -1230,6 +1231,10 @@ async function handleSubscriptionCancelled(payload: LSWebhookPayload) {
 
   if (error) throw new Error(`구독 취소 처리 실패: ${error.message}`)
   console.log(`[LS Webhook] 구독 취소/만료 처리 완료: ${lsSubId}`)
+
+  // 취소 = 자동 갱신 중단일 뿐, 이미 결제한 기간(ends_at)까지는 계속 사용 가능.
+  // 라이선스는 그 기간이 끝나 subscription_expired가 올 때만 끈다.
+  if (isCancelled) return
 
   // 연결된 라이선스 상태도 expired로 변경 (수량 N 주문이면 N개 전부)
   const licInfo = await findLicensesByLsSubId(lsSubId)
