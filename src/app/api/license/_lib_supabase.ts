@@ -455,15 +455,20 @@ export async function upsertLicenseForOrder(input: {
   }
   const admin = licenseClientFor(input.product)
 
-  const { data: existing } = await admin
-    .from('license_keys')
-    .select('license_key')
-    .eq('ls_order_id', input.lsOrderId)
-    .eq('product', input.product)
-    .maybeSingle()
+  const findByOrder = async () => {
+    const { data } = await admin
+      .from('license_keys')
+      .select('license_key, tier')
+      .eq('ls_order_id', input.lsOrderId)
+      .eq('product', input.product)
+      .maybeSingle()
+    return data
+  }
 
-  if (existing) {
-    // 행 있음 → 메타데이터만 채우고 license_key(LS키)는 덮지 않음
+  // 행 있음 → 메타데이터만 채우고 license_key(LS키)는 덮지 않음.
+  // is_active는 진짜 stub(tier NULL — license_key_created가 비활성으로 넣은 행)일 때만 켠다.
+  // 이미 발급된 행(tier 있음)은 환불·회수로 꺼졌을 수 있으므로 건드리지 않는다.
+  const fillExisting = async (existing: { license_key: unknown; tier: unknown }) => {
     const { error } = await admin
       .from('license_keys')
       .update({
@@ -471,12 +476,16 @@ export async function upsertLicenseForOrder(input: {
         buyer_email: input.buyerEmail,
         expires_at:  input.expiresAt,
         product:     input.product,
+        ...(existing.tier == null ? { is_active: true } : {}),
       })
       .eq('ls_order_id', input.lsOrderId)
       .eq('product', input.product)
     if (error) throw new Error(`라이선스 메타 갱신 실패: ${error.message}`)
     return { finalKey: existing.license_key as string, wasExisting: true }
   }
+
+  const existing = await findByOrder()
+  if (existing) return fillExisting(existing)
 
   // 행 없음 → 전체 INSERT
   const { error } = await admin.from('license_keys').insert({
@@ -489,6 +498,12 @@ export async function upsertLicenseForOrder(input: {
     is_active:   true,
     product:     input.product,
   })
+  if (error?.code === '23505') {
+    // 경쟁: license_key_created가 조회와 INSERT 사이에 stub을 넣었다 → 다시 읽어 그 행을 채운다.
+    // (그냥 실패시키면 stub이 비활성·tier NULL로 남아 돈 낸 고객이 잠긴다)
+    const raced = await findByOrder()
+    if (raced) return fillExisting(raced)
+  }
   if (error) throw new Error(`라이선스 등록 실패: ${error.message}`)
   return { finalKey: input.licenseKey, wasExisting: false }
 }
@@ -497,7 +512,7 @@ export async function upsertLicenseForOrder(input: {
  * @함수명: applyLsKeyForOrder
  * @설명: license_key_created 처리 — ls_order_id 기준으로 LS키를 license_keys에 반영.
  *        - 행 있음 → license_key를 LS키로 UPDATE(self-gen→LS 교체) + hwid_mapping 정합 방어.
- *        - 행 없음(선도착) → stub INSERT(tier 생략=NULL, license_key=LS키).
+ *        - 행 없음(선도착) → stub INSERT(tier 생략=NULL, license_key=LS키, is_active=false).
  *        ★GenieWork 전용(GW DB만 ls_order_id 컬럼). 멱등(이미 LS키면 noop).
  * @반환값: { action, replacedKey? } action='updated'면 replacedKey=교체된 옛 자체키
  *          (수량 N 주문 시 본체 licenses에서 "정확히 그 행"만 동기화하기 위해 필요)
@@ -539,11 +554,13 @@ export async function applyLsKeyForOrder(input: {
   }
 
   // 행 없음 → stub INSERT (tier 생략 = NULL; subscription_created가 나중에 채움)
+  // ★ 비활성으로 넣는다: tier·만료일이 빈 stub이 활성이면 인증이 lite·영구로 통과한다.
+  //   upsertLicenseForOrder가 메타를 채울 때 함께 켠다(실패 시 license_key_store_failed 알림).
   const { error } = await admin.from('license_keys').insert({
     ls_order_id: input.lsOrderId,
     license_key: input.lsKey,
     product:     input.product,
-    is_active:   true,
+    is_active:   false,
     buyer_email: input.buyerEmail,
     source:      'lemon_squeezy',
   })
