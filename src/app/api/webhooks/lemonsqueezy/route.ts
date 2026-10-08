@@ -1009,7 +1009,8 @@ async function handleSubscriptionUpdated(payload: LSWebhookPayload) {
     // DB license.expires_at를 구독 갱신일과 동기화 (주문의 모든 라이선스 공통)
     await admin
       .from('licenses')
-      .update({ expires_at: attrs.renews_at, status: 'active' })
+      // 상태는 활성일 때만 되살린다 — expired 통지가 뒤늦게 와도 대시보드가 '활성'으로 돌아가지 않게
+      .update({ expires_at: attrs.renews_at, ...(newStatus === 'active' ? { status: 'active' } : {}) })
       .eq('order_id', licInfo.orderId)
 
     // 키별 라우팅: 어느 라이선스 DB(공유+GW)에 있는지 찾아 그 DB로 동기화, 없으면 GeniePost(Sheets)
